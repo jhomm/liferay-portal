@@ -25,8 +25,6 @@ import javax.servlet.http.HttpServletRequest;
  */
 public interface PortletProvider {
 
-	public static final String CLASS_NAME_ANY = "any-class-name";
-
 	public String getPortletId();
 
 	public PortletURL getPortletURL(HttpServletRequest request)
@@ -34,7 +32,7 @@ public interface PortletProvider {
 
 	public enum Action {
 
-		ADD, BROWSE, EDIT, VIEW
+		ADD, BROWSE, EDIT, MANAGE, VIEW
 
 	}
 

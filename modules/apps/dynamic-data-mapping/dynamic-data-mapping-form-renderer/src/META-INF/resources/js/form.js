@@ -2,107 +2,128 @@ AUI.add(
 	'liferay-ddm-form-renderer',
 	function(A) {
 		var AArray = A.Array;
-		var Util = Liferay.DDM.Renderer.Util;
+		var Renderer = Liferay.DDM.Renderer;
 
 		var Form = A.Component.create(
 			{
 				ATTRS: {
 					container: {
-						setter: A.one
-					},
-
-					definition: {
-						value: []
-					},
-
-					fields: {
-						valueFn: '_valueFields'
+						setter: A.one,
+						valueFn: '_valueContainer'
 					},
 
 					portletNamespace: {
 						value: ''
-					},
-
-					values: {
 					}
 				},
+
+				AUGMENTS: [
+					Renderer.FormDefinitionSupport,
+					Renderer.FormFeedbackSupport,
+					Renderer.FormPaginationSupport,
+					Renderer.FormTabsSupport,
+					Renderer.FormValidationSupport,
+					Renderer.NestedFieldsSupport
+				],
 
 				EXTENDS: A.Base,
 
 				NAME: 'liferay-ddm-form-renderer',
 
 				prototype: {
+					_eventHandlers: [],
+
 					initializer: function() {
+						var instance = this;
+
+						var formNode = instance.getFormNode();
+
+						if (formNode) {
+							instance._eventHandlers.push(
+								formNode.on('submit', A.bind('_onDOMSubmitForm', instance)),
+								Liferay.on('submitForm', instance._onLiferaySubmitForm, instance)
+							);
+						}
+					},
+
+					destructor: function() {
+						var instance = this;
+
+						instance.get('container').remove();
+
+						(new A.EventHandle(instance._eventHandlers)).detach();
+					},
+
+					getFormNode: function() {
 						var instance = this;
 
 						var container = instance.get('container');
 
-						instance.tabView = new A.TabView(
-							{
-								boundingBox: container,
-								srcNode: container.one('.lfr-ddm-form-pages'),
-								type: 'pills'
-							}
-						).render();
-
-						AArray.invoke(instance.get('fields'), 'render');
-
-						instance.after('liferay-ddm-form-renderer-field:remove', A.bind(instance, instance._afterFieldRemove));
+						return container.ancestor('form', true);
 					},
 
-					getFieldNodes: function() {
+					render: function() {
 						var instance = this;
 
-						return instance.get('container').all('.lfr-ddm-form-field-container').filter(
-							function(item) {
-								return item.ancestors('.field-wrapper', false).size() === 0;
+						instance.fire('render');
+
+						return instance;
+					},
+
+					submit: function() {
+						var instance = this;
+
+						instance.validate(
+							function(hasErrors) {
+								if (!hasErrors) {
+									var formNode = instance.getFormNode();
+
+									formNode.submit();
+								}
 							}
 						);
 					},
 
-					_getField: function(node) {
+					toJSON: function() {
 						var instance = this;
 
-						var fieldNode = node.one('.field-wrapper');
+						var definition = instance.get('definition');
 
-						var qualifiedName = fieldNode.getData('fieldname');
-
-						var instanceId = Util.getInstanceIdFromQualifiedName(qualifiedName);
-
-						var name = Util.getFieldNameFromQualifiedName(qualifiedName);
-
-						var fieldDefinition = Util.searchFieldData(instance.get('definition'), 'name', name);
-
-						var FieldClass = Util.getFieldClass(fieldDefinition);
-
-						var field = new FieldClass(
-							{
-								container: node,
-								definition: fieldDefinition,
-								form: instance,
-								instanceId: instanceId,
-								parent: instance,
-								portletNamespace: instance.get('portletNamespace')
-							}
-						);
-
-						field.addTarget(instance);
-
-						return field;
+						return {
+							availableLanguageIds: definition.availableLanguageIds,
+							defaultLanguageId: definition.defaultLanguageId,
+							fieldValues: AArray.invoke(instance.get('fields'), 'toJSON')
+						};
 					},
 
-					_valueFields: function() {
+					_onDOMSubmitForm: function(event) {
 						var instance = this;
 
-						var fields = [];
+						event.preventDefault();
 
-						instance.getFieldNodes().each(
-							function(item) {
-								fields.push(instance._getField(item));
-							}
-						);
+						var currentPage = instance.getCurrentPage();
+						var pagesTotal = instance.getPagesTotal();
 
-						return fields;
+						if (pagesTotal > 1 && currentPage < pagesTotal) {
+							instance.nextPage();
+						}
+						else {
+							instance.submit();
+						}
+					},
+
+					_onLiferaySubmitForm: function(event) {
+						var instance = this;
+
+						if (event.form === instance.getFormNode()) {
+							event.preventDefault();
+						}
+					},
+
+					_valueContainer: function() {
+						var instance = this;
+
+						return A.Node.create('<div class="lfr-ddm-form-container"></div>');
 					}
 				}
 			}
@@ -112,6 +133,6 @@ AUI.add(
 	},
 	'',
 	{
-		requires: ['array-extras', 'aui-tabview', 'liferay-ddm-form-renderer-field', 'liferay-ddm-form-renderer-field-types', 'liferay-ddm-form-renderer-util']
+		requires: ['aui-component', 'liferay-ddm-form-renderer-definition', 'liferay-ddm-form-renderer-feedback', 'liferay-ddm-form-renderer-nested-fields', 'liferay-ddm-form-renderer-pagination', 'liferay-ddm-form-renderer-tabs', 'liferay-ddm-form-renderer-validation']
 	}
 );

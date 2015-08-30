@@ -15,7 +15,7 @@
 </tr>
 <tr>
 	<td>SEARCH_FIELD</td>
-	<td>//input[@id='_128_keywords']</td>
+	<td>//input[contains(@id,'keywords')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -26,6 +26,11 @@
 <tr>
 	<td>SUCCESS_MESSAGE</td>
 	<td>//div[contains(@class,'alert') and contains(@class,'alert-success')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INFO_MESSAGE</td>
+	<td>//div[contains(@class,'alert-info')]</td>
 	<td></td>
 </tr>
 <tr>

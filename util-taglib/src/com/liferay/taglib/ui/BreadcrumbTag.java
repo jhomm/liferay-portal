@@ -14,11 +14,13 @@
 
 package com.liferay.taglib.ui;
 
+import com.liferay.portal.kernel.portletdisplaytemplate.PortletDisplayTemplateManagerUtil;
 import com.liferay.portal.kernel.servlet.taglib.ui.BreadcrumbEntry;
 import com.liferay.portal.kernel.servlet.taglib.ui.BreadcrumbUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portlet.portletdisplaytemplate.util.PortletDisplayTemplateUtil;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.taglib.util.IncludeTag;
 
 import java.util.ArrayList;
@@ -110,10 +112,22 @@ public class BreadcrumbTag extends IncludeTag {
 
 	protected String getDisplayStyle() {
 		if (Validator.isNotNull(_ddmTemplateKey)) {
-			return PortletDisplayTemplateUtil.getDisplayStyle(_ddmTemplateKey);
+			return PortletDisplayTemplateManagerUtil.getDisplayStyle(
+				_ddmTemplateKey);
 		}
 
 		return null;
+	}
+
+	protected long getDisplayStyleGroupId() {
+		if (_ddmTemplateGroupId > 0) {
+			return _ddmTemplateGroupId;
+		}
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		return themeDisplay.getScopeGroupId();
 	}
 
 	@Override
@@ -129,7 +143,8 @@ public class BreadcrumbTag extends IncludeTag {
 		request.setAttribute(
 			"liferay-ui:breadcrumb:displayStyle", getDisplayStyle());
 		request.setAttribute(
-			"liferay-ui:breadcrumb:displayStyleGroupId", _ddmTemplateGroupId);
+			"liferay-ui:breadcrumb:displayStyleGroupId",
+			getDisplayStyleGroupId());
 	}
 
 	private static final String _PAGE = "/html/taglib/ui/breadcrumb/page.jsp";

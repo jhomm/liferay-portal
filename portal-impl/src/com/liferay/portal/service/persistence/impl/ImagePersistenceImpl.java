@@ -732,7 +732,7 @@ public class ImagePersistenceImpl extends BasePersistenceImpl<Image>
 				image.setNew(false);
 			}
 			else {
-				session.merge(image);
+				image = (Image)session.merge(image);
 			}
 		}
 		catch (Exception e) {
@@ -1131,6 +1131,11 @@ public class ImagePersistenceImpl extends BasePersistenceImpl<Image>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return ImageModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

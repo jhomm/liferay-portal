@@ -2032,8 +2032,8 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	}
 
 	protected void cacheUniqueFindersCache(
-		SocialActivityLimit socialActivityLimit) {
-		if (socialActivityLimit.isNew()) {
+		SocialActivityLimit socialActivityLimit, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					socialActivityLimit.getGroupId(),
 					socialActivityLimit.getUserId(),
@@ -2224,7 +2224,7 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 				socialActivityLimit.setNew(false);
 			}
 			else {
-				session.merge(socialActivityLimit);
+				socialActivityLimit = (SocialActivityLimit)session.merge(socialActivityLimit);
 			}
 		}
 		catch (Exception e) {
@@ -2301,8 +2301,9 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 			SocialActivityLimitImpl.class, socialActivityLimit.getPrimaryKey(),
 			socialActivityLimit, false);
 
-		clearUniqueFindersCache(socialActivityLimit);
-		cacheUniqueFindersCache(socialActivityLimit);
+		clearUniqueFindersCache((SocialActivityLimit)socialActivityLimitModelImpl);
+		cacheUniqueFindersCache((SocialActivityLimit)socialActivityLimitModelImpl,
+			isNew);
 
 		socialActivityLimit.resetOriginalValues();
 
@@ -2687,6 +2688,11 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SocialActivityLimitModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

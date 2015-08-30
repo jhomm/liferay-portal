@@ -12532,8 +12532,8 @@ public class MBThreadPersistenceImpl extends BasePersistenceImpl<MBThread>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(MBThread mbThread) {
-		if (mbThread.isNew()) {
+	protected void cacheUniqueFindersCache(MBThread mbThread, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					mbThread.getUuid(), mbThread.getGroupId()
 				};
@@ -12763,7 +12763,7 @@ public class MBThreadPersistenceImpl extends BasePersistenceImpl<MBThread>
 				mbThread.setNew(false);
 			}
 			else {
-				session.merge(mbThread);
+				mbThread = (MBThread)session.merge(mbThread);
 			}
 		}
 		catch (Exception e) {
@@ -12967,8 +12967,8 @@ public class MBThreadPersistenceImpl extends BasePersistenceImpl<MBThread>
 		EntityCacheUtil.putResult(MBThreadModelImpl.ENTITY_CACHE_ENABLED,
 			MBThreadImpl.class, mbThread.getPrimaryKey(), mbThread, false);
 
-		clearUniqueFindersCache(mbThread);
-		cacheUniqueFindersCache(mbThread);
+		clearUniqueFindersCache((MBThread)mbThreadModelImpl);
+		cacheUniqueFindersCache((MBThread)mbThreadModelImpl, isNew);
 
 		mbThread.resetOriginalValues();
 
@@ -13002,6 +13002,7 @@ public class MBThreadPersistenceImpl extends BasePersistenceImpl<MBThread>
 		mbThreadImpl.setLastPostDate(mbThread.getLastPostDate());
 		mbThreadImpl.setPriority(mbThread.getPriority());
 		mbThreadImpl.setQuestion(mbThread.isQuestion());
+		mbThreadImpl.setLastPublishDate(mbThread.getLastPublishDate());
 		mbThreadImpl.setStatus(mbThread.getStatus());
 		mbThreadImpl.setStatusByUserId(mbThread.getStatusByUserId());
 		mbThreadImpl.setStatusByUserName(mbThread.getStatusByUserName());
@@ -13365,6 +13366,11 @@ public class MBThreadPersistenceImpl extends BasePersistenceImpl<MBThread>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return MBThreadModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

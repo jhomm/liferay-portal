@@ -26,7 +26,7 @@ String portletResource = ParamUtil.getString(request, "portletResource");
 
 String portletResourceNamespace = ParamUtil.getString(request, "portletResourceNamespace");
 
-DDMTemplate template = (DDMTemplate)request.getAttribute(WebKeys.DYNAMIC_DATA_MAPPING_TEMPLATE);
+DDMTemplate template = (DDMTemplate)request.getAttribute(DDMWebKeys.DYNAMIC_DATA_MAPPING_TEMPLATE);
 
 long templateId = BeanParamUtil.getLong(template, request, "templateId");
 
@@ -38,7 +38,7 @@ long resourceClassNameId = BeanParamUtil.getLong(template, request, "resourceCla
 boolean cacheable = BeanParamUtil.getBoolean(template, request, "cacheable", true);
 boolean smallImage = BeanParamUtil.getBoolean(template, request, "smallImage");
 
-DDMStructure structure = (DDMStructure)request.getAttribute(WebKeys.DYNAMIC_DATA_MAPPING_STRUCTURE);
+DDMStructure structure = (DDMStructure)request.getAttribute(DDMWebKeys.DYNAMIC_DATA_MAPPING_STRUCTURE);
 
 if ((structure == null) && (template != null)) {
 	structure = DDMTemplateHelperUtil.fetchStructure(template);
@@ -46,7 +46,7 @@ if ((structure == null) && (template != null)) {
 
 String type = BeanParamUtil.getString(template, request, "type", DDMTemplateConstants.TEMPLATE_TYPE_FORM);
 String mode = BeanParamUtil.getString(template, request, "mode", DDMTemplateConstants.TEMPLATE_MODE_CREATE);
-String language = BeanParamUtil.getString(template, request, "language", PropsValues.DYNAMIC_DATA_MAPPING_TEMPLATE_LANGUAGE_DEFAULT);
+String language = BeanParamUtil.getString(template, request, "language", DDMWebConfigurationValues.DYNAMIC_DATA_MAPPING_TEMPLATE_LANGUAGE_DEFAULT);
 String script = BeanParamUtil.getString(template, request, "script");
 
 if (Validator.isNull(script) && type.equals(DDMTemplateConstants.TEMPLATE_TYPE_DISPLAY)) {
@@ -60,8 +60,14 @@ if (Validator.isNull(script) && type.equals(DDMTemplateConstants.TEMPLATE_TYPE_D
 		script = templateHandler.getTemplatesHelpContent(language);
 	}
 	else {
-		script = ContentUtil.get(PropsUtil.get(PropsKeys.DYNAMIC_DATA_MAPPING_TEMPLATE_LANGUAGE_CONTENT, new Filter(language)));
+		script = ContentUtil.get(DDMWebConfigurationUtil.class.getClassLoader(), DDMWebConfigurationUtil.get(DDMWebConfigurationKeys.DYNAMIC_DATA_MAPPING_TEMPLATE_LANGUAGE_CONTENT, new Filter(language)));
 	}
+}
+
+DDMTemplateVersion templateVersion = null;
+
+if (template != null) {
+	templateVersion = template.getTemplateVersion();
 }
 
 String structureAvailableFields = ParamUtil.getString(request, "structureAvailableFields");
@@ -73,11 +79,15 @@ if (Validator.isNotNull(structureAvailableFields)) {
 boolean showCacheableInput = ParamUtil.getBoolean(request, "showCacheableInput");
 %>
 
-<portlet:actionURL name="addTemplate" var="addTemplateURL" />
+<portlet:actionURL name="addTemplate" var="addTemplateURL">
+	<portlet:param name="mvcPath" value="/edit_template.jsp" />
+</portlet:actionURL>
 
-<portlet:actionURL name="updateTemplate" var="updateTemplateURL" />
+<portlet:actionURL name="updateTemplate" var="updateTemplateURL">
+	<portlet:param name="mvcPath" value="/edit_template.jsp" />
+</portlet:actionURL>
 
-<aui:form action="<%= (template == null) ? addTemplateURL : updateTemplateURL %>" enctype="multipart/form-data" method="post" name="fm" onSubmit='<%= "event.preventDefault(); " + renderResponse.getNamespace() + "saveTemplate();" %>'>
+<aui:form action="<%= (template == null) ? addTemplateURL : updateTemplateURL %>" enctype="multipart/form-data" method="post" name="fm" onSubmit='<%="event.preventDefault();" %>'>
 	<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
 	<aui:input name="closeRedirect" type="hidden" value="<%= closeRedirect %>" />
 	<aui:input name="portletResource" type="hidden" value="<%= portletResource %>" />
@@ -88,6 +98,7 @@ boolean showCacheableInput = ParamUtil.getBoolean(request, "showCacheableInput")
 	<aui:input name="classPK" type="hidden" value="<%= classPK %>" />
 	<aui:input name="resourceClassNameId" type="hidden" value="<%= resourceClassNameId %>" />
 	<aui:input name="type" type="hidden" value="<%= type %>" />
+	<aui:input name="status" type="hidden" value="<%= String.valueOf(WorkflowConstants.STATUS_APPROVED) %>" />
 	<aui:input name="structureAvailableFields" type="hidden" value="<%= structureAvailableFields %>" />
 	<aui:input name="saveAndContinue" type="hidden" value="<%= false %>" />
 
@@ -97,7 +108,7 @@ boolean showCacheableInput = ParamUtil.getBoolean(request, "showCacheableInput")
 	<liferay-ui:error exception="<%= TemplateSmallImageNameException.class %>">
 
 		<%
-		String[] imageExtensions = PrefsPropsUtil.getStringArray(PropsKeys.DYNAMIC_DATA_MAPPING_IMAGE_EXTENSIONS, ",");
+		String[] imageExtensions = PrefsPropsUtil.getStringArray(DDMServiceConfigurationKeys.DYNAMIC_DATA_MAPPING_IMAGE_EXTENSIONS, ",");
 		%>
 
 		<liferay-ui:message key="image-names-must-end-with-one-of-the-following-extensions" /> <%= StringUtil.merge(imageExtensions, StringPool.COMMA) %>.
@@ -106,7 +117,7 @@ boolean showCacheableInput = ParamUtil.getBoolean(request, "showCacheableInput")
 	<liferay-ui:error exception="<%= TemplateSmallImageSizeException.class %>">
 
 		<%
-		long imageMaxSize = PrefsPropsUtil.getLong(PropsKeys.DYNAMIC_DATA_MAPPING_IMAGE_SMALL_MAX_SIZE);
+		long imageMaxSize = PrefsPropsUtil.getLong(DDMServiceConfigurationKeys.DYNAMIC_DATA_MAPPING_IMAGE_SMALL_MAX_SIZE);
 		%>
 
 		<liferay-ui:message arguments="<%= TextFormatter.formatStorageSize(imageMaxSize, locale) %>" key="please-enter-a-small-image-with-a-valid-file-size-no-larger-than-x" translateArguments="<%= false %>" />
@@ -125,7 +136,7 @@ boolean showCacheableInput = ParamUtil.getBoolean(request, "showCacheableInput")
 
 	<c:if test="<%= showHeader %>">
 		<liferay-ui:header
-			backURL="<%= ddmDisplay.getEditTemplateBackURL(liferayPortletRequest, liferayPortletResponse, classNameId, classPK, portletResource) %>"
+			backURL="<%= ddmDisplay.getEditTemplateBackURL(liferayPortletRequest, liferayPortletResponse, classNameId, classPK, resourceClassNameId, portletResource) %>"
 			localizeTitle="<%= false %>"
 			showBackURL="<%= showBackURL %>"
 			title="<%= title %>"
@@ -133,6 +144,42 @@ boolean showCacheableInput = ParamUtil.getBoolean(request, "showCacheableInput")
 	</c:if>
 
 	<aui:model-context bean="<%= template %>" model="<%= DDMTemplate.class %>" />
+
+	<c:if test="<%= templateVersion != null %>">
+		<aui:workflow-status model="<%= DDMTemplate.class %>" status="<%= templateVersion.getStatus() %>" version="<%= templateVersion.getVersion() %>" />
+
+		<div class="template-history-toolbar" id="<portlet:namespace />templateHistoryToolbar"></div>
+
+		<aui:script use="aui-toolbar,aui-dialog-iframe-deprecated,liferay-util-window">
+			var toolbarChildren = [
+				<portlet:renderURL var="viewHistoryURL">
+					<portlet:param name="mvcPath" value="/view_template_history.jsp" />
+					<portlet:param name="redirect" value="<%= redirect %>" />
+					<portlet:param name="templateId" value="<%= String.valueOf(template.getTemplateId()) %>" />
+				</portlet:renderURL>
+
+				{
+					icon: 'icon-time',
+					label: '<%= UnicodeLanguageUtil.get(request, "view-history") %>',
+					on: {
+						click: function(event) {
+							event.domEvent.preventDefault();
+
+							window.location.href = '<%= viewHistoryURL %>';
+						}
+					}
+				}
+			];
+
+			new A.Toolbar(
+				{
+					boundingBox: '#<portlet:namespace />templateHistoryToolbar',
+					children: toolbarChildren
+				}
+			).render();
+		</aui:script>
+
+	</c:if>
 
 	<aui:fieldset>
 		<aui:input autoFocus="<%= windowState.equals(WindowState.MAXIMIZED) || windowState.equals(LiferayWindowState.POP_UP) %>" name="name" />
@@ -179,7 +226,7 @@ boolean showCacheableInput = ParamUtil.getBoolean(request, "showCacheableInput")
 					</aui:select>
 				</c:if>
 
-				<c:if test="<%= !PropsValues.DYNAMIC_DATA_MAPPING_TEMPLATE_FORCE_AUTOGENERATE_KEY %>">
+				<c:if test="<%= !DDMWebConfigurationValues.DYNAMIC_DATA_MAPPING_TEMPLATE_FORCE_AUTOGENERATE_KEY %>">
 					<aui:input disabled="<%= (template != null) ? true : false %>" name="templateKey" />
 				</c:if>
 
@@ -188,9 +235,9 @@ boolean showCacheableInput = ParamUtil.getBoolean(request, "showCacheableInput")
 				<c:if test="<%= template != null %>">
 					<aui:input helpMessage="template-key-help" name="templateKey" type="resource" value="<%= template.getTemplateKey() %>" />
 
-					<portlet:actionURL name="ddmGetTemplate" var="getTemplateURL">
+					<portlet:resourceURL id="getTemplate" var="getTemplateURL">
 						<portlet:param name="templateId" value="<%= String.valueOf(templateId) %>" />
-					</portlet:actionURL>
+					</portlet:resourceURL>
 
 					<aui:input name="url" type="resource" value="<%= getTemplateURL.toString() %>" />
 
@@ -323,7 +370,7 @@ boolean showCacheableInput = ParamUtil.getBoolean(request, "showCacheableInput")
 		function <portlet:namespace />openDDMStructureSelector() {
 			Liferay.Util.openDDMPortlet(
 				{
-					basePortletURL: '<%= PortletURLFactoryUtil.create(request, PortletKeys.DYNAMIC_DATA_MAPPING, themeDisplay.getPlid(), PortletRequest.RENDER_PHASE) %>',
+					basePortletURL: '<%= PortletURLFactoryUtil.create(request, DDMPortletKeys.DYNAMIC_DATA_MAPPING, themeDisplay.getPlid(), PortletRequest.RENDER_PHASE) %>',
 					classNameId: '<%= PortalUtil.getClassNameId(DDMStructure.class) %>',
 					classPK: 0,
 					eventName: '<portlet:namespace />selectStructure',
@@ -353,6 +400,14 @@ boolean showCacheableInput = ParamUtil.getBoolean(request, "showCacheableInput")
 			}
 		);
 
+		function <portlet:namespace />saveDraftTemplate() {
+			var form = AUI.$('#<portlet:namespace />fm');
+
+			form.fm('status').val(<%= String.valueOf(WorkflowConstants.STATUS_DRAFT) %>);
+
+			Liferay.fire('<%= renderResponse.getNamespace() + "saveTemplate" %>');
+		}
+
 		function <portlet:namespace />saveAndContinueTemplate() {
 			document.<portlet:namespace />fm.<portlet:namespace />saveAndContinue.value = '1';
 
@@ -367,6 +422,8 @@ boolean showCacheableInput = ParamUtil.getBoolean(request, "showCacheableInput")
 	<aui:button onClick="<%= taglibOnClick %>" primary="<%= true %>" value='<%= LanguageUtil.get(request, "save") %>' />
 
 	<aui:button onClick='<%= renderResponse.getNamespace() + "saveAndContinueTemplate();" %>' value='<%= LanguageUtil.get(request, "save-and-continue") %>' />
+
+	<aui:button onClick='<%= renderResponse.getNamespace() + "saveDraftTemplate();" %>' value='<%= LanguageUtil.get(request, "save-draft") %>' />
 
 	<aui:button href="<%= redirect %>" type="cancel" />
 </aui:button-row>

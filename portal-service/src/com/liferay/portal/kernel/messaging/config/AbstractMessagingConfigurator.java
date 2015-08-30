@@ -31,6 +31,7 @@ import com.liferay.portal.kernel.resiliency.spi.SPIUtil;
 import com.liferay.portal.kernel.security.pacl.permission.PortalMessageBusPermission;
 import com.liferay.portal.kernel.util.ClassLoaderPool;
 import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.registry.Filter;
 import com.liferay.registry.Registry;
 import com.liferay.registry.RegistryUtil;
@@ -270,9 +271,8 @@ public abstract class AbstractMessagingConfigurator
 	}
 
 	/**
+	 * @param      replacementDestinations
 	 * @deprecated As of 7.0.0, replaced by {@link #setDestinations(List)}
-	 *
-	 * @param replacementDestinations
 	 */
 	@Deprecated
 	@Override
@@ -308,8 +308,12 @@ public abstract class AbstractMessagingConfigurator
 		String servletContextName = ClassLoaderPool.getContextName(
 			operatingClassLoader);
 
-		MessagingConfiguratorRegistry.registerMessagingConfigurator(
-			servletContextName, this);
+		if ((servletContextName != null) &&
+			!servletContextName.equals(StringPool.NULL)) {
+
+			MessagingConfiguratorRegistry.registerMessagingConfigurator(
+				servletContextName, this);
+		}
 	}
 
 	protected void registerDestinationConfigurations() {

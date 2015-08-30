@@ -15,9 +15,6 @@
 package com.liferay.portal.model.impl;
 
 import com.liferay.portal.kernel.atom.AtomCollectionAdapter;
-import com.liferay.portal.kernel.lar.DefaultConfigurationPortletDataHandler;
-import com.liferay.portal.kernel.lar.PortletDataHandler;
-import com.liferay.portal.kernel.lar.StagedModelDataHandler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.notifications.UserNotificationHandler;
@@ -69,6 +66,8 @@ import com.liferay.portlet.DefaultControlPanelEntryFactory;
 import com.liferay.portlet.PortletQNameUtil;
 import com.liferay.portlet.asset.model.AssetRendererFactory;
 import com.liferay.portlet.expando.model.CustomAttributesDisplay;
+import com.liferay.portlet.exportimport.lar.PortletDataHandler;
+import com.liferay.portlet.exportimport.lar.StagedModelDataHandler;
 import com.liferay.portlet.social.model.SocialActivityInterpreter;
 import com.liferay.portlet.social.model.SocialRequestInterpreter;
 import com.liferay.registry.Registry;
@@ -168,7 +167,7 @@ public class PortletImpl extends PortletBaseImpl {
 		String controlPanelEntryCategory, double controlPanelEntryWeight,
 		String controlPanelClass, List<String> assetRendererFactoryClasses,
 		List<String> atomCollectionAdapterClasses,
-		List<String> customAttributesDisplayClasses, String ddmDisplayClass,
+		List<String> customAttributesDisplayClasses,
 		String permissionPropagatorClass, List<String> trashHandlerClasses,
 		List<String> workflowHandlerClasses, String defaultPreferences,
 		String preferencesValidator, boolean preferencesCompanyWide,
@@ -246,7 +245,6 @@ public class PortletImpl extends PortletBaseImpl {
 		_assetRendererFactoryClasses = assetRendererFactoryClasses;
 		_atomCollectionAdapterClasses = atomCollectionAdapterClasses;
 		_customAttributesDisplayClasses = customAttributesDisplayClasses;
-		_ddmDisplayClass = ddmDisplayClass;
 		_permissionPropagatorClass = permissionPropagatorClass;
 		_trashHandlerClasses = trashHandlerClasses;
 		_workflowHandlerClasses = workflowHandlerClasses;
@@ -385,21 +383,20 @@ public class PortletImpl extends PortletBaseImpl {
 			getControlPanelEntryCategory(), getControlPanelEntryWeight(),
 			getControlPanelEntryClass(), getAssetRendererFactoryClasses(),
 			getAtomCollectionAdapterClasses(),
-			getCustomAttributesDisplayClasses(), getDDMDisplayClass(),
-			getPermissionPropagatorClass(), getTrashHandlerClasses(),
-			getWorkflowHandlerClasses(), getDefaultPreferences(),
-			getPreferencesValidator(), isPreferencesCompanyWide(),
-			isPreferencesUniquePerLayout(), isPreferencesOwnedByGroup(),
-			isUseDefaultTemplate(), isShowPortletAccessDenied(),
-			isShowPortletInactive(), isActionURLRedirect(),
-			isRestoreCurrentView(), isMaximizeEdit(), isMaximizeHelp(),
-			isPopUpPrint(), isLayoutCacheable(), isInstanceable(),
-			isRemoteable(), isScopeable(), isSinglePageApplication(),
-			getUserPrincipalStrategy(), isPrivateRequestAttributes(),
-			isPrivateSessionAttributes(), getAutopropagatedParameters(),
-			isRequiresNamespacedParameters(), getActionTimeout(),
-			getRenderTimeout(), getRenderWeight(), isAjaxable(),
-			getHeaderPortalCss(), getHeaderPortletCss(),
+			getCustomAttributesDisplayClasses(), getPermissionPropagatorClass(),
+			getTrashHandlerClasses(), getWorkflowHandlerClasses(),
+			getDefaultPreferences(), getPreferencesValidator(),
+			isPreferencesCompanyWide(), isPreferencesUniquePerLayout(),
+			isPreferencesOwnedByGroup(), isUseDefaultTemplate(),
+			isShowPortletAccessDenied(), isShowPortletInactive(),
+			isActionURLRedirect(), isRestoreCurrentView(), isMaximizeEdit(),
+			isMaximizeHelp(), isPopUpPrint(), isLayoutCacheable(),
+			isInstanceable(), isRemoteable(), isScopeable(),
+			isSinglePageApplication(), getUserPrincipalStrategy(),
+			isPrivateRequestAttributes(), isPrivateSessionAttributes(),
+			getAutopropagatedParameters(), isRequiresNamespacedParameters(),
+			getActionTimeout(), getRenderTimeout(), getRenderWeight(),
+			isAjaxable(), getHeaderPortalCss(), getHeaderPortletCss(),
 			getHeaderPortalJavaScript(), getHeaderPortletJavaScript(),
 			getFooterPortalCss(), getFooterPortletCss(),
 			getFooterPortalJavaScript(), getFooterPortletJavaScript(),
@@ -559,7 +556,7 @@ public class PortletImpl extends PortletBaseImpl {
 	 * @return the asset type instances of the portlet
 	 */
 	@Override
-	public List<AssetRendererFactory> getAssetRendererFactoryInstances() {
+	public List<AssetRendererFactory<?>> getAssetRendererFactoryInstances() {
 		if (_assetRendererFactoryClasses.isEmpty()) {
 			return null;
 		}
@@ -768,17 +765,6 @@ public class PortletImpl extends PortletBaseImpl {
 		PortletBag portletBag = PortletBagPool.get(getRootPortletId());
 
 		return portletBag.getCustomAttributesDisplayInstances();
-	}
-
-	/**
-	 * Returns the name of the dynamic data mapping display class of the
-	 * portlet.
-	 *
-	 * @return the name of the dynamic data mapping display class of the portlet
-	 */
-	@Override
-	public String getDDMDisplayClass() {
-		return _ddmDisplayClass;
 	}
 
 	/**
@@ -1019,7 +1005,7 @@ public class PortletImpl extends PortletBaseImpl {
 	 * @return the indexer instances of the portlet
 	 */
 	@Override
-	public List<Indexer> getIndexerInstances() {
+	public List<Indexer<?>> getIndexerInstances() {
 		PortletBag portletBag = PortletBagPool.get(getRootPortletId());
 
 		return portletBag.getIndexerInstances();
@@ -2934,17 +2920,6 @@ public class PortletImpl extends PortletBaseImpl {
 	}
 
 	/**
-	 * Sets the name of the dynamic data mapping display class of the portlet.
-	 *
-	 * @param ddmDisplayClass the name of dynamic data mapping display class of
-	 *        the portlet
-	 */
-	@Override
-	public void setDDMDisplayClass(String ddmDisplayClass) {
-		_ddmDisplayClass = ddmDisplayClass;
-	}
-
-	/**
 	 * Sets the default plugin settings of the portlet.
 	 *
 	 * @param pluginSetting the plugin setting
@@ -4097,11 +4072,6 @@ public class PortletImpl extends PortletBaseImpl {
 	private List<String> _customAttributesDisplayClasses;
 
 	/**
-	 * The name of the dynamic data mapping display class of the portlet.
-	 */
-	private String _ddmDisplayClass;
-
-	/**
 	 * Plugin settings associated with the portlet.
 	 */
 	private PluginSetting _defaultPluginSetting;
@@ -4284,8 +4254,7 @@ public class PortletImpl extends PortletBaseImpl {
 	/**
 	 * The name of the portlet data handler class of the portlet.
 	 */
-	private String _portletDataHandlerClass =
-		DefaultConfigurationPortletDataHandler.class.getName();
+	private String _portletDataHandlerClass;
 
 	/**
 	 * The filters of the portlet.

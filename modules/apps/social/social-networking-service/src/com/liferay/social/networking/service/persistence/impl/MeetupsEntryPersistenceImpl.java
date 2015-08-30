@@ -1264,7 +1264,7 @@ public class MeetupsEntryPersistenceImpl extends BasePersistenceImpl<MeetupsEntr
 				meetupsEntry.setNew(false);
 			}
 			else {
-				session.merge(meetupsEntry);
+				meetupsEntry = (MeetupsEntry)session.merge(meetupsEntry);
 			}
 		}
 		catch (Exception e) {
@@ -1706,6 +1706,11 @@ public class MeetupsEntryPersistenceImpl extends BasePersistenceImpl<MeetupsEntr
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return MeetupsEntryModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

@@ -32,7 +32,10 @@ import javax.portlet.PortletURL;
 import javax.portlet.WindowState;
 import javax.portlet.WindowStateException;
 
+import javax.servlet.ServletContext;
+
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alexander Chow
@@ -40,21 +43,25 @@ import org.osgi.service.component.annotations.Component;
 @Component(
 	immediate = true,
 	property = {
+		"javax.portlet.name=" + BookmarksPortletKeys.BOOKMARKS,
 		"search.asset.type=com.liferay.bookmarks.model.BookmarksFolder"
 	},
 	service = AssetRendererFactory.class
 )
 public class BookmarksFolderAssetRendererFactory
-	extends BaseAssetRendererFactory {
+	extends BaseAssetRendererFactory<BookmarksFolder> {
 
 	public static final String TYPE = "bookmark_folder";
 
 	public BookmarksFolderAssetRendererFactory() {
 		setCategorizable(false);
+		setClassName(BookmarksFolder.class.getName());
+		setPortletId(BookmarksPortletKeys.BOOKMARKS);
 	}
 
 	@Override
-	public AssetRenderer getAssetRenderer(long classPK, int type)
+	public AssetRenderer<BookmarksFolder> getAssetRenderer(
+			long classPK, int type)
 		throws PortalException {
 
 		BookmarksFolder folder = BookmarksFolderLocalServiceUtil.getFolder(
@@ -64,6 +71,7 @@ public class BookmarksFolderAssetRendererFactory
 			new BookmarksFolderAssetRenderer(folder);
 
 		bookmarksFolderAssetRenderer.setAssetRendererType(type);
+		bookmarksFolderAssetRenderer.setServletContext(_servletContext);
 
 		return bookmarksFolderAssetRenderer;
 	}
@@ -113,9 +121,19 @@ public class BookmarksFolderAssetRendererFactory
 			permissionChecker, folder, actionId);
 	}
 
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.bookmarks.web)",
+		unbind = "-"
+	)
+	public void setServletContext(ServletContext servletContext) {
+		_servletContext = servletContext;
+	}
+
 	@Override
 	protected String getIconPath(ThemeDisplay themeDisplay) {
 		return themeDisplay.getPathThemeImages() + "/common/folder.png";
 	}
+
+	private ServletContext _servletContext;
 
 }

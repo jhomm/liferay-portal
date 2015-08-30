@@ -765,7 +765,7 @@ public class OrgLaborPersistenceImpl extends BasePersistenceImpl<OrgLabor>
 				orgLabor.setNew(false);
 			}
 			else {
-				session.merge(orgLabor);
+				orgLabor = (OrgLabor)session.merge(orgLabor);
 			}
 		}
 		catch (Exception e) {
@@ -1192,6 +1192,11 @@ public class OrgLaborPersistenceImpl extends BasePersistenceImpl<OrgLabor>
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return OrgLaborModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

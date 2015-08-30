@@ -60,8 +60,6 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	immediate = true,
 	property = {
-		"com.liferay.portlet.control-panel-entry-category=site_administration.content",
-		"com.liferay.portlet.control-panel-entry-weight=21.0",
 		"com.liferay.portlet.css-class-wrapper=portlet-asset-category-admin",
 		"com.liferay.portlet.display-category=category.hidden",
 		"com.liferay.portlet.icon=/icons/asset_category_admin.png",
@@ -218,7 +216,7 @@ public class AssetCategoryAdminPortlet extends MVCPortlet {
 			SessionErrors.contains(
 				renderRequest, NoSuchVocabularyException.class.getName()) ||
 			SessionErrors.contains(
-				renderRequest, PrincipalException.class.getName())) {
+				renderRequest, PrincipalException.getNestedClasses())) {
 
 			include("/error.jsp", renderRequest, renderResponse);
 		}

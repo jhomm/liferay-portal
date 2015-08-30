@@ -14,9 +14,19 @@
 
 package com.liferay.journal.web.portlet.template;
 
+import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
+import com.liferay.dynamic.data.mapping.service.DDMStructureService;
+import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
+import com.liferay.dynamic.data.mapping.service.DDMTemplateService;
+import com.liferay.dynamic.data.mapping.template.BaseDDMTemplateHandler;
+import com.liferay.dynamic.data.mapping.template.DDMTemplateVariableCodeHandler;
+import com.liferay.journal.constants.JournalPortletKeys;
+import com.liferay.journal.model.JournalArticle;
+import com.liferay.journal.service.JournalArticleLocalService;
+import com.liferay.journal.service.JournalArticleService;
+import com.liferay.journal.util.JournalContentUtil;
 import com.liferay.journal.web.configuration.JournalWebConfigurationUtil;
 import com.liferay.journal.web.configuration.JournalWebConfigurationValues;
-import com.liferay.journal.web.constants.JournalPortletKeys;
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
@@ -24,18 +34,9 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.template.TemplateHandler;
 import com.liferay.portal.kernel.template.TemplateVariableCodeHandler;
 import com.liferay.portal.kernel.template.TemplateVariableGroup;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.dynamicdatamapping.service.DDMStructureLocalService;
-import com.liferay.portlet.dynamicdatamapping.service.DDMStructureService;
-import com.liferay.portlet.dynamicdatamapping.service.DDMTemplateLocalService;
-import com.liferay.portlet.dynamicdatamapping.service.DDMTemplateService;
-import com.liferay.portlet.dynamicdatamapping.template.BaseDDMTemplateHandler;
-import com.liferay.portlet.dynamicdatamapping.template.DDMTemplateVariableCodeHandler;
-import com.liferay.portlet.journal.model.JournalArticle;
-import com.liferay.portlet.journal.service.JournalArticleLocalService;
-import com.liferay.portlet.journal.service.JournalArticleService;
-import com.liferay.portlet.journal.util.JournalContentUtil;
 
 import java.util.HashMap;
 import java.util.Locale;
@@ -88,7 +89,7 @@ public class JournalTemplateHandler extends BaseDDMTemplateHandler {
 
 	@Override
 	public String getResourceName() {
-		return "com.liferay.portlet.journal.template";
+		return "com.liferay.journal.template";
 	}
 
 	@Override
@@ -151,6 +152,11 @@ public class JournalTemplateHandler extends BaseDDMTemplateHandler {
 	private final TemplateVariableCodeHandler _templateVariableCodeHandler =
 		new DDMTemplateVariableCodeHandler(
 			JournalTemplateHandler.class.getClassLoader(),
-			"com/liferay/journal/web/portlet/template/dependencies/");
+			"com/liferay/journal/web/portlet/template/dependencies/",
+			SetUtil.fromArray(
+				new String[] {
+					"boolean", "date", "document-library", "image",
+					"link-to-page"
+				}));
 
 }

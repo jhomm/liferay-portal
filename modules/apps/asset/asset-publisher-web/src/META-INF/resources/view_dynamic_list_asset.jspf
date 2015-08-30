@@ -15,18 +15,18 @@
 --%>
 
 <%
-for (int assetEntryIndex = 0; assetEntryIndex < results.size(); assetEntryIndex++) {
-	AssetEntry assetEntry = (AssetEntry)results.get(assetEntryIndex);
+for (int assetEntryIndex = 0; assetEntryIndex < assetEntries.size(); assetEntryIndex++) {
+	AssetEntry assetEntry = (AssetEntry)assetEntries.get(assetEntryIndex);
 
 	long classPK = assetEntry.getClassPK();
 
-	AssetRendererFactory assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassNameId(assetEntry.getClassNameId());
+	AssetRendererFactory<?> assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassNameId(assetEntry.getClassNameId());
 
 	if (assetRendererFactory == null) {
 		continue;
 	}
 
-	AssetRenderer assetRenderer = null;
+	AssetRenderer<?> assetRenderer = null;
 
 	try {
 		assetRenderer = assetRendererFactory.getAssetRenderer(classPK);
@@ -43,7 +43,7 @@ for (int assetEntryIndex = 0; assetEntryIndex < results.size(); assetEntryIndex+
 
 	String title = assetRenderer.getTitle(locale);
 
-	request.setAttribute("view.jsp-assetEntryIndex", new Integer(assetEntryIndex));
+	request.setAttribute("view.jsp-assetEntryIndex", Integer.valueOf(assetEntryIndex));
 
 	request.setAttribute("view.jsp-assetEntry", assetEntry);
 	request.setAttribute("view.jsp-assetRendererFactory", assetRendererFactory);

@@ -11425,8 +11425,9 @@ public class DLFileEntryPersistenceImpl extends BasePersistenceImpl<DLFileEntry>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(DLFileEntry dlFileEntry) {
-		if (dlFileEntry.isNew()) {
+	protected void cacheUniqueFindersCache(DLFileEntry dlFileEntry,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					dlFileEntry.getUuid(), dlFileEntry.getGroupId()
 				};
@@ -11755,7 +11756,7 @@ public class DLFileEntryPersistenceImpl extends BasePersistenceImpl<DLFileEntry>
 				dlFileEntry.setNew(false);
 			}
 			else {
-				session.merge(dlFileEntry);
+				dlFileEntry = (DLFileEntry)session.merge(dlFileEntry);
 			}
 		}
 		catch (Exception e) {
@@ -12036,8 +12037,8 @@ public class DLFileEntryPersistenceImpl extends BasePersistenceImpl<DLFileEntry>
 			DLFileEntryImpl.class, dlFileEntry.getPrimaryKey(), dlFileEntry,
 			false);
 
-		clearUniqueFindersCache(dlFileEntry);
-		cacheUniqueFindersCache(dlFileEntry);
+		clearUniqueFindersCache((DLFileEntry)dlFileEntryModelImpl);
+		cacheUniqueFindersCache((DLFileEntry)dlFileEntryModelImpl, isNew);
 
 		dlFileEntry.resetOriginalValues();
 
@@ -12083,6 +12084,7 @@ public class DLFileEntryPersistenceImpl extends BasePersistenceImpl<DLFileEntry>
 		dlFileEntryImpl.setCustom1ImageId(dlFileEntry.getCustom1ImageId());
 		dlFileEntryImpl.setCustom2ImageId(dlFileEntry.getCustom2ImageId());
 		dlFileEntryImpl.setManualCheckInRequired(dlFileEntry.isManualCheckInRequired());
+		dlFileEntryImpl.setLastPublishDate(dlFileEntry.getLastPublishDate());
 
 		return dlFileEntryImpl;
 	}
@@ -12443,6 +12445,11 @@ public class DLFileEntryPersistenceImpl extends BasePersistenceImpl<DLFileEntry>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return DLFileEntryModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

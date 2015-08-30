@@ -2,6 +2,12 @@
 	$theme.runtime("com.liferay.portal.kernel.servlet.taglib.ui.BreadcrumbEntry", $portletProviderAction.VIEW)
 #end
 
+#macro (control_menu)
+	#if ($is_setup_complete && $is_signed_in)
+		$theme.runtime("com.liferay.portlet.admin.util.PortalControlMenuApplicationType$ControlMenu", $portletProviderAction.VIEW)
+	#end
+#end
+
 #macro (css $file_name)
 	#if ($file_name == $css_main_file)
 		<link class="lfr-css-file" href="$file_name" id="mainLiferayThemeCSS" rel="stylesheet" type="text/css" />
@@ -43,6 +49,26 @@ $languageUtil.format($locale, $lang_key, $arguments.toArray())#end
 	$menu_tag.runTag()
 #end
 
+#macro (navigation_menu)
+	$theme.runtime("com.liferay.portal.theme.NavItem", $portletProviderAction.VIEW)
+#end
+
+#macro (product_menu)
+	#if ($is_setup_complete && $is_signed_in)
+		$theme.runtime("com.liferay.portlet.admin.util.PortalProductMenuApplicationType$ProductMenu", $portletProviderAction.VIEW)
+	#end
+#end
+
+#macro (product_menu_sidebar $state)
+	#if ($is_setup_complete && $is_signed_in)
+		<div class="$state lfr-product-menu-panel sidenav-fixed sidenav-menu-slider" id="sidenavSliderId">
+			<div class="product-menu sidebar sidebar-inverse sidenav-menu">
+				#product_menu()
+			</div>
+		</div>
+	#end
+#end
+
 #macro (quick_access $content_id)
 	#set ($quick_access_tag = $theme.getQuickAccessTag())
 
@@ -53,4 +79,22 @@ $languageUtil.format($locale, $lang_key, $arguments.toArray())#end
 
 #macro (silently $foo)
 	#set ($foo = $foo)
+#end
+
+#macro (search)
+	#if ($is_setup_complete)
+		$theme.runtime("com.liferay.portlet.admin.util.PortalSearchApplicationType$Search", $portletProviderAction.VIEW)
+	#end
+#end
+
+#macro (user_personal_bar)
+	#if ($is_setup_complete)
+		#set ($render_portlet_boundary = $request.getAttribute("RENDER_PORTLET_BOUNDARY"))
+
+		$request.setAttribute("RENDER_PORTLET_BOUNDARY", false)
+
+		$theme.runtime("com.liferay.portlet.admin.util.PortalUserPersonalBarApplicationType$UserPersonalBar", $portletProviderAction.VIEW)
+
+		$request.setAttribute("RENDER_PORTLET_BOUNDARY", $render_portlet_boundary)
+	#end
 #end

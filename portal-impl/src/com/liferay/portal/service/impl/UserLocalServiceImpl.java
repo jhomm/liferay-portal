@@ -40,7 +40,6 @@ import com.liferay.portal.kernel.cache.PortalCacheMapSynchronizeUtil.Synchronize
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.WildcardMode;
-import com.liferay.portal.kernel.dao.shard.ShardCallable;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -59,7 +58,7 @@ import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.spring.aop.Skip;
 import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackRegistryUtil;
+import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Digester;
@@ -468,9 +467,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		groupPersistence.addUsers(groupId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userIds);
+		reindex(userIds);
 
 		PermissionCacheUtil.clearCache(userIds);
 
@@ -491,9 +488,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		organizationPersistence.addUsers(organizationId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userIds);
+		reindex(userIds);
 
 		PermissionCacheUtil.clearCache(userIds);
 	}
@@ -525,9 +520,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		rolePersistence.addUsers(roleId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userIds);
+		reindex(userIds);
 
 		PermissionCacheUtil.clearCache(userIds);
 	}
@@ -546,9 +539,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		teamPersistence.addUsers(teamId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userIds);
+		reindex(userIds);
 
 		PermissionCacheUtil.clearCache(userIds);
 	}
@@ -661,9 +652,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		userGroupPersistence.addUsers(userGroupId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userIds);
+		reindex(userIds);
 
 		PermissionCacheUtil.clearCache(userIds);
 	}
@@ -1061,15 +1050,13 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 *         a successful authentication the user's primary key will be placed
 	 *         under the key <code>userId</code>.
 	 * @return the authentication status. This can be {@link
-	 *         com.liferay.portal.security.auth.Authenticator#FAILURE}
-	 *         indicating that the user's credentials are invalid, {@link
-	 *         com.liferay.portal.security.auth.Authenticator#SUCCESS}
-	 *         indicating a successful login, or {@link
-	 *         com.liferay.portal.security.auth.Authenticator#DNE} indicating
-	 *         that a user with that login does not exist.
+	 *         Authenticator#FAILURE} indicating that the user's credentials are
+	 *         invalid, {@link Authenticator#SUCCESS} indicating a successful
+	 *         login, or {@link Authenticator#DNE} indicating that a user with
+	 *         that login does not exist.
 	 * @throws PortalException if <code>emailAddress</code> or
 	 *         <code>password</code> was <code>null</code>
-	 * @see    com.liferay.portal.security.auth.AuthPipeline
+	 * @see    AuthPipeline
 	 */
 	@Override
 	public int authenticateByEmailAddress(
@@ -1096,15 +1083,13 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 *         a successful authentication the user's primary key will be placed
 	 *         under the key <code>userId</code>.
 	 * @return the authentication status. This can be {@link
-	 *         com.liferay.portal.security.auth.Authenticator#FAILURE}
-	 *         indicating that the user's credentials are invalid, {@link
-	 *         com.liferay.portal.security.auth.Authenticator#SUCCESS}
-	 *         indicating a successful login, or {@link
-	 *         com.liferay.portal.security.auth.Authenticator#DNE} indicating
-	 *         that a user with that login does not exist.
+	 *         Authenticator#FAILURE} indicating that the user's credentials are
+	 *         invalid, {@link Authenticator#SUCCESS} indicating a successful
+	 *         login, or {@link Authenticator#DNE} indicating that a user with
+	 *         that login does not exist.
 	 * @throws PortalException if <code>screenName</code> or
 	 *         <code>password</code> was <code>null</code>
-	 * @see    com.liferay.portal.security.auth.AuthPipeline
+	 * @see    AuthPipeline
 	 */
 	@Override
 	public int authenticateByScreenName(
@@ -1131,15 +1116,13 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 *         a successful authentication the user's primary key will be placed
 	 *         under the key <code>userId</code>.
 	 * @return the authentication status. This can be {@link
-	 *         com.liferay.portal.security.auth.Authenticator#FAILURE}
-	 *         indicating that the user's credentials are invalid, {@link
-	 *         com.liferay.portal.security.auth.Authenticator#SUCCESS}
-	 *         indicating a successful login, or {@link
-	 *         com.liferay.portal.security.auth.Authenticator#DNE} indicating
-	 *         that a user with that login does not exist.
+	 *         Authenticator#FAILURE} indicating that the user's credentials are
+	 *         invalid, {@link Authenticator#SUCCESS} indicating a successful
+	 *         login, or {@link Authenticator#DNE} indicating that a user with
+	 *         that login does not exist.
 	 * @throws PortalException if <code>userId</code> or <code>password</code>
 	 *         was <code>null</code>
-	 * @see    com.liferay.portal.security.auth.AuthPipeline
+	 * @see    AuthPipeline
 	 */
 	@Override
 	public int authenticateByUserId(
@@ -1740,7 +1723,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 			return new KeyValuePair(name, password);
 		}
 		else {
-			throw new PrincipalException();
+			throw new PrincipalException.MustBeAuthenticated(userId);
 		}
 	}
 
@@ -1772,9 +1755,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		rolePersistence.removeUser(roleId, userId);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userId);
+		reindex(userId);
 
 		PermissionCacheUtil.clearCache(userId);
 	}
@@ -1883,9 +1864,10 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 		membershipRequestLocalService.deleteMembershipRequestsByUserId(
 			user.getUserId());
 
-		// Shopping cart
+		// Ratings
 
-		shoppingCartLocalService.deleteUserCarts(user.getUserId());
+		ratingsStatsLocalService.deleteStats(
+			User.class.getName(), user.getUserId());
 
 		// Social
 
@@ -1945,9 +1927,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		userGroupPersistence.removeUser(userGroupId, userId);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userId);
+		reindex(userId);
 
 		PermissionCacheUtil.clearCache(userId);
 	}
@@ -2078,8 +2058,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -2170,7 +2149,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		LinkedHashMap<String, Object> params = new LinkedHashMap<>();
 
-		params.put("usersGroups", new Long(groupId));
+		params.put("usersGroups", Long.valueOf(groupId));
 
 		return searchCount(group.getCompanyId(), null, status, params);
 	}
@@ -2255,7 +2234,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		LinkedHashMap<String, Object> params = new LinkedHashMap<>();
 
-		params.put("usersOrgs", new Long(organizationId));
+		params.put("usersOrgs", Long.valueOf(organizationId));
 
 		return searchCount(organization.getCompanyId(), null, status, params);
 	}
@@ -2288,7 +2267,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		LinkedHashMap<String, Object> params = new LinkedHashMap<>();
 
-		params.put("usersRoles", new Long(roleId));
+		params.put("usersRoles", Long.valueOf(roleId));
 
 		return searchCount(role.getCompanyId(), null, status, params);
 	}
@@ -2302,15 +2281,13 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
 	 * @param      userId the primary key of the user
 	 * @param      socialRelationType the type of social relation. The possible
-	 *             types can be found in {@link
-	 *             com.liferay.portlet.social.model.SocialRelationConstants}.
+	 *             types can be found in {@link SocialRelationConstants}.
 	 * @param      start the lower bound of the range of users
 	 * @param      end the upper bound of the range of users (not inclusive)
 	 * @param      obc the comparator to order the users by (optionally
@@ -2342,8 +2319,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -2437,16 +2413,14 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
 	 * @param  userId1 the primary key of the first user
 	 * @param  userId2 the primary key of the second user
 	 * @param  socialRelationType the type of social relation. The possible
-	 *         types can be found in {@link
-	 *         com.liferay.portlet.social.model.SocialRelationConstants}.
+	 *         types can be found in {@link SocialRelationConstants}.
 	 * @param  start the lower bound of the range of users
 	 * @param  end the upper bound of the range of users (not inclusive)
 	 * @param  obc the comparator to order the users by (optionally
@@ -2467,8 +2441,8 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		params.put(
 			"socialMutualRelationType",
-			new Long[] {userId1, new Long(socialRelationType), userId2,
-			new Long(socialRelationType)
+			new Long[] {userId1, Long.valueOf(socialRelationType), userId2,
+			Long.valueOf(socialRelationType)
 		});
 
 		return search(
@@ -2485,8 +2459,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -2541,8 +2514,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 *
 	 * @param      userId the primary key of the user
 	 * @param      socialRelationType the type of social relation. The possible
-	 *             types can be found in {@link
-	 *             com.liferay.portlet.social.model.SocialRelationConstants}.
+	 *             types can be found in {@link SocialRelationConstants}.
 	 * @return     the number of users with a social relation of the type with
 	 *             the user
 	 * @throws     PortalException if a user with the primary key could not be
@@ -2564,8 +2536,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 *
 	 * @param  userId the primary key of the user
 	 * @param  socialRelationType the type of social relation. The possible
-	 *         types can be found in {@link
-	 *         com.liferay.portlet.social.model.SocialRelationConstants}.
+	 *         types can be found in {@link SocialRelationConstants}.
 	 * @return the number of users with a social relation with the user
 	 * @throws PortalException if a user with the primary key could not be found
 	 */
@@ -2621,8 +2592,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 * @param  userId1 the primary key of the first user
 	 * @param  userId2 the primary key of the second user
 	 * @param  socialRelationType the type of social relation. The possible
-	 *         types can be found in {@link
-	 *         com.liferay.portlet.social.model.SocialRelationConstants}.
+	 *         types can be found in {@link SocialRelationConstants}.
 	 * @return the number of users with a mutual social relation of the type
 	 *         with the user
 	 * @throws PortalException if a user with the primary key could not be found
@@ -2638,8 +2608,8 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		params.put(
 			"socialMutualRelationType",
-			new Long[] {userId1, new Long(socialRelationType), userId2,
-			new Long(socialRelationType)
+			new Long[] {userId1, Long.valueOf(socialRelationType), userId2,
+			Long.valueOf(socialRelationType)
 		});
 
 		return searchCount(
@@ -2834,7 +2804,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		LinkedHashMap<String, Object> params = new LinkedHashMap<>();
 
-		params.put("usersUserGroups", new Long(userGroupId));
+		params.put("usersUserGroups", Long.valueOf(userGroupId));
 
 		return searchCount(userGroup.getCompanyId(), null, status, params);
 	}
@@ -3018,8 +2988,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -3072,8 +3041,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -3142,7 +3110,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 		}
 
 		try {
-			Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
 				User.class);
 
 			SearchContext searchContext = buildSearchContext(
@@ -3170,8 +3138,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -3235,8 +3202,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -3282,7 +3248,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 		int end, Sort[] sorts) {
 
 		try {
-			Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
 				User.class);
 
 			SearchContext searchContext = buildSearchContext(
@@ -3357,7 +3323,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 				params.put("keywords", keywords);
 			}
 
-			Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
 				User.class);
 
 			SearchContext searchContext = buildSearchContext(
@@ -3366,9 +3332,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 				status, params, andOperator, QueryUtil.ALL_POS,
 				QueryUtil.ALL_POS, null);
 
-			Hits hits = indexer.search(searchContext);
-
-			return hits.getLength();
+			return (int)indexer.searchCount(searchContext);
 		}
 		catch (Exception e) {
 			throw new SystemException(e);
@@ -3411,7 +3375,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 		}
 
 		try {
-			Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
 				User.class);
 
 			FullNameGenerator fullNameGenerator =
@@ -3425,9 +3389,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 				screenName, emailAddress, null, null, null, null, null, status,
 				params, true, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
-			Hits hits = indexer.search(searchContext);
-
-			return hits.getLength();
+			return (int)indexer.searchCount(searchContext);
 		}
 		catch (Exception e) {
 			throw new SystemException(e);
@@ -3908,9 +3870,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		rolePersistence.setUsers(roleId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(updateUserIds);
+		reindex(updateUserIds);
 
 		PermissionCacheUtil.clearCache(updateUserIds);
 	}
@@ -3942,9 +3902,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		userGroupPersistence.setUsers(userGroupId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(updateUserIds);
+		reindex(updateUserIds);
 
 		PermissionCacheUtil.clearCache(updateUserIds);
 	}
@@ -3991,9 +3949,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		groupPersistence.removeUsers(groupId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userIds);
+		reindex(userIds);
 
 		PermissionCacheUtil.clearCache(userIds);
 
@@ -4014,7 +3970,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		};
 
-		TransactionCommitCallbackRegistryUtil.registerCallback(callable);
+		TransactionCommitCallbackUtil.registerCallback(callable);
 	}
 
 	/**
@@ -4039,9 +3995,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		organizationPersistence.removeUsers(organizationId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userIds);
+		reindex(userIds);
 
 		PermissionCacheUtil.clearCache(userIds);
 
@@ -4062,7 +4016,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		};
 
-		TransactionCommitCallbackRegistryUtil.registerCallback(callable);
+		TransactionCommitCallbackUtil.registerCallback(callable);
 	}
 
 	/**
@@ -4103,7 +4057,8 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		rolePersistence.removeUsers(roleId, users);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
+		Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			User.class);
 
 		indexer.reindex(users);
 
@@ -4142,9 +4097,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		rolePersistence.removeUsers(roleId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userIds);
+		reindex(userIds);
 
 		PermissionCacheUtil.clearCache(userIds);
 	}
@@ -4162,9 +4115,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		teamPersistence.removeUsers(teamId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userIds);
+		reindex(userIds);
 
 		PermissionCacheUtil.clearCache(userIds);
 	}
@@ -4182,9 +4133,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 		userGroupPersistence.removeUsers(userGroupId, userIds);
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
-
-		indexer.reindex(userIds);
+		reindex(userIds);
 
 		PermissionCacheUtil.clearCache(userIds);
 	}
@@ -4582,7 +4531,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 
 			// Indexer
 
-			Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
 				User.class);
 
 			indexer.reindex(user);
@@ -4677,7 +4626,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 		user.setLastLoginDate(lastLoginDate);
 		user.setLastLoginIP(lastLoginIP);
 
-		resetFailedLoginAttempts(user);
+		resetFailedLoginAttempts(user, true);
 
 		return user;
 	}
@@ -5463,7 +5412,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 		// Indexer
 
 		if ((serviceContext == null) || serviceContext.isIndexingEnabled()) {
-			Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
 				User.class);
 
 			indexer.reindex(user);
@@ -5541,8 +5490,8 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 *             long, String, boolean, byte[], String, String, String,
 	 *             String, String, String, String, int, int, boolean, int, int,
 	 *             int, String, String, String, String, String, String, String,
-	 *             String, String, String, String, long[], long[], long[],
-	 *             java.util.List, long[], ServiceContext)}
+	 *             String, String, String, String, long[], long[], long[], List,
+	 *             long[], ServiceContext)}
 	 */
 	@Deprecated
 	@Override
@@ -5736,15 +5685,13 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 	 *         a successful authentication the user's primary key will be placed
 	 *         under the key <code>userId</code>.
 	 * @return the authentication status. This can be {@link
-	 *         com.liferay.portal.security.auth.Authenticator#FAILURE}
-	 *         indicating that the user's credentials are invalid, {@link
-	 *         com.liferay.portal.security.auth.Authenticator#SUCCESS}
-	 *         indicating a successful login, or {@link
-	 *         com.liferay.portal.security.auth.Authenticator#DNE} indicating
-	 *         that a user with that login does not exist.
+	 *         Authenticator#FAILURE} indicating that the user's credentials are
+	 *         invalid, {@link Authenticator#SUCCESS} indicating a successful
+	 *         login, or {@link Authenticator#DNE} indicating that a user with
+	 *         that login does not exist.
 	 * @throws PortalException if <code>login</code> or <code>password</code>
 	 *         was <code>null</code>
-	 * @see    com.liferay.portal.security.auth.AuthPipeline
+	 * @see    AuthPipeline
 	 */
 	protected int authenticate(
 			long companyId, String login, String password, String authType,
@@ -6185,36 +6132,55 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 		subscriptionSender.flushNotificationsAsync();
 	}
 
-	protected void reindex(final User user) {
-		final Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+	protected void reindex(long userId) throws SearchException {
+		Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
 			User.class);
 
-		Callable<Void> callable = new ShardCallable<Void>(
-			user.getCompanyId()) {
+		User user = userLocalService.fetchUser(userId);
 
-			@Override
-			protected Void doCall() throws Exception {
-				indexer.reindex(user);
+		indexer.reindex(user);
+	}
 
-				return null;
-			}
+	protected void reindex(long[] userIds) throws SearchException {
+		Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			User.class);
 
-		};
+		List<User> users = new ArrayList<>(userIds.length);
 
-		TransactionCommitCallbackRegistryUtil.registerCallback(callable);
+		for (Long userId : userIds) {
+			User user = userLocalService.fetchUser(userId);
+
+			users.add(user);
+		}
+
+		indexer.reindex(users);
+	}
+
+	protected void reindex(final User user) throws SearchException {
+		Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			User.class);
+
+		indexer.reindex(user);
 	}
 
 	protected void resetFailedLoginAttempts(User user) {
-		user.setFailedLoginAttempts(0);
+		resetFailedLoginAttempts(user, false);
+	}
 
-		userPersistence.update(user);
+	protected void resetFailedLoginAttempts(User user, boolean forceUpdate) {
+		if (forceUpdate || (user.getFailedLoginAttempts() > 0)) {
+			user.setFailedLoginAttempts(0);
+
+			userPersistence.update(user);
+		}
 	}
 
 	protected BaseModelSearchResult<User> searchUsers(
 			SearchContext searchContext)
 		throws PortalException {
 
-		Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(User.class);
+		Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			User.class);
 
 		for (int i = 0; i < 10; i++) {
 			Hits hits = indexer.search(searchContext);
@@ -6363,10 +6329,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 		}
 
 		if (indexingEnabled) {
-			Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
-				User.class);
-
-			indexer.reindex(new long[] {userId});
+			reindex(userId);
 		}
 
 		PermissionCacheUtil.clearCache(userId);
@@ -6395,10 +6358,7 @@ public class UserLocalServiceImpl extends UserLocalServiceBaseImpl {
 		}
 
 		if (indexingEnabled) {
-			Indexer indexer = IndexerRegistryUtil.nullSafeGetIndexer(
-				User.class);
-
-			indexer.reindex(new long[] {userId});
+			reindex(userId);
 		}
 
 		PermissionCacheUtil.clearCache(userId);

@@ -89,13 +89,11 @@ portletURL.setParameter("tabs3", tabs3);
 				LinkedHashMap<String, Object> userParams = new LinkedHashMap<String, Object>();
 
 				if (tabs3.equals("current")) {
-					userParams.put("usersPasswordPolicies", new Long(passwordPolicy.getPasswordPolicyId()));
+					userParams.put("usersPasswordPolicies", Long.valueOf(passwordPolicy.getPasswordPolicyId()));
 				}
 				%>
 
-				<liferay-ui:search-container-results>
-					<%@ include file="/user_search_results.jspf" %>
-				</liferay-ui:search-container-results>
+				<liferay-ui:user-search-container-results userParams="<%= userParams %>" />
 
 				<liferay-ui:search-container-row
 					className="com.liferay.portal.model.User"
@@ -170,18 +168,14 @@ portletURL.setParameter("tabs3", tabs3);
 				<%
 				OrganizationSearchTerms searchTerms = (OrganizationSearchTerms)organizationSearchContainer.getSearchTerms();
 
-				long parentOrganizationId = OrganizationConstants.ANY_PARENT_ORGANIZATION_ID;
-
 				LinkedHashMap<String, Object> organizationParams = new LinkedHashMap<String, Object>();
 
 				if (tabs3.equals("current")) {
-					organizationParams.put("organizationsPasswordPolicies", new Long(passwordPolicy.getPasswordPolicyId()));
+					organizationParams.put("organizationsPasswordPolicies", Long.valueOf(passwordPolicy.getPasswordPolicyId()));
 				}
 				%>
 
-				<liferay-ui:search-container-results>
-					<%@ include file="/organization_search_results.jspf" %>
-				</liferay-ui:search-container-results>
+				<liferay-ui:organization-search-container-results organizationParams="<%= organizationParams %>" parentOrganizationId="<%= OrganizationConstants.ANY_PARENT_ORGANIZATION_ID %>" />
 
 				<liferay-ui:search-container-row
 					className="com.liferay.portal.model.Organization"

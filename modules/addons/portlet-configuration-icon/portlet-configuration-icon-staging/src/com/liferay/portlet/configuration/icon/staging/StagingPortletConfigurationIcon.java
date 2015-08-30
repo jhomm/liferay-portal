@@ -15,7 +15,7 @@
 package com.liferay.portlet.configuration.icon.staging;
 
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.portlet.configuration.BasePortletConfigurationIcon;
+import com.liferay.portal.kernel.portlet.configuration.icon.BasePortletConfigurationIcon;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.theme.PortletDisplay;
@@ -58,17 +58,17 @@ public class StagingPortletConfigurationIcon
 
 		StringBundler sb = new StringBundler(11);
 
-		sb.append("Liferay.Portlet.openWindow('#p_p_id_");
-		sb.append(portletDisplay.getId());
-		sb.append("_', '");
-		sb.append(portletDisplay.getId());
-		sb.append("', '");
-		sb.append(HtmlUtil.escapeJS(portletDisplay.getURLStaging()));
-		sb.append("', '");
+		sb.append("Liferay.Portlet.openWindow({namespace: '");
 		sb.append(portletDisplay.getNamespace());
-		sb.append("', '");
+		sb.append("', portlet: '#p_p_id_");
+		sb.append(portletDisplay.getId());
+		sb.append("_', portletId: '");
+		sb.append(portletDisplay.getId());
+		sb.append("', title: '");
 		sb.append(LanguageUtil.get(themeDisplay.getLocale(), "staging"));
-		sb.append("'); return false;");
+		sb.append("', uri: '");
+		sb.append(HtmlUtil.escapeJS(portletDisplay.getURLStaging()));
+		sb.append("'}); return false;");
 
 		return sb.toString();
 	}

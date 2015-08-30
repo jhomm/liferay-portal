@@ -34,7 +34,9 @@ public class TermFilterTranslatorImpl implements TermFilterTranslator {
 		TermFilterBuilder termFilterBuilder = FilterBuilders.termFilter(
 			termFilter.getField(), termFilter.getValue());
 
-		termFilterBuilder.cache(termFilter.isCached());
+		if (termFilter.isCached() != null) {
+			termFilterBuilder.cache(termFilter.isCached());
+		}
 
 		return termFilterBuilder;
 	}

@@ -1358,8 +1358,9 @@ public class AssetTagStatsPersistenceImpl extends BasePersistenceImpl<AssetTagSt
 		}
 	}
 
-	protected void cacheUniqueFindersCache(AssetTagStats assetTagStats) {
-		if (assetTagStats.isNew()) {
+	protected void cacheUniqueFindersCache(AssetTagStats assetTagStats,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					assetTagStats.getTagId(), assetTagStats.getClassNameId()
 				};
@@ -1527,7 +1528,7 @@ public class AssetTagStatsPersistenceImpl extends BasePersistenceImpl<AssetTagSt
 				assetTagStats.setNew(false);
 			}
 			else {
-				session.merge(assetTagStats);
+				assetTagStats = (AssetTagStats)session.merge(assetTagStats);
 			}
 		}
 		catch (Exception e) {
@@ -1585,8 +1586,8 @@ public class AssetTagStatsPersistenceImpl extends BasePersistenceImpl<AssetTagSt
 			AssetTagStatsImpl.class, assetTagStats.getPrimaryKey(),
 			assetTagStats, false);
 
-		clearUniqueFindersCache(assetTagStats);
-		cacheUniqueFindersCache(assetTagStats);
+		clearUniqueFindersCache((AssetTagStats)assetTagStatsModelImpl);
+		cacheUniqueFindersCache((AssetTagStats)assetTagStatsModelImpl, isNew);
 
 		assetTagStats.resetOriginalValues();
 
@@ -1962,6 +1963,11 @@ public class AssetTagStatsPersistenceImpl extends BasePersistenceImpl<AssetTagSt
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return AssetTagStatsModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

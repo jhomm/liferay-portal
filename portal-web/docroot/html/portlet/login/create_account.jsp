@@ -29,9 +29,7 @@ birthdayCalendar.set(Calendar.DATE, 1);
 birthdayCalendar.set(Calendar.YEAR, 1970);
 %>
 
-<portlet:actionURL secure="<%= PropsValues.COMPANY_SECURITY_AUTH_REQUIRES_HTTPS || request.isSecure() %>" var="createAccountURL" windowState="<%= LiferayWindowState.MAXIMIZED.toString() %>">
-	<portlet:param name="struts_action" value="/login/create_account" />
-</portlet:actionURL>
+<portlet:actionURL name="/login/create_account" secure="<%= PropsValues.COMPANY_SECURITY_AUTH_REQUIRES_HTTPS || request.isSecure() %>" var="createAccountURL" windowState="<%= LiferayWindowState.MAXIMIZED.toString() %>" />
 
 <aui:form action="<%= createAccountURL %>" method="post" name="fm">
 	<aui:input name="saveLastPath" type="hidden" value="<%= false %>" />
@@ -42,6 +40,7 @@ birthdayCalendar.set(Calendar.YEAR, 1970);
 	<liferay-ui:error exception="<%= AddressCityException.class %>" message="please-enter-a-valid-city" />
 	<liferay-ui:error exception="<%= AddressStreetException.class %>" message="please-enter-a-valid-street" />
 	<liferay-ui:error exception="<%= AddressZipException.class %>" message="please-enter-a-valid-postal-code" />
+	<liferay-ui:error exception="<%= CaptchaConfigurationException.class %>" message="a-captcha-error-occurred-please-contact-an-administrator" />
 	<liferay-ui:error exception="<%= CaptchaMaxChallengesException.class %>" message="maximum-number-of-captcha-attempts-exceeded" />
 	<liferay-ui:error exception="<%= CaptchaTextException.class %>" message="text-verification-failed" />
 	<liferay-ui:error exception="<%= CompanyMaxUsersException.class %>" message="unable-to-create-user-account-because-the-maximum-number-of-users-has-been-reached" />
@@ -157,29 +156,7 @@ birthdayCalendar.set(Calendar.YEAR, 1970);
 				</c:if>
 			</aui:input>
 
-			<%
-			User selUser = null;
-			Contact selContact = null;
-
-			Locale userLocale = null;
-
-			String languageId = request.getParameter("languageId");
-
-			if (Validator.isNotNull(languageId)) {
-				userLocale = LocaleUtil.fromLanguageId(languageId);
-			}
-			else {
-				User defaultUser = company.getDefaultUser();
-
-				userLocale = LocaleUtil.fromLanguageId(defaultUser.getLanguageId());
-			}
-
-			String detailsLanguageStrutsAction = "/login/create_account";
-			%>
-
-			<%@ include file="/html/portlet/users_admin/user/details_language.jspf" %>
-
-			<%@ include file="/html/portlet/users_admin/user/details_user_name.jspf" %>
+			<liferay-ui:user-name-fields />
 		</aui:col>
 
 		<aui:col width="<%= 50 %>">
@@ -213,7 +190,7 @@ birthdayCalendar.set(Calendar.YEAR, 1970);
 
 			<c:if test="<%= PropsValues.CAPTCHA_CHECK_PORTAL_CREATE_ACCOUNT %>">
 				<portlet:resourceURL var="captchaURL">
-					<portlet:param name="struts_action" value="/login/captcha" />
+					<portlet:param name="mvcRenderCommandName" value="/login/captcha" />
 				</portlet:resourceURL>
 
 				<liferay-ui:captcha url="<%= captchaURL %>" />

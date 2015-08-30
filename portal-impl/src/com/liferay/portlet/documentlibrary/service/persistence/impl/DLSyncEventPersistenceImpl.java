@@ -841,8 +841,9 @@ public class DLSyncEventPersistenceImpl extends BasePersistenceImpl<DLSyncEvent>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(DLSyncEvent dlSyncEvent) {
-		if (dlSyncEvent.isNew()) {
+	protected void cacheUniqueFindersCache(DLSyncEvent dlSyncEvent,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { dlSyncEvent.getTypePK() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_TYPEPK, args,
@@ -988,6 +989,8 @@ public class DLSyncEventPersistenceImpl extends BasePersistenceImpl<DLSyncEvent>
 
 		boolean isNew = dlSyncEvent.isNew();
 
+		DLSyncEventModelImpl dlSyncEventModelImpl = (DLSyncEventModelImpl)dlSyncEvent;
+
 		Session session = null;
 
 		try {
@@ -999,7 +1002,7 @@ public class DLSyncEventPersistenceImpl extends BasePersistenceImpl<DLSyncEvent>
 				dlSyncEvent.setNew(false);
 			}
 			else {
-				session.merge(dlSyncEvent);
+				dlSyncEvent = (DLSyncEvent)session.merge(dlSyncEvent);
 			}
 		}
 		catch (Exception e) {
@@ -1019,8 +1022,8 @@ public class DLSyncEventPersistenceImpl extends BasePersistenceImpl<DLSyncEvent>
 			DLSyncEventImpl.class, dlSyncEvent.getPrimaryKey(), dlSyncEvent,
 			false);
 
-		clearUniqueFindersCache(dlSyncEvent);
-		cacheUniqueFindersCache(dlSyncEvent);
+		clearUniqueFindersCache((DLSyncEvent)dlSyncEventModelImpl);
+		cacheUniqueFindersCache((DLSyncEvent)dlSyncEventModelImpl, isNew);
 
 		dlSyncEvent.resetOriginalValues();
 
@@ -1402,6 +1405,11 @@ public class DLSyncEventPersistenceImpl extends BasePersistenceImpl<DLSyncEvent>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return DLSyncEventModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

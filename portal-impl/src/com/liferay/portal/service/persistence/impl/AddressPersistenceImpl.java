@@ -4611,7 +4611,7 @@ public class AddressPersistenceImpl extends BasePersistenceImpl<Address>
 				address.setNew(false);
 			}
 			else {
-				session.merge(address);
+				address = (Address)session.merge(address);
 			}
 		}
 		catch (Exception e) {
@@ -4833,6 +4833,7 @@ public class AddressPersistenceImpl extends BasePersistenceImpl<Address>
 		addressImpl.setTypeId(address.getTypeId());
 		addressImpl.setMailing(address.isMailing());
 		addressImpl.setPrimary(address.isPrimary());
+		addressImpl.setLastPublishDate(address.getLastPublishDate());
 
 		return addressImpl;
 	}
@@ -5192,6 +5193,11 @@ public class AddressPersistenceImpl extends BasePersistenceImpl<Address>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return AddressModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

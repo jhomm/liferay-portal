@@ -1431,8 +1431,8 @@ public class MeetupsRegistrationPersistenceImpl extends BasePersistenceImpl<Meet
 	}
 
 	protected void cacheUniqueFindersCache(
-		MeetupsRegistration meetupsRegistration) {
-		if (meetupsRegistration.isNew()) {
+		MeetupsRegistration meetupsRegistration, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					meetupsRegistration.getUserId(),
 					meetupsRegistration.getMeetupsEntryId()
@@ -1631,7 +1631,7 @@ public class MeetupsRegistrationPersistenceImpl extends BasePersistenceImpl<Meet
 				meetupsRegistration.setNew(false);
 			}
 			else {
-				session.merge(meetupsRegistration);
+				meetupsRegistration = (MeetupsRegistration)session.merge(meetupsRegistration);
 			}
 		}
 		catch (Exception e) {
@@ -1695,8 +1695,9 @@ public class MeetupsRegistrationPersistenceImpl extends BasePersistenceImpl<Meet
 			MeetupsRegistrationImpl.class, meetupsRegistration.getPrimaryKey(),
 			meetupsRegistration, false);
 
-		clearUniqueFindersCache(meetupsRegistration);
-		cacheUniqueFindersCache(meetupsRegistration);
+		clearUniqueFindersCache((MeetupsRegistration)meetupsRegistrationModelImpl);
+		cacheUniqueFindersCache((MeetupsRegistration)meetupsRegistrationModelImpl,
+			isNew);
 
 		meetupsRegistration.resetOriginalValues();
 
@@ -2081,6 +2082,11 @@ public class MeetupsRegistrationPersistenceImpl extends BasePersistenceImpl<Meet
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return MeetupsRegistrationModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

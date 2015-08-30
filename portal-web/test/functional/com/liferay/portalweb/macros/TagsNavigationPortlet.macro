@@ -5,16 +5,17 @@
 		<if>
 			<isset var="tagAssetCount" />
 			<then>
-				<execute function="AssertTextEquals#assertPartialText" locator1="PGTagsNavigationPortlet#TAG_NAME" value1="${tagAssetCount}" />
+				<execute function="AssertTextEquals#assertPartialText" locator1="TagsNavigation#TAG_NAME" value1="${tagAssetCount}" />
 			</then>
 		</if>
 
-		<execute function="AssertClick#assertPartialTextClickAt" locator1="PGTagsNavigationPortlet#TAG_NAME" value1="${tagName}" />
+		<execute function="AssertClick#assertPartialTextClickAt" locator1="TagsNavigation#TAG_NAME" value1="${tagName}" />
 	</command>
 
 	<command name="configureDisplayStylePG">
 		<execute macro="Portlet#gotoPortletOptions">
 			<var name="portletName" value="Tags Navigation" />
+			<var name="portletNameBorderless" value="${portletNameBorderless}" />
 			<var name="portletOption" value="Configuration" />
 		</execute>
 
@@ -34,6 +35,7 @@
 	<command name="configureFlaggableSettingsPG">
 		<execute macro="Portlet#gotoPortletOptions">
 			<var name="portletName" value="Tags Navigation" />
+			<var name="portletNameBorderless" value="${portletNameBorderless}" />
 			<var name="portletOption" value="Configuration" />
 		</execute>
 
@@ -61,14 +63,14 @@
 		<var name="key_adtTagColor" value="${adtTagColor}" />
 		<var name="key_tagName" value="${tagName}" />
 
-		<execute function="AssertTextEquals" locator1="PGTagsNavigationPortlet#ADT_COLOR_BY_POPULARITY_TAG" value1="${tagName}" />
+		<execute function="AssertTextEquals" locator1="TagsNavigation#ADT_COLOR_BY_POPULARITY_TAG" value1="${tagName}" />
 	</command>
 
 	<command name="viewDefaultPG">
 		<for list="${tagNameList}" param="tagName">
 			<var name="key_tagName" value="${tagName}" />
 
-			<execute function="AssertTextEquals" locator1="PGTagsNavigationPortlet#TAG_NAME" value1="${tagName}" />
+			<execute function="AssertTextEquals" locator1="TagsNavigation#TAG_NAME" value1="${tagName}" />
 		</for>
 	</command>
 
@@ -81,6 +83,7 @@
 	<command name="viewTagCloudConfiguration">
 		<execute macro="Portlet#gotoPortletOptions">
 			<var name="portletName" value="Tag Cloud" />
+			<var name="portletNameBorderless" value="${portletNameBorderless}" />
 			<var name="portletOption" value="Configuration" />
 		</execute>
 

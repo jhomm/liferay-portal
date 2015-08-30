@@ -7696,8 +7696,8 @@ public class GroupPersistenceImpl extends BasePersistenceImpl<Group>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(Group group) {
-		if (group.isNew()) {
+	protected void cacheUniqueFindersCache(Group group, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { group.getUuid(), group.getGroupId() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_UUID_G, args,
@@ -8096,7 +8096,7 @@ public class GroupPersistenceImpl extends BasePersistenceImpl<Group>
 				group.setNew(false);
 			}
 			else {
-				session.merge(group);
+				group = (Group)session.merge(group);
 			}
 		}
 		catch (Exception e) {
@@ -8324,8 +8324,8 @@ public class GroupPersistenceImpl extends BasePersistenceImpl<Group>
 		EntityCacheUtil.putResult(GroupModelImpl.ENTITY_CACHE_ENABLED,
 			GroupImpl.class, group.getPrimaryKey(), group, false);
 
-		clearUniqueFindersCache(group);
-		cacheUniqueFindersCache(group);
+		clearUniqueFindersCache((Group)groupModelImpl);
+		cacheUniqueFindersCache((Group)groupModelImpl, isNew);
 
 		group.resetOriginalValues();
 
@@ -9786,6 +9786,11 @@ public class GroupPersistenceImpl extends BasePersistenceImpl<Group>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return GroupModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

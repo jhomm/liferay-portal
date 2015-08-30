@@ -1389,8 +1389,8 @@ public class ResourceBlockPermissionPersistenceImpl extends BasePersistenceImpl<
 	}
 
 	protected void cacheUniqueFindersCache(
-		ResourceBlockPermission resourceBlockPermission) {
-		if (resourceBlockPermission.isNew()) {
+		ResourceBlockPermission resourceBlockPermission, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					resourceBlockPermission.getResourceBlockId(),
 					resourceBlockPermission.getRoleId()
@@ -1565,7 +1565,7 @@ public class ResourceBlockPermissionPersistenceImpl extends BasePersistenceImpl<
 				resourceBlockPermission.setNew(false);
 			}
 			else {
-				session.merge(resourceBlockPermission);
+				resourceBlockPermission = (ResourceBlockPermission)session.merge(resourceBlockPermission);
 			}
 		}
 		catch (Exception e) {
@@ -1626,8 +1626,9 @@ public class ResourceBlockPermissionPersistenceImpl extends BasePersistenceImpl<
 			resourceBlockPermission.getPrimaryKey(), resourceBlockPermission,
 			false);
 
-		clearUniqueFindersCache(resourceBlockPermission);
-		cacheUniqueFindersCache(resourceBlockPermission);
+		clearUniqueFindersCache((ResourceBlockPermission)resourceBlockPermissionModelImpl);
+		cacheUniqueFindersCache((ResourceBlockPermission)resourceBlockPermissionModelImpl,
+			isNew);
 
 		resourceBlockPermission.resetOriginalValues();
 
@@ -2010,6 +2011,11 @@ public class ResourceBlockPermissionPersistenceImpl extends BasePersistenceImpl<
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return ResourceBlockPermissionModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

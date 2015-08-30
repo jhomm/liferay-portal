@@ -43,11 +43,15 @@ public final class PoshiRunnerStackTraceUtil {
 			sb.append(PoshiRunnerGetterUtil.getFileNameFromFilePath(filePath));
 		}
 
-		sb.append(
-			PoshiRunnerGetterUtil.getFileNameFromFilePath(_filePaths.peek()));
+		String currentFilePath = _filePaths.peek();
 
-		sb.append(":");
-		sb.append(_currentElement.attributeValue("line-number"));
+		if (!currentFilePath.contains(".function")) {
+			sb.append(
+				PoshiRunnerGetterUtil.getFileNameFromFilePath(currentFilePath));
+
+			sb.append(":");
+			sb.append(_currentElement.attributeValue("line-number"));
+		}
 
 		return sb.toString();
 	}
@@ -119,12 +123,28 @@ public final class PoshiRunnerStackTraceUtil {
 			classCommandName = element.attributeValue("macro-mobile");
 			classType = "macro";
 		}
+		else if (element.attributeValue("test-case") != null) {
+			classCommandName = element.attributeValue("test-case");
+
+			String className =
+				PoshiRunnerGetterUtil.getClassNameFromClassCommandName(
+					classCommandName);
+
+			if (className.equals("super")) {
+				className = PoshiRunnerGetterUtil.getExtendedTestCaseName();
+
+				classCommandName = classCommandName.replaceFirst(
+					"super", className);
+			}
+
+			classType = "test-case";
+		}
 		else {
 			printStackTrace();
 
 			throw new Exception(
-				"Missing (function|macro|macro-desktop|macro-mobile) " +
-					"attribute");
+				"Missing (function|macro|macro-desktop|macro-mobile" +
+					"|test-case) attribute");
 		}
 
 		_pushFilePath(classCommandName, classType);

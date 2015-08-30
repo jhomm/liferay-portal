@@ -38,28 +38,30 @@ public interface PortalCacheManager<K extends Serializable, V> {
 
 	public void destroy();
 
-	public PortalCache<K, V> getCache(String name) throws PortalCacheException;
-
-	public PortalCache<K, V> getCache(String name, boolean blocking)
+	public PortalCache<K, V> getPortalCache(String portalCacheName)
 		throws PortalCacheException;
 
-	public Set<CacheManagerListener> getCacheManagerListeners();
+	public PortalCache<K, V> getPortalCache(
+			String portalCacheName, boolean blocking)
+		throws PortalCacheException;
 
-	public String getName();
+	public Set<PortalCacheManagerListener> getPortalCacheManagerListeners();
+
+	public String getPortalCacheManagerName();
 
 	public boolean isClusterAware();
 
 	@Proxy
-	public void reconfigureCaches(URL configurationURL);
+	public void reconfigurePortalCaches(URL configurationURL);
 
-	public boolean registerCacheManagerListener(
-		CacheManagerListener cacheManagerListener);
+	public boolean registerPortalCacheManagerListener(
+		PortalCacheManagerListener portalCacheManagerListener);
 
-	public void removeCache(String name);
+	public void removePortalCache(String portalCacheName);
 
-	public boolean unregisterCacheManagerListener(
-		CacheManagerListener cacheManagerListener);
+	public boolean unregisterPortalCacheManagerListener(
+		PortalCacheManagerListener portalCacheManagerListener);
 
-	public void unregisterCacheManagerListeners();
+	public void unregisterPortalCacheManagerListeners();
 
 }

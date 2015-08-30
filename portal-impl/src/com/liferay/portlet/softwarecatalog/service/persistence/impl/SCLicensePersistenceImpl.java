@@ -2006,7 +2006,7 @@ public class SCLicensePersistenceImpl extends BasePersistenceImpl<SCLicense>
 				scLicense.setNew(false);
 			}
 			else {
-				session.merge(scLicense);
+				scLicense = (SCLicense)session.merge(scLicense);
 			}
 		}
 		catch (Exception e) {
@@ -2725,6 +2725,11 @@ public class SCLicensePersistenceImpl extends BasePersistenceImpl<SCLicense>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SCLicenseModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

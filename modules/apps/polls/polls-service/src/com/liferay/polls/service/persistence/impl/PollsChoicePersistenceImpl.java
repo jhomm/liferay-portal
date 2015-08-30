@@ -2254,8 +2254,9 @@ public class PollsChoicePersistenceImpl extends BasePersistenceImpl<PollsChoice>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(PollsChoice pollsChoice) {
-		if (pollsChoice.isNew()) {
+	protected void cacheUniqueFindersCache(PollsChoice pollsChoice,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					pollsChoice.getUuid(), pollsChoice.getGroupId()
 				};
@@ -2492,7 +2493,7 @@ public class PollsChoicePersistenceImpl extends BasePersistenceImpl<PollsChoice>
 				pollsChoice.setNew(false);
 			}
 			else {
-				session.merge(pollsChoice);
+				pollsChoice = (PollsChoice)session.merge(pollsChoice);
 			}
 		}
 		catch (Exception e) {
@@ -2571,8 +2572,8 @@ public class PollsChoicePersistenceImpl extends BasePersistenceImpl<PollsChoice>
 			PollsChoiceImpl.class, pollsChoice.getPrimaryKey(), pollsChoice,
 			false);
 
-		clearUniqueFindersCache(pollsChoice);
-		cacheUniqueFindersCache(pollsChoice);
+		clearUniqueFindersCache((PollsChoice)pollsChoiceModelImpl);
+		cacheUniqueFindersCache((PollsChoice)pollsChoiceModelImpl, isNew);
 
 		pollsChoice.resetOriginalValues();
 
@@ -2600,6 +2601,7 @@ public class PollsChoicePersistenceImpl extends BasePersistenceImpl<PollsChoice>
 		pollsChoiceImpl.setQuestionId(pollsChoice.getQuestionId());
 		pollsChoiceImpl.setName(pollsChoice.getName());
 		pollsChoiceImpl.setDescription(pollsChoice.getDescription());
+		pollsChoiceImpl.setLastPublishDate(pollsChoice.getLastPublishDate());
 
 		return pollsChoiceImpl;
 	}
@@ -2960,6 +2962,11 @@ public class PollsChoicePersistenceImpl extends BasePersistenceImpl<PollsChoice>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return PollsChoiceModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

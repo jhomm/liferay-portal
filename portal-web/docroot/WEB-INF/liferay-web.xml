@@ -14,7 +14,7 @@
 		<filter-class>com.liferay.portal.servlet.filters.aggregate.AggregateFilter</filter-class>
 		<init-param>
 			<param-name>url-regex-ignore-pattern</param-name>
-			<param-value>^/html/editors/ckeditor[^/]*/ckeditor\.js(\?.*)?$</param-value>
+			<param-value>^/ckeditor[^/]*/ckeditor\.js(\?.*)?$</param-value>
 		</init-param>
 	</filter>
 	<filter>
@@ -360,6 +360,10 @@
 	<filter>
 		<filter-name>UnsyncPrintWriter Pool Filter</filter-name>
 		<filter-class>com.liferay.portal.servlet.filters.unsyncprintwriterpool.UnsyncPrintWriterPoolFilter</filter-class>
+	</filter>
+	<filter>
+		<filter-name>Upload Servlet Request Filter</filter-name>
+		<filter-class>com.liferay.portal.servlet.filters.uploadservletrequest.UploadServletRequestFilter</filter-class>
 	</filter>
 	<filter>
 		<filter-name>URL Rewrite Filter</filter-name>
@@ -993,5 +997,12 @@
 		<filter-name>WebLogic Include Filter</filter-name>
 		<url-pattern>/*</url-pattern>
 		<dispatcher>INCLUDE</dispatcher>
+	</filter-mapping>
+	<filter-mapping>
+		<filter-name>Upload Servlet Request Filter</filter-name>
+		<url-pattern>/*</url-pattern>
+		<dispatcher>FORWARD</dispatcher>
+		<dispatcher>INCLUDE</dispatcher>
+		<dispatcher>REQUEST</dispatcher>
 	</filter-mapping>
 </web-app>

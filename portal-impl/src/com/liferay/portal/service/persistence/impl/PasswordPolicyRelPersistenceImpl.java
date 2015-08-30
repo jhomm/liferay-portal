@@ -896,8 +896,9 @@ public class PasswordPolicyRelPersistenceImpl extends BasePersistenceImpl<Passwo
 		}
 	}
 
-	protected void cacheUniqueFindersCache(PasswordPolicyRel passwordPolicyRel) {
-		if (passwordPolicyRel.isNew()) {
+	protected void cacheUniqueFindersCache(
+		PasswordPolicyRel passwordPolicyRel, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					passwordPolicyRel.getClassNameId(),
 					passwordPolicyRel.getClassPK()
@@ -1069,7 +1070,7 @@ public class PasswordPolicyRelPersistenceImpl extends BasePersistenceImpl<Passwo
 				passwordPolicyRel.setNew(false);
 			}
 			else {
-				session.merge(passwordPolicyRel);
+				passwordPolicyRel = (PasswordPolicyRel)session.merge(passwordPolicyRel);
 			}
 		}
 		catch (Exception e) {
@@ -1112,8 +1113,9 @@ public class PasswordPolicyRelPersistenceImpl extends BasePersistenceImpl<Passwo
 			PasswordPolicyRelImpl.class, passwordPolicyRel.getPrimaryKey(),
 			passwordPolicyRel, false);
 
-		clearUniqueFindersCache(passwordPolicyRel);
-		cacheUniqueFindersCache(passwordPolicyRel);
+		clearUniqueFindersCache((PasswordPolicyRel)passwordPolicyRelModelImpl);
+		cacheUniqueFindersCache((PasswordPolicyRel)passwordPolicyRelModelImpl,
+			isNew);
 
 		passwordPolicyRel.resetOriginalValues();
 
@@ -1493,6 +1495,11 @@ public class PasswordPolicyRelPersistenceImpl extends BasePersistenceImpl<Passwo
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return PasswordPolicyRelModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

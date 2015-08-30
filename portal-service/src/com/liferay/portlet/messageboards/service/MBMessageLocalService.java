@@ -124,7 +124,7 @@ public interface MBMessageLocalService extends BaseLocalService,
 
 	public void addMessageResources(
 		com.liferay.portlet.messageboards.model.MBMessage message,
-		java.lang.String[] groupPermissions, java.lang.String[] guestPermissions)
+		com.liferay.portal.service.permission.ModelPermissions modelPermissions)
 		throws PortalException;
 
 	public void addMessageResources(long messageId,
@@ -132,7 +132,7 @@ public interface MBMessageLocalService extends BaseLocalService,
 		throws PortalException;
 
 	public void addMessageResources(long messageId,
-		java.lang.String[] groupPermissions, java.lang.String[] guestPermissions)
+		com.liferay.portal.service.permission.ModelPermissions modelPermissions)
 		throws PortalException;
 
 	/**
@@ -350,7 +350,7 @@ public interface MBMessageLocalService extends BaseLocalService,
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery getExportActionableDynamicQuery(
-		com.liferay.portal.kernel.lar.PortletDataContext portletDataContext);
+		com.liferay.portlet.exportimport.lar.PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public java.util.List<com.liferay.portlet.messageboards.model.MBMessage> getGroupMessages(

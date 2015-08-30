@@ -59,7 +59,6 @@ page import="com.liferay.portal.kernel.util.TextFormatter" %><%@
 page import="com.liferay.portal.kernel.util.WebKeys" %><%@
 page import="com.liferay.portal.model.Portlet" %><%@
 page import="com.liferay.portal.model.User" %><%@
-page import="com.liferay.portal.security.auth.PrincipalException" %><%@
 page import="com.liferay.portal.security.permission.ActionKeys" %><%@
 page import="com.liferay.portal.security.permission.ResourceActionsUtil" %><%@
 page import="com.liferay.portal.service.PortletLocalServiceUtil" %><%@
@@ -75,7 +74,8 @@ page import="java.text.NumberFormat" %>
 <%@ page import="java.util.ArrayList" %><%@
 page import="java.util.List" %>
 
-<%@ page import="javax.portlet.PortletURL" %><%@
+<%@ page import="javax.portlet.PortletRequest" %><%@
+page import="javax.portlet.PortletURL" %><%@
 page import="javax.portlet.ResourceURL" %><%@
 page import="javax.portlet.WindowState" %>
 

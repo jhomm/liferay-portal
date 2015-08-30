@@ -6939,7 +6939,7 @@ public class UserNotificationEventPersistenceImpl extends BasePersistenceImpl<Us
 				userNotificationEvent.setNew(false);
 			}
 			else {
-				session.merge(userNotificationEvent);
+				userNotificationEvent = (UserNotificationEvent)session.merge(userNotificationEvent);
 			}
 		}
 		catch (Exception e) {
@@ -7613,6 +7613,11 @@ public class UserNotificationEventPersistenceImpl extends BasePersistenceImpl<Us
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return UserNotificationEventModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

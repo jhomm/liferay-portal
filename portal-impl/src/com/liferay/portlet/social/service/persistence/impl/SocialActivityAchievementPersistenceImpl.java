@@ -3140,8 +3140,8 @@ public class SocialActivityAchievementPersistenceImpl
 	}
 
 	protected void cacheUniqueFindersCache(
-		SocialActivityAchievement socialActivityAchievement) {
-		if (socialActivityAchievement.isNew()) {
+		SocialActivityAchievement socialActivityAchievement, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					socialActivityAchievement.getGroupId(),
 					socialActivityAchievement.getUserId(),
@@ -3321,7 +3321,7 @@ public class SocialActivityAchievementPersistenceImpl
 				socialActivityAchievement.setNew(false);
 			}
 			else {
-				session.merge(socialActivityAchievement);
+				socialActivityAchievement = (SocialActivityAchievement)session.merge(socialActivityAchievement);
 			}
 		}
 		catch (Exception e) {
@@ -3450,8 +3450,9 @@ public class SocialActivityAchievementPersistenceImpl
 			socialActivityAchievement.getPrimaryKey(),
 			socialActivityAchievement, false);
 
-		clearUniqueFindersCache(socialActivityAchievement);
-		cacheUniqueFindersCache(socialActivityAchievement);
+		clearUniqueFindersCache((SocialActivityAchievement)socialActivityAchievementModelImpl);
+		cacheUniqueFindersCache((SocialActivityAchievement)socialActivityAchievementModelImpl,
+			isNew);
 
 		socialActivityAchievement.resetOriginalValues();
 
@@ -3835,6 +3836,11 @@ public class SocialActivityAchievementPersistenceImpl
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SocialActivityAchievementModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

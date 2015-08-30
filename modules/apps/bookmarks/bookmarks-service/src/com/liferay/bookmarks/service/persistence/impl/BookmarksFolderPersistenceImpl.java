@@ -6825,8 +6825,9 @@ public class BookmarksFolderPersistenceImpl extends BasePersistenceImpl<Bookmark
 		}
 	}
 
-	protected void cacheUniqueFindersCache(BookmarksFolder bookmarksFolder) {
-		if (bookmarksFolder.isNew()) {
+	protected void cacheUniqueFindersCache(BookmarksFolder bookmarksFolder,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					bookmarksFolder.getUuid(), bookmarksFolder.getGroupId()
 				};
@@ -7027,7 +7028,7 @@ public class BookmarksFolderPersistenceImpl extends BasePersistenceImpl<Bookmark
 				bookmarksFolder.setNew(false);
 			}
 			else {
-				session.merge(bookmarksFolder);
+				bookmarksFolder = (BookmarksFolder)session.merge(bookmarksFolder);
 			}
 		}
 		catch (Exception e) {
@@ -7189,7 +7190,7 @@ public class BookmarksFolderPersistenceImpl extends BasePersistenceImpl<Bookmark
 			bookmarksFolder, false);
 
 		clearUniqueFindersCache(bookmarksFolder);
-		cacheUniqueFindersCache(bookmarksFolder);
+		cacheUniqueFindersCache(bookmarksFolder, isNew);
 
 		bookmarksFolder.resetOriginalValues();
 
@@ -7219,6 +7220,7 @@ public class BookmarksFolderPersistenceImpl extends BasePersistenceImpl<Bookmark
 		bookmarksFolderImpl.setTreePath(bookmarksFolder.getTreePath());
 		bookmarksFolderImpl.setName(bookmarksFolder.getName());
 		bookmarksFolderImpl.setDescription(bookmarksFolder.getDescription());
+		bookmarksFolderImpl.setLastPublishDate(bookmarksFolder.getLastPublishDate());
 		bookmarksFolderImpl.setStatus(bookmarksFolder.getStatus());
 		bookmarksFolderImpl.setStatusByUserId(bookmarksFolder.getStatusByUserId());
 		bookmarksFolderImpl.setStatusByUserName(bookmarksFolder.getStatusByUserName());
@@ -7584,6 +7586,11 @@ public class BookmarksFolderPersistenceImpl extends BasePersistenceImpl<Bookmark
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return BookmarksFolderModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

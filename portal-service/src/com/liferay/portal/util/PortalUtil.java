@@ -415,15 +415,11 @@ public class PortalUtil {
 	}
 
 	/**
-	 * Returns the user's ID from the HTTP authentication headers after
-	 * validating his credentials.
-	 *
-	 * @param  request the servlet request from which to retrieve the HTTP
-	 *         authentication headers
-	 * @return the user's ID if HTTP authentication headers are present and his
-	 *         credentials are valid; <code>0</code> otherwise
-	 * @throws PortalException if an authentication exception occurred
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             com.liferay.portal.kernel.security.auth.http.HttpAuthManagerUtil#getBasicUserId(
+	 *             HttpServletRequest)}
 	 */
+	@Deprecated
 	public static long getBasicAuthUserId(HttpServletRequest request)
 		throws PortalException {
 
@@ -431,16 +427,11 @@ public class PortalUtil {
 	}
 
 	/**
-	 * Returns the user's ID from the HTTP authentication headers after
-	 * validating his credentials.
-	 *
-	 * @param  request the servlet request from which to retrieve the HTTP
-	 *         authentication headers
-	 * @param  companyId the company's ID. This parameter is not used.
-	 * @return the user's ID if HTTP authentication headers are present and his
-	 *         credentials are valid; <code>0</code> otherwise
-	 * @throws PortalException if an authentication exception occurred
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             com.liferay.portal.kernel.security.auth.http.HttpAuthManagerUtil#getBasicUserId(
+	 *             HttpServletRequest)}
 	 */
+	@Deprecated
 	public static long getBasicAuthUserId(
 			HttpServletRequest request, long companyId)
 		throws PortalException {
@@ -674,19 +665,35 @@ public class PortalUtil {
 	}
 
 	public static PortletURL getControlPanelPortletURL(
-		HttpServletRequest request, String portletId, long referrerPlid,
-		String lifecycle) {
+		HttpServletRequest request, Group group, String portletId,
+		long refererPlid, String lifecycle) {
 
 		return getPortal().getControlPanelPortletURL(
-			request, portletId, referrerPlid, lifecycle);
+			request, group, portletId, refererPlid, lifecycle);
 	}
 
 	public static PortletURL getControlPanelPortletURL(
-		PortletRequest portletRequest, String portletId, long referrerPlid,
+		HttpServletRequest request, String portletId, long refererPlid,
 		String lifecycle) {
 
 		return getPortal().getControlPanelPortletURL(
-			portletRequest, portletId, referrerPlid, lifecycle);
+			request, portletId, refererPlid, lifecycle);
+	}
+
+	public static PortletURL getControlPanelPortletURL(
+		PortletRequest portletRequest, Group group, String portletId,
+		long refererPlid, String lifecycle) {
+
+		return getPortal().getControlPanelPortletURL(
+			portletRequest, group, portletId, refererPlid, lifecycle);
+	}
+
+	public static PortletURL getControlPanelPortletURL(
+		PortletRequest portletRequest, String portletId, long refererPlid,
+		String lifecycle) {
+
+		return getPortal().getControlPanelPortletURL(
+			portletRequest, portletId, refererPlid, lifecycle);
 	}
 
 	public static String getCreateAccountURL(
@@ -896,6 +903,12 @@ public class PortalUtil {
 		return getPortal().getDefaultCompanyId();
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             com.liferay.portal.kernel.security.auth.http.HttpAuthManagerUtil#getDigestUserId(
+	 *             HttpServletRequest)}
+	 */
+	@Deprecated
 	public static long getDigestAuthUserId(HttpServletRequest request)
 		throws PortalException {
 
@@ -1801,20 +1814,38 @@ public class PortalUtil {
 		return getPortal().getSiteAdministrationCategoriesMap(request);
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             #getControlPanelPortletURL(PortletRequest, Group, String,
+	 *             long, String)}
+	 */
+	@Deprecated
 	public static PortletURL getSiteAdministrationURL(
 		HttpServletRequest request, ThemeDisplay themeDisplay) {
 
 		return getPortal().getSiteAdministrationURL(request, themeDisplay);
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             #getControlPanelPortletURL(PortletRequest, Group, String,
+	 *             long, String)}
+	 */
+	@Deprecated
 	public static PortletURL getSiteAdministrationURL(
 		HttpServletRequest request, ThemeDisplay themeDisplay,
-		String portletName) {
+		String portletId) {
 
 		return getPortal().getSiteAdministrationURL(
-			request, themeDisplay, portletName);
+			request, themeDisplay, portletId);
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             #getControlPanelPortletURL(PortletRequest, Group, String,
+	 *             long, String)}
+	 */
+	@Deprecated
 	public static PortletURL getSiteAdministrationURL(
 		PortletResponse portletResponse, ThemeDisplay themeDisplay) {
 
@@ -1822,6 +1853,12 @@ public class PortalUtil {
 			portletResponse, themeDisplay);
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             #getControlPanelPortletURL(PortletRequest, Group, String,
+	 *             long, String)}
+	 */
+	@Deprecated
 	public static PortletURL getSiteAdministrationURL(
 		PortletResponse portletResponse, ThemeDisplay themeDisplay,
 		String portletName) {
@@ -2078,6 +2115,10 @@ public class PortalUtil {
 		return getPortal().initUser(request);
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, with no direct replacement
+	 */
+	@Deprecated
 	public static void invokeTaglibDiscussion(
 			PortletConfig portletConfig, ActionRequest actionRequest,
 			ActionResponse actionResponse)
@@ -2087,6 +2128,10 @@ public class PortalUtil {
 			portletConfig, actionRequest, actionResponse);
 	}
 
+	/**
+	 * @deprecated As of 7.0.0, with no direct replacement
+	 */
+	@Deprecated
 	public static void invokeTaglibDiscussionPagination(
 			PortletConfig portletConfig, ResourceRequest resourceRequest,
 			ResourceResponse resourceResponse)

@@ -14,16 +14,19 @@
 
 package com.liferay.journal.web.asset;
 
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
+import com.liferay.dynamic.data.mapping.storage.Fields;
+import com.liferay.dynamic.data.mapping.util.DDMBeanTranslatorUtil;
+import com.liferay.dynamic.data.mapping.util.FieldsToDDMFormValuesConverterUtil;
+import com.liferay.journal.model.JournalArticle;
+import com.liferay.journal.util.JournalConverter;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portlet.asset.model.BaseDDMFormValuesReader;
-import com.liferay.portlet.dynamicdatamapping.model.DDMStructure;
-import com.liferay.portlet.dynamicdatamapping.service.DDMStructureLocalServiceUtil;
-import com.liferay.portlet.dynamicdatamapping.storage.DDMFormValues;
-import com.liferay.portlet.dynamicdatamapping.storage.Fields;
-import com.liferay.portlet.dynamicdatamapping.util.FieldsToDDMFormValuesConverterUtil;
-import com.liferay.portlet.journal.model.JournalArticle;
-import com.liferay.portlet.journal.util.JournalConverterUtil;
+import com.liferay.portlet.dynamicdatamapping.DDMFormValues;
+import com.liferay.registry.Registry;
+import com.liferay.registry.RegistryUtil;
 
 /**
  * @author Adolfo Pérez
@@ -37,22 +40,31 @@ final class JournalArticleDDMFormValuesReader extends BaseDDMFormValuesReader {
 	@Override
 	public DDMFormValues getDDMFormValues() throws PortalException {
 		try {
+			JournalConverter journalConverter = getJournalConverter();
+
 			DDMStructure ddmStructure =
 				DDMStructureLocalServiceUtil.getStructure(
 					PortalUtil.getSiteGroupId(_article.getGroupId()),
 					PortalUtil.getClassNameId(JournalArticle.class),
 					_article.getDDMStructureKey(), true);
 
-			Fields fields = JournalConverterUtil.getDDMFields(
+			Fields fields = journalConverter.getDDMFields(
 				ddmStructure, _article.getContent());
 
-			return FieldsToDDMFormValuesConverterUtil.convert(
-				ddmStructure, fields);
+			return DDMBeanTranslatorUtil.translate(
+				FieldsToDDMFormValuesConverterUtil.convert(
+					ddmStructure, fields));
 		}
 		catch (Exception e) {
 			throw new PortalException(
 				"Unable to read fields for article " + _article.getId(), e);
 		}
+	}
+
+	protected JournalConverter getJournalConverter() {
+		Registry registry = RegistryUtil.getRegistry();
+
+		return registry.getService(JournalConverter.class);
 	}
 
 	private final JournalArticle _article;

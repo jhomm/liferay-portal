@@ -27,10 +27,9 @@ import com.liferay.portal.service.GroupLocalServiceUtil;
 import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.service.UserLocalServiceUtil;
 import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.dynamicdatamapping.model.DDMTemplate;
-import com.liferay.portlet.dynamicdatamapping.model.DDMTemplateConstants;
-import com.liferay.portlet.dynamicdatamapping.service.DDMTemplateLocalServiceUtil;
-import com.liferay.portlet.portletdisplaytemplate.util.PortletDisplayTemplate;
+import com.liferay.portlet.dynamicdatamapping.DDMTemplate;
+import com.liferay.portlet.dynamicdatamapping.DDMTemplateManager;
+import com.liferay.portlet.dynamicdatamapping.DDMTemplateManagerUtil;
 import com.liferay.registry.Registry;
 import com.liferay.registry.RegistryUtil;
 import com.liferay.registry.ServiceReference;
@@ -95,6 +94,9 @@ public class TemplateHandlerRegistryUtil {
 
 		_serviceTracker.open();
 	}
+
+	private static final String _PORTLET_DISPLAY_TEMPLATE_CLASS_NAME =
+		"com.liferay.portlet.display.template.PortletDisplayTemplate";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		TemplateHandlerRegistryUtil.class);
@@ -178,9 +180,8 @@ public class TemplateHandlerRegistryUtil {
 				String templateKey = templateElement.elementText(
 					"template-key");
 
-				DDMTemplate ddmTemplate =
-					DDMTemplateLocalServiceUtil.fetchTemplate(
-						group.getGroupId(), classNameId, templateKey);
+				DDMTemplate ddmTemplate = DDMTemplateManagerUtil.fetchTemplate(
+					group.getGroupId(), classNameId, templateKey);
 
 				if (ddmTemplate != null) {
 					continue;
@@ -196,7 +197,15 @@ public class TemplateHandlerRegistryUtil {
 				Map<Locale, String> descriptionMap = _getLocalizationMap(
 					classLoader, group.getGroupId(),
 					templateElement.elementText("description"));
+
+				String type = templateElement.elementText("type");
+
+				if (type == null) {
+					type = DDMTemplateManager.TEMPLATE_TYPE_DISPLAY;
+				}
+
 				String language = templateElement.elementText("language");
+
 				String scriptFileName = templateElement.elementText(
 					"script-file");
 
@@ -205,11 +214,11 @@ public class TemplateHandlerRegistryUtil {
 				boolean cacheable = GetterUtil.getBoolean(
 					templateElement.elementText("cacheable"));
 
-				DDMTemplateLocalServiceUtil.addTemplate(
+				DDMTemplateManagerUtil.addTemplate(
 					userId, group.getGroupId(), classNameId, 0,
-					PortalUtil.getClassNameId(PortletDisplayTemplate.class),
-					templateKey, nameMap, descriptionMap,
-					DDMTemplateConstants.TEMPLATE_TYPE_DISPLAY, null, language,
+					PortalUtil.getClassNameId(
+						_PORTLET_DISPLAY_TEMPLATE_CLASS_NAME),
+					templateKey, nameMap, descriptionMap, type, null, language,
 					script, cacheable, false, null, null, serviceContext);
 			}
 		}

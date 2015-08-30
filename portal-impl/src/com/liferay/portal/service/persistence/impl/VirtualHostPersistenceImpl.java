@@ -634,8 +634,9 @@ public class VirtualHostPersistenceImpl extends BasePersistenceImpl<VirtualHost>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(VirtualHost virtualHost) {
-		if (virtualHost.isNew()) {
+	protected void cacheUniqueFindersCache(VirtualHost virtualHost,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { virtualHost.getHostname() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_HOSTNAME, args,
@@ -821,6 +822,8 @@ public class VirtualHostPersistenceImpl extends BasePersistenceImpl<VirtualHost>
 
 		boolean isNew = virtualHost.isNew();
 
+		VirtualHostModelImpl virtualHostModelImpl = (VirtualHostModelImpl)virtualHost;
+
 		Session session = null;
 
 		try {
@@ -832,7 +835,7 @@ public class VirtualHostPersistenceImpl extends BasePersistenceImpl<VirtualHost>
 				virtualHost.setNew(false);
 			}
 			else {
-				session.merge(virtualHost);
+				virtualHost = (VirtualHost)session.merge(virtualHost);
 			}
 		}
 		catch (Exception e) {
@@ -852,8 +855,8 @@ public class VirtualHostPersistenceImpl extends BasePersistenceImpl<VirtualHost>
 			VirtualHostImpl.class, virtualHost.getPrimaryKey(), virtualHost,
 			false);
 
-		clearUniqueFindersCache(virtualHost);
-		cacheUniqueFindersCache(virtualHost);
+		clearUniqueFindersCache((VirtualHost)virtualHostModelImpl);
+		cacheUniqueFindersCache((VirtualHost)virtualHostModelImpl, isNew);
 
 		virtualHost.resetOriginalValues();
 
@@ -1230,6 +1233,11 @@ public class VirtualHostPersistenceImpl extends BasePersistenceImpl<VirtualHost>
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return VirtualHostModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

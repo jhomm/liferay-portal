@@ -1634,8 +1634,9 @@ public class PortletItemPersistenceImpl extends BasePersistenceImpl<PortletItem>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(PortletItem portletItem) {
-		if (portletItem.isNew()) {
+	protected void cacheUniqueFindersCache(PortletItem portletItem,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					portletItem.getGroupId(), portletItem.getName(),
 					portletItem.getPortletId(), portletItem.getClassNameId()
@@ -1831,7 +1832,7 @@ public class PortletItemPersistenceImpl extends BasePersistenceImpl<PortletItem>
 				portletItem.setNew(false);
 			}
 			else {
-				session.merge(portletItem);
+				portletItem = (PortletItem)session.merge(portletItem);
 			}
 		}
 		catch (Exception e) {
@@ -1897,8 +1898,8 @@ public class PortletItemPersistenceImpl extends BasePersistenceImpl<PortletItem>
 			PortletItemImpl.class, portletItem.getPrimaryKey(), portletItem,
 			false);
 
-		clearUniqueFindersCache(portletItem);
-		cacheUniqueFindersCache(portletItem);
+		clearUniqueFindersCache((PortletItem)portletItemModelImpl);
+		cacheUniqueFindersCache((PortletItem)portletItemModelImpl, isNew);
 
 		portletItem.resetOriginalValues();
 
@@ -2281,6 +2282,11 @@ public class PortletItemPersistenceImpl extends BasePersistenceImpl<PortletItem>
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return PortletItemModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

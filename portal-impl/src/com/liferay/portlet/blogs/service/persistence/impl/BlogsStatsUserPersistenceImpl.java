@@ -2919,8 +2919,9 @@ public class BlogsStatsUserPersistenceImpl extends BasePersistenceImpl<BlogsStat
 		}
 	}
 
-	protected void cacheUniqueFindersCache(BlogsStatsUser blogsStatsUser) {
-		if (blogsStatsUser.isNew()) {
+	protected void cacheUniqueFindersCache(BlogsStatsUser blogsStatsUser,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					blogsStatsUser.getGroupId(), blogsStatsUser.getUserId()
 				};
@@ -3089,7 +3090,7 @@ public class BlogsStatsUserPersistenceImpl extends BasePersistenceImpl<BlogsStat
 				blogsStatsUser.setNew(false);
 			}
 			else {
-				session.merge(blogsStatsUser);
+				blogsStatsUser = (BlogsStatsUser)session.merge(blogsStatsUser);
 			}
 		}
 		catch (Exception e) {
@@ -3166,8 +3167,8 @@ public class BlogsStatsUserPersistenceImpl extends BasePersistenceImpl<BlogsStat
 			BlogsStatsUserImpl.class, blogsStatsUser.getPrimaryKey(),
 			blogsStatsUser, false);
 
-		clearUniqueFindersCache(blogsStatsUser);
-		cacheUniqueFindersCache(blogsStatsUser);
+		clearUniqueFindersCache((BlogsStatsUser)blogsStatsUserModelImpl);
+		cacheUniqueFindersCache((BlogsStatsUser)blogsStatsUserModelImpl, isNew);
 
 		blogsStatsUser.resetOriginalValues();
 
@@ -3549,6 +3550,11 @@ public class BlogsStatsUserPersistenceImpl extends BasePersistenceImpl<BlogsStat
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return BlogsStatsUserModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

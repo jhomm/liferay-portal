@@ -14,10 +14,10 @@
 
 package com.liferay.gradle.plugins;
 
+import com.liferay.gradle.plugins.css.builder.BuildCSSTask;
 import com.liferay.gradle.plugins.extensions.LiferayExtension;
 import com.liferay.gradle.plugins.service.builder.BuildServiceTask;
 import com.liferay.gradle.plugins.service.builder.ServiceBuilderPlugin;
-import com.liferay.gradle.plugins.tasks.BuildCssTask;
 import com.liferay.gradle.plugins.tasks.DirectDeployTask;
 import com.liferay.gradle.plugins.wsdd.builder.BuildWSDDTask;
 import com.liferay.gradle.plugins.wsdd.builder.WSDDBuilderPlugin;
@@ -27,10 +27,19 @@ import com.liferay.gradle.util.FileUtil;
 import com.liferay.gradle.util.GradleUtil;
 import com.liferay.gradle.util.StringUtil;
 import com.liferay.gradle.util.Validator;
+import com.liferay.gradle.util.copy.RenameDependencyClosure;
 
 import groovy.lang.Closure;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+
+import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 import java.util.Iterator;
 import java.util.Properties;
@@ -40,6 +49,7 @@ import org.gradle.api.Action;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
+import org.gradle.api.file.CopySpec;
 import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileCopyDetails;
@@ -202,13 +212,10 @@ public class LiferayWebAppPlugin extends LiferayJavaPlugin {
 	protected void configureDependencies(Project project) {
 		super.configureDependencies(project);
 
-		configureDependenciesProvidedCompile(project);
+		configureDependenciesCompile(project);
 	}
 
-	@Override
 	protected void configureDependenciesCompile(Project project) {
-		super.configureDependenciesCompile(project);
-
 		project.afterEvaluate(
 			new Action<Project>() {
 
@@ -224,14 +231,6 @@ public class LiferayWebAppPlugin extends LiferayJavaPlugin {
 				}
 
 			});
-	}
-
-	protected void configureDependenciesProvidedCompile(Project project) {
-		for (String dependencyNotation : COMPILE_DEPENDENCY_NOTATIONS) {
-			GradleUtil.addDependency(
-				project, WarPlugin.PROVIDED_COMPILE_CONFIGURATION_NAME,
-				dependencyNotation);
-		}
 	}
 
 	@Override
@@ -251,16 +250,22 @@ public class LiferayWebAppPlugin extends LiferayJavaPlugin {
 	}
 
 	@Override
-	protected void configureTaskBuildCssRootDirs(BuildCssTask buildCssTask) {
-		FileCollection rootDirs = buildCssTask.getRootDirs();
+	protected void configureTaskBuildCSSDocrootDirName(
+		BuildCSSTask buildCSSTask) {
 
-		if (!rootDirs.isEmpty()) {
+		Project project = buildCSSTask.getProject();
+
+		String docrootDirName = buildCSSTask.getDocrootDirName();
+
+		if (Validator.isNotNull(docrootDirName) &&
+			FileUtil.exists(project, docrootDirName)) {
+
 			return;
 		}
 
-		Project project = buildCssTask.getProject();
+		File webAppDir = getWebAppDir(project);
 
-		buildCssTask.setRootDirs(getWebAppDir(project));
+		buildCSSTask.setDocrootDirName(project.relativePath(webAppDir));
 	}
 
 	@Override
@@ -317,11 +322,14 @@ public class LiferayWebAppPlugin extends LiferayJavaPlugin {
 	}
 
 	@Override
-	protected void configureTaskDeployFrom(Copy deployTask) {
-		War war = (War)GradleUtil.getTask(
-			deployTask.getProject(), WarPlugin.WAR_TASK_NAME);
+	protected void configureTaskDeployFrom(Copy copy) {
+		Project project = copy.getProject();
 
-		deployTask.from(war.getOutputs());
+		War war = (War)GradleUtil.getTask(project, WarPlugin.WAR_TASK_NAME);
+
+		copy.from(war);
+
+		addCleanDeployedFile(project, war.getArchivePath());
 	}
 
 	protected void configureTaskDirectDeploy(
@@ -385,11 +393,132 @@ public class LiferayWebAppPlugin extends LiferayJavaPlugin {
 
 		War war = (War)GradleUtil.getTask(project, WarPlugin.WAR_TASK_NAME);
 
+		configureTaskWarAlloyPortlet(war);
 		configureTaskWarDuplicatesStrategy(war);
 		configureTaskWarExcludeManifest(war);
 		configureTaskWarFilesMatching(war);
 		configureTaskWarOutputs(war);
 		configureTaskWarRenameDependencies(war);
+	}
+
+	protected void configureTaskWarAlloyPortlet(final War war) {
+		Project project = war.getProject();
+
+		String projectName = project.getName();
+
+		if (!projectName.endsWith("-portlet")) {
+			return;
+		}
+
+		File webAppDir = getWebAppDir(project);
+
+		String portletXml = "";
+
+		try {
+			File portletXmlFile = new File(webAppDir, "WEB-INF/portlet.xml");
+
+			if (portletXmlFile.exists()) {
+				portletXml = new String(
+					Files.readAllBytes(portletXmlFile.toPath()),
+					StandardCharsets.UTF_8);
+			}
+		}
+		catch (Exception e) {
+			throw new GradleException("Unable to read portlet.xml", e);
+		}
+
+		if (!portletXml.contains("com.liferay.alloy.mvc.AlloyPortlet")) {
+			return;
+		}
+
+		war.doFirst(
+			new Action<Task>() {
+
+				@Override
+				public void execute(Task task) {
+					ClassLoader classLoader =
+						LiferayWebAppPlugin.class.getClassLoader();
+
+					try (InputStream inputStream =
+							classLoader.getResourceAsStream(
+								"com/liferay/gradle/plugins/dependencies" +
+									"/touch.jsp")) {
+
+						File touchJspFile = new File(
+							task.getTemporaryDir(), "touch.jsp");
+
+						Files.copy(
+							inputStream, touchJspFile.toPath(),
+							StandardCopyOption.REPLACE_EXISTING);
+					}
+					catch (Exception e) {
+						throw new GradleException(
+							"Unable to copy touch.jsp", e);
+					}
+				}
+
+			});
+
+		war.doLast(
+			new Action<Task>() {
+
+				@Override
+				public void execute(Task task) {
+					Project project = task.getProject();
+
+					File touchJspFile = new File(
+						task.getTemporaryDir(), "touch.jsp");
+
+					project.delete(touchJspFile);
+				}
+
+			});
+
+		File jspDir = new File(webAppDir, "WEB-INF/jsp");
+
+		DirectoryStream.Filter<Path> filter =
+			new DirectoryStream.Filter<Path>() {
+
+				@Override
+				public boolean accept(Path path) throws IOException {
+					if (!Files.isDirectory(path)) {
+						return false;
+					}
+
+					Path viewsDirPath = path.resolve("views");
+
+					if (!Files.exists(viewsDirPath)) {
+						return false;
+					}
+
+					return true;
+				}
+
+			};
+
+		try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(
+				jspDir.toPath(), filter)) {
+
+			Closure<Void> closure = new Closure<Void>(null) {
+
+				@SuppressWarnings("unused")
+				public void doCall(CopySpec copySpec) {
+					File touchJspFile = new File(
+						war.getTemporaryDir(), "touch.jsp");
+
+					copySpec.from(touchJspFile);
+				}
+
+			};
+
+			for (Path path : directoryStream) {
+				war.into(
+					FileUtil.relativize(path.toFile(), webAppDir), closure);
+			}
+		}
+		catch (Exception e) {
+			throw new GradleException(e.getMessage(), e);
+		}
 	}
 
 	protected void configureTaskWarDuplicatesStrategy(War war) {
@@ -477,7 +606,7 @@ public class LiferayWebAppPlugin extends LiferayJavaPlugin {
 
 	protected void configureTaskWarRenameDependencies(War war) {
 		Closure<String> closure = new RenameDependencyClosure(
-			war.getProject(), JavaPlugin.COMPILE_CONFIGURATION_NAME);
+			war.getProject(), JavaPlugin.RUNTIME_CONFIGURATION_NAME);
 
 		CopySpecInternal copySpecInternal = war.getRootSpec();
 
@@ -503,7 +632,7 @@ public class LiferayWebAppPlugin extends LiferayJavaPlugin {
 		File pluginPackagePropertiesFile = new File(
 			getWebAppDir(project), "WEB-INF/liferay-plugin-package.properties");
 
-		Properties pluginPackageProperties;
+		Properties pluginPackageProperties = null;
 
 		try {
 			pluginPackageProperties = FileUtil.readProperties(

@@ -2552,7 +2552,7 @@ public class SCFrameworkVersionPersistenceImpl extends BasePersistenceImpl<SCFra
 				scFrameworkVersion.setNew(false);
 			}
 			else {
-				session.merge(scFrameworkVersion);
+				scFrameworkVersion = (SCFrameworkVersion)session.merge(scFrameworkVersion);
 			}
 		}
 		catch (Exception e) {
@@ -3300,6 +3300,11 @@ public class SCFrameworkVersionPersistenceImpl extends BasePersistenceImpl<SCFra
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SCFrameworkVersionModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

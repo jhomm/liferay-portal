@@ -41,6 +41,7 @@ import com.liferay.portal.service.RepositoryLocalServiceUtil;
 import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.service.UserLocalServiceUtil;
 import com.liferay.portal.spring.hibernate.LastSessionRecorderUtil;
+import com.liferay.portal.test.randomizerbumpers.TikaSafeRandomizerBumper;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.MainServletTestRule;
 import com.liferay.portal.util.PortalUtil;
@@ -939,7 +940,10 @@ public class DLFileEntryFinderTest {
 			DLFileEntryLocalServiceUtil.fetchFileEntryByAnyImageId(
 				_SMALL_IMAGE_ID);
 
-		Assert.assertEquals("FE1.txt", dlFileEntry.getTitle());
+		String title = dlFileEntry.getTitle();
+
+		Assert.assertTrue(
+			title.equals("FE1.txt") || title.equals("FE1.txt-NewRepository"));
 	}
 
 	@Test
@@ -1468,7 +1472,9 @@ public class DLFileEntryFinderTest {
 		fileEntry = DLAppServiceUtil.updateFileEntry(
 			fileEntry.getFileEntryId(), "FE3.txt", ContentTypes.TEXT_PLAIN,
 			"FE3.txt".concat(titleSuffix), StringPool.BLANK, StringPool.BLANK,
-			false, RandomTestUtil.randomBytes(), serviceContext);
+			false,
+			RandomTestUtil.randomBytes(TikaSafeRandomizerBumper.INSTANCE),
+			serviceContext);
 
 		dlFileEntry = ((LiferayFileEntry)fileEntry).getDLFileEntry();
 

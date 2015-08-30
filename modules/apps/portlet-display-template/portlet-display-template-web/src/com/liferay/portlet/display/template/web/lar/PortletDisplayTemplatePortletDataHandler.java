@@ -14,33 +14,36 @@
 
 package com.liferay.portlet.display.template.web.lar;
 
+import com.liferay.dynamic.data.mapping.model.DDMTemplate;
+import com.liferay.dynamic.data.mapping.model.DDMTemplateConstants;
+import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalServiceUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
-import com.liferay.portal.kernel.lar.BasePortletDataHandler;
-import com.liferay.portal.kernel.lar.ManifestSummary;
-import com.liferay.portal.kernel.lar.PortletDataContext;
-import com.liferay.portal.kernel.lar.PortletDataHandler;
-import com.liferay.portal.kernel.lar.PortletDataHandlerBoolean;
-import com.liferay.portal.kernel.lar.StagedModelDataHandlerUtil;
-import com.liferay.portal.kernel.lar.StagedModelType;
+import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.template.TemplateHandlerRegistryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.PortletKeys;
-import com.liferay.portlet.dynamicdatamapping.model.DDMTemplate;
-import com.liferay.portlet.dynamicdatamapping.model.DDMTemplateConstants;
-import com.liferay.portlet.dynamicdatamapping.service.DDMTemplateLocalServiceUtil;
+import com.liferay.portlet.exportimport.lar.BasePortletDataHandler;
+import com.liferay.portlet.exportimport.lar.ManifestSummary;
+import com.liferay.portlet.exportimport.lar.PortletDataContext;
+import com.liferay.portlet.exportimport.lar.PortletDataHandler;
+import com.liferay.portlet.exportimport.lar.PortletDataHandlerBoolean;
+import com.liferay.portlet.exportimport.lar.StagedModelDataHandlerUtil;
+import com.liferay.portlet.exportimport.lar.StagedModelType;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.portlet.PortletPreferences;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Juan Fernández
@@ -53,12 +56,6 @@ public class PortletDisplayTemplatePortletDataHandler
 	extends BasePortletDataHandler {
 
 	public static final String NAMESPACE = "portlet_display_template";
-
-	public PortletDisplayTemplatePortletDataHandler() {
-		setExportControls(
-			new PortletDataHandlerBoolean(
-				NAMESPACE, "application-display-templates", true, true));
-	}
 
 	@Override
 	public StagedModelType[] getDeletionSystemEventStagedModelTypes() {
@@ -87,6 +84,13 @@ public class PortletDisplayTemplatePortletDataHandler
 		}
 
 		return totalModelCount;
+	}
+
+	@Activate
+	protected void activate() {
+		setExportControls(
+			new PortletDataHandlerBoolean(
+				NAMESPACE, "application-display-templates", true, true));
 	}
 
 	@Override
@@ -207,6 +211,11 @@ public class PortletDisplayTemplatePortletDataHandler
 			new StagedModelType[stagedModelTypes.size()]);
 
 		return _stagedModelTypes;
+	}
+
+	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED, unbind = "-")
+	protected void setModuleServiceLifecycle(
+		ModuleServiceLifecycle moduleServiceLifecycle) {
 	}
 
 	private StagedModelType[] _stagedModelTypes;

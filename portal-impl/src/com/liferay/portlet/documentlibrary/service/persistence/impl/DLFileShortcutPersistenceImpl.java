@@ -5855,8 +5855,9 @@ public class DLFileShortcutPersistenceImpl extends BasePersistenceImpl<DLFileSho
 		}
 	}
 
-	protected void cacheUniqueFindersCache(DLFileShortcut dlFileShortcut) {
-		if (dlFileShortcut.isNew()) {
+	protected void cacheUniqueFindersCache(DLFileShortcut dlFileShortcut,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					dlFileShortcut.getUuid(), dlFileShortcut.getGroupId()
 				};
@@ -6058,7 +6059,7 @@ public class DLFileShortcutPersistenceImpl extends BasePersistenceImpl<DLFileSho
 				dlFileShortcut.setNew(false);
 			}
 			else {
-				session.merge(dlFileShortcut);
+				dlFileShortcut = (DLFileShortcut)session.merge(dlFileShortcut);
 			}
 		}
 		catch (Exception e) {
@@ -6225,8 +6226,8 @@ public class DLFileShortcutPersistenceImpl extends BasePersistenceImpl<DLFileSho
 			DLFileShortcutImpl.class, dlFileShortcut.getPrimaryKey(),
 			dlFileShortcut, false);
 
-		clearUniqueFindersCache(dlFileShortcut);
-		cacheUniqueFindersCache(dlFileShortcut);
+		clearUniqueFindersCache((DLFileShortcut)dlFileShortcutModelImpl);
+		cacheUniqueFindersCache((DLFileShortcut)dlFileShortcutModelImpl, isNew);
 
 		dlFileShortcut.resetOriginalValues();
 
@@ -6256,6 +6257,7 @@ public class DLFileShortcutPersistenceImpl extends BasePersistenceImpl<DLFileSho
 		dlFileShortcutImpl.setToFileEntryId(dlFileShortcut.getToFileEntryId());
 		dlFileShortcutImpl.setTreePath(dlFileShortcut.getTreePath());
 		dlFileShortcutImpl.setActive(dlFileShortcut.isActive());
+		dlFileShortcutImpl.setLastPublishDate(dlFileShortcut.getLastPublishDate());
 		dlFileShortcutImpl.setStatus(dlFileShortcut.getStatus());
 		dlFileShortcutImpl.setStatusByUserId(dlFileShortcut.getStatusByUserId());
 		dlFileShortcutImpl.setStatusByUserName(dlFileShortcut.getStatusByUserName());
@@ -6621,6 +6623,11 @@ public class DLFileShortcutPersistenceImpl extends BasePersistenceImpl<DLFileSho
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return DLFileShortcutModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

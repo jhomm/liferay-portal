@@ -14,7 +14,20 @@
 
 package com.liferay.dynamic.data.lists.web.lar;
 
-import com.liferay.dynamic.data.lists.web.constants.DDLPortletKeys;
+import com.liferay.dynamic.data.lists.constants.DDLPortletKeys;
+import com.liferay.dynamic.data.lists.model.DDLRecord;
+import com.liferay.dynamic.data.lists.model.DDLRecordSet;
+import com.liferay.dynamic.data.lists.model.DDLRecordVersion;
+import com.liferay.dynamic.data.lists.model.impl.DDLRecordImpl;
+import com.liferay.dynamic.data.lists.model.impl.DDLRecordSetImpl;
+import com.liferay.dynamic.data.lists.service.DDLRecordLocalServiceUtil;
+import com.liferay.dynamic.data.lists.service.DDLRecordSetLocalServiceUtil;
+import com.liferay.dynamic.data.lists.service.permission.DDLPermission;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.dynamic.data.mapping.model.DDMTemplate;
+import com.liferay.dynamic.data.mapping.model.impl.DDMStructureImpl;
+import com.liferay.dynamic.data.mapping.model.impl.DDMTemplateImpl;
+import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
@@ -24,38 +37,27 @@ import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.lar.BasePortletDataHandler;
-import com.liferay.portal.kernel.lar.PortletDataContext;
-import com.liferay.portal.kernel.lar.PortletDataHandler;
-import com.liferay.portal.kernel.lar.PortletDataHandlerBoolean;
-import com.liferay.portal.kernel.lar.StagedModelDataHandler;
-import com.liferay.portal.kernel.lar.StagedModelDataHandlerRegistryUtil;
-import com.liferay.portal.kernel.lar.StagedModelDataHandlerUtil;
-import com.liferay.portal.kernel.lar.StagedModelType;
-import com.liferay.portal.kernel.lar.xstream.XStreamAliasRegistryUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.dynamicdatalists.model.DDLRecord;
-import com.liferay.portlet.dynamicdatalists.model.DDLRecordSet;
-import com.liferay.portlet.dynamicdatalists.model.DDLRecordVersion;
-import com.liferay.portlet.dynamicdatalists.model.impl.DDLRecordImpl;
-import com.liferay.portlet.dynamicdatalists.model.impl.DDLRecordSetImpl;
-import com.liferay.portlet.dynamicdatalists.service.DDLRecordLocalServiceUtil;
-import com.liferay.portlet.dynamicdatalists.service.DDLRecordSetLocalServiceUtil;
-import com.liferay.portlet.dynamicdatalists.service.permission.DDLPermission;
-import com.liferay.portlet.dynamicdatamapping.model.DDMStructure;
-import com.liferay.portlet.dynamicdatamapping.model.DDMTemplate;
-import com.liferay.portlet.dynamicdatamapping.model.impl.DDMStructureImpl;
-import com.liferay.portlet.dynamicdatamapping.model.impl.DDMTemplateImpl;
-import com.liferay.portlet.dynamicdatamapping.service.DDMStructureLocalServiceUtil;
+import com.liferay.portlet.exportimport.lar.BasePortletDataHandler;
+import com.liferay.portlet.exportimport.lar.PortletDataContext;
+import com.liferay.portlet.exportimport.lar.PortletDataHandler;
+import com.liferay.portlet.exportimport.lar.PortletDataHandlerBoolean;
+import com.liferay.portlet.exportimport.lar.StagedModelDataHandler;
+import com.liferay.portlet.exportimport.lar.StagedModelDataHandlerRegistryUtil;
+import com.liferay.portlet.exportimport.lar.StagedModelDataHandlerUtil;
+import com.liferay.portlet.exportimport.lar.StagedModelType;
+import com.liferay.portlet.exportimport.xstream.XStreamAliasRegistryUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.portlet.PortletPreferences;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Michael C. Han
@@ -68,7 +70,8 @@ public class DDLPortletDataHandler extends BasePortletDataHandler {
 
 	public static final String NAMESPACE = "dynamic_data_lists";
 
-	public DDLPortletDataHandler() {
+	@Activate
+	protected void activate() {
 		setDataLocalized(true);
 		setDeletionSystemEventStagedModelTypes(
 			new StagedModelType(DDLRecord.class),
@@ -319,21 +322,23 @@ public class DDLPortletDataHandler extends BasePortletDataHandler {
 					Property recordIdProperty = PropertyFactoryUtil.forName(
 						"recordId");
 
+					StagedModelDataHandler<?> stagedModelDataHandler =
+						StagedModelDataHandlerRegistryUtil.
+							getStagedModelDataHandler(
+								DDLRecord.class.getName());
+
+					Class<?> clazz = stagedModelDataHandler.getClass();
+
 					DynamicQuery recordVersionDynamicQuery =
 						DynamicQueryFactoryUtil.forClass(
 							DDLRecordVersion.class, "recordVersion",
-							PortalClassLoaderUtil.getClassLoader());
+							clazz.getClassLoader());
 
 					recordVersionDynamicQuery.setProjection(
 						ProjectionFactoryUtil.property("recordId"));
 
 					Property statusProperty = PropertyFactoryUtil.forName(
 						"status");
-
-					StagedModelDataHandler<?> stagedModelDataHandler =
-						StagedModelDataHandlerRegistryUtil.
-							getStagedModelDataHandler(
-								DDLRecord.class.getName());
 
 					recordVersionDynamicQuery.add(
 						statusProperty.in(
@@ -354,6 +359,11 @@ public class DDLPortletDataHandler extends BasePortletDataHandler {
 			});
 
 		return actionableDynamicQuery;
+	}
+
+	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED, unbind = "-")
+	protected void setModuleServiceLifecycle(
+		ModuleServiceLifecycle moduleServiceLifecycle) {
 	}
 
 }

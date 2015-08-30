@@ -83,7 +83,7 @@ public interface AssetVocabularyLocalService extends BaseLocalService,
 
 	public void addVocabularyResources(
 		com.liferay.portlet.asset.model.AssetVocabulary vocabulary,
-		java.lang.String[] groupPermissions, java.lang.String[] guestPermissions)
+		com.liferay.portal.service.permission.ModelPermissions modelPermissions)
 		throws PortalException;
 
 	/**
@@ -128,7 +128,7 @@ public interface AssetVocabularyLocalService extends BaseLocalService,
 
 	@com.liferay.portal.kernel.search.Indexable(type = IndexableType.DELETE)
 	@com.liferay.portal.kernel.systemevent.SystemEvent(action = SystemEventConstants.ACTION_SKIP, type = SystemEventConstants.TYPE_DELETE)
-	public void deleteVocabulary(
+	public com.liferay.portlet.asset.model.AssetVocabulary deleteVocabulary(
 		com.liferay.portlet.asset.model.AssetVocabulary vocabulary)
 		throws PortalException;
 
@@ -302,7 +302,7 @@ public interface AssetVocabularyLocalService extends BaseLocalService,
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery getExportActionableDynamicQuery(
-		com.liferay.portal.kernel.lar.PortletDataContext portletDataContext);
+		com.liferay.portlet.exportimport.lar.PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public java.util.List<com.liferay.portlet.asset.model.AssetVocabulary> getGroupVocabularies(

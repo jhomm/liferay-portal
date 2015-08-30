@@ -919,8 +919,8 @@ public class AnnouncementsDeliveryPersistenceImpl extends BasePersistenceImpl<An
 	}
 
 	protected void cacheUniqueFindersCache(
-		AnnouncementsDelivery announcementsDelivery) {
-		if (announcementsDelivery.isNew()) {
+		AnnouncementsDelivery announcementsDelivery, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					announcementsDelivery.getUserId(),
 					announcementsDelivery.getType()
@@ -1095,7 +1095,7 @@ public class AnnouncementsDeliveryPersistenceImpl extends BasePersistenceImpl<An
 				announcementsDelivery.setNew(false);
 			}
 			else {
-				session.merge(announcementsDelivery);
+				announcementsDelivery = (AnnouncementsDelivery)session.merge(announcementsDelivery);
 			}
 		}
 		catch (Exception e) {
@@ -1134,8 +1134,9 @@ public class AnnouncementsDeliveryPersistenceImpl extends BasePersistenceImpl<An
 			AnnouncementsDeliveryImpl.class,
 			announcementsDelivery.getPrimaryKey(), announcementsDelivery, false);
 
-		clearUniqueFindersCache(announcementsDelivery);
-		cacheUniqueFindersCache(announcementsDelivery);
+		clearUniqueFindersCache((AnnouncementsDelivery)announcementsDeliveryModelImpl);
+		cacheUniqueFindersCache((AnnouncementsDelivery)announcementsDeliveryModelImpl,
+			isNew);
 
 		announcementsDelivery.resetOriginalValues();
 
@@ -1523,6 +1524,11 @@ public class AnnouncementsDeliveryPersistenceImpl extends BasePersistenceImpl<An
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return AnnouncementsDeliveryModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

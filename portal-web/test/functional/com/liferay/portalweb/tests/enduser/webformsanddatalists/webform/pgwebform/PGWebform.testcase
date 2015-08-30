@@ -97,7 +97,7 @@
 		<execute macro="WebForm#sendPG" />
 	</command>
 
-	<command name="EditWebForm" priority="5">
+	<command name="EditWebForm" priority="4">
 		<execute macro="Page#gotoPG">
 			<var name="pageName" value="${pageName}" />
 		</execute>
@@ -781,7 +781,7 @@
 		<execute macro="WebForm#sendPG" />
 	</command>
 
-	<command name="SendWebForm" priority="5">
+	<command name="SendWebForm" priority="4">
 		<execute macro="Page#gotoPG">
 			<var name="pageName" value="${pageName}" />
 		</execute>
@@ -790,7 +790,7 @@
 			<var name="portletOption" value="Configuration" />
 		</execute>
 
-		<execute function="SelectFrame" locator1="PGWebformConfiguration#CONFIGURATION_IFRAME" />
+		<execute function="SelectFrame" locator1="WebFormConfiguration#CONFIGURATION_IFRAME" />
 
 		<execute macro="WebFormPortlet#viewEditableField">
 			<var name="wfFieldName" value="Name" />
@@ -835,8 +835,8 @@
 			<var name="portletOption" value="Configuration" />
 		</execute>
 
-		<execute function="SelectFrame" locator1="PGWebformConfiguration#CONFIGURATION_IFRAME" />
-		<execute function="AssertTextEquals" locator1="PGWebformConfiguration#SETUP_FORM_FIELDS_INFO_MESSAGE" value1="There is existing form data. Please export and delete it before making changes to the fields." />
+		<execute function="SelectFrame" locator1="WebFormConfiguration#CONFIGURATION_IFRAME" />
+		<execute function="AssertTextEquals" locator1="WebFormConfiguration#SETUP_FORM_FIELDS_INFO_MESSAGE" value1="There is existing form data. Please export and delete it before making changes to the fields." />
 
 		<execute macro="WebFormPortlet#viewEditableFieldNotPresent">
 			<var name="wfFieldName" value="Name" />

@@ -16,7 +16,8 @@ package com.liferay.portal.events;
 
 import com.liferay.portal.fabric.server.FabricServerUtil;
 import com.liferay.portal.jericho.CachedLoggerProvider;
-import com.liferay.portal.kernel.cache.bootstrap.ClusterLinkBootstrapLoaderHelperUtil;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManager;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManagerUtil;
 import com.liferay.portal.kernel.cluster.ClusterExecutor;
 import com.liferay.portal.kernel.cluster.ClusterMasterExecutor;
 import com.liferay.portal.kernel.events.ActionException;
@@ -37,12 +38,11 @@ import com.liferay.portal.kernel.resiliency.spi.agent.annotation.DistributedRegi
 import com.liferay.portal.kernel.resiliency.spi.agent.annotation.MatchType;
 import com.liferay.portal.kernel.scheduler.SchedulerEngineHelper;
 import com.liferay.portal.kernel.scheduler.SchedulerLifecycle;
+import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.util.PortalLifecycle;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.plugin.PluginPackageIndexer;
-import com.liferay.portal.service.BackgroundTaskLocalServiceUtil;
-import com.liferay.portal.service.LockLocalServiceUtil;
 import com.liferay.portal.tools.DBUpgrader;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.util.WebKeys;
@@ -57,7 +57,7 @@ import com.liferay.taglib.servlet.JspFactorySwapper;
 import javax.portlet.MimeResponse;
 import javax.portlet.PortletRequest;
 
-import org.apache.struts.taglib.tiles.ComponentConstants;
+import org.apache.struts.tiles.taglib.ComponentConstants;
 
 /**
  * @author Brian Wing Shun Chan
@@ -108,8 +108,26 @@ public class StartupAction extends SimpleAction {
 
 		// Indexers
 
-		IndexerRegistryUtil.register(new MBMessageIndexer());
-		IndexerRegistryUtil.register(new PluginPackageIndexer());
+		ServiceDependencyManager indexerRegistryServiceDependencyManager =
+			new ServiceDependencyManager();
+
+		indexerRegistryServiceDependencyManager.registerDependencies(
+			IndexerRegistry.class);
+
+		indexerRegistryServiceDependencyManager.addServiceDependencyListener(
+			new ServiceDependencyListener() {
+
+				@Override
+				public void dependenciesFulfilled() {
+					IndexerRegistryUtil.register(new MBMessageIndexer());
+					IndexerRegistryUtil.register(new PluginPackageIndexer());
+				}
+
+				@Override
+				public void destroy() {
+				}
+
+			});
 
 		// Upgrade
 
@@ -118,26 +136,6 @@ public class StartupAction extends SimpleAction {
 		}
 
 		DBUpgrader.upgrade();
-
-		// Clear locks
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Clear locks");
-		}
-
-		try {
-			LockLocalServiceUtil.clear();
-		}
-		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(
-					"Unable to clear locks because Lock table does not exist");
-			}
-		}
-
-		// Ehache bootstrap
-
-		ClusterLinkBootstrapLoaderHelperUtil.start();
 
 		// Scheduler
 
@@ -199,8 +197,7 @@ public class StartupAction extends SimpleAction {
 							registry.getService(ClusterMasterExecutor.class);
 
 						if (!clusterMasterExecutor.isEnabled()) {
-							BackgroundTaskLocalServiceUtil.
-								cleanUpBackgroundTasks();
+							BackgroundTaskManagerUtil.cleanUpBackgroundTasks();
 						}
 						else {
 							clusterMasterExecutor.
@@ -215,7 +212,8 @@ public class StartupAction extends SimpleAction {
 				});
 
 		clusterMasterExecutorServiceDependencyManager.registerDependencies(
-			ClusterExecutor.class, ClusterMasterExecutor.class);
+			BackgroundTaskManager.class, ClusterExecutor.class,
+			ClusterMasterExecutor.class);
 
 		// Liferay JspFactory
 

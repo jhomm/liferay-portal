@@ -1196,8 +1196,9 @@ public class UserIdMapperPersistenceImpl extends BasePersistenceImpl<UserIdMappe
 		}
 	}
 
-	protected void cacheUniqueFindersCache(UserIdMapper userIdMapper) {
-		if (userIdMapper.isNew()) {
+	protected void cacheUniqueFindersCache(UserIdMapper userIdMapper,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					userIdMapper.getUserId(), userIdMapper.getType()
 				};
@@ -1405,7 +1406,7 @@ public class UserIdMapperPersistenceImpl extends BasePersistenceImpl<UserIdMappe
 				userIdMapper.setNew(false);
 			}
 			else {
-				session.merge(userIdMapper);
+				userIdMapper = (UserIdMapper)session.merge(userIdMapper);
 			}
 		}
 		catch (Exception e) {
@@ -1444,8 +1445,8 @@ public class UserIdMapperPersistenceImpl extends BasePersistenceImpl<UserIdMappe
 			UserIdMapperImpl.class, userIdMapper.getPrimaryKey(), userIdMapper,
 			false);
 
-		clearUniqueFindersCache(userIdMapper);
-		cacheUniqueFindersCache(userIdMapper);
+		clearUniqueFindersCache((UserIdMapper)userIdMapperModelImpl);
+		cacheUniqueFindersCache((UserIdMapper)userIdMapperModelImpl, isNew);
 
 		userIdMapper.resetOriginalValues();
 
@@ -1828,6 +1829,11 @@ public class UserIdMapperPersistenceImpl extends BasePersistenceImpl<UserIdMappe
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return UserIdMapperModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

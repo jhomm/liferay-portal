@@ -14,11 +14,11 @@
 
 package com.liferay.dynamic.data.mapping.form.renderer.internal;
 
-import com.liferay.portlet.dynamicdatamapping.model.DDMFormLayout;
-import com.liferay.portlet.dynamicdatamapping.model.DDMFormLayoutColumn;
-import com.liferay.portlet.dynamicdatamapping.model.DDMFormLayoutPage;
-import com.liferay.portlet.dynamicdatamapping.model.DDMFormLayoutRow;
-import com.liferay.portlet.dynamicdatamapping.model.LocalizedValue;
+import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
+import com.liferay.dynamic.data.mapping.model.DDMFormLayoutColumn;
+import com.liferay.dynamic.data.mapping.model.DDMFormLayoutPage;
+import com.liferay.dynamic.data.mapping.model.DDMFormLayoutRow;
+import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,9 +50,7 @@ public class DDMFormLayoutTransformer {
 		Map<String, Object> column = new HashMap<>();
 
 		column.put(
-			"field",
-			_renderedDDMFormFieldsMap.get(
-				ddmFormLayoutColumn.getDDMFormFieldName()));
+			"fields", getFields(ddmFormLayoutColumn.getDDMFormFieldNames()));
 		column.put("size", ddmFormLayoutColumn.getSize());
 
 		return column;
@@ -68,6 +66,17 @@ public class DDMFormLayoutTransformer {
 		}
 
 		return columns;
+	}
+
+	protected List<String> getFields(List<String> ddmFormFieldNames) {
+		List<String> renderedDDMFormFields = new ArrayList<>();
+
+		for (String ddmFormFieldName : ddmFormFieldNames) {
+			renderedDDMFormFields.add(
+				_renderedDDMFormFieldsMap.get(ddmFormFieldName));
+		}
+
+		return renderedDDMFormFields;
 	}
 
 	protected Map<String, Object> getPage(DDMFormLayoutPage ddmFormLayoutPage) {

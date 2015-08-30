@@ -14,11 +14,19 @@
 
 package com.liferay.journal.web.asset;
 
-import com.liferay.journal.web.constants.JournalPortletKeys;
+import com.liferay.journal.configuration.JournalServiceConfigurationValues;
+import com.liferay.journal.constants.JournalPortletKeys;
+import com.liferay.journal.model.JournalArticle;
+import com.liferay.journal.model.JournalArticleConstants;
+import com.liferay.journal.model.JournalArticleDisplay;
+import com.liferay.journal.service.JournalArticleLocalServiceUtil;
+import com.liferay.journal.service.JournalContentSearchLocalServiceUtil;
+import com.liferay.journal.service.permission.JournalArticlePermission;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.PortletRequestModel;
 import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -34,27 +42,22 @@ import com.liferay.portal.service.LayoutLocalServiceUtil;
 import com.liferay.portal.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.util.WebKeys;
 import com.liferay.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portlet.asset.model.BaseAssetRenderer;
+import com.liferay.portlet.asset.model.BaseJSPAssetRenderer;
 import com.liferay.portlet.asset.model.DDMFormValuesReader;
-import com.liferay.portlet.journal.model.JournalArticle;
-import com.liferay.portlet.journal.model.JournalArticleConstants;
-import com.liferay.portlet.journal.model.JournalArticleDisplay;
-import com.liferay.portlet.journal.service.JournalArticleLocalServiceUtil;
-import com.liferay.portlet.journal.service.JournalContentSearchLocalServiceUtil;
-import com.liferay.portlet.journal.service.permission.JournalArticlePermission;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import javax.portlet.ActionRequest;
 import javax.portlet.PortletPreferences;
 import javax.portlet.PortletRequest;
 import javax.portlet.PortletResponse;
 import javax.portlet.PortletURL;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Julio Camarero
@@ -63,7 +66,7 @@ import javax.portlet.PortletURL;
  * @author Raymond Augé
  */
 public class JournalArticleAssetRenderer
-	extends BaseAssetRenderer implements TrashRenderer {
+	extends BaseJSPAssetRenderer<JournalArticle> implements TrashRenderer {
 
 	public static final String TYPE = "journal_article";
 
@@ -83,6 +86,11 @@ public class JournalArticleAssetRenderer
 	}
 
 	public JournalArticle getArticle() {
+		return _article;
+	}
+
+	@Override
+	public JournalArticle getAssetObject() {
 		return _article;
 	}
 
@@ -108,7 +116,9 @@ public class JournalArticleAssetRenderer
 
 	@Override
 	public String getDiscussionPath() {
-		if (PropsValues.JOURNAL_ARTICLE_COMMENTS_ENABLED) {
+		if (JournalServiceConfigurationValues.
+				JOURNAL_ARTICLE_COMMENTS_ENABLED) {
+
 			return "edit_article_discussion";
 		}
 		else {
@@ -127,8 +137,25 @@ public class JournalArticleAssetRenderer
 	}
 
 	@Override
+	public String getJspPath(HttpServletRequest request, String template) {
+		if (template.equals(TEMPLATE_ABSTRACT) ||
+			template.equals(TEMPLATE_FULL_CONTENT)) {
+
+			return "/asset/" + template + ".jsp";
+		}
+		else {
+			return null;
+		}
+	}
+
+	@Override
 	public String getPortletId() {
 		return JournalPortletKeys.JOURNAL;
+	}
+
+	@Override
+	public int getStatus() {
+		return _article.getStatus();
 	}
 
 	@Override
@@ -140,7 +167,7 @@ public class JournalArticleAssetRenderer
 		String summary = _article.getDescription(locale);
 
 		if (Validator.isNotNull(summary)) {
-			return summary;
+			return StringUtil.shorten(summary, 200);
 		}
 
 		try {
@@ -201,9 +228,9 @@ public class JournalArticleAssetRenderer
 			LiferayPortletResponse liferayPortletResponse)
 		throws Exception {
 
-		PortletURL portletURL = liferayPortletResponse.createLiferayPortletURL(
-			getControlPanelPlid(liferayPortletRequest),
-			JournalPortletKeys.JOURNAL, PortletRequest.RENDER_PHASE);
+		PortletURL portletURL = PortalUtil.getControlPanelPortletURL(
+			liferayPortletRequest, JournalPortletKeys.JOURNAL, 0,
+			PortletRequest.RENDER_PHASE);
 
 		portletURL.setParameter("mvcPath", "/edit_article.jsp");
 		portletURL.setParameter(
@@ -221,16 +248,18 @@ public class JournalArticleAssetRenderer
 			LiferayPortletResponse liferayPortletResponse)
 		throws Exception {
 
-		PortletURL portletURL = liferayPortletResponse.createLiferayPortletURL(
-			getControlPanelPlid(liferayPortletRequest),
-			JournalPortletKeys.JOURNAL, PortletRequest.ACTION_PHASE);
+		PortletURL portletURL = PortalUtil.getControlPanelPortletURL(
+			liferayPortletRequest, JournalPortletKeys.JOURNAL, 0,
+			PortletRequest.RESOURCE_PHASE);
 
-		portletURL.setParameter(ActionRequest.ACTION_NAME, "exportArticle");
-		portletURL.setParameter(
+		LiferayPortletURL liferayPortletURL = (LiferayPortletURL)portletURL;
+
+		liferayPortletURL.setParameter(
 			"groupId", String.valueOf(_article.getGroupId()));
-		portletURL.setParameter("articleId", _article.getArticleId());
+		liferayPortletURL.setParameter("articleId", _article.getArticleId());
+		liferayPortletURL.setResourceID("exportArticle");
 
-		return portletURL;
+		return liferayPortletURL;
 	}
 
 	@Override
@@ -244,9 +273,9 @@ public class JournalArticleAssetRenderer
 			LiferayPortletResponse liferayPortletResponse)
 		throws Exception {
 
-		PortletURL portletURL = liferayPortletResponse.createLiferayPortletURL(
-			getControlPanelPlid(liferayPortletRequest),
-			JournalPortletKeys.JOURNAL, PortletRequest.RENDER_PHASE);
+		PortletURL portletURL = PortalUtil.getControlPanelPortletURL(
+			liferayPortletRequest, JournalPortletKeys.JOURNAL, 0,
+			PortletRequest.RENDER_PHASE);
 
 		JournalArticle previousApprovedArticle =
 			JournalArticleLocalServiceUtil.getPreviousApprovedArticle(_article);
@@ -371,6 +400,17 @@ public class JournalArticleAssetRenderer
 	}
 
 	@Override
+	public boolean include(
+			HttpServletRequest request, HttpServletResponse response,
+			String template)
+		throws Exception {
+
+		request.setAttribute(WebKeys.JOURNAL_ARTICLE, _article);
+
+		return super.include(request, response, template);
+	}
+
+	@Override
 	public boolean isConvertible() {
 		return true;
 	}
@@ -402,24 +442,6 @@ public class JournalArticleAssetRenderer
 	@Override
 	public boolean isPrintable() {
 		return true;
-	}
-
-	@Override
-	public String render(
-			PortletRequest portletRequest, PortletResponse portletResponse,
-			String template)
-		throws Exception {
-
-		if (template.equals(TEMPLATE_ABSTRACT) ||
-			template.equals(TEMPLATE_FULL_CONTENT)) {
-
-			portletRequest.setAttribute(WebKeys.JOURNAL_ARTICLE, _article);
-
-			return "/asset/" + template + ".jsp";
-		}
-		else {
-			return null;
-		}
 	}
 
 	@Override

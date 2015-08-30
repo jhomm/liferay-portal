@@ -239,7 +239,7 @@ public class PortletWrapper implements Portlet, ModelWrapper<Portlet> {
 	* @return the asset type instances of the portlet
 	*/
 	@Override
-	public java.util.List<com.liferay.portlet.asset.model.AssetRendererFactory> getAssetRendererFactoryInstances() {
+	public java.util.List<com.liferay.portlet.asset.model.AssetRendererFactory<?>> getAssetRendererFactoryInstances() {
 		return _portlet.getAssetRendererFactoryInstances();
 	}
 
@@ -419,17 +419,6 @@ public class PortletWrapper implements Portlet, ModelWrapper<Portlet> {
 	@Override
 	public java.util.List<com.liferay.portlet.expando.model.CustomAttributesDisplay> getCustomAttributesDisplayInstances() {
 		return _portlet.getCustomAttributesDisplayInstances();
-	}
-
-	/**
-	* Returns the name of the dynamic data mapping display class of the
-	* portlet.
-	*
-	* @return the name of the dynamic data mapping display class of the portlet
-	*/
-	@Override
-	public java.lang.String getDDMDisplayClass() {
-		return _portlet.getDDMDisplayClass();
 	}
 
 	/**
@@ -675,7 +664,7 @@ public class PortletWrapper implements Portlet, ModelWrapper<Portlet> {
 	* @return the indexer instances of the portlet
 	*/
 	@Override
-	public java.util.List<com.liferay.portal.kernel.search.Indexer> getIndexerInstances() {
+	public java.util.List<com.liferay.portal.kernel.search.Indexer<?>> getIndexerInstances() {
 		return _portlet.getIndexerInstances();
 	}
 
@@ -924,7 +913,7 @@ public class PortletWrapper implements Portlet, ModelWrapper<Portlet> {
 	* @return the portlet data handler instance of the portlet
 	*/
 	@Override
-	public com.liferay.portal.kernel.lar.PortletDataHandler getPortletDataHandlerInstance() {
+	public com.liferay.portlet.exportimport.lar.PortletDataHandler getPortletDataHandlerInstance() {
 		return _portlet.getPortletDataHandlerInstance();
 	}
 
@@ -1404,7 +1393,7 @@ public class PortletWrapper implements Portlet, ModelWrapper<Portlet> {
 	* @return the staged model data handler instances of the portlet
 	*/
 	@Override
-	public java.util.List<com.liferay.portal.kernel.lar.StagedModelDataHandler<?>> getStagedModelDataHandlerInstances() {
+	public java.util.List<com.liferay.portlet.exportimport.lar.StagedModelDataHandler<?>> getStagedModelDataHandlerInstances() {
 		return _portlet.getStagedModelDataHandlerInstances();
 	}
 
@@ -2403,17 +2392,6 @@ public class PortletWrapper implements Portlet, ModelWrapper<Portlet> {
 	public void setCustomAttributesDisplayClasses(
 		java.util.List<java.lang.String> customAttributesDisplayClasses) {
 		_portlet.setCustomAttributesDisplayClasses(customAttributesDisplayClasses);
-	}
-
-	/**
-	* Sets the name of the dynamic data mapping display class of the portlet.
-	*
-	* @param ddmDisplayClass the name of dynamic data mapping display class of
-	the portlet
-	*/
-	@Override
-	public void setDDMDisplayClass(java.lang.String ddmDisplayClass) {
-		_portlet.setDDMDisplayClass(ddmDisplayClass);
 	}
 
 	/**

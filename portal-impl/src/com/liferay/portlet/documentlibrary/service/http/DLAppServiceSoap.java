@@ -500,7 +500,7 @@ public class DLAppServiceSoap {
 	* @param folderName the temporary folder's name
 	* @param fileName the file's original name
 	* @throws PortalException if the file name was invalid
-	* @see com.liferay.portal.kernel.util.TempFileEntryUtil
+	* @see TempFileEntryUtil
 	*/
 	public static void deleteTempFileEntry(long groupId, long folderId,
 		java.lang.String folderName, java.lang.String fileName)
@@ -547,8 +547,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -584,8 +583,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1031,8 +1029,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1072,8 +1069,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1117,8 +1113,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1163,8 +1158,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1202,8 +1196,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1396,8 +1389,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1436,8 +1428,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1481,8 +1472,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1524,8 +1514,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1688,8 +1677,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1729,8 +1717,7 @@ public class DLAppServiceSoap {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1864,13 +1851,66 @@ public class DLAppServiceSoap {
 	* @return the temporary file entry names
 	* @throws PortalException if the folder was invalid
 	* @see #addTempFileEntry(long, long, String, String, File, String)
-	* @see com.liferay.portal.kernel.util.TempFileEntryUtil
+	* @see TempFileEntryUtil
 	*/
 	public static java.lang.String[] getTempFileNames(long groupId,
 		long folderId, java.lang.String folderName) throws RemoteException {
 		try {
 			java.lang.String[] returnValue = DLAppServiceUtil.getTempFileNames(groupId,
 					folderId, folderName);
+
+			return returnValue;
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	/**
+	* Locks the folder. This method is primarily used by WebDAV.
+	*
+	* @param repositoryId the primary key of the repository
+	* @param folderId the primary key of the folder
+	* @return the lock object
+	* @throws PortalException if the repository or folder could not be found
+	*/
+	public static com.liferay.portal.kernel.lock.Lock lockFolder(
+		long repositoryId, long folderId) throws RemoteException {
+		try {
+			com.liferay.portal.kernel.lock.Lock returnValue = DLAppServiceUtil.lockFolder(repositoryId,
+					folderId);
+
+			return returnValue;
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	/**
+	* Locks the folder. This method is primarily used by WebDAV.
+	*
+	* @param repositoryId the primary key of the repository
+	* @param folderId the primary key of the folder
+	* @param owner the owner string for the checkout (optionally
+	<code>null</code>)
+	* @param inheritable whether the lock must propagate to descendants
+	* @param expirationTime the time in milliseconds before the lock expires.
+	If the value is <code>0</code>, the default expiration time will
+	be used from <code>portal.properties>.
+	* @return the lock object
+	* @throws PortalException if the repository or folder could not be found
+	*/
+	public static com.liferay.portal.kernel.lock.Lock lockFolder(
+		long repositoryId, long folderId, java.lang.String owner,
+		boolean inheritable, long expirationTime) throws RemoteException {
+		try {
+			com.liferay.portal.kernel.lock.Lock returnValue = DLAppServiceUtil.lockFolder(repositoryId,
+					folderId, owner, inheritable, expirationTime);
 
 			return returnValue;
 		}
@@ -2022,6 +2062,62 @@ public class DLAppServiceSoap {
 			com.liferay.portal.kernel.repository.model.Folder returnValue = DLAppServiceUtil.moveFolderToTrash(folderId);
 
 			return com.liferay.portal.kernel.repository.model.FolderSoap.toSoapModel(returnValue);
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	/**
+	* Refreshes the lock for the file entry. This method is primarily used by
+	* WebDAV.
+	*
+	* @param lockUuid the lock's UUID
+	* @param companyId the primary key of the file entry's company
+	* @param expirationTime the time in milliseconds before the lock expires.
+	If the value is <code>0</code>, the default expiration time will
+	be used from <code>portal.properties>.
+	* @return the lock object
+	* @throws PortalException if the file entry or lock could not be found
+	*/
+	public static com.liferay.portal.kernel.lock.Lock refreshFileEntryLock(
+		java.lang.String lockUuid, long companyId, long expirationTime)
+		throws RemoteException {
+		try {
+			com.liferay.portal.kernel.lock.Lock returnValue = DLAppServiceUtil.refreshFileEntryLock(lockUuid,
+					companyId, expirationTime);
+
+			return returnValue;
+		}
+		catch (Exception e) {
+			_log.error(e, e);
+
+			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	/**
+	* Refreshes the lock for the folder. This method is primarily used by
+	* WebDAV.
+	*
+	* @param lockUuid the lock's UUID
+	* @param companyId the primary key of the file entry's company
+	* @param expirationTime the time in milliseconds before the lock expires.
+	If the value is <code>0</code>, the default expiration time will
+	be used from <code>portal.properties>.
+	* @return the lock object
+	* @throws PortalException if the folder or lock could not be found
+	*/
+	public static com.liferay.portal.kernel.lock.Lock refreshFolderLock(
+		java.lang.String lockUuid, long companyId, long expirationTime)
+		throws RemoteException {
+		try {
+			com.liferay.portal.kernel.lock.Lock returnValue = DLAppServiceUtil.refreshFolderLock(lockUuid,
+					companyId, expirationTime);
+
+			return returnValue;
 		}
 		catch (Exception e) {
 			_log.error(e, e);

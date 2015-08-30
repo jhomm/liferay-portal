@@ -5,9 +5,11 @@
 			<var name="entryTitle" value="${entryTitle}" />
 		</execute>
 
-		<execute function="Pause" locator1="1000" />
-
 		<execute function="Click" locator1="Comments#COMMENT_FIELD" />
+	</command>
+
+	<command name="gotoConfigurationPermissionsPG">
+		<execute function="AssertClick" locator1="BasePortletConfiguration#NAVIGATION_PERMISSIONS" value1="Permissions" />
 	</command>
 
 	<command name="gotoConfigurationScopePG">
@@ -25,6 +27,7 @@
 			</then>
 			<else>
 				<execute macro="Portlet#gotoPortletOptions">
+					<var name="portletNameBorderless" value="${portletNameBorderless}" />
 					<var name="portletOption" value="Configuration" />
 				</execute>
 			</else>
@@ -104,6 +107,16 @@
 		<execute function="AssertClick" locator1="BlogsEntry#TITLE_GENERIC" value1="${entryTitle}" />
 	</command>
 
+	<command name="gotoEntryWithAbstractPG">
+		<var name="key_entryAbstractDescription" value="${entryAbstractDescription}" />
+		<var name="key_entryTitle" value="${entryTitle}" />
+
+		<execute function="AssertTextEquals" locator1="BlogsEntry#TITLE" value1="${entryTitle}" />
+		<execute function="AssertTextEquals#assertPartialText" locator1="BlogsEntry#CONTENT_ABSTRACT" value1="${entryAbstractDescription}" />
+
+		<execute function="AssertClick" locator1="BlogsEntry#TITLE_LINK" value1="${entryTitle}" />
+	</command>
+
 	<command name="gotoPG">
 		<var name="key_entryTitle" value="${entryTitle}" />
 
@@ -158,6 +171,9 @@
 		<var name="key_entryTitle" value="${entryTitle}" />
 
 		<execute function="AssertTextEquals" locator1="BlogsEntry#TITLE" value1="${entryTitle}" />
+
+		<var name="key_entryContent" value="${entryContent}" />
+
 		<execute function="AssertTextEquals" locator1="BlogsEntry#CONTENT" value1="${entryContent}" />
 
 		<execute function="AssertClick" locator1="Link#MOVE_TO_THE_RECYCLING_BIN" value1="Move to the Recycle Bin" />

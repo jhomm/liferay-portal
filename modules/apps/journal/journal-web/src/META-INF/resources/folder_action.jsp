@@ -37,23 +37,23 @@ String resourcePrimKey = null;
 boolean hasPermissionsPermission = false;
 
 if (folder != null) {
-	modelResource= JournalFolder.class.getName();
+	modelResource = JournalFolder.class.getName();
 	modelResourceDescription = folder.getName();
-	resourcePrimKey= String.valueOf(folder.getPrimaryKey());
+	resourcePrimKey = String.valueOf(folder.getPrimaryKey());
 
 	hasPermissionsPermission = JournalFolderPermission.contains(permissionChecker, folder, ActionKeys.PERMISSIONS);
 }
 else {
-	modelResource= "com.liferay.portlet.journal";
+	modelResource = "com.liferay.journal";
 	modelResourceDescription = themeDisplay.getScopeGroupName();
-	resourcePrimKey= String.valueOf(scopeGroupId);
+	resourcePrimKey = String.valueOf(scopeGroupId);
 
 	hasPermissionsPermission = JournalPermission.contains(permissionChecker, scopeGroupId, ActionKeys.PERMISSIONS);
 }
 %>
 
-<span class="entry-action overlay">
-	<liferay-ui:icon-menu direction="down" icon="<%= StringPool.BLANK %>" message="<%= StringPool.BLANK %>" showWhenSingleIcon="<%= true %>">
+<span class="<%= row != null ? StringPool.BLANK : "entry-action overlay" %>">
+	<liferay-ui:icon-menu direction='<%= row != null ? "left-side" : "right-side" %>' icon="<%= StringPool.BLANK %>" message="<%= StringPool.BLANK %>" showWhenSingleIcon="<%= true %>" view='<%= row != null ? "lexicon" : null %>'>
 		<c:choose>
 			<c:when test="<%= folder != null %>">
 				<c:if test="<%= JournalFolderPermission.contains(permissionChecker, folder, ActionKeys.UPDATE) %>">

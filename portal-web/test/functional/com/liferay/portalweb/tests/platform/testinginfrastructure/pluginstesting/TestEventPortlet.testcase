@@ -10,7 +10,7 @@
 		<execute macro="Page#tearDownPG" />
 	</tear-down>
 
-	<command name="ViewEvent" priority="5">
+	<command name="ViewEvent" priority="4">
 		<execute macro="Page#addPG">
 			<var name="pageName" value="Test Event Page" />
 		</execute>
@@ -27,8 +27,8 @@
 			<var name="portletName" value="Event Producer" />
 		</execute>
 
-		<execute function="Click" locator1="PGTestEventProducer#EVENT_PRODUCER_PORTLET_LINK" />
+		<execute function="Click" locator1="TestEventProducer#EVENT_PRODUCER_PORTLET_LINK" />
 
-		<execute function="AssertTextEquals" locator1="PGTestEventConsumer#EVENT_CONSUMER_PORTLET_BODY" value1="PASSED" />
+		<execute function="AssertTextEquals" locator1="TestEventConsumer#EVENT_CONSUMER_PORTLET_BODY" value1="PASSED" />
 	</command>
 </definition>

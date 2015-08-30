@@ -1980,8 +1980,8 @@ public class AssetCategoryPropertyPersistenceImpl extends BasePersistenceImpl<As
 	}
 
 	protected void cacheUniqueFindersCache(
-		AssetCategoryProperty assetCategoryProperty) {
-		if (assetCategoryProperty.isNew()) {
+		AssetCategoryProperty assetCategoryProperty, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					assetCategoryProperty.getCategoryId(),
 					assetCategoryProperty.getKey()
@@ -2180,7 +2180,7 @@ public class AssetCategoryPropertyPersistenceImpl extends BasePersistenceImpl<As
 				assetCategoryProperty.setNew(false);
 			}
 			else {
-				session.merge(assetCategoryProperty);
+				assetCategoryProperty = (AssetCategoryProperty)session.merge(assetCategoryProperty);
 			}
 		}
 		catch (Exception e) {
@@ -2265,8 +2265,9 @@ public class AssetCategoryPropertyPersistenceImpl extends BasePersistenceImpl<As
 			AssetCategoryPropertyImpl.class,
 			assetCategoryProperty.getPrimaryKey(), assetCategoryProperty, false);
 
-		clearUniqueFindersCache(assetCategoryProperty);
-		cacheUniqueFindersCache(assetCategoryProperty);
+		clearUniqueFindersCache((AssetCategoryProperty)assetCategoryPropertyModelImpl);
+		cacheUniqueFindersCache((AssetCategoryProperty)assetCategoryPropertyModelImpl,
+			isNew);
 
 		assetCategoryProperty.resetOriginalValues();
 
@@ -2656,6 +2657,11 @@ public class AssetCategoryPropertyPersistenceImpl extends BasePersistenceImpl<As
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return AssetCategoryPropertyModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

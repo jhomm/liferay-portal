@@ -14,7 +14,7 @@
 
 package com.liferay.portlet.configuration.icon.maximize;
 
-import com.liferay.portal.kernel.portlet.configuration.BasePortletConfigurationIcon;
+import com.liferay.portal.kernel.portlet.configuration.icon.BasePortletConfigurationIcon;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.theme.PortletDisplay;
 
@@ -35,6 +35,7 @@ public class MaximizePortletConfigurationIcon
 		return "portlet-maximize portlet-maximize-icon";
 	}
 
+	@Override
 	public String getImage() {
 		return "../aui/plus";
 	}

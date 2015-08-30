@@ -911,8 +911,9 @@ public class AnnouncementsFlagPersistenceImpl extends BasePersistenceImpl<Announ
 		}
 	}
 
-	protected void cacheUniqueFindersCache(AnnouncementsFlag announcementsFlag) {
-		if (announcementsFlag.isNew()) {
+	protected void cacheUniqueFindersCache(
+		AnnouncementsFlag announcementsFlag, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					announcementsFlag.getUserId(),
 					announcementsFlag.getEntryId(), announcementsFlag.getValue()
@@ -1085,7 +1086,7 @@ public class AnnouncementsFlagPersistenceImpl extends BasePersistenceImpl<Announ
 				announcementsFlag.setNew(false);
 			}
 			else {
-				session.merge(announcementsFlag);
+				announcementsFlag = (AnnouncementsFlag)session.merge(announcementsFlag);
 			}
 		}
 		catch (Exception e) {
@@ -1124,8 +1125,9 @@ public class AnnouncementsFlagPersistenceImpl extends BasePersistenceImpl<Announ
 			AnnouncementsFlagImpl.class, announcementsFlag.getPrimaryKey(),
 			announcementsFlag, false);
 
-		clearUniqueFindersCache(announcementsFlag);
-		cacheUniqueFindersCache(announcementsFlag);
+		clearUniqueFindersCache((AnnouncementsFlag)announcementsFlagModelImpl);
+		cacheUniqueFindersCache((AnnouncementsFlag)announcementsFlagModelImpl,
+			isNew);
 
 		announcementsFlag.resetOriginalValues();
 
@@ -1505,6 +1507,11 @@ public class AnnouncementsFlagPersistenceImpl extends BasePersistenceImpl<Announ
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return AnnouncementsFlagModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

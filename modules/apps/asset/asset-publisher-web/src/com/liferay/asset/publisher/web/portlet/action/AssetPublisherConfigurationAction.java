@@ -21,8 +21,6 @@ import com.liferay.portal.kernel.portlet.ConfigurationAction;
 import com.liferay.portal.kernel.portlet.DefaultConfigurationAction;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.servlet.SessionMessages;
-import com.liferay.portal.kernel.staging.LayoutStagingUtil;
-import com.liferay.portal.kernel.staging.StagingUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -51,9 +49,9 @@ import com.liferay.portlet.asset.AssetTagException;
 import com.liferay.portlet.asset.DuplicateQueryRuleException;
 import com.liferay.portlet.asset.model.AssetQueryRule;
 import com.liferay.portlet.asset.model.AssetRendererFactory;
-import com.liferay.portlet.asset.model.ClassType;
-import com.liferay.portlet.asset.model.ClassTypeReader;
 import com.liferay.portlet.asset.service.AssetTagLocalServiceUtil;
+import com.liferay.portlet.exportimport.staging.LayoutStagingUtil;
+import com.liferay.portlet.exportimport.staging.StagingUtil;
 import com.liferay.util.ContentUtil;
 
 import java.util.ArrayList;
@@ -65,9 +63,11 @@ import javax.portlet.PortletConfig;
 import javax.portlet.PortletPreferences;
 import javax.portlet.PortletRequest;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Brian Wing Shun Chan
@@ -82,6 +82,11 @@ import org.osgi.service.component.annotations.Component;
 )
 public class AssetPublisherConfigurationAction
 	extends DefaultConfigurationAction {
+
+	@Override
+	public String getJspPath(HttpServletRequest request) {
+		return "/configuration.jsp";
+	}
 
 	@Override
 	public void postProcess(
@@ -202,6 +207,15 @@ public class AssetPublisherConfigurationAction
 		}
 	}
 
+	@Override
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.asset.publisher.web)",
+		unbind = "-"
+	)
+	public void setServletContext(ServletContext servletContext) {
+		super.setServletContext(servletContext);
+	}
+
 	protected void addScope(
 			ActionRequest actionRequest, PortletPreferences preferences)
 		throws Exception {
@@ -270,26 +284,11 @@ public class AssetPublisherConfigurationAction
 			return null;
 		}
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
 		String className = PortalUtil.getClassName(defaultAssetTypeId);
 
-		AssetRendererFactory assetRendererFactory =
+		AssetRendererFactory<?> assetRendererFactory =
 			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
 				className);
-
-		ClassTypeReader classTypeReader =
-			assetRendererFactory.getClassTypeReader();
-
-		List<ClassType> classTypes = classTypeReader.getAvailableClassTypes(
-			PortalUtil.getCurrentAndAncestorSiteGroupIds(
-				themeDisplay.getSiteGroupId()),
-			themeDisplay.getLocale());
-
-		if (classTypes.isEmpty()) {
-			return null;
-		}
 
 		String assetClassName = AssetPublisherUtil.getClassName(
 			assetRendererFactory);

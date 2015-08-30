@@ -969,8 +969,9 @@ public class ExpandoTablePersistenceImpl extends BasePersistenceImpl<ExpandoTabl
 		}
 	}
 
-	protected void cacheUniqueFindersCache(ExpandoTable expandoTable) {
-		if (expandoTable.isNew()) {
+	protected void cacheUniqueFindersCache(ExpandoTable expandoTable,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					expandoTable.getCompanyId(), expandoTable.getClassNameId(),
 					expandoTable.getName()
@@ -1142,7 +1143,7 @@ public class ExpandoTablePersistenceImpl extends BasePersistenceImpl<ExpandoTabl
 				expandoTable.setNew(false);
 			}
 			else {
-				session.merge(expandoTable);
+				expandoTable = (ExpandoTable)session.merge(expandoTable);
 			}
 		}
 		catch (Exception e) {
@@ -1185,8 +1186,8 @@ public class ExpandoTablePersistenceImpl extends BasePersistenceImpl<ExpandoTabl
 			ExpandoTableImpl.class, expandoTable.getPrimaryKey(), expandoTable,
 			false);
 
-		clearUniqueFindersCache(expandoTable);
-		cacheUniqueFindersCache(expandoTable);
+		clearUniqueFindersCache((ExpandoTable)expandoTableModelImpl);
+		cacheUniqueFindersCache((ExpandoTable)expandoTableModelImpl, isNew);
 
 		expandoTable.resetOriginalValues();
 
@@ -1562,6 +1563,11 @@ public class ExpandoTablePersistenceImpl extends BasePersistenceImpl<ExpandoTabl
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return ExpandoTableModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

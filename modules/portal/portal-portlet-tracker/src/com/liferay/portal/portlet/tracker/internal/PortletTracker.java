@@ -17,8 +17,11 @@ package com.liferay.portal.portlet.tracker.internal;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.configuration.ConfigurationFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.UTF8Control;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletBag;
 import com.liferay.portal.kernel.portlet.PortletBagPool;
@@ -26,6 +29,7 @@ import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionary;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringPool;
@@ -61,11 +65,14 @@ import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -75,7 +82,6 @@ import javax.portlet.PortletMode;
 import javax.portlet.WindowState;
 
 import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletContextListener;
 
 import org.osgi.framework.Bundle;
@@ -88,6 +94,7 @@ import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.http.context.ServletContextHelper;
 import org.osgi.service.http.runtime.HttpServiceRuntime;
@@ -118,7 +125,9 @@ public class PortletTracker
 		if (Validator.isNull(portletName)) {
 			Class<?> clazz = portlet.getClass();
 
-			portletName = clazz.getName();
+			portletName = StringUtil.replace(
+				clazz.getName(), new String[] {".", "$"},
+				new String[] {"_", "_"});
 		}
 
 		String portletId = StringUtil.replace(
@@ -217,8 +226,13 @@ public class PortletTracker
 	}
 
 	@Activate
+	@Modified
 	protected void activate(ComponentContext componentContext) {
 		_componentContext = componentContext;
+
+		if (_serviceTracker != null) {
+			_serviceTracker.close();
+		}
 
 		BundleContext bundleContext = _componentContext.getBundleContext();
 
@@ -282,6 +296,10 @@ public class PortletTracker
 				bundlePortletApp.getServletContextName(),
 				bundleWiring.getClassLoader(), serviceRegistrations);
 
+			checkResourceBundles(
+				bundle.getBundleContext(), bundleWiring.getClassLoader(),
+				portletModel, serviceRegistrations);
+
 			List<Company> companies = _companyLocalService.getCompanies();
 
 			deployPortlet(serviceReference, portletModel, companies);
@@ -320,6 +338,33 @@ public class PortletTracker
 		portletModel.setStrutsPath(portletId);
 
 		return portletModel;
+	}
+
+	protected void checkResourceBundles(
+		BundleContext bundleContext, ClassLoader classLoader,
+		com.liferay.portal.model.Portlet portletModel,
+		ServiceRegistrations serviceRegistrations) {
+
+		if (Validator.isBlank(portletModel.getResourceBundle())) {
+			return;
+		}
+
+		for (Locale locale : LanguageUtil.getAvailableLocales()) {
+			ResourceBundle resourceBundle = ResourceBundle.getBundle(
+				portletModel.getResourceBundle(), locale, classLoader,
+				UTF8Control.INSTANCE);
+
+			Dictionary<String, Object> properties = new HashMapDictionary<>();
+
+			properties.put("javax.portlet.name", portletModel.getPortletId());
+			properties.put("language.id", LocaleUtil.toLanguageId(locale));
+
+			ServiceRegistration<ResourceBundle> serviceRegistration =
+				bundleContext.registerService(
+					ResourceBundle.class, resourceBundle, properties);
+
+			serviceRegistrations.addServiceRegistration(serviceRegistration);
+		}
 	}
 
 	protected void checkResources(
@@ -733,6 +778,13 @@ public class PortletTracker
 		List<String> roleRefs = StringPlus.asList(
 			serviceReference.getProperty("javax.portlet.security-role-ref"));
 
+		if (roleRefs.isEmpty()) {
+			roleRefs.add("administrator");
+			roleRefs.add("guest");
+			roleRefs.add("power-user");
+			roleRefs.add("user");
+		}
+
 		for (String roleRef : roleRefs) {
 			for (String curRoleRef : StringUtil.split(roleRef)) {
 				unlinkedRoles.add(curRoleRef);
@@ -1016,6 +1068,25 @@ public class PortletTracker
 
 		Dictionary<String, Object> properties = new HashMapDictionary<>();
 
+		Dictionary<String, Object> componentProperties =
+			_componentContext.getProperties();
+
+		for (Enumeration<String> keys = componentProperties.keys();
+				keys.hasMoreElements();) {
+
+			String key = keys.nextElement();
+
+			if (!key.startsWith(_JSP_SERVLET_INIT_PARAM_PREFIX)) {
+				continue;
+			}
+
+			String paramName =
+				_SERVLET_INIT_PARAM_PREFIX +
+					key.substring(_JSP_SERVLET_INIT_PARAM_PREFIX.length());
+
+			properties.put(paramName, componentProperties.get(key));
+		}
+
 		properties.put(
 			HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_SELECT,
 			contextName);
@@ -1140,12 +1211,16 @@ public class PortletTracker
 		HttpServiceRuntime httpServiceRuntime, Map<String, Object> properties) {
 
 		List<String> httpServiceEndpoints = StringPlus.asList(
-			properties.get(
-				HttpServiceRuntimeConstants.HTTP_SERVICE_ENDPOINT_ATTRIBUTE));
+			properties.get(HttpServiceRuntimeConstants.HTTP_SERVICE_ENDPOINT));
 
 		if (!httpServiceEndpoints.isEmpty()) {
 			_httpServiceEndpoint = httpServiceEndpoints.get(0);
 		}
+	}
+
+	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED, unbind = "-")
+	protected void setModuleServiceLifecycle(
+		ModuleServiceLifecycle moduleServiceLifecycle) {
 	}
 
 	@Reference(unbind = "-")
@@ -1172,10 +1247,6 @@ public class PortletTracker
 	@Reference(unbind = "-")
 	protected void setResourceActions(ResourceActions resourceActions) {
 		_resourceActions = resourceActions;
-	}
-
-	@Reference(target = "(original.bean=true)", unbind = "-")
-	protected void setServletContext(ServletContext servletContext) {
 	}
 
 	protected String toLowerCase(Object object) {
@@ -1211,7 +1282,13 @@ public class PortletTracker
 		}
 	}
 
+	private static final String _JSP_SERVLET_INIT_PARAM_PREFIX =
+		"jsp.servlet.init.param.";
+
 	private static final String _NAMESPACE = "com.liferay.portlet.";
+
+	private static final String _SERVLET_INIT_PARAM_PREFIX =
+		HttpWhiteboardConstants.HTTP_WHITEBOARD_SERVLET_INIT_PARAM_PREFIX;
 
 	private static final Log _log = LogFactoryUtil.getLog(PortletTracker.class);
 

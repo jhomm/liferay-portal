@@ -20,7 +20,7 @@
 		<execute macro="PortalSettings#tearDownCP" />
 	</tear-down>
 
-	<command name="AddOrganizationRegRole" priority="5">
+	<command name="AddOrganizationRegRole" priority="4">
 		<var name="orgName" value="Organization Name" />
 		<var name="orgType" value="Regular Organization" />
 		<var name="permissionDefinition1Key" value="CONTROL_PANEL_GENERAL_PERMISSIONS_ADD_ORGANIZATION_CHECKBOX" />
@@ -41,6 +41,7 @@
 			<var name="userLoginEmailAddress" value="${userEmailAddress}" />
 			<var name="userLoginEmailAddress" value="test@liferay.com" />
 			<var name="userLoginFullName" value="Test Test" />
+			<var name="userScreenName" value="${userScreenName}" />
 		</execute>
 
 		<execute macro="Permissions#definePermissionLoginUserCP">
@@ -53,8 +54,8 @@
 
 		<execute macro="Page#gotoCP" />
 
-		<execute function="AssertElementNotPresent" locator1="CPUsersandorganizations#ADD" />
-		<execute function="AssertTextEquals" locator1="CPUsersandorganizations#INFO_MESSAGE" value1="You do not belong to an organization and are not allowed to view other organizations." />
+		<execute function="AssertElementNotPresent" locator1="UsersAndOrganizations#ADD" />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="You do not belong to an organization and are not allowed to view other organizations." />
 
 		<execute macro="Permissions#definePermissionLoginUserCP">
 			<var name="permissionDefinitionKey" value="${permissionDefinition1Key}" />
@@ -81,10 +82,10 @@
 
 		<execute macro="Page#gotoCP" />
 
-		<execute function="AssertElementNotPresent" locator1="CPUsersandorganizations#ADD" />
+		<execute function="AssertElementNotPresent" locator1="UsersAndOrganizations#ADD" />
 	</command>
 
-	<command name="AddUserRegRole" priority="5">
+	<command name="AddUserRegRole" priority="4">
 		<var name="permissionDefinition1Key" value="CONTROL_PANEL_GENERAL_PERMISSIONS_ADD_USER_CHECKBOX" />
 		<var name="permissionDefinition1Value" value="Add User" />
 		<var name="permissionDefinition2Key" value="CONTROL_PANEL_USERS_USERS_AND_ORGANIZATIONS_GENERAL_PERMISSIONS_ACCESS_IN_CONTROL_PANEL_CHECKBOX" />
@@ -107,6 +108,7 @@
 			<var name="userLoginEmailAddress" value="${userEmailAddress}" />
 			<var name="userLoginEmailAddress" value="test@liferay.com" />
 			<var name="userLoginFullName" value="Test Test" />
+			<var name="userScreenName" value="${userScreenName}" />
 		</execute>
 
 		<execute macro="Permissions#definePermissionLoginUserCP">
@@ -119,8 +121,8 @@
 
 		<execute macro="Page#gotoCP" />
 
-		<execute function="AssertTextEquals" locator1="CPUsersandorganizations#INFO_MESSAGE" value1="You do not belong to an organization and are not allowed to view other organizations." />
-		<execute function="AssertElementNotPresent" locator1="CPUsersandorganizations#ADD" />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="You do not belong to an organization and are not allowed to view other organizations." />
+		<execute function="AssertElementNotPresent" locator1="UsersAndOrganizations#ADD" />
 
 		<execute macro="Permissions#definePermissionLoginUserCP">
 			<var name="permissionDefinitionKey" value="${permissionDefinition1Key}" />
@@ -149,7 +151,7 @@
 
 		<execute macro="Page#gotoCP" />
 
-		<execute function="AssertTextEquals" locator1="CPUsersandorganizations#INFO_MESSAGE" value1="You do not belong to an organization and are not allowed to view other organizations." />
-		<execute function="AssertElementNotPresent" locator1="CPUsersandorganizations#ADD" />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="You do not belong to an organization and are not allowed to view other organizations." />
+		<execute function="AssertElementNotPresent" locator1="UsersAndOrganizations#ADD" />
 	</command>
 </definition>

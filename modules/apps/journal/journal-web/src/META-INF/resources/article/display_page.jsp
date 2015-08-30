@@ -94,9 +94,9 @@ boolean changeStructure = GetterUtil.getBoolean(request.getAttribute("edit_artic
 				defaultDisplayLayout = LayoutLocalServiceUtil.fetchLayoutByUuidAndGroupId(layoutUuid, scopeGroupId, true);
 			}
 
-			AssetRendererFactory assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(JournalArticle.class.getName());
+			AssetRendererFactory<JournalArticle> assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClass(JournalArticle.class);
 
-			AssetRenderer assetRenderer = assetRendererFactory.getAssetRenderer(article.getResourcePrimKey());
+			AssetRenderer<JournalArticle> assetRenderer = assetRendererFactory.getAssetRenderer(article.getResourcePrimKey());
 
 			String urlViewInContext = assetRenderer.getURLViewInContext(liferayPortletRequest, liferayPortletResponse, currentURL);
 			%>
@@ -111,9 +111,15 @@ boolean changeStructure = GetterUtil.getBoolean(request.getAttribute("edit_artic
 
 		ItemSelector itemSelector = (ItemSelector)request.getAttribute(JournalWebKeys.ITEM_SELECTOR);
 
-		LayoutItemSelectorCriterion layoutItemSelectorCriterion = new LayoutItemSelectorCriterion(scopeGroupId);
+		LayoutItemSelectorCriterion layoutItemSelectorCriterion = new LayoutItemSelectorCriterion();
 
-		PortletURL itemSelectorURL = itemSelector.getItemSelectorURL(liferayPortletResponse, eventName, layoutItemSelectorCriterion);
+		List<ItemSelectorReturnType> desiredItemSelectorReturnTypes = new ArrayList<ItemSelectorReturnType>();
+
+		desiredItemSelectorReturnTypes.add(new UUIDItemSelectorReturnType());
+
+		layoutItemSelectorCriterion.setDesiredItemSelectorReturnTypes(desiredItemSelectorReturnTypes);
+
+		PortletURL itemSelectorURL = itemSelector.getItemSelectorURL(RequestBackedPortletURLFactoryUtil.create(liferayPortletRequest), eventName, layoutItemSelectorCriterion);
 		%>
 
 		<aui:script sandbox="<%= true %>">
@@ -137,7 +143,7 @@ boolean changeStructure = GetterUtil.getBoolean(request.getAttribute("edit_artic
 							uri: '<%= itemSelectorURL.toString() %>'
 						},
 						function(event) {
-							pagesContainerInput.val(event.uuid);
+							pagesContainerInput.val(event.value);
 
 							displayPageNameInput.html(event.layoutpath);
 

@@ -7901,8 +7901,8 @@ public class LayoutPersistenceImpl extends BasePersistenceImpl<Layout>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(Layout layout) {
-		if (layout.isNew()) {
+	protected void cacheUniqueFindersCache(Layout layout, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					layout.getUuid(), layout.getGroupId(),
 					layout.getPrivateLayout()
@@ -8260,7 +8260,7 @@ public class LayoutPersistenceImpl extends BasePersistenceImpl<Layout>
 				layout.setNew(false);
 			}
 			else {
-				session.merge(layout);
+				layout = (Layout)session.merge(layout);
 			}
 		}
 		catch (Exception e) {
@@ -8460,8 +8460,8 @@ public class LayoutPersistenceImpl extends BasePersistenceImpl<Layout>
 		EntityCacheUtil.putResult(LayoutModelImpl.ENTITY_CACHE_ENABLED,
 			LayoutImpl.class, layout.getPrimaryKey(), layout, false);
 
-		clearUniqueFindersCache(layout);
-		cacheUniqueFindersCache(layout);
+		clearUniqueFindersCache((Layout)layoutModelImpl);
+		cacheUniqueFindersCache((Layout)layoutModelImpl, isNew);
 
 		layout.resetOriginalValues();
 
@@ -8509,6 +8509,7 @@ public class LayoutPersistenceImpl extends BasePersistenceImpl<Layout>
 		layoutImpl.setLayoutPrototypeUuid(layout.getLayoutPrototypeUuid());
 		layoutImpl.setLayoutPrototypeLinkEnabled(layout.isLayoutPrototypeLinkEnabled());
 		layoutImpl.setSourcePrototypeLayoutUuid(layout.getSourcePrototypeLayoutUuid());
+		layoutImpl.setLastPublishDate(layout.getLastPublishDate());
 
 		return layoutImpl;
 	}
@@ -8867,6 +8868,11 @@ public class LayoutPersistenceImpl extends BasePersistenceImpl<Layout>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return LayoutModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

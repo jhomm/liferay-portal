@@ -2517,8 +2517,8 @@ public class SocialActivityCounterPersistenceImpl extends BasePersistenceImpl<So
 	}
 
 	protected void cacheUniqueFindersCache(
-		SocialActivityCounter socialActivityCounter) {
-		if (socialActivityCounter.isNew()) {
+		SocialActivityCounter socialActivityCounter, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					socialActivityCounter.getGroupId(),
 					socialActivityCounter.getClassNameId(),
@@ -2767,7 +2767,7 @@ public class SocialActivityCounterPersistenceImpl extends BasePersistenceImpl<So
 				socialActivityCounter.setNew(false);
 			}
 			else {
-				session.merge(socialActivityCounter);
+				socialActivityCounter = (SocialActivityCounter)session.merge(socialActivityCounter);
 			}
 		}
 		catch (Exception e) {
@@ -2852,8 +2852,9 @@ public class SocialActivityCounterPersistenceImpl extends BasePersistenceImpl<So
 			SocialActivityCounterImpl.class,
 			socialActivityCounter.getPrimaryKey(), socialActivityCounter, false);
 
-		clearUniqueFindersCache(socialActivityCounter);
-		cacheUniqueFindersCache(socialActivityCounter);
+		clearUniqueFindersCache((SocialActivityCounter)socialActivityCounterModelImpl);
+		cacheUniqueFindersCache((SocialActivityCounter)socialActivityCounterModelImpl,
+			isNew);
 
 		socialActivityCounter.resetOriginalValues();
 
@@ -3247,6 +3248,11 @@ public class SocialActivityCounterPersistenceImpl extends BasePersistenceImpl<So
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SocialActivityCounterModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

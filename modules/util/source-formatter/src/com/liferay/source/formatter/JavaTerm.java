@@ -14,6 +14,7 @@
 
 package com.liferay.source.formatter;
 
+import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 
@@ -69,11 +70,14 @@ public class JavaTerm {
 
 	public static final int TYPE_VARIABLE_PUBLIC_STATIC = 1;
 
-	public JavaTerm(String name, int type, String content, int lineCount) {
+	public JavaTerm(
+		String name, int type, String content, int lineCount, String indent) {
+
 		_name = name;
 		_type = type;
 		_content = content;
 		_lineCount = lineCount;
+		_indent = indent;
 	}
 
 	public String getContent() {
@@ -106,6 +110,30 @@ public class JavaTerm {
 
 	public int getType() {
 		return _type;
+	}
+
+	public boolean hasAnnotation(String annotation) {
+		if (_content.contains(_indent + StringPool.AT + annotation + "\n") ||
+			_content.contains(
+				_indent + StringPool.AT + annotation + 
+					StringPool.OPEN_PARENTHESIS)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean hasReturnType() {
+		if (!isMethod()) {
+			return false;
+		}
+
+		int i = _content.indexOf(_name);
+
+		String methodSignature = StringUtil.trim(_content.substring(0, i));
+
+		return !methodSignature.endsWith(" void");
 	}
 
 	public boolean isClass() {
@@ -231,22 +259,6 @@ public class JavaTerm {
 		}
 	}
 
-	public void setContent(String content) {
-		_content = content;
-	}
-
-	public void setLineCount(int lineCount) {
-		_lineCount = lineCount;
-	}
-
-	public void setName(String name) {
-		_name = name;
-	}
-
-	public void setParameterTypes(List<String> parameterTypes) {
-		_parameterTypes = parameterTypes;
-	}
-
 	public void setType(int type) {
 		_type = type;
 	}
@@ -275,14 +287,14 @@ public class JavaTerm {
 			return;
 		}
 
-		x = _content.indexOf(StringPool.OPEN_PARENTHESIS, x);
+		x = _content.indexOf(CharPool.OPEN_PARENTHESIS, x);
 
 		int y = x;
 
 		String parameters = StringPool.BLANK;
 
 		while (true) {
-			y = _content.indexOf(StringPool.CLOSE_PARENTHESIS, y + 1);
+			y = _content.indexOf(CharPool.CLOSE_PARENTHESIS, y + 1);
 
 			if (y == -1) {
 				return;
@@ -315,7 +327,7 @@ public class JavaTerm {
 				parameters = parameters.substring(6);
 			}
 
-			x = parameters.indexOf(StringPool.SPACE, x + 1);
+			x = parameters.indexOf(CharPool.SPACE, x + 1);
 
 			if (x == -1) {
 				return;
@@ -334,7 +346,7 @@ public class JavaTerm {
 
 			_parameterTypes.add(parameterType);
 
-			y = parameters.indexOf(StringPool.COMMA, x);
+			y = parameters.indexOf(CharPool.COMMA, x);
 
 			if (y == -1) {
 				_parameterNames.add(parameters.substring(x + 1));
@@ -354,7 +366,7 @@ public class JavaTerm {
 		int pos = -1;
 
 		while (true) {
-			pos = parameters.indexOf(StringPool.SPACE, pos + 1);
+			pos = parameters.indexOf(CharPool.SPACE, pos + 1);
 
 			if (pos == -1) {
 				return parameters;
@@ -380,6 +392,7 @@ public class JavaTerm {
 	}
 
 	private String _content;
+	private String _indent;
 	private int _lineCount;
 	private String _name;
 	private List<String> _parameterNames;

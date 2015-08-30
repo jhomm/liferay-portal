@@ -7,21 +7,22 @@
 			</then>
 		</if>
 
-		<execute function="Click#clickAtSidebarClickAtWaitForScript" locator1="Dockbar#ADD" value1="Add" />
+		<execute function="Click#clickAtSidebarClickAtWaitForScript" locator1="Icon#ADD" value1="Add" />
 
 		<execute function="AssertClick" locator1="DockbarAddpanelpage#NAVIGATION_PAGE" value1="Page" />
-		<execute function="Type" locator1="DockbarAddpanelpage#NAME_FIELD" value1="${pageName}" />
+		<execute function="Type" locator1="TextInput#NAME" value1="${pageName}" />
 
 		<if>
 			<isset var="pageType" />
 			<then>
 				<execute macro="Page#selectPageTypeRadioPG">
 					<var name="pageType" value="${pageType}" />
+					<var name="portletNameList" value="${portletNameList}" />
 				</execute>
 			</then>
 		</if>
 
-		<execute function="AssertClick#pauseAssertTextClickAt" locator1="DockbarAddpanelpage#ADD_PAGE_BUTTON" value1="Add Page" />
+		<execute function="AssertClick#pauseAssertTextClickAt" locator1="Button#ADD_PAGE" value1="Add Page" />
 		<execute function="Pause" locator1="1000" />
 
 		<var name="key_pageName" value="${pageName}" />
@@ -60,9 +61,7 @@
 				<execute function="Pause" locator1="1000" />
 
 				<if>
-					<and>
-						<condition function="IsElementNotPresent" locator1="Home#${portletTypeKey}" />
-					</and>
+					<condition function="IsElementNotPresent" locator1="Home#${portletTypeKey}" />
 					<then>
 						<if>
 							<condition function="IsElementNotPresent" locator1="SOUserBar#VISIBLE_PAGE_CONTROLS" />
@@ -93,8 +92,10 @@
 
 				<while>
 					<not>
-						<condition function="IsVisible" locator1="SOUserBar#GO_TO_ADD_SITE_BUTTON" />
-						<equals arg1="${gotoMenuClickAttemptNumber}" arg2="5" />
+						<and>
+							<condition function="IsVisible" locator1="SOUserBar#GO_TO_ADD_SITE_BUTTON" />
+							<equals arg1="${gotoMenuClickAttemptNumber}" arg2="5" />
+						</and>
 					</not>
 					<then>
 						<var method="MathUtil#sum('${gotoMenuClickAttemptNumber}', '1')" name="gotoMenuClickAttemptNumber" />
@@ -175,8 +176,10 @@
 
 		<if>
 			<not>
-				<contains string="${numberOfNotifications}" substring="{numberOfNotifications}" />
-				<equals arg1="${numberOfNotifications}" arg2="1" />
+				<and>
+					<contains string="${numberOfNotifications}" substring="{numberOfNotifications}" />
+					<equals arg1="${numberOfNotifications}" arg2="1" />
+				</and>
 			</not>
 			<then>
 				<execute function="AssertClick" locator1="SOUserBar#NOTIFICATION_MENU_COUNT" value1="${numberOfNotifications}" />
@@ -283,8 +286,8 @@
 		<if>
 			<condition function="IsElementNotPresent" locator1="SOUserBar#EDIT_CONTROLS_NOT_FLAGGED" />
 			<then>
-				<execute function="MouseOver" locator1="Dockbar#EDIT_CONTROLS" />
-				<execute function="Click" locator1="Dockbar#EDIT_CONTROLS" />
+				<execute function="MouseOver" locator1="Icon#EDIT_CONTROLS" />
+				<execute function="Click" locator1="Icon#EDIT_CONTROLS" />
 			</then>
 		</if>
 	</command>
@@ -475,8 +478,8 @@
 		<if>
 			<condition function="IsElementPresent" locator1="SOUserBar#EDIT_CONTROLS_NOT_FLAGGED" />
 			<then>
-				<execute function="MouseOver" locator1="Dockbar#EDIT_CONTROLS" />
-				<execute function="Click" locator1="Dockbar#EDIT_CONTROLS" />
+				<execute function="MouseOver" locator1="Icon#EDIT_CONTROLS" />
+				<execute function="Click" locator1="Icon#EDIT_CONTROLS" />
 			</then>
 		</if>
 	</command>

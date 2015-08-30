@@ -15,7 +15,7 @@
 </tr>
 <tr>
 	<td>PANEL_TOGGLE</td>
-	<td>//div[contains(.,'Comment')]//div[@class='panel-toggle']/</td>
+	<td>//div[contains(.,'Comment')]//div[@class='panel-toggle']</td>
 	<td></td>
 </tr>
 <tr>
@@ -25,12 +25,12 @@
 </tr>
 <tr>
 	<td>COMMENT_BODY</td>
-	<td>//div[@class='lfr-discussion-message']</td>
+	<td>//div[(@class='lfr-discussion-message-body')]/p[contains(.,'${key_entryComment}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>COMMENT_FIELD</td>
-	<td>//div[contains(@id,'postReplyBody')]</td>
+	<td>//div[contains(@class,'alloy-editor') and contains(@role,'textbox')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -40,12 +40,22 @@
 </tr>
 <tr>
 	<td>DELETE_LINK</td>
-	<td>//ul[@class='lfr-discussion-actions']/li[contains(.,'Delete')]</td>
+	<td>//div[(@class='lfr-discussion-body') and contains (.,'${key_entryComment}')]//a[contains(.,'Delete')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DELETE_LINK_GENERIC</td>
+	<td>//ul[@class='lfr-discussion-actions']/li/span/a[contains(.,'Delete')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EDIT_COMMENT_FIELD</td>
+	<td>//div[contains(@name,'editReplyBody')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>EDIT_LINK</td>
-	<td>//ul[@class='lfr-discussion-actions']/li[contains(.,'Edit')]</td>
+	<td>//div[(@class='lfr-discussion-body') and contains (.,'${key_entryComment}')]//a[contains(.,'Edit')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -79,6 +89,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>PUBLISH_COMMENT_BUTTON</td>
+	<td>//div[(@class='lfr-discussion-body') and contains (.,'${key_entryComment}')]//button[contains(.,'Publish')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>REPLY_BODY</td>
 	<td>//div[@class='lfr-discussion-message']</td>
 	<td></td>
@@ -91,6 +106,11 @@
 <tr>
 	<td>USER_NAME</td>
 	<td>//header[@class='lfr-discussion-message-author']/a | //span[@class='user-name']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>WORKFLOW_STATUS</td>
+	<td>//div[contains(@class,'lfr-discussion-body') and contains(.,'${key_commentBody}')]//span[contains(@class,'workflow-status')]/strong</td>
 	<td></td>
 </tr>
 </tbody>

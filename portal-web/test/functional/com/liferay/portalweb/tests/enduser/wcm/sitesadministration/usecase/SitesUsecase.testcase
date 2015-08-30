@@ -27,7 +27,7 @@
 		</execute>
 	</tear-down>
 
-	<command known-issues="LPS-55978" name="AddPageAndChildPageTranslations" priority="5">
+	<command name="AddPageAndChildPageTranslations" priority="4">
 		<execute macro="Page#gotoCP">
 			<var name="portletName" value="Sites" />
 		</execute>
@@ -102,7 +102,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-55465" name="AddWebContentWithGlobalScopeViaCPToLiferayAP" priority="4">
+	<command name="AddWebContentWithGlobalScopeViaCPToLiferayAP" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 			<var name="siteScopeName" value="Global" />
@@ -112,6 +112,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -157,8 +163,8 @@
 
 		<var name="key_assetTitle" value="WC WebContent Title" />
 
-		<execute function="AssertTextEquals" locator1="PGAssetpublisher#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
-		<execute function="AssertTextEquals#assertPartialText" locator1="PGAssetpublisher#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content" />
+		<execute function="AssertTextEquals" locator1="AP#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
+		<execute function="AssertTextEquals#assertPartialText" locator1="AP#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content" />
 
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
@@ -181,8 +187,8 @@
 
 		<var name="key_assetTitle" value="WC WebContent Title Edit" />
 
-		<execute function="AssertTextEquals" locator1="PGAssetpublisher#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title Edit" />
-		<execute function="AssertTextEquals#assertPartialText" locator1="PGAssetpublisher#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content Edit" />
+		<execute function="AssertTextEquals" locator1="AP#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title Edit" />
+		<execute function="AssertTextEquals#assertPartialText" locator1="AP#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content Edit" />
 
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
@@ -200,14 +206,14 @@
 
 		<var name="key_assetTitle" value="WC WebContent Title" />
 
-		<execute function="AssertTextNotPresent" locator1="PGAssetpublisher#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
-		<execute function="AssertTextNotPresent" locator1="PGAssetpublisher#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title Edit" />
-		<execute function="AssertTextNotPresent" locator1="PGAssetpublisher#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content" />
-		<execute function="AssertTextNotPresent" locator1="PGAssetpublisher#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content Edit" />
-		<execute function="AssertTextNotPresent" locator1="PGAssetpublisher#ASSET_ABSTRACT_READ_MORE" value1="Read More" />
+		<execute function="AssertTextNotPresent" locator1="AP#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
+		<execute function="AssertTextNotPresent" locator1="AP#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title Edit" />
+		<execute function="AssertTextNotPresent" locator1="AP#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content" />
+		<execute function="AssertTextNotPresent" locator1="AP#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content Edit" />
+		<execute function="AssertTextNotPresent" locator1="Link#READ_MORE" value1="Read More" />
 	</command>
 
-	<command known-issues="LPS-51687" name="AddWebContentWithGlobalScopeViaCPToSiteAP" priority="4">
+	<command name="AddWebContentWithGlobalScopeViaCPToSiteAP" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 			<var name="siteScopeName" value="Global" />
@@ -217,6 +223,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -286,8 +298,8 @@
 
 		<var name="key_assetTitle" value="WC WebContent Title" />
 
-		<execute function="AssertTextEquals" locator1="PGAssetpublisher#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
-		<execute function="AssertTextEquals#assertPartialText" locator1="PGAssetpublisher#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content" />
+		<execute function="AssertTextEquals" locator1="AP#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
+		<execute function="AssertTextEquals#assertPartialText" locator1="AP#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content" />
 
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
@@ -312,8 +324,8 @@
 
 		<var name="key_assetTitle" value="WC WebContent Title Edit" />
 
-		<execute function="AssertTextEquals" locator1="PGAssetpublisher#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title Edit" />
-		<execute function="AssertTextEquals#assertPartialText" locator1="PGAssetpublisher#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content Edit" />
+		<execute function="AssertTextEquals" locator1="AP#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title Edit" />
+		<execute function="AssertTextEquals#assertPartialText" locator1="AP#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content Edit" />
 
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
@@ -333,14 +345,14 @@
 
 		<var name="key_assetTitle" value="WC WebContent Title" />
 
-		<execute function="AssertTextNotPresent" locator1="PGAssetpublisher#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
-		<execute function="AssertTextNotPresent" locator1="PGAssetpublisher#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title Edit" />
-		<execute function="AssertTextNotPresent" locator1="PGAssetpublisher#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content" />
-		<execute function="AssertTextNotPresent" locator1="PGAssetpublisher#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content Edit" />
-		<execute function="AssertTextNotPresent" locator1="PGAssetpublisher#ASSET_ABSTRACT_READ_MORE" value1="Read More" />
+		<execute function="AssertTextNotPresent" locator1="AP#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
+		<execute function="AssertTextNotPresent" locator1="AP#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title Edit" />
+		<execute function="AssertTextNotPresent" locator1="AP#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content" />
+		<execute function="AssertTextNotPresent" locator1="AP#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Content Edit" />
+		<execute function="AssertTextNotPresent" locator1="Link#READ_MORE" value1="Read More" />
 	</command>
 
-	<command known-issues="LPS-55465" name="AddWebContentWithStructureAndGlobalScopeViaCPToLiferayAP" priority="4">
+	<command name="AddWebContentWithStructureAndGlobalScopeViaCPToLiferayAP" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 			<var name="siteScopeName" value="Global" />
@@ -381,7 +393,9 @@
 			<var name="siteScopeName" value="Global" />
 		</execute>
 
-		<execute macro="WebContentNavigator#gotoAddWithStructureCP" />
+		<execute macro="WebContentNavigator#gotoAddWithStructureCP">
+			<var name="structureName" value="WC Structure Name" />
+		</execute>
 
 		<execute macro="WebContent#addWithStructureCP">
 			<var name="structureName" value="WC Structure Name" />
@@ -390,18 +404,24 @@
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 			<var name="siteScopeName" value="Global" />
 		</execute>
 
-		<execute macro="WebContent#viewCPWithStructure">
+		<execute macro="WebContent#viewWithStructureCP">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
 		<var name="key_fieldName" value="Text" />
 
-		<execute function="AssertTextEquals" locator1="CPWebcontentAddwebcontent#TEXT_FIELD" value1="WC WebContent Text" />
+		<execute function="AssertTextEquals" locator1="DDMField#TEXT" value1="WC WebContent Text" />
 
 		<execute macro="Page#addPG">
 			<var name="pageName" value="Test Page 1" />
@@ -431,8 +451,8 @@
 
 		<var name="key_assetTitle" value="WC WebContent Title" />
 
-		<execute function="AssertTextEquals" locator1="PGAssetpublisher#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
-		<execute function="AssertTextEquals#assertPartialText" locator1="PGAssetpublisher#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Text" />
+		<execute function="AssertTextEquals" locator1="AP#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
+		<execute function="AssertTextEquals#assertPartialText" locator1="AP#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Text" />
 	</command>
 
 	<command name="AddWebContentWithStructureAndGlobalScopeViaCPToSiteAP" priority="4">
@@ -476,7 +496,9 @@
 			<var name="siteScopeName" value="Global" />
 		</execute>
 
-		<execute macro="WebContentNavigator#gotoAddWithStructureCP" />
+		<execute macro="WebContentNavigator#gotoAddWithStructureCP">
+			<var name="structureName" value="WC Structure Name" />
+		</execute>
 
 		<execute macro="WebContent#addWithStructureCP">
 			<var name="structureName" value="WC Structure Name" />
@@ -485,18 +507,24 @@
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 			<var name="siteScopeName" value="Global" />
 		</execute>
 
-		<execute macro="WebContent#viewCPWithStructure">
+		<execute macro="WebContent#viewWithStructureCP">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
 		<var name="key_fieldName" value="Text" />
 
-		<execute function="AssertTextEquals" locator1="CPWebcontentAddwebcontent#TEXT_FIELD" value1="WC WebContent Text" />
+		<execute function="AssertTextEquals" locator1="DDMField#TEXT" value1="WC WebContent Text" />
 
 		<execute macro="Page#gotoCP">
 			<var name="portletName" value="Sites" />
@@ -550,11 +578,11 @@
 
 		<var name="key_assetTitle" value="WC WebContent Title" />
 
-		<execute function="AssertTextEquals" locator1="PGAssetpublisher#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
-		<execute function="AssertTextEquals#assertPartialText" locator1="PGAssetpublisher#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Text" />
+		<execute function="AssertTextEquals" locator1="AP#ASSET_ABSTRACT_TITLE" value1="WC WebContent Title" />
+		<execute function="AssertTextEquals#assertPartialText" locator1="AP#ASSET_ABSTRACT_DESCRIPTION" value1="WC WebContent Text" />
 	</command>
 
-	<command known-issues="LPS-55978" name="ViewDefaultGlobalScopeLandingPage" priority="4">
+	<command name="ViewDefaultGlobalScopeLandingPage" priority="4">
 		<execute macro="Page#gotoCP">
 			<var name="portletName" value="Sites" />
 		</execute>
@@ -574,7 +602,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51156" name="WebContentAdministrationSitesTemplatePermissionPersistence" priority="5">
+	<command name="WebContentAdministrationSitesTemplatePermissionPersistence" priority="4">
 		<execute macro="Page#gotoCP">
 			<var name="portletName" value="Sites" />
 		</execute>
@@ -627,8 +655,8 @@
 
 		<execute function="AssertTextEquals" locator1="BasePortlet#SPECIFIC_PORTLET_TITLE" value1="Asset Publisher" />
 
-		<execute function="AssertTextEquals#assertPartialText" locator1="Dockbar#PAGE_INFO_MESSAGE" value1="This page has been changed since the last update from the site template." />
-		<execute function="AssertClick" locator1="Dockbar#RESET_CHANGES_BUTTON" value1="Reset Changes" />
+		<execute function="AssertTextEquals#assertPartialText" locator1="Message#CUSTOMIZED_PAGE_INFO" value1="This page has been changed since the last update from the site template." />
+		<execute function="AssertClick" locator1="Button#RESET_CHANGES" value1="Reset Changes" />
 
 		<execute macro="Page#openURL">
 			<var name="pageName" value="Home" />
@@ -728,7 +756,7 @@
 
 		<execute function="AssertTextEquals" locator1="BasePortlet#INFO_MESSAGE" value1="Please sign in to vote." />
 
-		<execute function="AssertElementPresent" locator1="PGSearch#SEARCH_FIELD" />
+		<execute function="AssertElementPresent" locator1="Search#SEARCH_FIELD" />
 
 		<var name="key_portletName" value="User Statistics" />
 
@@ -738,11 +766,11 @@
 
 		<execute function="AssertTextEquals" locator1="BasePortlet#SPECIFIC_PORTLET_TITLE" value1="Upcoming Events" />
 
-		<execute function="AssertClick" locator1="Dockbar#USER_SIGN_IN" value1="Sign In" />
+		<execute function="AssertClick" locator1="ControlMenu#USER_SIGN_IN" value1="Sign In" />
 
-		<execute function="Type" locator1="PGLogin#EMAIL_ADDRESS_FIELD" value1="test@liferay.com" />
-		<execute function="Type" locator1="PGLogin#PASSWORD_FIELD" value1="test" />
-		<execute function="Click" locator1="PGLogin#SIGN_IN_BUTTON" value1="Sign In" />
+		<execute function="Type" locator1="TextInput#EMAIL_ADDRESS" value1="test@liferay.com" />
+		<execute function="Type" locator1="TextInput#PASSWORD" value1="test" />
+		<execute function="Click" locator1="Button#SIGN_IN" value1="Sign In" />
 
 		<execute macro="PermissionsInline#gotoConfigurationPG" >
 			<var name="portletName" value="Polls Display" />

@@ -1771,7 +1771,7 @@ public class ContactPersistenceImpl extends BasePersistenceImpl<Contact>
 				contact.setNew(false);
 			}
 			else {
-				session.merge(contact);
+				contact = (Contact)session.merge(contact);
 			}
 		}
 		catch (Exception e) {
@@ -2254,6 +2254,11 @@ public class ContactPersistenceImpl extends BasePersistenceImpl<Contact>
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return ContactModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

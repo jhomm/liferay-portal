@@ -14,8 +14,11 @@
 
 package com.liferay.portal.test.rule.callback;
 
+import com.liferay.portal.kernel.dao.db.DB;
+import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
 import com.liferay.portal.kernel.test.rule.callback.BaseTestCallback;
 import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.log.CaptureAppender;
 import com.liferay.portal.test.log.Log4JLoggerTestUtil;
 import com.liferay.portal.test.rule.ExpectedLog;
@@ -23,6 +26,9 @@ import com.liferay.portal.test.rule.ExpectedLogs;
 import com.liferay.portal.test.rule.ExpectedType;
 import com.liferay.portal.test.rule.LogAssertionAppender;
 import com.liferay.portal.test.rule.LogAssertionHandler;
+import com.liferay.portal.test.rule.LogAssertionUncaughtExceptionHandler;
+
+import java.lang.Thread.UncaughtExceptionHandler;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,6 +82,8 @@ public class LogAssertionTestCallback
 			}
 		}
 
+		Thread.setDefaultUncaughtExceptionHandler(_uncaughtExceptionHandler);
+
 		_thread = null;
 
 		try {
@@ -99,6 +107,11 @@ public class LogAssertionTestCallback
 
 	public static CaptureAppender startAssert(ExpectedLogs expectedLogs) {
 		_thread = Thread.currentThread();
+		_uncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+
+		Thread.setDefaultUncaughtExceptionHandler(
+			new LogAssertionUncaughtExceptionHandler(
+				_uncaughtExceptionHandler));
 
 		CaptureAppender captureAppender = null;
 
@@ -169,6 +182,16 @@ public class LogAssertionTestCallback
 		ExpectedLogs expectedLogs, String renderedMessage) {
 
 		for (ExpectedLog expectedLog : expectedLogs.expectedLogs()) {
+			String dbType = expectedLog.dbType();
+
+			if (Validator.isNotNull(dbType)) {
+				DB db = DBFactoryUtil.getDB();
+
+				if (!Validator.equals(dbType, db.getType())) {
+					continue;
+				}
+			}
+
 			ExpectedType expectedType = expectedLog.expectedType();
 
 			if (expectedType == ExpectedType.EXACT) {
@@ -197,5 +220,6 @@ public class LogAssertionTestCallback
 	private static final Map<Thread, Error> _concurrentFailures =
 		new ConcurrentHashMap<>();
 	private static volatile Thread _thread;
+	private static volatile UncaughtExceptionHandler _uncaughtExceptionHandler;
 
 }

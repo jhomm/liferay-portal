@@ -2703,8 +2703,9 @@ public class SCProductEntryPersistenceImpl extends BasePersistenceImpl<SCProduct
 		}
 	}
 
-	protected void cacheUniqueFindersCache(SCProductEntry scProductEntry) {
-		if (scProductEntry.isNew()) {
+	protected void cacheUniqueFindersCache(SCProductEntry scProductEntry,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					scProductEntry.getRepoGroupId(),
 					scProductEntry.getRepoArtifactId()
@@ -2901,7 +2902,7 @@ public class SCProductEntryPersistenceImpl extends BasePersistenceImpl<SCProduct
 				scProductEntry.setNew(false);
 			}
 			else {
-				session.merge(scProductEntry);
+				scProductEntry = (SCProductEntry)session.merge(scProductEntry);
 			}
 		}
 		catch (Exception e) {
@@ -2980,8 +2981,8 @@ public class SCProductEntryPersistenceImpl extends BasePersistenceImpl<SCProduct
 			SCProductEntryImpl.class, scProductEntry.getPrimaryKey(),
 			scProductEntry, false);
 
-		clearUniqueFindersCache(scProductEntry);
-		cacheUniqueFindersCache(scProductEntry);
+		clearUniqueFindersCache((SCProductEntry)scProductEntryModelImpl);
+		cacheUniqueFindersCache((SCProductEntry)scProductEntryModelImpl, isNew);
 
 		scProductEntry.resetOriginalValues();
 
@@ -3650,6 +3651,11 @@ public class SCProductEntryPersistenceImpl extends BasePersistenceImpl<SCProduct
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SCProductEntryModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

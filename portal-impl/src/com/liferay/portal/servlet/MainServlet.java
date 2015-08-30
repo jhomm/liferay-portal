@@ -20,12 +20,12 @@ import com.liferay.portal.events.StartupAction;
 import com.liferay.portal.events.StartupHelperUtil;
 import com.liferay.portal.kernel.cache.Lifecycle;
 import com.liferay.portal.kernel.cache.ThreadLocalCacheManager;
-import com.liferay.portal.kernel.dao.shard.ShardDataSourceTargetSource;
 import com.liferay.portal.kernel.deploy.hot.HotDeployUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.plugin.PluginPackage;
 import com.liferay.portal.kernel.servlet.DynamicServletRequest;
 import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
@@ -36,7 +36,6 @@ import com.liferay.portal.kernel.util.ClassLoaderUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
-import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.kernel.util.InstanceFactory;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -147,7 +146,8 @@ public class MainServlet extends ActionServlet {
 			_log.debug("Destroy plugins");
 		}
 
-		_servletContextRegistration.unregister();
+		_moduleServiceLifecycleServiceRegistration.unregister();
+		_servletContextServiceRegistration.unregister();
 
 		PortalLifecycleUtil.flushDestroys();
 
@@ -365,7 +365,7 @@ public class MainServlet extends ActionServlet {
 
 		StartupHelperUtil.setStartupFinished(true);
 
-		registerServletContextWithModuleFramework();
+		registerPortalInitialized();
 
 		ThreadLocalCacheManager.clearAll(Lifecycle.REQUEST);
 	}
@@ -801,15 +801,6 @@ public class MainServlet extends ActionServlet {
 						finally {
 							CompanyThreadLocal.setCompanyId(
 								PortalInstances.getDefaultCompanyId());
-
-							ShardDataSourceTargetSource
-								shardDataSourceTargetSource =
-									InfrastructureUtil.
-										getShardDataSourceTargetSource();
-
-							if (shardDataSourceTargetSource != null) {
-								shardDataSourceTargetSource.resetDataSource();
-							}
 						}
 					}
 					catch (Exception e) {
@@ -1084,7 +1075,7 @@ public class MainServlet extends ActionServlet {
 		HttpSession session = request.getSession();
 
 		session.setAttribute(WebKeys.USER, user);
-		session.setAttribute(WebKeys.USER_ID, new Long(userId));
+		session.setAttribute(WebKeys.USER_ID, Long.valueOf(userId));
 		session.setAttribute(Globals.LOCALE_KEY, user.getLocale());
 
 		EventsProcessorUtil.process(
@@ -1336,16 +1327,26 @@ public class MainServlet extends ActionServlet {
 		return new ProtectedServletRequest(request, remoteUser);
 	}
 
-	protected void registerServletContextWithModuleFramework() {
+	protected void registerPortalInitialized() {
 		Registry registry = RegistryUtil.getRegistry();
 
 		Map<String, Object> properties = new HashMap<>();
+
+		properties.put("module.service.lifecycle", "portal.initialized");
+		properties.put("service.vendor", ReleaseInfo.getVendor());
+		properties.put("service.version", ReleaseInfo.getVersion());
+
+		_moduleServiceLifecycleServiceRegistration = registry.registerService(
+			ModuleServiceLifecycle.class, new ModuleServiceLifecycle() {},
+			properties);
+
+		properties = new HashMap<>();
 
 		properties.put("bean.id", ServletContext.class.getName());
 		properties.put("original.bean", Boolean.TRUE);
 		properties.put("service.vendor", ReleaseInfo.getVendor());
 
-		_servletContextRegistration = registry.registerService(
+		_servletContextServiceRegistration = registry.registerService(
 			ServletContext.class, getServletContext(), properties);
 	}
 
@@ -1419,6 +1420,9 @@ public class MainServlet extends ActionServlet {
 
 	private static final Log _log = LogFactoryUtil.getLog(MainServlet.class);
 
-	private ServiceRegistration<ServletContext> _servletContextRegistration;
+	private ServiceRegistration<ModuleServiceLifecycle>
+		_moduleServiceLifecycleServiceRegistration;
+	private ServiceRegistration<ServletContext>
+		_servletContextServiceRegistration;
 
 }

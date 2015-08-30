@@ -45,6 +45,8 @@
 	</tear-down>
 
 	<command name="AddAndEditAssetsViaVirtualHostOrganizations" priority="4">
+		<property name="custom.properties" value="virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com,www.baker.com" />
+
 		<execute macro="Page#gotoCP">
 			<var name="portletName" value="Users and Organizations" />
 		</execute>
@@ -183,7 +185,7 @@
 			<var name="webContentContent" value="WC WebContent Content" />
 		</execute>
 
-		<execute function="AssertClick#assertPartialTextClickAtAndWait" locator1="PGAssetpublisher#DISPLAY_ICON_EDIT" value1="Edit" />
+		<execute function="AssertClick#assertPartialTextClickAtAndWait" locator1="Icon#EDIT" value1="Edit" />
 
 		<execute function="AssertElementNotPresent" locator1="PGSignin#PORTLET_TITLE" value1="Sign" />
 
@@ -235,7 +237,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-55859" name="AssertAssetListScopeViaAssetPublisher" priority="4">
+	<command name="AssertAssetListScopeViaAssetPublisher" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Documents and Media" />
 			<var name="siteScopeName" value="Global" />
@@ -263,17 +265,17 @@
 
 		<execute macro="AssetPublisherPortlet#gotoConfigurationPG" />
 
-		<execute function="Click" locator1="PGAssetpublisherConfiguration#ASSET_SELECTION_MANUAL" />
+		<execute function="Click" locator1="APConfiguration#ASSET_SELECTION_MANUAL" />
 
-		<execute function="AssertClick" locator1="PGAssetpublisherConfigurationManual#ASSET_SELECTION_MANUAL_ASSET_ENTRIES_SELECT" value1="Select" />
+		<execute function="AssertClick" locator1="APConfigurationManual#ASSET_SELECTION_MANUAL_ASSET_ENTRIES_SELECT" value1="Select" />
 
 		<var name="key_assetEntryType" value="Global Document Type Name" />
 
-		<execute function="AssertTextEquals" locator1="PGAssetpublisherConfigurationManual#ASSET_SELECTION_MANUAL_ASSET_ENTRIES_MENULIST_ITEM" value1="Global Document Type Name" />
+		<execute function="AssertTextEquals" locator1="APConfigurationManual#ASSET_SELECTION_MANUAL_ASSET_ENTRIES_MENULIST_ITEM" value1="Global Document Type Name" />
 
 		<var name="key_assetEntryType" value="Local Document Type Name" />
 
-		<execute function="AssertTextEquals" locator1="PGAssetpublisherConfigurationManual#ASSET_SELECTION_MANUAL_ASSET_ENTRIES_MENULIST_ITEM" value1="Local Document Type Name" />
+		<execute function="AssertTextEquals" locator1="APConfigurationManual#ASSET_SELECTION_MANUAL_ASSET_ENTRIES_MENULIST_ITEM" value1="Local Document Type Name" />
 	</command>
 
 	<command name="AssetPublisherCategoriesLocalization" priority="3">
@@ -441,7 +443,7 @@
 		</execute>
 	</command>
 
-	<command name="AssetPublisherCategoriesNavigation" priority="3">
+	<command known-issues="LPS-56754" name="AssetPublisherCategoriesNavigation" priority="3">
 		<var name="siteName" value="Liferay" />
 
 		<execute macro="Page#gotoContentCP">
@@ -619,7 +621,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-55464" name="AssetPublisherFilterAndOrderByFieldType" priority="5">
+	<command name="AssetPublisherFilterAndOrderByFieldType" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -659,13 +661,21 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContentNavigator#gotoAddWithStructureCP" />
+		<execute macro="WebContentNavigator#gotoAddWithStructureCP">
+			<var name="structureName" value="WC Structure Name" />
+		</execute>
 
 		<execute macro="WebContent#addWithStructureCP">
 			<var name="structureName" value="WC Structure Name" />
 			<var name="templateName" value="WC Template Name" />
 			<var name="webContentInteger" value="4" />
 			<var name="webContentNumber" value="123" />
+			<var name="webContentTitle" value="Web Content1 Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="Web Content1 Title" />
 		</execute>
 
@@ -689,13 +699,21 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContentNavigator#gotoAddWithStructureCP" />
+		<execute macro="WebContentNavigator#gotoAddWithStructureCP">
+			<var name="structureName" value="WC Structure Name" />
+		</execute>
 
 		<execute macro="WebContent#addWithStructureCP">
 			<var name="structureName" value="WC Structure Name" />
 			<var name="templateName" value="WC Template Name" />
 			<var name="webContentInteger" value="5" />
 			<var name="webContentNumber" value="345" />
+			<var name="webContentTitle" value="Web Content2 Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="Web Content2 Title" />
 		</execute>
 
@@ -719,13 +737,21 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContentNavigator#gotoAddWithStructureCP" />
+		<execute macro="WebContentNavigator#gotoAddWithStructureCP">
+			<var name="structureName" value="WC Structure Name" />
+		</execute>
 
 		<execute macro="WebContent#addWithStructureCP">
 			<var name="structureName" value="WC Structure Name" />
 			<var name="templateName" value="WC Template Name" />
 			<var name="webContentInteger" value="1" />
 			<var name="webContentNumber" value="567" />
+			<var name="webContentTitle" value="Web Content3 Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="Web Content3 Title" />
 		</execute>
 
@@ -753,6 +779,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="Web Content4 Content" />
+			<var name="webContentTitle" value="Web Content4 Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="Web Content4 Title" />
 		</execute>
 
@@ -962,7 +994,7 @@
 		</execute>
 	</command>
 
-	<command name="AssetPublisherSiteAndGlobalScopeAccessibility" priority="5">
+	<command known-issues="LPS-56754" name="AssetPublisherSiteAndGlobalScopeAccessibility" priority="5">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -971,6 +1003,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent1 Content" />
+			<var name="webContentTitle" value="WC WebContent1 Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent1 Title" />
 		</execute>
 
@@ -983,6 +1021,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Global Content" />
+			<var name="webContentTitle" value="WC WebContent Global Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Global Title" />
 		</execute>
 
@@ -1003,6 +1047,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Site Content" />
+			<var name="webContentTitle" value="WC WebContent Site Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Site Title" />
 		</execute>
 
@@ -1058,7 +1108,7 @@
 		</execute>
 	</command>
 
-	<command name="AssetPublisherTogglingBetweenSites" priority="5">
+	<command known-issues="LPS-56754" name="AssetPublisherTogglingBetweenSites" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -1067,6 +1117,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent1 Content" />
+			<var name="webContentTitle" value="WC WebContent1 Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent1 Title" />
 		</execute>
 
@@ -1079,6 +1135,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Global Content" />
+			<var name="webContentTitle" value="WC WebContent Global Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Global Title" />
 		</execute>
 
@@ -1099,6 +1161,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Site Content" />
+			<var name="webContentTitle" value="WC WebContent Site Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Site Title" />
 		</execute>
 
@@ -1219,7 +1287,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-55060,LPS-55061" name="ValidateRelatedAssetsAdvancedSearchFunction" priority="3">
+	<command name="ValidateRelatedAssetsAdvancedSearchFunction" priority="3">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Documents and Media" />
 		</execute>
@@ -1422,7 +1490,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-54823" name="ViewAPPortletAsNewUserSiteAdministratorViaUserSite" priority="4">
+	<command known-issues="LPS-56754" name="ViewAPPortletAsNewUserSiteAdministratorViaUserSite" priority="4">
 		<execute macro="Page#gotoCP">
 			<var name="portletName" value="Sites" />
 		</execute>
@@ -1496,7 +1564,7 @@
 			<var name="portletName" value="Asset Publisher" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="PGAssetpublisher#ADD_NEW_DROPDOWN" value1="Add New" />
+		<execute function="AssertTextEquals" locator1="AP#ADD_NEW_DROPDOWN" value1="Add New" />
 
 		<execute macro="AssetPublisherPortlet#viewDynamicAssetSelectionConfigurationPG">
 			<var name="portletName" value="Asset Publisher" />
@@ -1520,7 +1588,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-54712" name="ViewAuthorChangeViaAP" priority="3">
+	<command name="ViewAuthorChangeViaAP" priority="3">
 		<execute macro="AssetPublisherPortlet#configureShowMetadataFieldsPG">
 			<var name="addMetadata" value="true" />
 			<var name="metadataField" value="Author" />
@@ -1599,6 +1667,12 @@
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
 		<execute macro="Page#gotoPG">
 			<var name="pageName" value="Asset Publisher Page" />
 		</execute>
@@ -1640,7 +1714,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51696" name="ViewBlogsEntriesViaRelatedAssets" priority="4">
+	<command name="ViewBlogsEntriesViaRelatedAssets" priority="4">
 		<execute macro="Page#addPG">
 			<var name="pageName" value="Blogs Page" />
 		</execute>
@@ -1665,7 +1739,7 @@
 			<var name="pageName" value="Blogs Page" />
 		</execute>
 
-		<execute macro="BlogsEntry#addPG">
+		<execute macro="Blogs#addEntry">
 			<var name="entryContent" value="Blogs Entry1 Content" />
 			<var name="entryTitle" value="Blogs Entry1 Title" />
 		</execute>
@@ -1674,7 +1748,7 @@
 			<var name="pageName" value="Blogs Page" />
 		</execute>
 
-		<execute macro="BlogsEntry#addPG">
+		<execute macro="Blogs#addEntry">
 			<var name="assetTitle" value="Blogs Entry1 Title" />
 			<var name="assetType" value="Blogs Entry" />
 			<var name="entryAddRelatedAsset" value="true" />
@@ -1697,9 +1771,9 @@
 			<var name="assetTitle" value="Blogs Entry2 Title" />
 		</execute>
 
-		<execute function="AssertElementNotPresent" locator1="PGRelatedassets#ASSET_TITLE_IMAGE_2" />
-		<execute function="AssertElementNotPresent" locator1="PGRelatedassets#ASSET_TITLE_2" />
-		<execute function="AssertElementNotPresent" locator1="PGRelatedassets#ASSET_EDIT_2" />
+		<execute function="AssertElementNotPresent" locator1="Relatedassets#ASSET_TITLE_IMAGE_2" />
+		<execute function="AssertElementNotPresent" locator1="Relatedassets#ASSET_TITLE_2" />
+		<execute function="AssertElementNotPresent" locator1="Relatedassets#ASSET_EDIT_2" />
 
 		<execute macro="Page#gotoPG">
 			<var name="pageName" value="Blogs Page" />
@@ -1720,12 +1794,12 @@
 			<var name="assetTitle" value="Blogs Entry1 Title" />
 		</execute>
 
-		<execute function="AssertElementNotPresent" locator1="PGRelatedassets#ASSET_TITLE_IMAGE_2" />
-		<execute function="AssertElementNotPresent" locator1="PGRelatedassets#ASSET_TITLE_2" />
-		<execute function="AssertElementNotPresent" locator1="PGRelatedassets#ASSET_EDIT_2" />
+		<execute function="AssertElementNotPresent" locator1="Relatedassets#ASSET_TITLE_IMAGE_2" />
+		<execute function="AssertElementNotPresent" locator1="Relatedassets#ASSET_TITLE_2" />
+		<execute function="AssertElementNotPresent" locator1="Relatedassets#ASSET_EDIT_2" />
 	</command>
 
-	<command name="ViewDeletedWCDArticleAsAdminAndGuestCP" priority="5">
+	<command name="ViewDeletedWCDArticleAsAdminAndGuestCP" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -1734,6 +1808,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -1798,7 +1878,7 @@
 		<execute macro="User#loginPG" />
 	</command>
 
-	<command known-issues="LPS-51696" name="ViewRelatedAssetsViaRelatedAssetsPortlet" priority="3">
+	<command name="ViewRelatedAssetsViaRelatedAssetsPortlet" priority="3">
 		<execute macro="Page#gotoPG">
 			<var name="pageName" value="Asset Publisher Page" />
 		</execute>
@@ -1844,7 +1924,7 @@
 			<var name="pageName" value="Blogs Page" />
 		</execute>
 
-		<execute macro="BlogsEntry#addPG">
+		<execute macro="Blogs#addEntry">
 			<var name="assetTitle" value="WC WebContent Title" />
 			<var name="assetType" value="Basic Web Content" />
 			<var name="entryAddRelatedAsset" value="true" />
@@ -1917,7 +1997,7 @@
 		<execute macro="User#loginPG" />
 	</command>
 
-	<command known-issues="LPS-51696" name="ViewRelatedAssetViaDMPortlet" priority="3">
+	<command name="ViewRelatedAssetViaDMPortlet" priority="3">
 		<execute macro="Page#addPG">
 			<var name="pageName" value="Blogs Page" />
 		</execute>
@@ -1930,9 +2010,13 @@
 			<var name="portletName" value="Blogs" />
 		</execute>
 
-		<execute macro="BlogsEntry#addPG">
+		<execute macro="Blogs#addEntry">
 			<var name="entryContent" value="Blogs Entry Content" />
 			<var name="entryTitle" value="Blogs Entry Title" />
+		</execute>
+
+		<execute macro="Page#gotoPG">
+			<var name="pageName" value="Blogs Page" />
 		</execute>
 
 		<execute macro="Page#addPG">
@@ -2017,7 +2101,7 @@
 		</execute>
 	</command>
 
-	<command name="ViewWebContentWithConfiguredDisplayPageViaAP" priority="5">
+	<command name="ViewWebContentWithConfiguredDisplayPageViaAP" priority="4">
 		<execute macro="Page#gotoPG">
 			<var name="pageName" value="Asset Publisher Page" />
 		</execute>
@@ -2077,6 +2161,6 @@
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="Home#BREADCRUMB_1" value1="Asset Publisher Page 2" />
+		<execute function="Pause" locator1="1073" />
 	</command>
 </definition>

@@ -1892,8 +1892,8 @@ public class RegionPersistenceImpl extends BasePersistenceImpl<Region>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(Region region) {
-		if (region.isNew()) {
+	protected void cacheUniqueFindersCache(Region region, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					region.getCountryId(), region.getRegionCode()
 				};
@@ -2057,7 +2057,7 @@ public class RegionPersistenceImpl extends BasePersistenceImpl<Region>
 				region.setNew(false);
 			}
 			else {
-				session.merge(region);
+				region = (Region)session.merge(region);
 			}
 		}
 		catch (Exception e) {
@@ -2133,8 +2133,8 @@ public class RegionPersistenceImpl extends BasePersistenceImpl<Region>
 		EntityCacheUtil.putResult(RegionModelImpl.ENTITY_CACHE_ENABLED,
 			RegionImpl.class, region.getPrimaryKey(), region, false);
 
-		clearUniqueFindersCache(region);
-		cacheUniqueFindersCache(region);
+		clearUniqueFindersCache((Region)regionModelImpl);
+		cacheUniqueFindersCache((Region)regionModelImpl, isNew);
 
 		region.resetOriginalValues();
 
@@ -2515,6 +2515,11 @@ public class RegionPersistenceImpl extends BasePersistenceImpl<Region>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return RegionModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

@@ -5971,8 +5971,9 @@ public class SocialActivityPersistenceImpl extends BasePersistenceImpl<SocialAct
 		}
 	}
 
-	protected void cacheUniqueFindersCache(SocialActivity socialActivity) {
-		if (socialActivity.isNew()) {
+	protected void cacheUniqueFindersCache(SocialActivity socialActivity,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { socialActivity.getMirrorActivityId() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_MIRRORACTIVITYID,
@@ -6194,7 +6195,7 @@ public class SocialActivityPersistenceImpl extends BasePersistenceImpl<SocialAct
 				socialActivity.setNew(false);
 			}
 			else {
-				session.merge(socialActivity);
+				socialActivity = (SocialActivity)session.merge(socialActivity);
 			}
 		}
 		catch (Exception e) {
@@ -6424,8 +6425,8 @@ public class SocialActivityPersistenceImpl extends BasePersistenceImpl<SocialAct
 			SocialActivityImpl.class, socialActivity.getPrimaryKey(),
 			socialActivity, false);
 
-		clearUniqueFindersCache(socialActivity);
-		cacheUniqueFindersCache(socialActivity);
+		clearUniqueFindersCache((SocialActivity)socialActivityModelImpl);
+		cacheUniqueFindersCache((SocialActivity)socialActivityModelImpl, isNew);
 
 		socialActivity.resetOriginalValues();
 
@@ -6817,6 +6818,11 @@ public class SocialActivityPersistenceImpl extends BasePersistenceImpl<SocialAct
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SocialActivityModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

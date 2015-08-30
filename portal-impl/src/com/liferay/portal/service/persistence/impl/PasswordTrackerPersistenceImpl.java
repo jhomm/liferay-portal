@@ -766,7 +766,7 @@ public class PasswordTrackerPersistenceImpl extends BasePersistenceImpl<Password
 				passwordTracker.setNew(false);
 			}
 			else {
-				session.merge(passwordTracker);
+				passwordTracker = (PasswordTracker)session.merge(passwordTracker);
 			}
 		}
 		catch (Exception e) {
@@ -1186,6 +1186,11 @@ public class PasswordTrackerPersistenceImpl extends BasePersistenceImpl<Password
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return PasswordTrackerModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

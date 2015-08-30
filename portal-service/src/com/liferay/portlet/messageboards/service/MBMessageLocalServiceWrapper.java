@@ -153,10 +153,9 @@ public class MBMessageLocalServiceWrapper implements MBMessageLocalService,
 	@Override
 	public void addMessageResources(
 		com.liferay.portlet.messageboards.model.MBMessage message,
-		java.lang.String[] groupPermissions, java.lang.String[] guestPermissions)
+		com.liferay.portal.service.permission.ModelPermissions modelPermissions)
 		throws com.liferay.portal.kernel.exception.PortalException {
-		_mbMessageLocalService.addMessageResources(message, groupPermissions,
-			guestPermissions);
+		_mbMessageLocalService.addMessageResources(message, modelPermissions);
 	}
 
 	@Override
@@ -169,10 +168,9 @@ public class MBMessageLocalServiceWrapper implements MBMessageLocalService,
 
 	@Override
 	public void addMessageResources(long messageId,
-		java.lang.String[] groupPermissions, java.lang.String[] guestPermissions)
+		com.liferay.portal.service.permission.ModelPermissions modelPermissions)
 		throws com.liferay.portal.kernel.exception.PortalException {
-		_mbMessageLocalService.addMessageResources(messageId, groupPermissions,
-			guestPermissions);
+		_mbMessageLocalService.addMessageResources(messageId, modelPermissions);
 	}
 
 	/**
@@ -485,7 +483,7 @@ public class MBMessageLocalServiceWrapper implements MBMessageLocalService,
 
 	@Override
 	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery getExportActionableDynamicQuery(
-		com.liferay.portal.kernel.lar.PortletDataContext portletDataContext) {
+		com.liferay.portlet.exportimport.lar.PortletDataContext portletDataContext) {
 		return _mbMessageLocalService.getExportActionableDynamicQuery(portletDataContext);
 	}
 

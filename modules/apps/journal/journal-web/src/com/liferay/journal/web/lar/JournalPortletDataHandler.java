@@ -14,8 +14,23 @@
 
 package com.liferay.journal.web.lar;
 
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.dynamic.data.mapping.model.DDMTemplate;
+import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
+import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalServiceUtil;
+import com.liferay.journal.constants.JournalPortletKeys;
+import com.liferay.journal.model.JournalArticle;
+import com.liferay.journal.model.JournalFeed;
+import com.liferay.journal.model.JournalFolder;
+import com.liferay.journal.model.impl.JournalArticleImpl;
+import com.liferay.journal.model.impl.JournalFeedImpl;
+import com.liferay.journal.model.impl.JournalFolderImpl;
+import com.liferay.journal.service.JournalArticleLocalServiceUtil;
+import com.liferay.journal.service.JournalFeedLocalServiceUtil;
+import com.liferay.journal.service.JournalFolderLocalServiceUtil;
+import com.liferay.journal.service.permission.JournalPermission;
+import com.liferay.journal.util.JournalContentUtil;
 import com.liferay.journal.web.configuration.JournalWebConfigurationValues;
-import com.liferay.journal.web.constants.JournalPortletKeys;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Disjunction;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -25,39 +40,26 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
-import com.liferay.portal.kernel.lar.BasePortletDataHandler;
-import com.liferay.portal.kernel.lar.PortletDataContext;
-import com.liferay.portal.kernel.lar.PortletDataHandler;
-import com.liferay.portal.kernel.lar.PortletDataHandlerBoolean;
-import com.liferay.portal.kernel.lar.PortletDataHandlerControl;
-import com.liferay.portal.kernel.lar.StagedModelDataHandlerUtil;
-import com.liferay.portal.kernel.lar.StagedModelType;
-import com.liferay.portal.kernel.lar.xstream.XStreamAliasRegistryUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.dynamicdatamapping.model.DDMStructure;
-import com.liferay.portlet.dynamicdatamapping.model.DDMTemplate;
-import com.liferay.portlet.dynamicdatamapping.service.DDMStructureLocalServiceUtil;
-import com.liferay.portlet.dynamicdatamapping.service.DDMTemplateLocalServiceUtil;
-import com.liferay.portlet.journal.model.JournalArticle;
-import com.liferay.portlet.journal.model.JournalFeed;
-import com.liferay.portlet.journal.model.JournalFolder;
-import com.liferay.portlet.journal.model.impl.JournalArticleImpl;
-import com.liferay.portlet.journal.model.impl.JournalFeedImpl;
-import com.liferay.portlet.journal.model.impl.JournalFolderImpl;
-import com.liferay.portlet.journal.service.JournalArticleLocalServiceUtil;
-import com.liferay.portlet.journal.service.JournalFeedLocalServiceUtil;
-import com.liferay.portlet.journal.service.JournalFolderLocalServiceUtil;
-import com.liferay.portlet.journal.service.permission.JournalPermission;
-import com.liferay.portlet.journal.util.JournalContentUtil;
+import com.liferay.portlet.exportimport.lar.BasePortletDataHandler;
+import com.liferay.portlet.exportimport.lar.PortletDataContext;
+import com.liferay.portlet.exportimport.lar.PortletDataHandler;
+import com.liferay.portlet.exportimport.lar.PortletDataHandlerBoolean;
+import com.liferay.portlet.exportimport.lar.PortletDataHandlerControl;
+import com.liferay.portlet.exportimport.lar.StagedModelDataHandlerUtil;
+import com.liferay.portlet.exportimport.lar.StagedModelType;
+import com.liferay.portlet.exportimport.xstream.XStreamAliasRegistryUtil;
 
 import java.util.List;
 
 import javax.portlet.PortletPreferences;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * Provides the Journal portlet export and import functionality, which is to
@@ -91,8 +93,8 @@ import org.osgi.service.component.annotations.Component;
  * @author Hugo Huijser
  * @author Daniel Kocsis
  * @author László Csontos
- * @see    com.liferay.portal.kernel.lar.PortletDataHandler
- * @see    com.liferay.portlet.journal.lar.JournalCreationStrategy
+ * @see    com.liferay.journal.lar.JournalCreationStrategy
+ * @see    com.liferay.portlet.exportimport.lar.PortletDataHandler
  */
 @Component(
 	property = {"javax.portlet.name=" + JournalPortletKeys.JOURNAL},
@@ -102,7 +104,8 @@ public class JournalPortletDataHandler extends BasePortletDataHandler {
 
 	public static final String NAMESPACE = "journal";
 
-	public JournalPortletDataHandler() {
+	@Activate
+	protected void activate() {
 		setDataLocalized(true);
 		setDeletionSystemEventStagedModelTypes(
 			new StagedModelType(DDMStructure.class, JournalArticle.class),
@@ -384,10 +387,12 @@ public class JournalPortletDataHandler extends BasePortletDataHandler {
 						return;
 					}
 
+					Class<?> clazz = getClass();
+
 					DynamicQuery versionArticleDynamicQuery =
 						DynamicQueryFactoryUtil.forClass(
 							JournalArticle.class, "versionArticle",
-							PortalClassLoaderUtil.getClassLoader());
+							clazz.getClassLoader());
 
 					versionArticleDynamicQuery.setProjection(
 						ProjectionFactoryUtil.alias(
@@ -522,6 +527,11 @@ public class JournalPortletDataHandler extends BasePortletDataHandler {
 				DDMTemplate.class.getName(), DDMStructure.class.getName()));
 
 		return exportActionableDynamicQuery;
+	}
+
+	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED, unbind = "-")
+	protected void setModuleServiceLifecycle(
+		ModuleServiceLifecycle moduleServiceLifecycle) {
 	}
 
 }

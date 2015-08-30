@@ -24,7 +24,7 @@ public class ServiceBuilderArgs {
 		"classpath*:META-INF/portal-model-hints.xml",
 		"META-INF/portal-model-hints.xml",
 		"classpath*:META-INF/ext-model-hints.xml",
-		"META-INF/portlet-model-hints.xml"
+		"classpath*:META-INF/portlet-model-hints.xml"
 	};
 
 	public static final String OUTPUT_KEY_MODIFIED_FILES =
@@ -362,8 +362,7 @@ public class ServiceBuilderArgs {
 	private String _propsUtil = "com.liferay.portal.util.PropsUtil";
 	private String[] _readOnlyPrefixes = READ_ONLY_PREFIXES;
 	private boolean _readOnlyPrefixesSet;
-	private String _remotingFileName =
-		"../portal-web/docroot/WEB-INF/remoting-servlet.xml";
+	private String _remotingFileName;
 	private String[] _resourceActionsConfigs = RESOURCE_ACTION_CONFIGS;
 	private boolean _resourceActionsConfigsSet;
 	private String _resourcesDirName = "src";

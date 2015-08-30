@@ -3664,8 +3664,8 @@ public class AssetEntryPersistenceImpl extends BasePersistenceImpl<AssetEntry>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(AssetEntry assetEntry) {
-		if (assetEntry.isNew()) {
+	protected void cacheUniqueFindersCache(AssetEntry assetEntry, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					assetEntry.getGroupId(), assetEntry.getClassUuid()
 				};
@@ -3895,7 +3895,7 @@ public class AssetEntryPersistenceImpl extends BasePersistenceImpl<AssetEntry>
 				assetEntry.setNew(false);
 			}
 			else {
-				session.merge(assetEntry);
+				assetEntry = (AssetEntry)session.merge(assetEntry);
 			}
 		}
 		catch (Exception e) {
@@ -4026,8 +4026,8 @@ public class AssetEntryPersistenceImpl extends BasePersistenceImpl<AssetEntry>
 		EntityCacheUtil.putResult(AssetEntryModelImpl.ENTITY_CACHE_ENABLED,
 			AssetEntryImpl.class, assetEntry.getPrimaryKey(), assetEntry, false);
 
-		clearUniqueFindersCache(assetEntry);
-		cacheUniqueFindersCache(assetEntry);
+		clearUniqueFindersCache((AssetEntry)assetEntryModelImpl);
+		cacheUniqueFindersCache((AssetEntry)assetEntryModelImpl, isNew);
 
 		assetEntry.resetOriginalValues();
 
@@ -4975,6 +4975,11 @@ public class AssetEntryPersistenceImpl extends BasePersistenceImpl<AssetEntry>
 		catch (Exception e) {
 			throw processException(e);
 		}
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return AssetEntryModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

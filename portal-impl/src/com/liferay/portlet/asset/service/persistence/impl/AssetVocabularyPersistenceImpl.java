@@ -4503,8 +4503,9 @@ public class AssetVocabularyPersistenceImpl extends BasePersistenceImpl<AssetVoc
 		}
 	}
 
-	protected void cacheUniqueFindersCache(AssetVocabulary assetVocabulary) {
-		if (assetVocabulary.isNew()) {
+	protected void cacheUniqueFindersCache(AssetVocabulary assetVocabulary,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					assetVocabulary.getUuid(), assetVocabulary.getGroupId()
 				};
@@ -4745,7 +4746,7 @@ public class AssetVocabularyPersistenceImpl extends BasePersistenceImpl<AssetVoc
 				assetVocabulary.setNew(false);
 			}
 			else {
-				session.merge(assetVocabulary);
+				assetVocabulary = (AssetVocabulary)session.merge(assetVocabulary);
 			}
 		}
 		catch (Exception e) {
@@ -4841,8 +4842,8 @@ public class AssetVocabularyPersistenceImpl extends BasePersistenceImpl<AssetVoc
 			AssetVocabularyImpl.class, assetVocabulary.getPrimaryKey(),
 			assetVocabulary, false);
 
-		clearUniqueFindersCache(assetVocabulary);
-		cacheUniqueFindersCache(assetVocabulary);
+		clearUniqueFindersCache((AssetVocabulary)assetVocabularyModelImpl);
+		cacheUniqueFindersCache((AssetVocabulary)assetVocabularyModelImpl, isNew);
 
 		assetVocabulary.resetOriginalValues();
 
@@ -4871,6 +4872,7 @@ public class AssetVocabularyPersistenceImpl extends BasePersistenceImpl<AssetVoc
 		assetVocabularyImpl.setTitle(assetVocabulary.getTitle());
 		assetVocabularyImpl.setDescription(assetVocabulary.getDescription());
 		assetVocabularyImpl.setSettings(assetVocabulary.getSettings());
+		assetVocabularyImpl.setLastPublishDate(assetVocabulary.getLastPublishDate());
 
 		return assetVocabularyImpl;
 	}
@@ -5232,6 +5234,11 @@ public class AssetVocabularyPersistenceImpl extends BasePersistenceImpl<AssetVoc
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return AssetVocabularyModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

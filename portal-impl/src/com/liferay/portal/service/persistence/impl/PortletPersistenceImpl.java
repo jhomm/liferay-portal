@@ -903,8 +903,8 @@ public class PortletPersistenceImpl extends BasePersistenceImpl<Portlet>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(Portlet portlet) {
-		if (portlet.isNew()) {
+	protected void cacheUniqueFindersCache(Portlet portlet, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					portlet.getCompanyId(), portlet.getPortletId()
 				};
@@ -1070,7 +1070,7 @@ public class PortletPersistenceImpl extends BasePersistenceImpl<Portlet>
 				portlet.setNew(false);
 			}
 			else {
-				session.merge(portlet);
+				portlet = (Portlet)session.merge(portlet);
 			}
 		}
 		catch (Exception e) {
@@ -1110,8 +1110,8 @@ public class PortletPersistenceImpl extends BasePersistenceImpl<Portlet>
 		EntityCacheUtil.putResult(PortletModelImpl.ENTITY_CACHE_ENABLED,
 			PortletImpl.class, portlet.getPrimaryKey(), portlet, false);
 
-		clearUniqueFindersCache(portlet);
-		cacheUniqueFindersCache(portlet);
+		clearUniqueFindersCache((Portlet)portletModelImpl);
+		cacheUniqueFindersCache((Portlet)portletModelImpl, isNew);
 
 		portlet.resetOriginalValues();
 
@@ -1492,6 +1492,11 @@ public class PortletPersistenceImpl extends BasePersistenceImpl<Portlet>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return PortletModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

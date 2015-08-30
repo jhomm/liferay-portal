@@ -89,7 +89,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jorge Ferrer
  */
 @Component(
-	configurationPid = "com.liferay.portal.security.sso.openid.configuration.OpenIdConfiguration",
+	configurationPid = "com.liferay.portal.security.sso.openid.module.configuration.OpenIdConfiguration",
 	immediate = true,
 	property = {
 		"path=/login/open_id", "portlet.login.login=portlet.login.login",
@@ -114,7 +114,8 @@ public class OpenIdAction extends BaseStrutsPortletAction {
 			WebKeys.THEME_DISPLAY);
 
 		if (!_openId.isEnabled(themeDisplay.getCompanyId())) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustBeEnabled(
+				themeDisplay.getCompanyId(), OpenId.class.getName());
 		}
 
 		if (actionRequest.getRemoteUser() != null) {

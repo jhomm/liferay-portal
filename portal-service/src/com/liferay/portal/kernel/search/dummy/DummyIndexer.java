@@ -21,9 +21,11 @@ import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerPostProcessor;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Summary;
+import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.security.permission.PermissionChecker;
 
+import java.util.Collection;
 import java.util.Locale;
 
 import javax.portlet.PortletRequest;
@@ -32,14 +34,14 @@ import javax.portlet.PortletResponse;
 /**
  * @author Brian Wing Shun Chan
  */
-public class DummyIndexer implements Indexer {
+public class DummyIndexer implements Indexer<Object> {
 
 	@Override
 	public void delete(long companyId, String uid) {
 	}
 
 	@Override
-	public void delete(Object obj) {
+	public void delete(Object object) {
 	}
 
 	@Override
@@ -57,12 +59,12 @@ public class DummyIndexer implements Indexer {
 	}
 
 	@Override
-	public Document getDocument(Object obj) {
+	public Document getDocument(Object object) {
 		return null;
 	}
 
 	@Override
-	public BooleanQuery getFacetQuery(
+	public BooleanFilter getFacetBooleanFilter(
 		String className, SearchContext searchContext) {
 
 		return null;
@@ -168,18 +170,48 @@ public class DummyIndexer implements Indexer {
 	}
 
 	@Override
+	public void postProcessContextBooleanFilter(
+			BooleanFilter contextBooleanFilter, SearchContext searchContext)
+		throws Exception {
+	}
+
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             #postProcessContextBooleanFilter(BooleanFilter,
+	 *             SearchContext)}
+	 */
+	@Deprecated
+	@Override
 	public void postProcessContextQuery(
 		BooleanQuery contextQuery, SearchContext searchContext) {
 	}
 
 	@Override
 	public void postProcessSearchQuery(
+		BooleanQuery searchQuery, BooleanFilter fullQueryBooleanFilter,
+		SearchContext searchContext) {
+	}
+
+	/**
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             #postProcessSearchQuery(BooleanQuery, BooleanFilter,
+	 *             SearchContext)}
+	 */
+	@Deprecated
+	@Override
+	public void postProcessSearchQuery(
 		BooleanQuery searchQuery, SearchContext searchContext) {
+
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public void registerIndexerPostProcessor(
 		IndexerPostProcessor indexerPostProcessor) {
+	}
+
+	@Override
+	public void reindex(Collection<Object> objects) {
 	}
 
 	@Override
@@ -204,6 +236,11 @@ public class DummyIndexer implements Indexer {
 		SearchContext searchContext, String... selectedFieldNames) {
 
 		return null;
+	}
+
+	@Override
+	public long searchCount(SearchContext searchContext) {
+		return 0;
 	}
 
 	@Override

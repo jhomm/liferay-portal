@@ -6476,8 +6476,9 @@ public class OrganizationPersistenceImpl extends BasePersistenceImpl<Organizatio
 		}
 	}
 
-	protected void cacheUniqueFindersCache(Organization organization) {
-		if (organization.isNew()) {
+	protected void cacheUniqueFindersCache(Organization organization,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					organization.getCompanyId(), organization.getName()
 				};
@@ -6682,7 +6683,7 @@ public class OrganizationPersistenceImpl extends BasePersistenceImpl<Organizatio
 				organization.setNew(false);
 			}
 			else {
-				session.merge(organization);
+				organization = (Organization)session.merge(organization);
 			}
 		}
 		catch (Exception e) {
@@ -6801,8 +6802,8 @@ public class OrganizationPersistenceImpl extends BasePersistenceImpl<Organizatio
 			OrganizationImpl.class, organization.getPrimaryKey(), organization,
 			false);
 
-		clearUniqueFindersCache(organization);
-		cacheUniqueFindersCache(organization);
+		clearUniqueFindersCache((Organization)organizationModelImpl);
+		cacheUniqueFindersCache((Organization)organizationModelImpl, isNew);
 
 		organization.resetOriginalValues();
 
@@ -6837,6 +6838,7 @@ public class OrganizationPersistenceImpl extends BasePersistenceImpl<Organizatio
 		organizationImpl.setStatusId(organization.getStatusId());
 		organizationImpl.setComments(organization.getComments());
 		organizationImpl.setLogoId(organization.getLogoId());
+		organizationImpl.setLastPublishDate(organization.getLastPublishDate());
 
 		return organizationImpl;
 	}
@@ -7726,6 +7728,11 @@ public class OrganizationPersistenceImpl extends BasePersistenceImpl<Organizatio
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return OrganizationModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

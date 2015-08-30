@@ -23,10 +23,14 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.model.Team;
 import com.liferay.portal.security.auth.PrincipalException;
+import com.liferay.portal.service.ServiceContext;
+import com.liferay.portal.service.ServiceContextFactory;
 import com.liferay.portal.service.TeamServiceUtil;
 import com.liferay.portal.service.UserGroupServiceUtil;
 import com.liferay.portal.service.UserServiceUtil;
+import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.site.teams.web.upgrade.SiteTeamsWebUpgrade;
 
 import java.io.IOException;
@@ -51,14 +55,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.control-panel-entry-category=site_administration.users",
 		"com.liferay.portlet.control-panel-entry-weight=2.0",
 		"com.liferay.portlet.css-class-wrapper=portlet-communities",
-		"com.liferay.portlet.icon=/icons/site_memberships_admin.png",
+		"com.liferay.portlet.icon=/icons/site_teams.png",
 		"com.liferay.portlet.preferences-owned-by-group=true",
 		"com.liferay.portlet.private-request-attributes=false",
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.system=true",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Site Teams Admin",
+		"javax.portlet.display-name=Site Teams",
 		"javax.portlet.expiration-cache=0",
 		"javax.portlet.init-param.template-path=/",
 		"javax.portlet.init-param.view-template=/view.jsp",
@@ -83,9 +87,11 @@ public class SiteTeamsPortlet extends MVCPortlet {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
 		long teamId = ParamUtil.getLong(actionRequest, "teamId");
 
-		long groupId = ParamUtil.getLong(actionRequest, "groupId");
 		String name = ParamUtil.getString(actionRequest, "name");
 		String description = ParamUtil.getString(actionRequest, "description");
 
@@ -93,7 +99,12 @@ public class SiteTeamsPortlet extends MVCPortlet {
 
 			// Add team
 
-			TeamServiceUtil.addTeam(groupId, name, description);
+			ServiceContext serviceContext = ServiceContextFactory.getInstance(
+				Team.class.getName(), actionRequest);
+
+			TeamServiceUtil.addTeam(
+				themeDisplay.getSiteGroupId(), name, description,
+				serviceContext);
 		}
 		else {
 
@@ -149,7 +160,7 @@ public class SiteTeamsPortlet extends MVCPortlet {
 		throws IOException, PortletException {
 
 		if (SessionErrors.contains(
-				renderRequest, PrincipalException.class.getName())) {
+				renderRequest, PrincipalException.getNestedClasses())) {
 
 			include("/error.jsp", renderRequest, renderResponse);
 		}

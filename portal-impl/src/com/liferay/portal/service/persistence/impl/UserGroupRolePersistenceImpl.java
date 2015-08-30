@@ -2754,7 +2754,7 @@ public class UserGroupRolePersistenceImpl extends BasePersistenceImpl<UserGroupR
 				userGroupRole.setNew(false);
 			}
 			else {
-				session.merge(userGroupRole);
+				userGroupRole = (UserGroupRole)session.merge(userGroupRole);
 			}
 		}
 		catch (Exception e) {
@@ -3171,6 +3171,11 @@ public class UserGroupRolePersistenceImpl extends BasePersistenceImpl<UserGroupR
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return UserGroupRoleModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

@@ -25,6 +25,7 @@ import com.liferay.portlet.documentlibrary.DuplicateFileException;
 import com.liferay.portlet.documentlibrary.NoSuchFileException;
 import com.liferay.portlet.documentlibrary.store.BaseStore;
 import com.liferay.portlet.documentlibrary.store.Store;
+import com.liferay.portlet.documentlibrary.store.StoreFactory;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -50,7 +51,9 @@ public abstract class BaseStoreTestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		store = getStore();
+		StoreFactory storeFactory = StoreFactory.getInstance();
+
+		store = storeFactory.getStore(getStoreType());
 
 		companyId = RandomTestUtil.nextLong();
 		repositoryId = RandomTestUtil.nextLong();
@@ -148,6 +151,9 @@ public abstract class BaseStoreTestCase {
 
 		Assert.assertTrue(
 			store.hasFile(companyId, repositoryId, fileName, "1.2"));
+		Assert.assertArrayEquals(
+			_DATA_VERSION_1,
+			store.getFileAsBytes(companyId, repositoryId, fileName, "1.2"));
 	}
 
 	@Test(expected = DuplicateFileException.class)
@@ -499,6 +505,20 @@ public abstract class BaseStoreTestCase {
 			Store.VERSION_DEFAULT);
 	}
 
+	@Test
+	public void testUpdateFileVersion() throws Exception {
+		String fileName = RandomTestUtil.randomString();
+
+		store.addFile(companyId, repositoryId, fileName, _DATA_VERSION_1);
+
+		store.updateFileVersion(
+			companyId, repositoryId, fileName, "1.0", "1.1");
+
+		Assert.assertArrayEquals(
+			_DATA_VERSION_1,
+			store.getFileAsBytes(companyId, repositoryId, fileName, "1.1"));
+	}
+
 	@Test(expected = DuplicateFileException.class)
 	public void testUpdateFileVersionDuplicateFileException() throws Exception {
 		String fileName = RandomTestUtil.randomString();
@@ -708,7 +728,7 @@ public abstract class BaseStoreTestCase {
 		return file;
 	}
 
-	protected abstract Store getStore();
+	protected abstract String getStoreType();
 
 	protected long companyId;
 	protected long repositoryId;

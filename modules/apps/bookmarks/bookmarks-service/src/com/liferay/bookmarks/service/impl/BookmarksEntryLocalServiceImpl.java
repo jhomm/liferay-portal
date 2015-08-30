@@ -14,6 +14,9 @@
 
 package com.liferay.bookmarks.service.impl;
 
+import aQute.bnd.annotation.ProviderType;
+
+import com.liferay.bookmarks.configuration.BookmarksGroupServiceOverriddenConfiguration;
 import com.liferay.bookmarks.constants.BookmarksConstants;
 import com.liferay.bookmarks.constants.BookmarksPortletKeys;
 import com.liferay.bookmarks.exception.EntryURLException;
@@ -22,20 +25,21 @@ import com.liferay.bookmarks.model.BookmarksFolder;
 import com.liferay.bookmarks.model.BookmarksFolderConstants;
 import com.liferay.bookmarks.service.base.BookmarksEntryLocalServiceBaseImpl;
 import com.liferay.bookmarks.service.permission.BookmarksResourcePermissionChecker;
-import com.liferay.bookmarks.settings.BookmarksGroupServiceSettings;
 import com.liferay.bookmarks.social.BookmarksActivityKeys;
 import com.liferay.bookmarks.util.comparator.EntryModifiedDateComparator;
-import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.configuration.ConfigurationFactory;
 import com.liferay.portal.kernel.notifications.UserNotificationDefinition;
+import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexable;
@@ -47,7 +51,6 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
-import com.liferay.portal.kernel.settings.SettingsFactory;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
@@ -61,6 +64,7 @@ import com.liferay.portal.model.ResourceConstants;
 import com.liferay.portal.model.SystemEventConstants;
 import com.liferay.portal.model.User;
 import com.liferay.portal.service.ServiceContext;
+import com.liferay.portal.spring.extender.service.ServiceReference;
 import com.liferay.portal.util.GroupSubscriptionCheckSubscriptionSender;
 import com.liferay.portal.util.Portal;
 import com.liferay.portal.util.SubscriptionSender;
@@ -78,6 +82,7 @@ import java.util.List;
  * @author Raymond Augé
  * @author Levente Hudák
  */
+@ProviderType
 public class BookmarksEntryLocalServiceImpl
 	extends BookmarksEntryLocalServiceBaseImpl {
 
@@ -189,6 +194,11 @@ public class BookmarksEntryLocalServiceImpl
 		// Expando
 
 		expandoRowLocalService.deleteRows(entry.getEntryId());
+
+		// Ratings
+
+		ratingsStatsLocalService.deleteStats(
+			BookmarksEntry.class.getName(), entry.getEntryId());
 
 		// Subscriptions
 
@@ -456,7 +466,7 @@ public class BookmarksEntryLocalServiceImpl
 			int start, int end)
 		throws PortalException {
 
-		Indexer indexer = IndexerRegistryUtil.getIndexer(
+		Indexer<BookmarksEntry> indexer = IndexerRegistryUtil.getIndexer(
 			BookmarksEntry.class.getName());
 
 		SearchContext searchContext = new SearchContext();
@@ -493,7 +503,11 @@ public class BookmarksEntryLocalServiceImpl
 			final long folderId, final String treePath, final boolean reindex)
 		throws PortalException {
 
-		ActionableDynamicQuery actionableDynamicQuery =
+		if (treePath == null) {
+			throw new IllegalArgumentException("Tree path is null");
+		}
+
+		final ActionableDynamicQuery actionableDynamicQuery =
 			getActionableDynamicQuery();
 
 		actionableDynamicQuery.setAddCriteriaMethod(
@@ -509,13 +523,16 @@ public class BookmarksEntryLocalServiceImpl
 					Property treePathProperty = PropertyFactoryUtil.forName(
 						"treePath");
 
-					dynamicQuery.add(treePathProperty.ne(treePath));
+					dynamicQuery.add(
+						RestrictionsFactoryUtil.or(
+							treePathProperty.isNull(),
+							treePathProperty.ne(treePath)));
 				}
 
 			});
 
-		final Indexer indexer = IndexerRegistryUtil.getIndexer(
-			BookmarksEntry.class.getName());
+		final Indexer<BookmarksEntry> indexer = IndexerRegistryUtil.getIndexer(
+			BookmarksEntry.class);
 
 		actionableDynamicQuery.setPerformActionMethod(
 			new ActionableDynamicQuery.PerformActionMethod() {
@@ -530,7 +547,9 @@ public class BookmarksEntryLocalServiceImpl
 
 					updateBookmarksEntry(entry);
 
-					indexer.reindex(entry);
+					Document document = indexer.getDocument(entry);
+
+					actionableDynamicQuery.addDocument(document);
 				}
 
 			});
@@ -709,16 +728,19 @@ public class BookmarksEntryLocalServiceImpl
 			return;
 		}
 
-		BookmarksGroupServiceSettings bookmarksGroupServiceSettings =
-			_settingsFactory.getSettings(
-				BookmarksGroupServiceSettings.class,
-				new GroupServiceSettingsLocator(
-					entry.getGroupId(), BookmarksConstants.SERVICE_NAME));
+		BookmarksGroupServiceOverriddenConfiguration
+			bookmarksGroupServiceOverriddenConfiguration =
+				configurationFactory.getConfiguration(
+					BookmarksGroupServiceOverriddenConfiguration.class,
+					new GroupServiceSettingsLocator(
+						entry.getGroupId(), BookmarksConstants.SERVICE_NAME));
 
 		if ((serviceContext.isCommandAdd() &&
-			 !bookmarksGroupServiceSettings.emailEntryAddedEnabled()) ||
+			 !bookmarksGroupServiceOverriddenConfiguration.
+				 emailEntryAddedEnabled()) ||
 			(serviceContext.isCommandUpdate() &&
-			 !bookmarksGroupServiceSettings.emailEntryUpdatedEnabled())) {
+			 !bookmarksGroupServiceOverriddenConfiguration.
+				 emailEntryUpdatedEnabled())) {
 
 			return;
 		}
@@ -740,23 +762,29 @@ public class BookmarksEntryLocalServiceImpl
 			layoutFullURL + Portal.FRIENDLY_URL_SEPARATOR + "bookmarks" +
 				StringPool.SLASH + entry.getEntryId();
 
-		String fromName = bookmarksGroupServiceSettings.emailFromName();
-		String fromAddress = bookmarksGroupServiceSettings.emailFromAddress();
+		String fromName =
+			bookmarksGroupServiceOverriddenConfiguration.emailFromName();
+		String fromAddress =
+			bookmarksGroupServiceOverriddenConfiguration.emailFromAddress();
 
 		LocalizedValuesMap subjectLocalizedValuesMap = null;
 		LocalizedValuesMap bodyLocalizedValuesMap = null;
 
 		if (serviceContext.isCommandUpdate()) {
 			subjectLocalizedValuesMap =
-				bookmarksGroupServiceSettings.emailEntryUpdatedSubject();
+				bookmarksGroupServiceOverriddenConfiguration.
+					emailEntryUpdatedSubject();
 			bodyLocalizedValuesMap =
-				bookmarksGroupServiceSettings.emailEntryUpdatedBody();
+				bookmarksGroupServiceOverriddenConfiguration.
+					emailEntryUpdatedBody();
 		}
 		else {
 			subjectLocalizedValuesMap =
-				bookmarksGroupServiceSettings.emailEntryAddedSubject();
+				bookmarksGroupServiceOverriddenConfiguration.
+					emailEntryAddedSubject();
 			bodyLocalizedValuesMap =
-				bookmarksGroupServiceSettings.emailEntryAddedBody();
+				bookmarksGroupServiceOverriddenConfiguration.
+					emailEntryAddedBody();
 		}
 
 		SubscriptionSender subscriptionSender =
@@ -831,10 +859,10 @@ public class BookmarksEntryLocalServiceImpl
 		}
 	}
 
+	@ServiceReference(type = ConfigurationFactory.class)
+	protected ConfigurationFactory configurationFactory;
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		BookmarksEntryLocalServiceImpl.class);
-
-	@BeanReference(type = SettingsFactory.class)
-	private SettingsFactory _settingsFactory;
 
 }

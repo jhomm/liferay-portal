@@ -2324,7 +2324,7 @@ public class MembershipRequestPersistenceImpl extends BasePersistenceImpl<Member
 				membershipRequest.setNew(false);
 			}
 			else {
-				session.merge(membershipRequest);
+				membershipRequest = (MembershipRequest)session.merge(membershipRequest);
 			}
 		}
 		catch (Exception e) {
@@ -2808,6 +2808,11 @@ public class MembershipRequestPersistenceImpl extends BasePersistenceImpl<Member
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return MembershipRequestModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

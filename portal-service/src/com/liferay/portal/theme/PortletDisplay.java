@@ -14,14 +14,12 @@
 
 package com.liferay.portal.theme;
 
-import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
+import com.liferay.portal.kernel.module.configuration.ConfigurationFactoryUtil;
 import com.liferay.portal.kernel.portlet.toolbar.PortletToolbar;
 import com.liferay.portal.kernel.settings.PortletInstanceSettingsLocator;
-import com.liferay.portal.kernel.settings.SettingsException;
-import com.liferay.portal.kernel.settings.SettingsFactory;
-import com.liferay.portal.kernel.settings.SettingsFactoryUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringPool;
@@ -239,15 +237,12 @@ public class PortletDisplay implements Serializable {
 	}
 
 	public <T> T getPortletInstanceConfiguration(Class<T> clazz)
-		throws SettingsException {
-
-		SettingsFactory settingsFactory =
-			SettingsFactoryUtil.getSettingsFactory();
+		throws ConfigurationException {
 
 		String portletId = Validator.isNull(
 			_portletResource) ? _id : _portletResource;
 
-		return settingsFactory.getSettings(
+		return ConfigurationFactoryUtil.getConfiguration(
 			clazz,
 			new PortletInstanceSettingsLocator(
 				_themeDisplay.getLayout(), portletId));
@@ -298,21 +293,7 @@ public class PortletDisplay implements Serializable {
 	}
 
 	public String getURLConfigurationJS() {
-		StringBundler sb = new StringBundler(11);
-
-		sb.append("Liferay.Portlet.openWindow(\'#p_p_id_");
-		sb.append(_id);
-		sb.append("_\', \'");
-		sb.append(_id);
-		sb.append("\', \'");
-		sb.append(HtmlUtil.escapeJS(_urlConfiguration));
-		sb.append(" \', \'");
-		sb.append(_namespace);
-		sb.append(" \', \'");
-		sb.append(LanguageUtil.get(_themeDisplay.getLocale(), "configuration"));
-		sb.append("\'); return false;");
-
-		return sb.toString();
+		return _urlConfigurationJS;
 	}
 
 	public String getURLEdit() {
@@ -808,6 +789,10 @@ public class PortletDisplay implements Serializable {
 		_urlConfiguration = urlConfiguration;
 	}
 
+	public void setURLConfigurationJS(String urlConfigurationJS) {
+		_urlConfigurationJS = urlConfigurationJS;
+	}
+
 	public void setURLEdit(String urlEdit) {
 		_urlEdit = urlEdit;
 	}
@@ -922,6 +907,7 @@ public class PortletDisplay implements Serializable {
 	private String _urlBack = StringPool.BLANK;
 	private String _urlClose = StringPool.BLANK;
 	private String _urlConfiguration = StringPool.BLANK;
+	private String _urlConfigurationJS = StringPool.BLANK;
 	private String _urlEdit = StringPool.BLANK;
 	private String _urlEditDefaults = StringPool.BLANK;
 	private String _urlEditGuest = StringPool.BLANK;

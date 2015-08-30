@@ -4400,8 +4400,8 @@ public class PortletPreferencesPersistenceImpl extends BasePersistenceImpl<Portl
 	}
 
 	protected void cacheUniqueFindersCache(
-		PortletPreferences portletPreferences) {
-		if (portletPreferences.isNew()) {
+		PortletPreferences portletPreferences, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					portletPreferences.getOwnerId(),
 					portletPreferences.getOwnerType(),
@@ -4582,7 +4582,7 @@ public class PortletPreferencesPersistenceImpl extends BasePersistenceImpl<Portl
 				portletPreferences.setNew(false);
 			}
 			else {
-				session.merge(portletPreferences);
+				portletPreferences = (PortletPreferences)session.merge(portletPreferences);
 			}
 		}
 		catch (Exception e) {
@@ -4751,8 +4751,9 @@ public class PortletPreferencesPersistenceImpl extends BasePersistenceImpl<Portl
 			PortletPreferencesImpl.class, portletPreferences.getPrimaryKey(),
 			portletPreferences, false);
 
-		clearUniqueFindersCache(portletPreferences);
-		cacheUniqueFindersCache(portletPreferences);
+		clearUniqueFindersCache((PortletPreferences)portletPreferencesModelImpl);
+		cacheUniqueFindersCache((PortletPreferences)portletPreferencesModelImpl,
+			isNew);
 
 		portletPreferences.resetOriginalValues();
 
@@ -5135,6 +5136,11 @@ public class PortletPreferencesPersistenceImpl extends BasePersistenceImpl<Portl
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return PortletPreferencesModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

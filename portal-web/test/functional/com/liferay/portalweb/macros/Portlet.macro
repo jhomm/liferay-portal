@@ -92,18 +92,31 @@
 			</then>
 		</if>
 
-		<execute function="Click#clickAtSidebarClickAtWaitForScript" locator1="Dockbar#ADD_ICON" value1="Add" />
+		<var method="TestPropsUtil#get('browser.type')" name="browserType" />
+
+		<if>
+			<contains string="${browserType}" substring="iexplore" />
+			<then>
+				<execute function="MouseDown#javaScriptMouseDown" locator1="Dockbar#ADD_ICON" />
+
+				<execute function="MouseUp#javaScriptMouseUp" locator1="Dockbar#ADD_ICON" />
+			</then>
+			<else>
+				<execute function="Click#clickAt" locator1="Dockbar#ADD_ICON" />
+			</else>
+		</if>
 
 		<execute function="AssertClick#assertTextClickAtAddApplication" locator1="DockbarAddpanelapplications#APPLICATIONS_TAB" value1="Applications" />
-		<execute function="Type#sendKeysApplicationSearch" locator1="DockbarAddpanelapplications#SEARCH_FIELD" value1="${portletName}" />
-		<execute function="AssertClick#pauseMakeVisibleAssertTextEqualsClickAt" locator1="DockbarAddpanelapplications#ADD_PORTLET_LINK" value1="Add" />
+		<execute function="Type#sendKeysApplicationSearch" locator1="NavBar#APPLICATION_SEARCH_FIELD" value1="${portletName}" />
+		<execute function="AssertClick#pauseMakeVisibleAssertTextEqualsClickAt" locator1="ControlMenuAddPanel#ADD_PORTLET_LINK" value1="Add" />
 
 		<execute function="Pause" locator1="5000" />
 
 		<if>
 			<or>
-				<equals arg1="${portletName}" arg2="Calendar" />
+				<equals arg1="${portletName}" arg2="Asset Publisher" />
 				<equals arg1="${portletName}" arg2="Documents and Media" />
+				<equals arg1="${portletName}" arg2="Knowledge Base Display" />
 				<equals arg1="${portletName}" arg2="Media Gallery" />
 			</or>
 			<then>
@@ -131,13 +144,14 @@
 		<var name="key_portletTitleName" value="${portletName}" />
 
 		<execute function="AssertTextEquals" locator1="Home#PAGE_COLUMN_PORTLET_COLUMN_${columnNumberFrom}_PORTLET_TITLE" value1="${portletName}" />
-		<execute function="DragAndDrop" locator1="Home#PAGE_COLUMN_PORTLET_COLUMN_${columnNumberFrom}_PORTLET_TITLE" locator2="Home#PAGE_COLUMN_${columnNumberTo}" value1="${portletName}" />
+		<execute function="DragAndDrop#dragAndDropPortletToObject" locator1="Home#PAGE_COLUMN_PORTLET_COLUMN_${columnNumberFrom}_PORTLET_TITLE" locator2="Home#PAGE_COLUMN_${columnNumberTo}" value1="${portletName}" />
 		<execute function="AssertTextEquals" locator1="Home#PAGE_COLUMN_PORTLET_COLUMN_${columnNumberTo}_PORTLET_TITLE" value1="${portletName}" />
 		<execute function="AssertTextEquals" locator1="Home#PAGE_COLUMN_PORTLET_COLUMN_${columnNumberTo}_PORTLET_TITLE" value1="${portletName}" />
 	</command>
 
 	<command name="flagAllDisplaySettingsCheckboxes">
 		<execute macro="Portlet#gotoPortletOptions">
+			<var name="portletNameBorderless" value="${portletNameBorderless}" />
 			<var name="portletOption" value="Configuration" />
 		</execute>
 
@@ -157,8 +171,8 @@
 		<execute function="Check" locator1="PGADTConfiguration#NAVIGATION_DISPLAY_SETTINGS_ENABLE_COMMENTS_CHECKBOX" />
 		<execute function="Check" locator1="PGADTConfiguration#NAVIGATION_DISPLAY_SETTINGS_ENABLE_COMMENT_RATINGS_CHECKBOX" />
 		<execute function="Check" locator1="PGADTConfiguration#NAVIGATION_DISPLAY_SETTINGS_ENABLE_SOCIAL_BOOKMARKS_CHECKBOX" />
-		<execute function="AssertClick" locator1="PGADTConfiguration#SAVE_BUTTON" value1="Save" />
-		<execute function="AssertTextEquals" locator1="PGADTConfiguration#SUCCESS_MESSAGE" value1="You have successfully updated the setup." />
+		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
+		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="You have successfully updated the setup." />
 		<execute function="SelectFrameTop" value1="relative=top" />
 	</command>
 
@@ -219,6 +233,16 @@
 		<execute function="AntCommand" locator1="build-test.xml" value1="stop-app-server" />
 	</command>
 
+	<command name="shutdownSpecificServer">
+		<description message="This will shutdown the server at a specific bundle at ${base_branch}-bundles-${bundle_index}\tomcat." />
+
+		<var method="StringUtil#replace('${nodePort}', '080','')" name="leadingPortNumber" />
+
+		<var method="MathUtil#difference('${leadingPortNumber}', '8')" name="bundleIndex" />
+
+		<execute function="AntCommand" locator1="build-test.xml" value1="stop-app-server -Dapp.server.bundle.index=${bundleIndex}" />
+	</command>
+
 	<command name="startServer">
 		<description message="This will start the server at ${base_branch}-bundles\tomcat." />
 
@@ -233,6 +257,24 @@
 		</if>
 	</command>
 
+	<command name="startSpecificServer">
+		<description message="This will start the server at a specific bundle at ${base_branch}-bundles-${bundle_index}\tomcat." />
+
+		<var method="StringUtil#replace('${nodePort}', '080','')" name="leadingPortNumber" />
+
+		<var method="MathUtil#difference('${leadingPortNumber}', '8')" name="bundleIndex" />
+
+		<if>
+			<equals arg1="${deleteLiferayHome}" arg2="false" />
+			<then>
+				<execute function="AntCommand" locator1="build-test.xml" value1="start-app-server -Dapp.server.bundle.index=${bundleIndex} -Ddelete.liferay.home=false" />
+			</then>
+			<else>
+				<execute function="AntCommand" locator1="build-test.xml" value1="start-app-server -Dapp.server.bundle.index=${bundleIndex}" />
+			</else>
+		</if>
+	</command>
+
 	<command name="tearDownPG">
 		<description message="Delete all ${portletName} portlets from the Welcome Page, except default portlets." />
 
@@ -242,6 +284,7 @@
 			<condition function="IsElementPresent" locator1="BasePortlet#SPECIFIC_PORTLET_TITLE" value1="${portletName}" />
 			<then>
 				<execute macro="Portlet#deletePG">
+					<var name="portletLocator" value="${portletLocator}" />
 					<var name="portletName" value="${portletName}" />
 				</execute>
 			</then>
@@ -270,10 +313,10 @@
 			</elseif>
 		</if>
 
-		<execute function="Click#clickAtSidebarClickAtWaitForScript" locator1="Dockbar#ADD" value1="Add" />
+		<execute function="Click#clickAtSidebarClickAtWaitForScript" locator1="Icon#ADD" value1="Add" />
 
 		<execute function="AssertClick" locator1="DockbarAddpanelapplications#NAVIGATION_APPLICATIONS" value1="Applications" />
-		<execute function="Type#sendKeysApplicationSearch" locator1="DockbarAddpanelapplications#SEARCH_FIELD" value1="${portletName}" />
+		<execute function="Type#sendKeysApplicationSearch" locator1="NavBar#APPLICATION_SEARCH_FIELD" value1="${portletName}" />
 
 		<var name="portletLocator" value="//span[@data-title=&quot;${portletName}&quot; and contains(@class,'add-content-item')]" />
 
@@ -317,6 +360,14 @@
 		</if>
 	</command>
 
+	<command name="viewPillTitle" summary="Assert that the ${portletName} portlet title has the text '${portletName}' in ALL CAPS">
+		<var name="key_portletName" value="${portletName}" />
+
+		<var method="StringUtil#upperCase('${portletName}')" name="portletNameUppercase" />
+
+		<execute function="AssertTextEquals" locator1="BasePortlet#TITLE" value1="${portletNameUppercase}" />
+	</command>
+
 	<command name="viewSpecificPG">
 		<var name="key_portletTitleName" value="${portletName}" />
 
@@ -324,6 +375,8 @@
 	</command>
 
 	<command name="viewTitle" summary="Assert that the ${portletName} portlet title has the text '${portletName}'">
+		<var name="key_portletName" value="${portletName}" />
+
 		<execute function="AssertTextEquals" locator1="BasePortlet#TITLE" value1="${portletName}" />
 	</command>
 </definition>

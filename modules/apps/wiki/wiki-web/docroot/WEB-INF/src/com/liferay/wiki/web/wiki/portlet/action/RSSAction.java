@@ -26,9 +26,9 @@ import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.Portal;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.WebKeys;
+import com.liferay.wiki.configuration.WikiGroupServiceOverriddenConfiguration;
 import com.liferay.wiki.constants.WikiPortletKeys;
 import com.liferay.wiki.service.WikiPageServiceUtil;
-import com.liferay.wiki.settings.WikiGroupServiceSettings;
 import com.liferay.wiki.util.WikiUtil;
 import com.liferay.wiki.web.display.context.util.WikiRequestHelper;
 
@@ -49,7 +49,6 @@ public class RSSAction extends BaseRSSStrutsAction {
 		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		long companyId = ParamUtil.getLong(request, "companyId");
 		long nodeId = ParamUtil.getLong(request, "nodeId");
 		String title = ParamUtil.getString(request, "title");
 		int max = ParamUtil.getInteger(
@@ -86,8 +85,8 @@ public class RSSAction extends BaseRSSStrutsAction {
 
 			if (Validator.isNotNull(title)) {
 				rss = WikiPageServiceUtil.getPagesRSS(
-					companyId, nodeId, title, max, type, version, displayStyle,
-					feedURL, entryURL, attachmentURLPrefix, locale);
+					nodeId, title, max, type, version, displayStyle, feedURL,
+					entryURL, attachmentURLPrefix, locale);
 			}
 			else {
 				rss = WikiPageServiceUtil.getNodePagesRSS(
@@ -105,10 +104,11 @@ public class RSSAction extends BaseRSSStrutsAction {
 
 		WikiRequestHelper wikiRequestHelper = new WikiRequestHelper(request);
 
-		WikiGroupServiceSettings wikiGroupServiceSettings =
-			wikiRequestHelper.getWikiGroupServiceSettings();
+		WikiGroupServiceOverriddenConfiguration
+			wikiGroupServiceOverriddenConfiguration =
+				wikiRequestHelper.getWikiGroupServiceOverriddenConfiguration();
 
-		return wikiGroupServiceSettings.enableRss();
+		return wikiGroupServiceOverriddenConfiguration.enableRss();
 	}
 
 }

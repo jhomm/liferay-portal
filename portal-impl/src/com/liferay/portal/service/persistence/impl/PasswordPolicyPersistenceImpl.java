@@ -3421,8 +3421,9 @@ public class PasswordPolicyPersistenceImpl extends BasePersistenceImpl<PasswordP
 		}
 	}
 
-	protected void cacheUniqueFindersCache(PasswordPolicy passwordPolicy) {
-		if (passwordPolicy.isNew()) {
+	protected void cacheUniqueFindersCache(PasswordPolicy passwordPolicy,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					passwordPolicy.getCompanyId(),
 					passwordPolicy.getDefaultPolicy()
@@ -3665,7 +3666,7 @@ public class PasswordPolicyPersistenceImpl extends BasePersistenceImpl<PasswordP
 				passwordPolicy.setNew(false);
 			}
 			else {
-				session.merge(passwordPolicy);
+				passwordPolicy = (PasswordPolicy)session.merge(passwordPolicy);
 			}
 		}
 		catch (Exception e) {
@@ -3744,8 +3745,8 @@ public class PasswordPolicyPersistenceImpl extends BasePersistenceImpl<PasswordP
 			PasswordPolicyImpl.class, passwordPolicy.getPrimaryKey(),
 			passwordPolicy, false);
 
-		clearUniqueFindersCache(passwordPolicy);
-		cacheUniqueFindersCache(passwordPolicy);
+		clearUniqueFindersCache((PasswordPolicy)passwordPolicyModelImpl);
+		cacheUniqueFindersCache((PasswordPolicy)passwordPolicyModelImpl, isNew);
 
 		passwordPolicy.resetOriginalValues();
 
@@ -3797,6 +3798,7 @@ public class PasswordPolicyPersistenceImpl extends BasePersistenceImpl<PasswordP
 		passwordPolicyImpl.setRequireUnlock(passwordPolicy.isRequireUnlock());
 		passwordPolicyImpl.setResetFailureCount(passwordPolicy.getResetFailureCount());
 		passwordPolicyImpl.setResetTicketMaxAge(passwordPolicy.getResetTicketMaxAge());
+		passwordPolicyImpl.setLastPublishDate(passwordPolicy.getLastPublishDate());
 
 		return passwordPolicyImpl;
 	}
@@ -4158,6 +4160,11 @@ public class PasswordPolicyPersistenceImpl extends BasePersistenceImpl<PasswordP
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return PasswordPolicyModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

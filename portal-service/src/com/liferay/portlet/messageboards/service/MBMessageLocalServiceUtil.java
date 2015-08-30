@@ -156,10 +156,9 @@ public class MBMessageLocalServiceUtil {
 
 	public static void addMessageResources(
 		com.liferay.portlet.messageboards.model.MBMessage message,
-		java.lang.String[] groupPermissions, java.lang.String[] guestPermissions)
+		com.liferay.portal.service.permission.ModelPermissions modelPermissions)
 		throws com.liferay.portal.kernel.exception.PortalException {
-		getService()
-			.addMessageResources(message, groupPermissions, guestPermissions);
+		getService().addMessageResources(message, modelPermissions);
 	}
 
 	public static void addMessageResources(long messageId,
@@ -171,10 +170,9 @@ public class MBMessageLocalServiceUtil {
 	}
 
 	public static void addMessageResources(long messageId,
-		java.lang.String[] groupPermissions, java.lang.String[] guestPermissions)
+		com.liferay.portal.service.permission.ModelPermissions modelPermissions)
 		throws com.liferay.portal.kernel.exception.PortalException {
-		getService()
-			.addMessageResources(messageId, groupPermissions, guestPermissions);
+		getService().addMessageResources(messageId, modelPermissions);
 	}
 
 	/**
@@ -454,7 +452,7 @@ public class MBMessageLocalServiceUtil {
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery getExportActionableDynamicQuery(
-		com.liferay.portal.kernel.lar.PortletDataContext portletDataContext) {
+		com.liferay.portlet.exportimport.lar.PortletDataContext portletDataContext) {
 		return getService().getExportActionableDynamicQuery(portletDataContext);
 	}
 

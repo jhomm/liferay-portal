@@ -20,12 +20,15 @@ import java.io.File;
 
 import java.net.URL;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 
 import org.gradle.api.Action;
 import org.gradle.api.GradleException;
@@ -40,7 +43,9 @@ import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.plugins.Convention;
+import org.gradle.api.plugins.ExtensionAware;
 import org.gradle.api.plugins.ExtensionContainer;
+import org.gradle.api.plugins.ExtraPropertiesExtension;
 import org.gradle.api.plugins.JavaPluginConvention;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
@@ -90,7 +95,19 @@ public class GradleUtil {
 		Project project, String configurationName, String group, String name,
 		String version, boolean transitive) {
 
+		return addDependency(
+			project, configurationName, group, name, version, null, transitive);
+	}
+
+	public static Dependency addDependency(
+		Project project, String configurationName, String group, String name,
+		String version, String classifier, boolean transitive) {
+
 		Map<String, Object> dependencyNotation = new HashMap<>();
+
+		if (Validator.isNotNull(classifier)) {
+			dependencyNotation.put("classifier", classifier);
+		}
 
 		dependencyNotation.put("group", group);
 		dependencyNotation.put("name", name);
@@ -101,11 +118,11 @@ public class GradleUtil {
 	}
 
 	public static <T> T addExtension(
-		Project project, String name, Class<T> clazz) {
+		ExtensionAware extensionAware, String name, Class<T> clazz) {
 
-		ExtensionContainer extensionContainer = project.getExtensions();
+		ExtensionContainer extensionContainer = extensionAware.getExtensions();
 
-		return extensionContainer.create(name, clazz, project);
+		return extensionContainer.create(name, clazz, extensionAware);
 	}
 
 	public static SourceSet addSourceSet(Project project, String name) {
@@ -135,7 +152,9 @@ public class GradleUtil {
 		project.apply(args);
 	}
 
-	public static void applyScript(Project project, String name, Object obj) {
+	public static void applyScript(
+		Project project, String name, Object object) {
+
 		Map<String, Object> args = new HashMap<>();
 
 		ClassLoader classLoader = GradleUtil.class.getClassLoader();
@@ -148,8 +167,8 @@ public class GradleUtil {
 
 		args.put("from", url);
 
-		if (obj != null) {
-			args.put("to", obj);
+		if (object != null) {
+			args.put("to", object);
 		}
 
 		project.apply(args);
@@ -170,8 +189,12 @@ public class GradleUtil {
 
 					Set<Dependency> dependencies =
 						configuration.getDependencies();
+					Set<Configuration> parentConfigurations =
+						configuration.getExtendsFrom();
 
-					if (dependencies.isEmpty()) {
+					if (dependencies.isEmpty() &&
+						parentConfigurations.isEmpty()) {
+
 						action.execute(configuration);
 					}
 				}
@@ -192,8 +215,10 @@ public class GradleUtil {
 		return convention.getPlugin(clazz);
 	}
 
-	public static <T> T getExtension(Project project, Class<T> clazz) {
-		ExtensionContainer extensionContainer = project.getExtensions();
+	public static <T> T getExtension(
+		ExtensionAware extensionAware, Class<T> clazz) {
+
+		ExtensionContainer extensionContainer = extensionAware.getExtensions();
 
 		return extensionContainer.getByType(clazz);
 	}
@@ -229,6 +254,67 @@ public class GradleUtil {
 		return null;
 	}
 
+	public static Object getProperty(
+		ExtensionAware extensionAware, String name) {
+
+		ExtensionContainer extensionContainer = extensionAware.getExtensions();
+
+		ExtraPropertiesExtension extraPropertiesExtension =
+			extensionContainer.getExtraProperties();
+
+		if (!extraPropertiesExtension.has(name)) {
+			return null;
+		}
+
+		Object value = extraPropertiesExtension.get(name);
+
+		if ((value instanceof String) && Validator.isNull((String)value)) {
+			value = null;
+		}
+
+		return value;
+	}
+
+	public static boolean getProperty(
+		ExtensionAware extensionAware, String name, boolean defaultValue) {
+
+		Object value = getProperty(extensionAware, name);
+
+		if (value instanceof Boolean) {
+			return (Boolean)value;
+		}
+
+		if (value instanceof String) {
+			return Boolean.parseBoolean((String)value);
+		}
+
+		return defaultValue;
+	}
+
+	public static String getProperty(
+		ExtensionAware extensionAware, String name, String defaultValue) {
+
+		Object value = getProperty(extensionAware, name);
+
+		if (value == null) {
+			return defaultValue;
+		}
+
+		return toString(value);
+	}
+
+	public static File getProperty(
+		Project project, String name, File defaultValue) {
+
+		Object value = getProperty(project, name);
+
+		if (value == null) {
+			return defaultValue;
+		}
+
+		return toFile(project, value);
+	}
+
 	public static SourceSet getSourceSet(Project project, String name) {
 		JavaPluginConvention javaPluginConvention = getConvention(
 			project, JavaPluginConvention.class);
@@ -253,6 +339,18 @@ public class GradleUtil {
 		return prefix + StringUtil.capitalize(fileName);
 	}
 
+	public static String getTaskPrefixedProperty(Task task, String name) {
+		String suffix = "." + name;
+
+		String value = System.getProperty(task.getPath() + suffix);
+
+		if (Validator.isNull(value)) {
+			value = System.getProperty(task.getName() + suffix);
+		}
+
+		return value;
+	}
+
 	public static void removeDependencies(
 		Project project, String configurationName,
 		String[] dependencyNotations) {
@@ -273,6 +371,102 @@ public class GradleUtil {
 				iterator.remove();
 			}
 		}
+	}
+
+	public static void setProperty(
+		ExtensionAware extensionAware, String name, Object value) {
+
+		ExtensionContainer extensionContainer = extensionAware.getExtensions();
+
+		ExtraPropertiesExtension extraPropertiesExtension =
+			extensionContainer.getExtraProperties();
+
+		extraPropertiesExtension.set(name, value);
+	}
+
+	public static File toFile(Project project, Object object) {
+		if (object == null) {
+			return null;
+		}
+
+		return project.file(object);
+	}
+
+	public static Integer toInteger(Object object) {
+		object = toObject(object);
+
+		if (object instanceof Integer) {
+			return (Integer)object;
+		}
+
+		if (object instanceof Number) {
+			Number number = (Number)object;
+
+			return number.intValue();
+		}
+
+		if (object instanceof String) {
+			return Integer.parseInt((String)object);
+		}
+
+		return null;
+	}
+
+	public static Object toObject(Object object) {
+		if (object instanceof Callable<?>) {
+			Callable<?> callable = (Callable<?>)object;
+
+			try {
+				object = callable.call();
+			}
+			catch (Exception e) {
+				throw new GradleException(e.getMessage(), e);
+			}
+		}
+		else if (object instanceof Closure<?>) {
+			Closure<?> closure = (Closure<?>)object;
+
+			object = closure.call();
+		}
+
+		return object;
+	}
+
+	public static String toString(Object object) {
+		object = toObject(object);
+
+		if (object == null) {
+			return null;
+		}
+
+		return object.toString();
+	}
+
+	public static List<String> toStringList(Iterable<?> iterable) {
+		List<String> list = new ArrayList<>();
+
+		for (Object object : iterable) {
+			list.add(toString(object));
+		}
+
+		return list;
+	}
+
+	public static boolean waitFor(
+			Callable<Boolean> callable, long checkInterval, long timeout)
+		throws Exception {
+
+		long end = System.currentTimeMillis() + timeout;
+
+		while (System.currentTimeMillis() < end) {
+			if (callable.call()) {
+				return true;
+			}
+
+			Thread.sleep(checkInterval);
+		}
+
+		return false;
 	}
 
 	private static Dependency _addDependency(

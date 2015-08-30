@@ -2419,7 +2419,7 @@ public class SystemEventPersistenceImpl extends BasePersistenceImpl<SystemEvent>
 				systemEvent.setNew(false);
 			}
 			else {
-				session.merge(systemEvent);
+				systemEvent = (SystemEvent)session.merge(systemEvent);
 			}
 		}
 		catch (Exception e) {
@@ -2917,6 +2917,11 @@ public class SystemEventPersistenceImpl extends BasePersistenceImpl<SystemEvent>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SystemEventModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

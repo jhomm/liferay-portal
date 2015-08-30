@@ -2223,8 +2223,9 @@ public class MBMailingListPersistenceImpl extends BasePersistenceImpl<MBMailingL
 		}
 	}
 
-	protected void cacheUniqueFindersCache(MBMailingList mbMailingList) {
-		if (mbMailingList.isNew()) {
+	protected void cacheUniqueFindersCache(MBMailingList mbMailingList,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					mbMailingList.getUuid(), mbMailingList.getGroupId()
 				};
@@ -2466,7 +2467,7 @@ public class MBMailingListPersistenceImpl extends BasePersistenceImpl<MBMailingL
 				mbMailingList.setNew(false);
 			}
 			else {
-				session.merge(mbMailingList);
+				mbMailingList = (MBMailingList)session.merge(mbMailingList);
 			}
 		}
 		catch (Exception e) {
@@ -2543,8 +2544,8 @@ public class MBMailingListPersistenceImpl extends BasePersistenceImpl<MBMailingL
 			MBMailingListImpl.class, mbMailingList.getPrimaryKey(),
 			mbMailingList, false);
 
-		clearUniqueFindersCache(mbMailingList);
-		cacheUniqueFindersCache(mbMailingList);
+		clearUniqueFindersCache((MBMailingList)mbMailingListModelImpl);
+		cacheUniqueFindersCache((MBMailingList)mbMailingListModelImpl, isNew);
 
 		mbMailingList.resetOriginalValues();
 
@@ -2947,6 +2948,11 @@ public class MBMailingListPersistenceImpl extends BasePersistenceImpl<MBMailingL
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return MBMailingListModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

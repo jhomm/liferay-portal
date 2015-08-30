@@ -104,6 +104,11 @@ public final class LoggerUtil {
 			"addChildLoggerElement(" + parentSB + ", " + childSB + ");");
 	}
 
+	public static void createSummary() throws Exception {
+		FileUtil.write(
+			_getSummaryLogFilePath(), SummaryLoggerHandler.getSummary());
+	}
+
 	public static void executeJavaScript(String script) {
 		if (!isLoggerStarted()) {
 			return;
@@ -118,7 +123,7 @@ public final class LoggerUtil {
 		}
 
 		return (String)_javascriptExecutor.executeScript(
-			"getClassName(" + loggerElement.getID() + ");");
+			"getClassName('" + loggerElement.getID() + "');");
 	}
 
 	public static String getName(LoggerElement loggerElement) {
@@ -127,7 +132,7 @@ public final class LoggerUtil {
 		}
 
 		return (String)_javascriptExecutor.executeScript(
-			"getName(" + loggerElement.getID() + ");");
+			"getName('" + loggerElement.getID() + "');");
 	}
 
 	public static String getText(LoggerElement loggerElement) {
@@ -136,7 +141,7 @@ public final class LoggerUtil {
 		}
 
 		return (String)_javascriptExecutor.executeScript(
-			"getText(" + loggerElement.getID() + ");");
+			"getText('" + loggerElement.getID() + "');");
 	}
 
 	public static boolean isLoggerStarted() {
@@ -154,7 +159,7 @@ public final class LoggerUtil {
 
 		try {
 			return (boolean)_javascriptExecutor.executeScript(
-				"isWrittenToLogger(" + loggerElement.getID() + ");");
+				"isWrittenToLogger('" + loggerElement.getID() + "');");
 		}
 		catch (Exception e) {
 			return false;
@@ -175,7 +180,7 @@ public final class LoggerUtil {
 			attributeValue);
 
 		_javascriptExecutor.executeScript(
-			"setAttribute(" + loggerElement.getID() + ", '" +
+			"setAttribute('" + loggerElement.getID() + "', '" +
 				escapedAttributeName + "', '" + escapedAttributeValue + "');");
 	}
 
@@ -188,19 +193,20 @@ public final class LoggerUtil {
 			loggerElement.getClassName());
 
 		_javascriptExecutor.executeScript(
-			"setClassName(" + loggerElement.getID() + ", '" + className +
+			"setClassName('" + loggerElement.getID() + "', '" + className +
 				"');");
 	}
 
-	public static void setID(LoggerElement loggerElement) {
+	public static void setID(String oldID, String newID) {
 		if (!isLoggerStarted()) {
 			return;
 		}
 
-		String id = StringEscapeUtils.escapeEcmaScript(loggerElement.getID());
+		String escapedOldID = StringEscapeUtils.escapeEcmaScript(oldID);
+		String escapedNewID = StringEscapeUtils.escapeEcmaScript(newID);
 
 		_javascriptExecutor.executeScript(
-			"setID(" + loggerElement.getID() + ", '" + id + "');");
+			"setID(" + escapedOldID + ", '" + escapedNewID + "');");
 	}
 
 	public static void setName(LoggerElement loggerElement) {
@@ -212,7 +218,7 @@ public final class LoggerUtil {
 			loggerElement.getName());
 
 		_javascriptExecutor.executeScript(
-			"setName(" + loggerElement.getID() + ", '" + name + "');");
+			"setName('" + loggerElement.getID() + "', '" + name + "');");
 	}
 
 	public static void setText(LoggerElement loggerElement) {
@@ -224,7 +230,7 @@ public final class LoggerUtil {
 			loggerElement.getText());
 
 		_javascriptExecutor.executeScript(
-			"setText(" + loggerElement.getID() + ", '" + text + "');");
+			"setText('" + loggerElement.getID() + "', '" + text + "');");
 	}
 
 	public static void startLogger() throws Exception {
@@ -247,7 +253,7 @@ public final class LoggerUtil {
 			"META-INF/resources/css/main.css");
 
 		FileUtil.write(
-			_CURRENT_DIR + "/test-results/css/main.css", mainCSSContent);
+			_CURRENT_DIR_NAME + "/test-results/css/main.css", mainCSSContent);
 
 		String indexHTMLContent = _readResource(
 			"META-INF/resources/html/index.html");
@@ -266,12 +272,13 @@ public final class LoggerUtil {
 			"META-INF/resources/js/component.js");
 
 		FileUtil.write(
-			_CURRENT_DIR + "/test-results/js/component.js", componentJSContent);
+			_CURRENT_DIR_NAME + "/test-results/js/component.js",
+			componentJSContent);
 
 		String mainJSContent = _readResource("META-INF/resources/js/main.js");
 
 		FileUtil.write(
-			_CURRENT_DIR + "/test-results/js/main.js", mainJSContent);
+			_CURRENT_DIR_NAME + "/test-results/js/main.js", mainJSContent);
 
 		_webDriver.get("file://" + _getHtmlFilePath());
 	}
@@ -282,20 +289,21 @@ public final class LoggerUtil {
 				"META-INF/resources/css/main.css");
 
 			FileUtil.write(
-				_CURRENT_DIR + "/test-results/css/main.css", mainCSSContent);
+				_CURRENT_DIR_NAME + "/test-results/css/main.css",
+				mainCSSContent);
 
 			String componentJSContent = _readResource(
 				"META-INF/resources/js/component.js");
 
 			FileUtil.write(
-				_CURRENT_DIR + "/test-results/js/component.js",
+				_CURRENT_DIR_NAME + "/test-results/js/component.js",
 				componentJSContent);
 
 			String mainJSContent = _readResource(
 				"META-INF/resources/js/main.js");
 
 			FileUtil.write(
-				_CURRENT_DIR + "/test-results/js/main.js", mainJSContent);
+				_CURRENT_DIR_NAME + "/test-results/js/main.js", mainJSContent);
 		}
 
 		String indexHTMLContent = _readResource(
@@ -315,12 +323,12 @@ public final class LoggerUtil {
 				"<link href=\"" + PropsValues.LOGGER_RESOURCES_URL +
 					"/css/.sass-cache/main.css\"");
 			indexHTMLContent = StringUtil.replace(
-				indexHTMLContent, "<script src=\"../js/component.js\"",
-				"<script src=\"" + PropsValues.LOGGER_RESOURCES_URL +
+				indexHTMLContent, "<script defer src=\"../js/component.js\"",
+				"<script defer src=\"" + PropsValues.LOGGER_RESOURCES_URL +
 					"/js/component.js\"");
 			indexHTMLContent = StringUtil.replace(
-				indexHTMLContent, "<script src=\"../js/main.js\"",
-				"<script src=\"" + PropsValues.LOGGER_RESOURCES_URL +
+				indexHTMLContent, "<script defer src=\"../js/main.js\"",
+				"<script defer src=\"" + PropsValues.LOGGER_RESOURCES_URL +
 					"/js/main.js\"");
 		}
 
@@ -336,12 +344,25 @@ public final class LoggerUtil {
 	private static String _getHtmlFilePath() {
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(_CURRENT_DIR);
+		sb.append(_CURRENT_DIR_NAME);
 		sb.append("/test-results/");
 		sb.append(
 			StringUtil.replace(
 				PoshiRunnerContext.getTestCaseCommandName(), "#", "_"));
 		sb.append("/index.html");
+
+		return sb.toString();
+	}
+
+	private static String _getSummaryLogFilePath() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append(_CURRENT_DIR_NAME);
+		sb.append("/test-results/");
+		sb.append(
+			StringUtil.replace(
+				PoshiRunnerContext.getTestCaseCommandName(), "#", "_"));
+		sb.append("/summary.html");
 
 		return sb.toString();
 	}
@@ -370,7 +391,7 @@ public final class LoggerUtil {
 		return sb.toString();
 	}
 
-	private static final String _CURRENT_DIR =
+	private static final String _CURRENT_DIR_NAME =
 		PoshiRunnerGetterUtil.getCanonicalPath(".");
 
 	private static JavascriptExecutor _javascriptExecutor;

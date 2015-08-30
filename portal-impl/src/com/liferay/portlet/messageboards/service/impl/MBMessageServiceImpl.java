@@ -16,6 +16,7 @@ package com.liferay.portlet.messageboards.service.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.lock.LockManagerUtil;
 import com.liferay.portal.kernel.parsers.bbcode.BBCodeTranslatorUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
@@ -28,6 +29,7 @@ import com.liferay.portal.model.Group;
 import com.liferay.portal.model.User;
 import com.liferay.portal.security.auth.PrincipalException;
 import com.liferay.portal.security.permission.ActionKeys;
+import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.PortalUtil;
@@ -96,8 +98,8 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 
 	/**
 	 * @deprecated As of 6.2.0, replaced by {@link #addMessage(long, String,
-	 *             String, String, java.util.List, boolean, double, boolean,
-	 *             com.liferay.portal.service.ServiceContext)}
+	 *             String, String, List, boolean, double, boolean,
+	 *             ServiceContext)}
 	 */
 	@Deprecated
 	@Override
@@ -214,7 +216,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 				getPermissionChecker(), parentMessageId, ActionKeys.UPDATE);
 		}
 
-		if (lockLocalService.isLocked(
+		if (LockManagerUtil.isLocked(
 				MBThread.class.getName(), parentMessage.getThreadId())) {
 
 			throw new LockedThreadException();
@@ -249,7 +251,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 
 		MBMessage message = mbMessageLocalService.getMBMessage(messageId);
 
-		if (lockLocalService.isLocked(
+		if (LockManagerUtil.isLocked(
 				MBThread.class.getName(), message.getThreadId())) {
 
 			throw new LockedThreadException();
@@ -272,8 +274,8 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 	}
 
 	/**
-	 * @deprecated As of 7.0.0, replaced by {@link #deleteDiscussionMessage(
-	 *             long)}
+	 * @deprecated As of 7.0.0, replaced by {@link
+	 *             #deleteDiscussionMessage(long)}
 	 */
 	@Deprecated
 	@Override
@@ -757,7 +759,7 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 				getPermissionChecker(), messageId, ActionKeys.UPDATE);
 		}
 
-		if (lockLocalService.isLocked(
+		if (LockManagerUtil.isLocked(
 				MBThread.class.getName(), message.getThreadId())) {
 
 			throw new LockedThreadException();
@@ -789,25 +791,28 @@ public class MBMessageServiceImpl extends MBMessageServiceBaseImpl {
 			long groupId, long categoryId, long parentMessageId)
 		throws PortalException {
 
+		PermissionChecker permissionChecker = getPermissionChecker();
+
 		if (parentMessageId > 0) {
 			if (MBCategoryPermission.contains(
-					getPermissionChecker(), groupId, categoryId,
+					permissionChecker, groupId, categoryId,
 					ActionKeys.ADD_MESSAGE)) {
 
 				return;
 			}
 
 			if (!MBCategoryPermission.contains(
-					getPermissionChecker(), groupId, categoryId,
+					permissionChecker, groupId, categoryId,
 					ActionKeys.REPLY_TO_MESSAGE)) {
 
-				throw new PrincipalException();
+				throw new PrincipalException.MustHavePermission(
+					permissionChecker, MBCategory.class.getName(), categoryId,
+					ActionKeys.REPLY_TO_MESSAGE);
 			}
 		}
 		else {
 			MBCategoryPermission.check(
-				getPermissionChecker(), groupId, categoryId,
-				ActionKeys.ADD_MESSAGE);
+				permissionChecker, groupId, categoryId, ActionKeys.ADD_MESSAGE);
 		}
 	}
 

@@ -22,7 +22,7 @@
 		<execute macro="SOSite#tearDownCP" />
 	</tear-down>
 
-	<command name="GoBackToSOSiteFromControlPanel" priority="5">
+	<command name="GoBackToSOSiteFromControlPanel" priority="4">
 		<var name="siteDescription" value="Open Site Description" />
 		<var name="siteName" value="Open Site Name" />
 		<var name="siteType" value="Open" />
@@ -38,8 +38,8 @@
 			<var name="siteURL" value="true" />
 		</execute>
 
-		<execute function="AssertClick#assertTextClickAtClickDockbar" locator1="Dockbar#ADMIN" value1="Admin" />
-		<execute function="AssertClick" locator1="Dockbar#ADMIN_CONTROL_PANEL" value1="Control Panel" />
+		<execute function="AssertClick#assertTextClickAtClickDockbar" locator1="ControlMenu#ADMIN" value1="Admin" />
+		<execute function="AssertClick" locator1="ControlMenu#ADMIN_CONTROL_PANEL" value1="Control Panel" />
 		<execute function="Click" locator1="//a[@title='Back']" />
 
 		<execute function="AssertTextEquals" locator1="SOSite#SITE_NAME" value1="${siteName}" />

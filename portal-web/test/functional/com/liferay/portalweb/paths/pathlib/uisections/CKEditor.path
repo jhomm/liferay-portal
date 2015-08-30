@@ -10,12 +10,12 @@
 <tbody>
 <tr>
 	<td>BODY_FIELD</td>
-	<td>//iframe[contains(@title,'Rich Text Editor')]</td>
+	<td>//div[contains(@id,'cke')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>BODY_FIELD_LOCALIZED</td>
-	<td>//iframe[contains(@title,'_editor')]</td>
+	<td>//div[contains(@id,'cke__')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -24,8 +24,13 @@
 	<td></td>
 </tr>
 <tr>
+	<td>BODY_FIELD_IFRAME</td>
+	<td>//div[contains(@id,'cke')]//iframe</td>
+	<td></td>
+</tr>
+<tr>
 	<td>IFRAME</td>
-	<td>//iframe[contains(@title,'Rich Text Editor')]</td>
+	<td>//iframe[contains(@class,'cke_panel')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -57,6 +62,11 @@
 <tr>
 	<td>RESIZER</td>
 	<td>//span[@id='cke_1_resizer']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CKEDITOR_PNG</td>
+	<td>/portal/fields/ckeditor.png</td>
 	<td></td>
 </tr>
 <tr>
@@ -103,7 +113,7 @@
 </tr>
 <tr>
 	<td>TOOLBAR_FORMAT_BUTTON</td>
-	<td>//a[contains(@class,'cke_combo_button') and contains(.,'Format')]/span</td>
+	<td>//a[contains(@class,'cke_combo_button') and contains(@title,'Format')]/span</td>
 	<td></td>
 </tr>
 <tr>

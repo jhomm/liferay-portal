@@ -21,7 +21,7 @@
 		<execute macro="SOSite#tearDownCP" />
 	</tear-down>
 
-	<command name="DashboardDocumentsDemo" priority="5">
+	<command name="DashboardDocumentsDemo" priority="4">
 		<var name="dmDocumentDescription1" value="DM Folder Image1 Description" />
 		<var name="dmDocumentDescription2" value="DM Folder Image2 Description" />
 		<var name="dmDocumentDescription3" value="DM Folder Image3 Description" />
@@ -366,7 +366,7 @@
 			<var name="siteURL" value="true" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="PGDocumentsandmedia#INFO_MESSAGE" value1="There are no documents or media files in this folder." />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="There are no documents or media files in this folder." />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName1}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName2}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName3}" />
@@ -418,7 +418,7 @@
 			<var name="siteURL" value="true" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="PGDocumentsandmedia#INFO_MESSAGE" value1="There are no documents or media files in this folder." />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="There are no documents or media files in this folder." />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName1}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName2}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName3}" />
@@ -471,7 +471,7 @@
 			<var name="siteURL" value="true" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="PGDocumentsandmedia#INFO_MESSAGE" value1="There are no documents or media files in this folder." />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="There are no documents or media files in this folder." />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName1}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName2}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName3}" />
@@ -524,7 +524,7 @@
 			<var name="siteURL" value="true" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="PGDocumentsandmedia#INFO_MESSAGE" value1="There are no documents or media files in this folder." />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="There are no documents or media files in this folder." />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName1}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName2}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName3}" />
@@ -545,7 +545,7 @@
 			<var name="soPage" value="true" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="PGDocumentsandmedia#INFO_MESSAGE" value1="There are no documents or media files in this folder." />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="There are no documents or media files in this folder." />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName1}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName2}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName3}" />
@@ -561,7 +561,7 @@
 			<var name="siteURL" value="true" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="PGDocumentsandmedia#INFO_MESSAGE" value1="There are no documents or media files in this folder." />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="There are no documents or media files in this folder." />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName1}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName2}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName3}" />
@@ -577,7 +577,7 @@
 			<var name="siteURL" value="true" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="PGDocumentsandmedia#INFO_MESSAGE" value1="There are no documents or media files in this folder." />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="There are no documents or media files in this folder." />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName1}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName2}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName3}" />
@@ -594,7 +594,7 @@
 			<var name="siteURL" value="true" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="PGDocumentsandmedia#INFO_MESSAGE" value1="There are no documents or media files in this folder." />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="There are no documents or media files in this folder." />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName1}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName2}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName3}" />
@@ -611,7 +611,7 @@
 			<var name="siteURL" value="true" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="PGDocumentsandmedia#INFO_MESSAGE" value1="There are no documents or media files in this folder." />
+		<execute function="AssertTextEquals" locator1="Message#INFO" value1="There are no documents or media files in this folder." />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName1}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName2}" />
 		<execute function="AssertTextNotPresent" value1="${dmFolderName3}" />

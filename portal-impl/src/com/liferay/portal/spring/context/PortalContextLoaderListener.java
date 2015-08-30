@@ -15,9 +15,10 @@
 package com.liferay.portal.spring.context;
 
 import com.liferay.portal.bean.BeanLocatorImpl;
+import com.liferay.portal.dao.jdbc.util.DataSourceWrapper;
 import com.liferay.portal.dao.orm.hibernate.FieldInterceptionHelperUtil;
+import com.liferay.portal.deploy.hot.CustomJspBagRegistryUtil;
 import com.liferay.portal.deploy.hot.IndexerPostProcessorRegistry;
-import com.liferay.portal.deploy.hot.SchedulerEntryRegistry;
 import com.liferay.portal.deploy.hot.ServiceWrapperRegistry;
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
 import com.liferay.portal.kernel.cache.CacheRegistryUtil;
@@ -61,7 +62,6 @@ import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.webcache.WebCachePoolUtil;
 import com.liferay.portal.module.framework.ModuleFrameworkUtilAdapter;
-import com.liferay.portal.scripting.ruby.RubyExecutor;
 import com.liferay.portal.security.lang.SecurityManagerUtil;
 import com.liferay.portal.security.permission.PermissionCacheUtil;
 import com.liferay.portal.servlet.filters.cache.CacheUtil;
@@ -75,7 +75,9 @@ import com.liferay.registry.dependency.ServiceDependencyManager;
 
 import java.beans.PropertyDescriptor;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 
 import java.lang.reflect.Field;
 
@@ -83,6 +85,8 @@ import java.util.Map;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
+
+import javax.sql.DataSource;
 
 import org.springframework.beans.CachedIntrospectionResults;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
@@ -111,6 +115,14 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 		PortalContextLoaderLifecycleThreadLocal.setDestroying(true);
 
 		ThreadLocalCacheManager.destroy();
+
+		if (_indexerPostProcessorRegistry != null) {
+			_indexerPostProcessorRegistry.close();
+		}
+
+		if (_serviceWrapperRegistry != null) {
+			_serviceWrapperRegistry.close();
+		}
 
 		try {
 			ClearThreadLocalUtil.clearThreadLocal();
@@ -154,6 +166,10 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 			_log.error(e, e);
 		}
 
+		closeDataSource("counterDataSourceWrapper");
+
+		closeDataSource("liferayDataSourceWrapper");
+
 		try {
 			super.contextDestroyed(servletContextEvent);
 
@@ -176,7 +192,12 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 
 	@Override
 	public void contextInitialized(ServletContextEvent servletContextEvent) {
-		SystemProperties.reload();
+		try {
+			Class.forName(SystemProperties.class.getName());
+		}
+		catch (ClassNotFoundException cnfe) {
+			throw new RuntimeException(cnfe);
+		}
 
 		DBFactoryUtil.reset();
 		DeployManagerUtil.reset();
@@ -263,31 +284,14 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 
 				@Override
 				public void destroy() {
-					if (_indexerPostProcessorRegistry != null) {
-						_indexerPostProcessorRegistry.close();
-					}
-
-					if (_schedulerEntryRegistry != null) {
-						_schedulerEntryRegistry.close();
-					}
-
-					if (_serviceWrapperRegistry != null) {
-						_serviceWrapperRegistry.close();
-					}
 				}
 
 				@Override
 				public void dependenciesFulfilled() {
 					_indexerPostProcessorRegistry =
 						new IndexerPostProcessorRegistry();
-					_schedulerEntryRegistry = new SchedulerEntryRegistry();
 					_serviceWrapperRegistry = new ServiceWrapperRegistry();
 				}
-
-				private IndexerPostProcessorRegistry
-					_indexerPostProcessorRegistry;
-				private SchedulerEntryRegistry _schedulerEntryRegistry;
-				private ServiceWrapperRegistry _serviceWrapperRegistry;
 
 			});
 
@@ -295,6 +299,10 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 			MessageBus.class, PortalExecutorManager.class,
 			SchedulerEngineHelper.class,
 			SingleDestinationMessageSenderFactory.class);
+
+		ClassLoader portalClassLoader = ClassLoaderUtil.getPortalClassLoader();
+
+		ClassLoaderPool.register(_portalServletContextName, portalClassLoader);
 
 		PortalContextLoaderLifecycleThreadLocal.setInitializing(true);
 
@@ -332,10 +340,6 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 			WebCachePoolUtil.clear();
 		}
 
-		ClassLoader portalClassLoader = ClassLoaderUtil.getPortalClassLoader();
-
-		ClassLoaderPool.register(_portalServletContextName, portalClassLoader);
-
 		ServletContextPool.put(_portalServletContextName, servletContext);
 
 		BeanLocatorImpl beanLocatorImpl = new BeanLocatorImpl(
@@ -365,9 +369,9 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 			throw new RuntimeException(e);
 		}
 
-		initListeners(servletContext);
+		CustomJspBagRegistryUtil.getCustomJspBags();
 
-		RubyExecutor.initRubyGems(servletContext);
+		initListeners(servletContext);
 	}
 
 	protected void clearFilteredPropertyDescriptorsCache(
@@ -384,6 +388,24 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 		}
 		catch (Exception e) {
 			_log.error(e, e);
+		}
+	}
+
+	protected void closeDataSource(String name) {
+		DataSourceWrapper dataSourceWrapper =
+			(DataSourceWrapper)PortalBeanLocatorUtil.locate(name);
+
+		DataSource dataSource = dataSourceWrapper.getWrappedDataSource();
+
+		if (dataSource instanceof Closeable) {
+			try {
+				Closeable closeable = (Closeable)dataSource;
+
+				closeable.close();
+			}
+			catch (IOException e) {
+				_log.error(e, e);
+			}
 		}
 	}
 
@@ -415,5 +437,7 @@ public class PortalContextLoaderListener extends ContextLoaderListener {
 	}
 
 	private ArrayApplicationContext _arrayApplicationContext;
+	private IndexerPostProcessorRegistry _indexerPostProcessorRegistry;
+	private ServiceWrapperRegistry _serviceWrapperRegistry;
 
 }

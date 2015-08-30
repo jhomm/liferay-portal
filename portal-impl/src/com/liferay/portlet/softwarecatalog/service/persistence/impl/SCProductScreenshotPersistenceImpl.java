@@ -1339,8 +1339,8 @@ public class SCProductScreenshotPersistenceImpl extends BasePersistenceImpl<SCPr
 	}
 
 	protected void cacheUniqueFindersCache(
-		SCProductScreenshot scProductScreenshot) {
-		if (scProductScreenshot.isNew()) {
+		SCProductScreenshot scProductScreenshot, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { scProductScreenshot.getThumbnailId() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_THUMBNAILID, args,
@@ -1583,7 +1583,7 @@ public class SCProductScreenshotPersistenceImpl extends BasePersistenceImpl<SCPr
 				scProductScreenshot.setNew(false);
 			}
 			else {
-				session.merge(scProductScreenshot);
+				scProductScreenshot = (SCProductScreenshot)session.merge(scProductScreenshot);
 			}
 		}
 		catch (Exception e) {
@@ -1626,8 +1626,9 @@ public class SCProductScreenshotPersistenceImpl extends BasePersistenceImpl<SCPr
 			SCProductScreenshotImpl.class, scProductScreenshot.getPrimaryKey(),
 			scProductScreenshot, false);
 
-		clearUniqueFindersCache(scProductScreenshot);
-		cacheUniqueFindersCache(scProductScreenshot);
+		clearUniqueFindersCache((SCProductScreenshot)scProductScreenshotModelImpl);
+		cacheUniqueFindersCache((SCProductScreenshot)scProductScreenshotModelImpl,
+			isNew);
 
 		scProductScreenshot.resetOriginalValues();
 
@@ -2010,6 +2011,11 @@ public class SCProductScreenshotPersistenceImpl extends BasePersistenceImpl<SCPr
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SCProductScreenshotModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

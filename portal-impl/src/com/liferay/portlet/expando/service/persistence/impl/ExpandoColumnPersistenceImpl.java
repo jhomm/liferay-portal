@@ -1742,8 +1742,9 @@ public class ExpandoColumnPersistenceImpl extends BasePersistenceImpl<ExpandoCol
 		}
 	}
 
-	protected void cacheUniqueFindersCache(ExpandoColumn expandoColumn) {
-		if (expandoColumn.isNew()) {
+	protected void cacheUniqueFindersCache(ExpandoColumn expandoColumn,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					expandoColumn.getTableId(), expandoColumn.getName()
 				};
@@ -1911,7 +1912,7 @@ public class ExpandoColumnPersistenceImpl extends BasePersistenceImpl<ExpandoCol
 				expandoColumn.setNew(false);
 			}
 			else {
-				session.merge(expandoColumn);
+				expandoColumn = (ExpandoColumn)session.merge(expandoColumn);
 			}
 		}
 		catch (Exception e) {
@@ -1971,8 +1972,8 @@ public class ExpandoColumnPersistenceImpl extends BasePersistenceImpl<ExpandoCol
 			ExpandoColumnImpl.class, expandoColumn.getPrimaryKey(),
 			expandoColumn, false);
 
-		clearUniqueFindersCache(expandoColumn);
-		cacheUniqueFindersCache(expandoColumn);
+		clearUniqueFindersCache((ExpandoColumn)expandoColumnModelImpl);
+		cacheUniqueFindersCache((ExpandoColumn)expandoColumnModelImpl, isNew);
 
 		expandoColumn.resetOriginalValues();
 
@@ -2356,6 +2357,11 @@ public class ExpandoColumnPersistenceImpl extends BasePersistenceImpl<ExpandoCol
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return ExpandoColumnModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

@@ -24,9 +24,7 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.model.Layout;
 import com.liferay.portal.service.BaseServiceImpl;
 import com.liferay.portal.service.LayoutService;
-import com.liferay.portal.service.persistence.BackgroundTaskPersistence;
 import com.liferay.portal.service.persistence.ClassNamePersistence;
-import com.liferay.portal.service.persistence.ExportImportConfigurationPersistence;
 import com.liferay.portal.service.persistence.GroupFinder;
 import com.liferay.portal.service.persistence.GroupPersistence;
 import com.liferay.portal.service.persistence.ImagePersistence;
@@ -53,6 +51,7 @@ import com.liferay.portlet.asset.service.persistence.AssetEntryPersistence;
 import com.liferay.portlet.asset.service.persistence.AssetTagFinder;
 import com.liferay.portlet.asset.service.persistence.AssetTagPersistence;
 import com.liferay.portlet.expando.service.persistence.ExpandoRowPersistence;
+import com.liferay.portlet.exportimport.service.persistence.ExportImportConfigurationPersistence;
 import com.liferay.portlet.ratings.service.persistence.RatingsStatsFinder;
 import com.liferay.portlet.ratings.service.persistence.RatingsStatsPersistence;
 
@@ -171,63 +170,6 @@ public abstract class LayoutServiceBaseImpl extends BaseServiceImpl
 	}
 
 	/**
-	 * Returns the background task local service.
-	 *
-	 * @return the background task local service
-	 */
-	public com.liferay.portal.service.BackgroundTaskLocalService getBackgroundTaskLocalService() {
-		return backgroundTaskLocalService;
-	}
-
-	/**
-	 * Sets the background task local service.
-	 *
-	 * @param backgroundTaskLocalService the background task local service
-	 */
-	public void setBackgroundTaskLocalService(
-		com.liferay.portal.service.BackgroundTaskLocalService backgroundTaskLocalService) {
-		this.backgroundTaskLocalService = backgroundTaskLocalService;
-	}
-
-	/**
-	 * Returns the background task remote service.
-	 *
-	 * @return the background task remote service
-	 */
-	public com.liferay.portal.service.BackgroundTaskService getBackgroundTaskService() {
-		return backgroundTaskService;
-	}
-
-	/**
-	 * Sets the background task remote service.
-	 *
-	 * @param backgroundTaskService the background task remote service
-	 */
-	public void setBackgroundTaskService(
-		com.liferay.portal.service.BackgroundTaskService backgroundTaskService) {
-		this.backgroundTaskService = backgroundTaskService;
-	}
-
-	/**
-	 * Returns the background task persistence.
-	 *
-	 * @return the background task persistence
-	 */
-	public BackgroundTaskPersistence getBackgroundTaskPersistence() {
-		return backgroundTaskPersistence;
-	}
-
-	/**
-	 * Sets the background task persistence.
-	 *
-	 * @param backgroundTaskPersistence the background task persistence
-	 */
-	public void setBackgroundTaskPersistence(
-		BackgroundTaskPersistence backgroundTaskPersistence) {
-		this.backgroundTaskPersistence = backgroundTaskPersistence;
-	}
-
-	/**
 	 * Returns the class name local service.
 	 *
 	 * @return the class name local service
@@ -282,63 +224,6 @@ public abstract class LayoutServiceBaseImpl extends BaseServiceImpl
 	public void setClassNamePersistence(
 		ClassNamePersistence classNamePersistence) {
 		this.classNamePersistence = classNamePersistence;
-	}
-
-	/**
-	 * Returns the export import configuration local service.
-	 *
-	 * @return the export import configuration local service
-	 */
-	public com.liferay.portal.service.ExportImportConfigurationLocalService getExportImportConfigurationLocalService() {
-		return exportImportConfigurationLocalService;
-	}
-
-	/**
-	 * Sets the export import configuration local service.
-	 *
-	 * @param exportImportConfigurationLocalService the export import configuration local service
-	 */
-	public void setExportImportConfigurationLocalService(
-		com.liferay.portal.service.ExportImportConfigurationLocalService exportImportConfigurationLocalService) {
-		this.exportImportConfigurationLocalService = exportImportConfigurationLocalService;
-	}
-
-	/**
-	 * Returns the export import configuration remote service.
-	 *
-	 * @return the export import configuration remote service
-	 */
-	public com.liferay.portal.service.ExportImportConfigurationService getExportImportConfigurationService() {
-		return exportImportConfigurationService;
-	}
-
-	/**
-	 * Sets the export import configuration remote service.
-	 *
-	 * @param exportImportConfigurationService the export import configuration remote service
-	 */
-	public void setExportImportConfigurationService(
-		com.liferay.portal.service.ExportImportConfigurationService exportImportConfigurationService) {
-		this.exportImportConfigurationService = exportImportConfigurationService;
-	}
-
-	/**
-	 * Returns the export import configuration persistence.
-	 *
-	 * @return the export import configuration persistence
-	 */
-	public ExportImportConfigurationPersistence getExportImportConfigurationPersistence() {
-		return exportImportConfigurationPersistence;
-	}
-
-	/**
-	 * Sets the export import configuration persistence.
-	 *
-	 * @param exportImportConfigurationPersistence the export import configuration persistence
-	 */
-	public void setExportImportConfigurationPersistence(
-		ExportImportConfigurationPersistence exportImportConfigurationPersistence) {
-		this.exportImportConfigurationPersistence = exportImportConfigurationPersistence;
 	}
 
 	/**
@@ -731,6 +616,63 @@ public abstract class LayoutServiceBaseImpl extends BaseServiceImpl
 	public void setExpandoRowPersistence(
 		ExpandoRowPersistence expandoRowPersistence) {
 		this.expandoRowPersistence = expandoRowPersistence;
+	}
+
+	/**
+	 * Returns the export import configuration local service.
+	 *
+	 * @return the export import configuration local service
+	 */
+	public com.liferay.portlet.exportimport.service.ExportImportConfigurationLocalService getExportImportConfigurationLocalService() {
+		return exportImportConfigurationLocalService;
+	}
+
+	/**
+	 * Sets the export import configuration local service.
+	 *
+	 * @param exportImportConfigurationLocalService the export import configuration local service
+	 */
+	public void setExportImportConfigurationLocalService(
+		com.liferay.portlet.exportimport.service.ExportImportConfigurationLocalService exportImportConfigurationLocalService) {
+		this.exportImportConfigurationLocalService = exportImportConfigurationLocalService;
+	}
+
+	/**
+	 * Returns the export import configuration remote service.
+	 *
+	 * @return the export import configuration remote service
+	 */
+	public com.liferay.portlet.exportimport.service.ExportImportConfigurationService getExportImportConfigurationService() {
+		return exportImportConfigurationService;
+	}
+
+	/**
+	 * Sets the export import configuration remote service.
+	 *
+	 * @param exportImportConfigurationService the export import configuration remote service
+	 */
+	public void setExportImportConfigurationService(
+		com.liferay.portlet.exportimport.service.ExportImportConfigurationService exportImportConfigurationService) {
+		this.exportImportConfigurationService = exportImportConfigurationService;
+	}
+
+	/**
+	 * Returns the export import configuration persistence.
+	 *
+	 * @return the export import configuration persistence
+	 */
+	public ExportImportConfigurationPersistence getExportImportConfigurationPersistence() {
+		return exportImportConfigurationPersistence;
+	}
+
+	/**
+	 * Sets the export import configuration persistence.
+	 *
+	 * @param exportImportConfigurationPersistence the export import configuration persistence
+	 */
+	public void setExportImportConfigurationPersistence(
+		ExportImportConfigurationPersistence exportImportConfigurationPersistence) {
+		this.exportImportConfigurationPersistence = exportImportConfigurationPersistence;
 	}
 
 	/**
@@ -1398,7 +1340,7 @@ public abstract class LayoutServiceBaseImpl extends BaseServiceImpl
 
 	@BeanReference(type = com.liferay.portal.service.LayoutLocalService.class)
 	protected com.liferay.portal.service.LayoutLocalService layoutLocalService;
-	@BeanReference(type = LayoutService.class)
+	@BeanReference(type = com.liferay.portal.service.LayoutService.class)
 	protected LayoutService layoutService;
 	@BeanReference(type = LayoutPersistence.class)
 	protected LayoutPersistence layoutPersistence;
@@ -1406,24 +1348,12 @@ public abstract class LayoutServiceBaseImpl extends BaseServiceImpl
 	protected LayoutFinder layoutFinder;
 	@BeanReference(type = com.liferay.counter.service.CounterLocalService.class)
 	protected com.liferay.counter.service.CounterLocalService counterLocalService;
-	@BeanReference(type = com.liferay.portal.service.BackgroundTaskLocalService.class)
-	protected com.liferay.portal.service.BackgroundTaskLocalService backgroundTaskLocalService;
-	@BeanReference(type = com.liferay.portal.service.BackgroundTaskService.class)
-	protected com.liferay.portal.service.BackgroundTaskService backgroundTaskService;
-	@BeanReference(type = BackgroundTaskPersistence.class)
-	protected BackgroundTaskPersistence backgroundTaskPersistence;
 	@BeanReference(type = com.liferay.portal.service.ClassNameLocalService.class)
 	protected com.liferay.portal.service.ClassNameLocalService classNameLocalService;
 	@BeanReference(type = com.liferay.portal.service.ClassNameService.class)
 	protected com.liferay.portal.service.ClassNameService classNameService;
 	@BeanReference(type = ClassNamePersistence.class)
 	protected ClassNamePersistence classNamePersistence;
-	@BeanReference(type = com.liferay.portal.service.ExportImportConfigurationLocalService.class)
-	protected com.liferay.portal.service.ExportImportConfigurationLocalService exportImportConfigurationLocalService;
-	@BeanReference(type = com.liferay.portal.service.ExportImportConfigurationService.class)
-	protected com.liferay.portal.service.ExportImportConfigurationService exportImportConfigurationService;
-	@BeanReference(type = ExportImportConfigurationPersistence.class)
-	protected ExportImportConfigurationPersistence exportImportConfigurationPersistence;
 	@BeanReference(type = com.liferay.portal.service.GroupLocalService.class)
 	protected com.liferay.portal.service.GroupLocalService groupLocalService;
 	@BeanReference(type = com.liferay.portal.service.GroupService.class)
@@ -1466,6 +1396,12 @@ public abstract class LayoutServiceBaseImpl extends BaseServiceImpl
 	protected com.liferay.portlet.expando.service.ExpandoRowLocalService expandoRowLocalService;
 	@BeanReference(type = ExpandoRowPersistence.class)
 	protected ExpandoRowPersistence expandoRowPersistence;
+	@BeanReference(type = com.liferay.portlet.exportimport.service.ExportImportConfigurationLocalService.class)
+	protected com.liferay.portlet.exportimport.service.ExportImportConfigurationLocalService exportImportConfigurationLocalService;
+	@BeanReference(type = com.liferay.portlet.exportimport.service.ExportImportConfigurationService.class)
+	protected com.liferay.portlet.exportimport.service.ExportImportConfigurationService exportImportConfigurationService;
+	@BeanReference(type = ExportImportConfigurationPersistence.class)
+	protected ExportImportConfigurationPersistence exportImportConfigurationPersistence;
 	@BeanReference(type = com.liferay.portlet.ratings.service.RatingsStatsLocalService.class)
 	protected com.liferay.portlet.ratings.service.RatingsStatsLocalService ratingsStatsLocalService;
 	@BeanReference(type = RatingsStatsPersistence.class)

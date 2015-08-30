@@ -6092,8 +6092,9 @@ public class SocialRequestPersistenceImpl extends BasePersistenceImpl<SocialRequ
 		}
 	}
 
-	protected void cacheUniqueFindersCache(SocialRequest socialRequest) {
-		if (socialRequest.isNew()) {
+	protected void cacheUniqueFindersCache(SocialRequest socialRequest,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					socialRequest.getUuid(), socialRequest.getGroupId()
 				};
@@ -6320,7 +6321,7 @@ public class SocialRequestPersistenceImpl extends BasePersistenceImpl<SocialRequ
 				socialRequest.setNew(false);
 			}
 			else {
-				session.merge(socialRequest);
+				socialRequest = (SocialRequest)session.merge(socialRequest);
 			}
 		}
 		catch (Exception e) {
@@ -6556,8 +6557,8 @@ public class SocialRequestPersistenceImpl extends BasePersistenceImpl<SocialRequ
 			SocialRequestImpl.class, socialRequest.getPrimaryKey(),
 			socialRequest, false);
 
-		clearUniqueFindersCache(socialRequest);
-		cacheUniqueFindersCache(socialRequest);
+		clearUniqueFindersCache((SocialRequest)socialRequestModelImpl);
+		cacheUniqueFindersCache((SocialRequest)socialRequestModelImpl, isNew);
 
 		socialRequest.resetOriginalValues();
 
@@ -6947,6 +6948,11 @@ public class SocialRequestPersistenceImpl extends BasePersistenceImpl<SocialRequ
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SocialRequestModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

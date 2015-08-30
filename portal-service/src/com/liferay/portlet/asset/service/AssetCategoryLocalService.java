@@ -90,7 +90,7 @@ public interface AssetCategoryLocalService extends BaseLocalService,
 
 	public void addCategoryResources(
 		com.liferay.portlet.asset.model.AssetCategory category,
-		java.lang.String[] groupPermissions, java.lang.String[] guestPermissions)
+		com.liferay.portal.service.permission.ModelPermissions modelPermissions)
 		throws PortalException;
 
 	public void clearAssetEntryAssetCategories(long entryId);
@@ -411,7 +411,7 @@ public interface AssetCategoryLocalService extends BaseLocalService,
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery getExportActionableDynamicQuery(
-		com.liferay.portal.kernel.lar.PortletDataContext portletDataContext);
+		com.liferay.portlet.exportimport.lar.PortletDataContext portletDataContext);
 
 	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)

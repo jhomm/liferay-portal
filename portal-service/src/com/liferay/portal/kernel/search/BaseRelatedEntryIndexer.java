@@ -14,6 +14,9 @@
 
 package com.liferay.portal.kernel.search;
 
+import com.liferay.portal.kernel.search.filter.BooleanFilter;
+import com.liferay.portal.kernel.search.filter.QueryFilter;
+import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.util.PortalUtil;
 
@@ -24,7 +27,7 @@ public class BaseRelatedEntryIndexer implements RelatedEntryIndexer {
 
 	@Override
 	public void addRelatedClassNames(
-			BooleanQuery contextQuery, SearchContext searchContext)
+			BooleanFilter contextBooleanFilter, SearchContext searchContext)
 		throws Exception {
 
 		searchContext.setAttribute("relatedClassName", Boolean.TRUE);
@@ -36,37 +39,43 @@ public class BaseRelatedEntryIndexer implements RelatedEntryIndexer {
 			return;
 		}
 
-		BooleanQuery relatedQueries = BooleanQueryFactoryUtil.create(
-			searchContext);
+		BooleanFilter relatedBooleanFilters = new BooleanFilter();
 
 		for (String relatedEntryClassName : relatedEntryClassNames) {
-			Indexer indexer = IndexerRegistryUtil.getIndexer(
+			Indexer<?> indexer = IndexerRegistryUtil.getIndexer(
 				relatedEntryClassName);
 
 			if (indexer == null) {
 				continue;
 			}
 
-			BooleanQuery relatedQuery = BooleanQueryFactoryUtil.create(
-				searchContext);
+			BooleanFilter relatedBooleanFilter = new BooleanFilter();
 
-			indexer.postProcessContextQuery(relatedQuery, searchContext);
+			indexer.postProcessContextBooleanFilter(
+				relatedBooleanFilter, searchContext);
 
 			for (IndexerPostProcessor indexerPostProcessor :
 					indexer.getIndexerPostProcessors()) {
 
-				indexerPostProcessor.postProcessContextQuery(
-					relatedQuery, searchContext);
+				indexerPostProcessor.postProcessContextBooleanFilter(
+					relatedBooleanFilter, searchContext);
 			}
 
-			relatedQuery.addRequiredTerm(
+			postProcessContextQuery(
+				relatedBooleanFilter, searchContext, indexer);
+
+			relatedBooleanFilter.addRequiredTerm(
 				Field.CLASS_NAME_ID,
 				PortalUtil.getClassNameId(relatedEntryClassName));
 
-			relatedQueries.add(relatedQuery, BooleanClauseOccur.SHOULD);
+			relatedBooleanFilters.add(
+				relatedBooleanFilter, BooleanClauseOccur.SHOULD);
 		}
 
-		contextQuery.add(relatedQueries, BooleanClauseOccur.MUST);
+		if (relatedBooleanFilters.hasClauses()) {
+			contextBooleanFilter.add(
+				relatedBooleanFilters, BooleanClauseOccur.MUST);
+		}
 
 		searchContext.setAttribute("relatedClassName", Boolean.FALSE);
 	}
@@ -78,6 +87,35 @@ public class BaseRelatedEntryIndexer implements RelatedEntryIndexer {
 
 	@Override
 	public void updateFullQuery(SearchContext searchContext) {
+	}
+
+	/**
+	 * @deprecated As of 7.0.0, added strictly to support backwards
+	 *             compatibility of {@link
+	 *             Indexer#postProcessContextQuery(BooleanQuery, SearchContext)}
+	 */
+	@Deprecated
+	protected void postProcessContextQuery(
+			BooleanFilter relatedBooleanFilter, SearchContext searchContext,
+			Indexer<?> indexer)
+		throws Exception {
+
+		BooleanQuery entityQuery = new BooleanQueryImpl();
+
+		indexer.postProcessContextQuery(entityQuery, searchContext);
+
+		for (IndexerPostProcessor indexerPostProcessor :
+				indexer.getIndexerPostProcessors()) {
+
+			indexerPostProcessor.postProcessContextQuery(
+				entityQuery, searchContext);
+		}
+
+		if (entityQuery.hasClauses()) {
+			QueryFilter queryFilter = new QueryFilter(entityQuery);
+
+			relatedBooleanFilter.add(queryFilter, BooleanClauseOccur.MUST);
+		}
 	}
 
 }

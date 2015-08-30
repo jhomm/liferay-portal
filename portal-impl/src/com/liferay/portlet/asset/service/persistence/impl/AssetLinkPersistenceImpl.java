@@ -2916,8 +2916,8 @@ public class AssetLinkPersistenceImpl extends BasePersistenceImpl<AssetLink>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(AssetLink assetLink) {
-		if (assetLink.isNew()) {
+	protected void cacheUniqueFindersCache(AssetLink assetLink, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					assetLink.getEntryId1(), assetLink.getEntryId2(),
 					assetLink.getType()
@@ -3088,7 +3088,7 @@ public class AssetLinkPersistenceImpl extends BasePersistenceImpl<AssetLink>
 				assetLink.setNew(false);
 			}
 			else {
-				session.merge(assetLink);
+				assetLink = (AssetLink)session.merge(assetLink);
 			}
 		}
 		catch (Exception e) {
@@ -3206,8 +3206,8 @@ public class AssetLinkPersistenceImpl extends BasePersistenceImpl<AssetLink>
 		EntityCacheUtil.putResult(AssetLinkModelImpl.ENTITY_CACHE_ENABLED,
 			AssetLinkImpl.class, assetLink.getPrimaryKey(), assetLink, false);
 
-		clearUniqueFindersCache(assetLink);
-		cacheUniqueFindersCache(assetLink);
+		clearUniqueFindersCache((AssetLink)assetLinkModelImpl);
+		cacheUniqueFindersCache((AssetLink)assetLinkModelImpl, isNew);
 
 		assetLink.resetOriginalValues();
 
@@ -3592,6 +3592,11 @@ public class AssetLinkPersistenceImpl extends BasePersistenceImpl<AssetLink>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return AssetLinkModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

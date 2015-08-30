@@ -1007,8 +1007,8 @@ public class UserNotificationDeliveryPersistenceImpl extends BasePersistenceImpl
 	}
 
 	protected void cacheUniqueFindersCache(
-		UserNotificationDelivery userNotificationDelivery) {
-		if (userNotificationDelivery.isNew()) {
+		UserNotificationDelivery userNotificationDelivery, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					userNotificationDelivery.getUserId(),
 					userNotificationDelivery.getPortletId(),
@@ -1195,7 +1195,7 @@ public class UserNotificationDeliveryPersistenceImpl extends BasePersistenceImpl
 				userNotificationDelivery.setNew(false);
 			}
 			else {
-				session.merge(userNotificationDelivery);
+				userNotificationDelivery = (UserNotificationDelivery)session.merge(userNotificationDelivery);
 			}
 		}
 		catch (Exception e) {
@@ -1237,8 +1237,9 @@ public class UserNotificationDeliveryPersistenceImpl extends BasePersistenceImpl
 			userNotificationDelivery.getPrimaryKey(), userNotificationDelivery,
 			false);
 
-		clearUniqueFindersCache(userNotificationDelivery);
-		cacheUniqueFindersCache(userNotificationDelivery);
+		clearUniqueFindersCache((UserNotificationDelivery)userNotificationDeliveryModelImpl);
+		cacheUniqueFindersCache((UserNotificationDelivery)userNotificationDeliveryModelImpl,
+			isNew);
 
 		userNotificationDelivery.resetOriginalValues();
 
@@ -1625,6 +1626,11 @@ public class UserNotificationDeliveryPersistenceImpl extends BasePersistenceImpl
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return UserNotificationDeliveryModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

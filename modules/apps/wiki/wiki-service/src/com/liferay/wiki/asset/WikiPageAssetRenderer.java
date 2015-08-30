@@ -15,19 +15,21 @@
 package com.liferay.wiki.asset;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.configuration.ConfigurationFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
-import com.liferay.portal.kernel.settings.SettingsFactory;
 import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.security.permission.ActionKeys;
 import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portal.theme.ThemeDisplay;
+import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.WebKeys;
 import com.liferay.portlet.asset.model.AssetRendererFactory;
-import com.liferay.portlet.asset.model.BaseAssetRenderer;
+import com.liferay.portlet.asset.model.BaseJSPAssetRenderer;
 import com.liferay.portlet.trash.util.TrashUtil;
+import com.liferay.wiki.configuration.WikiGroupServiceOverriddenConfiguration;
 import com.liferay.wiki.constants.WikiConstants;
 import com.liferay.wiki.constants.WikiPortletKeys;
 import com.liferay.wiki.constants.WikiWebKeys;
@@ -35,8 +37,6 @@ import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.model.WikiPageConstants;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
 import com.liferay.wiki.service.permission.WikiPagePermissionChecker;
-import com.liferay.wiki.service.util.WikiServiceComponentProvider;
-import com.liferay.wiki.settings.WikiGroupServiceSettings;
 import com.liferay.wiki.util.WikiUtil;
 
 import java.util.Date;
@@ -47,12 +47,15 @@ import javax.portlet.PortletResponse;
 import javax.portlet.PortletURL;
 import javax.portlet.WindowState;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 /**
  * @author Julio Camarero
  * @author Sergio González
  */
 public class WikiPageAssetRenderer
-	extends BaseAssetRenderer implements TrashRenderer {
+	extends BaseJSPAssetRenderer<WikiPage> implements TrashRenderer {
 
 	public static final String TYPE = "wiki_page";
 
@@ -71,16 +74,16 @@ public class WikiPageAssetRenderer
 	public WikiPageAssetRenderer(WikiPage page) throws PortalException {
 		_page = page;
 
-		WikiServiceComponentProvider wikiServiceComponentProvider =
-			WikiServiceComponentProvider.getWikiServiceComponentProvider();
-
-		SettingsFactory settingsFactory =
-			wikiServiceComponentProvider.getSettingsFactory();
-
-		_wikiGroupServiceSettings = settingsFactory.getSettings(
-			WikiGroupServiceSettings.class,
+		_wikiGroupServiceOverriddenConfiguration =
+			ConfigurationFactoryUtil.getConfiguration(
+				WikiGroupServiceOverriddenConfiguration.class,
 			new GroupServiceSettingsLocator(
 				page.getGroupId(), WikiConstants.SERVICE_NAME));
+	}
+
+	@Override
+	public WikiPage getAssetObject() {
+		return _page;
 	}
 
 	@Override
@@ -95,7 +98,7 @@ public class WikiPageAssetRenderer
 
 	@Override
 	public String getDiscussionPath() {
-		if (_wikiGroupServiceSettings.pageCommentsEnabled()) {
+		if (_wikiGroupServiceOverriddenConfiguration.pageCommentsEnabled()) {
 			return "edit_page_discussion";
 		}
 		else {
@@ -114,8 +117,25 @@ public class WikiPageAssetRenderer
 	}
 
 	@Override
+	public String getJspPath(HttpServletRequest request, String template) {
+		if (template.equals(TEMPLATE_ABSTRACT) ||
+			template.equals(TEMPLATE_FULL_CONTENT)) {
+
+			return "/html/portlet/wiki/asset/" + template + ".jsp";
+		}
+		else {
+			return null;
+		}
+	}
+
+	@Override
 	public String getPortletId() {
 		return WikiPortletKeys.WIKI;
+	}
+
+	@Override
+	public int getStatus() {
+		return _page.getStatus();
 	}
 
 	@Override
@@ -165,8 +185,8 @@ public class WikiPageAssetRenderer
 			LiferayPortletResponse liferayPortletResponse)
 		throws Exception {
 
-		PortletURL portletURL = liferayPortletResponse.createLiferayPortletURL(
-			getControlPanelPlid(liferayPortletRequest), WikiPortletKeys.WIKI,
+		PortletURL portletURL = PortalUtil.getControlPanelPortletURL(
+			liferayPortletRequest, WikiPortletKeys.WIKI, 0,
 			PortletRequest.RENDER_PHASE);
 
 		portletURL.setParameter("struts_action", "/wiki/edit_page");
@@ -182,8 +202,8 @@ public class WikiPageAssetRenderer
 			LiferayPortletResponse liferayPortletResponse)
 		throws Exception {
 
-		PortletURL portletURL = liferayPortletResponse.createLiferayPortletURL(
-			getControlPanelPlid(liferayPortletRequest), WikiPortletKeys.WIKI,
+		PortletURL portletURL = PortalUtil.getControlPanelPortletURL(
+			liferayPortletRequest, WikiPortletKeys.WIKI, 0,
 			PortletRequest.RENDER_PHASE);
 
 		portletURL.setParameter("struts_action", "/wiki/export_page");
@@ -199,7 +219,8 @@ public class WikiPageAssetRenderer
 			WindowState windowState)
 		throws Exception {
 
-		AssetRendererFactory assetRendererFactory = getAssetRendererFactory();
+		AssetRendererFactory<WikiPage> assetRendererFactory =
+			getAssetRendererFactory();
 
 		PortletURL portletURL = assetRendererFactory.getURLView(
 			liferayPortletResponse, windowState);
@@ -218,8 +239,8 @@ public class WikiPageAssetRenderer
 			LiferayPortletResponse liferayPortletResponse)
 		throws Exception {
 
-		PortletURL portletURL = liferayPortletResponse.createLiferayPortletURL(
-			getControlPanelPlid(liferayPortletRequest), WikiPortletKeys.WIKI,
+		PortletURL portletURL = PortalUtil.getControlPanelPortletURL(
+			liferayPortletRequest, WikiPortletKeys.WIKI, 0,
 			PortletRequest.RENDER_PHASE);
 
 		WikiPage previousVersionPage =
@@ -285,6 +306,17 @@ public class WikiPageAssetRenderer
 	}
 
 	@Override
+	public boolean include(
+			HttpServletRequest request, HttpServletResponse response,
+			String template)
+		throws Exception {
+
+		request.setAttribute(WikiWebKeys.WIKI_PAGE, _page);
+
+		return super.include(request, response, template);
+	}
+
+	@Override
 	public boolean isConvertible() {
 		return true;
 	}
@@ -295,29 +327,12 @@ public class WikiPageAssetRenderer
 	}
 
 	@Override
-	public String render(
-			PortletRequest portletRequest, PortletResponse portletResponse,
-			String template)
-		throws Exception {
-
-		if (template.equals(TEMPLATE_ABSTRACT) ||
-			template.equals(TEMPLATE_FULL_CONTENT)) {
-
-			portletRequest.setAttribute(WikiWebKeys.WIKI_PAGE, _page);
-
-			return "/html/portlet/wiki/asset/" + template + ".jsp";
-		}
-		else {
-			return null;
-		}
-	}
-
-	@Override
 	protected String getIconPath(ThemeDisplay themeDisplay) {
 		return themeDisplay.getPathThemeImages() + "/common/page.png";
 	}
 
 	private final WikiPage _page;
-	private final WikiGroupServiceSettings _wikiGroupServiceSettings;
+	private final WikiGroupServiceOverriddenConfiguration
+		_wikiGroupServiceOverriddenConfiguration;
 
 }

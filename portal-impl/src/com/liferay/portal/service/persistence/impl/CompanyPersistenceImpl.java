@@ -1332,8 +1332,8 @@ public class CompanyPersistenceImpl extends BasePersistenceImpl<Company>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(Company company) {
-		if (company.isNew()) {
+	protected void cacheUniqueFindersCache(Company company, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { company.getWebId() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_WEBID, args,
@@ -1547,7 +1547,7 @@ public class CompanyPersistenceImpl extends BasePersistenceImpl<Company>
 				company.setNew(false);
 			}
 			else {
-				session.merge(company);
+				company = (Company)session.merge(company);
 			}
 		}
 		catch (Exception e) {
@@ -1585,8 +1585,8 @@ public class CompanyPersistenceImpl extends BasePersistenceImpl<Company>
 		EntityCacheUtil.putResult(CompanyModelImpl.ENTITY_CACHE_ENABLED,
 			CompanyImpl.class, company.getPrimaryKey(), company, false);
 
-		clearUniqueFindersCache(company);
-		cacheUniqueFindersCache(company);
+		clearUniqueFindersCache((Company)companyModelImpl);
+		cacheUniqueFindersCache((Company)companyModelImpl, isNew);
 
 		company.resetOriginalValues();
 
@@ -1973,6 +1973,11 @@ public class CompanyPersistenceImpl extends BasePersistenceImpl<Company>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return CompanyModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

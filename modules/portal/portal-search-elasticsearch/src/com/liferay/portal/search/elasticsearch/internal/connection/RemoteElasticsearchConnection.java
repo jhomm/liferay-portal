@@ -21,6 +21,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
@@ -29,12 +30,11 @@ import com.liferay.portal.search.elasticsearch.connection.BaseElasticsearchConne
 import com.liferay.portal.search.elasticsearch.connection.ElasticsearchConnection;
 import com.liferay.portal.search.elasticsearch.connection.OperationMode;
 import com.liferay.portal.search.elasticsearch.index.IndexFactory;
-import com.liferay.registry.util.StringPlus;
+import com.liferay.portal.search.elasticsearch.settings.SettingsContributor;
 
 import java.net.InetAddress;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,25 +46,25 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Michael C. Han
  */
 @Component(
 	configurationPid = "com.liferay.portal.search.elasticsearch.configuration.ElasticsearchConfiguration",
+	immediate = true, property = {"operation.mode=REMOTE"},
 	service = ElasticsearchConnection.class
 )
 public class RemoteElasticsearchConnection extends BaseElasticsearchConnection {
 
 	@Override
-	public void close() {
-		super.close();
-	}
-
-	@Override
 	public OperationMode getOperationMode() {
-		return OperationMode.EMBEDDED;
+		return OperationMode.REMOTE;
 	}
 
 	@Override
@@ -79,13 +79,20 @@ public class RemoteElasticsearchConnection extends BaseElasticsearchConnection {
 
 	@Activate
 	protected void activate(Map<String, Object> properties) {
-		elasticsearchConfiguration = Configurable.createConfigurable(
-			ElasticsearchConfiguration.class, properties);
+		replaceElasticsearchConfiguration(properties);
+	}
 
-		List<String> transportAddresses = StringPlus.asList(
-			properties.get("transportAddresses"));
+	@Override
+	@Reference(
+		cardinality = ReferenceCardinality.MULTIPLE,
+		policy = ReferencePolicy.DYNAMIC,
+		policyOption = ReferencePolicyOption.GREEDY,
+		target = "(operation.mode=REMOTE)"
+	)
+	protected void addSettingsContributor(
+		SettingsContributor settingsContributor) {
 
-		setTransportAddresses(new HashSet<>(transportAddresses));
+		super.addSettingsContributor(settingsContributor);
 	}
 
 	@Override
@@ -147,6 +154,36 @@ public class RemoteElasticsearchConnection extends BaseElasticsearchConnection {
 		builder.put("path.logs", _props.get(PropsKeys.LIFERAY_HOME) + "/logs");
 		builder.put(
 			"path.work", SystemProperties.get(SystemProperties.TMP_DIR));
+	}
+
+	@Modified
+	protected synchronized void modified(Map<String, Object> properties) {
+		replaceElasticsearchConfiguration(properties);
+
+		if (isConnected()) {
+			close();
+
+			connect();
+		}
+	}
+
+	@Override
+	protected void removeSettingsContributor(
+		SettingsContributor settingsContributor) {
+
+		super.removeSettingsContributor(settingsContributor);
+	}
+
+	protected void replaceElasticsearchConfiguration(
+		Map<String, Object> properties) {
+
+		elasticsearchConfiguration = Configurable.createConfigurable(
+			ElasticsearchConfiguration.class, properties);
+
+		String[] transportAddresses =
+			elasticsearchConfiguration.transportAddresses();
+
+		setTransportAddresses(SetUtil.fromArray(transportAddresses));
 	}
 
 	@Reference(unbind = "-")

@@ -30,11 +30,6 @@ import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.lar.ExportImportHelperUtil;
-import com.liferay.portal.kernel.lar.ManifestSummary;
-import com.liferay.portal.kernel.lar.PortletDataContext;
-import com.liferay.portal.kernel.lar.StagedModelDataHandlerUtil;
-import com.liferay.portal.kernel.lar.StagedModelType;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -84,12 +79,18 @@ import com.liferay.portlet.documentlibrary.service.persistence.DLFileEntryPersis
 import com.liferay.portlet.documentlibrary.service.persistence.DLFileRankFinder;
 import com.liferay.portlet.documentlibrary.service.persistence.DLFileRankPersistence;
 import com.liferay.portlet.expando.service.persistence.ExpandoRowPersistence;
+import com.liferay.portlet.exportimport.lar.ExportImportHelperUtil;
+import com.liferay.portlet.exportimport.lar.ManifestSummary;
+import com.liferay.portlet.exportimport.lar.PortletDataContext;
+import com.liferay.portlet.exportimport.lar.StagedModelDataHandlerUtil;
+import com.liferay.portlet.exportimport.lar.StagedModelType;
 import com.liferay.portlet.messageboards.service.persistence.MBBanPersistence;
 import com.liferay.portlet.messageboards.service.persistence.MBMessageFinder;
 import com.liferay.portlet.messageboards.service.persistence.MBMessagePersistence;
 import com.liferay.portlet.messageboards.service.persistence.MBStatsUserPersistence;
 import com.liferay.portlet.messageboards.service.persistence.MBThreadFlagPersistence;
-import com.liferay.portlet.shopping.service.persistence.ShoppingCartPersistence;
+import com.liferay.portlet.ratings.service.persistence.RatingsStatsFinder;
+import com.liferay.portlet.ratings.service.persistence.RatingsStatsPersistence;
 import com.liferay.portlet.social.service.persistence.SocialActivityFinder;
 import com.liferay.portlet.social.service.persistence.SocialActivityPersistence;
 import com.liferay.portlet.social.service.persistence.SocialRelationPersistence;
@@ -2636,41 +2637,59 @@ public abstract class UserLocalServiceBaseImpl extends BaseLocalServiceImpl
 	}
 
 	/**
-	 * Returns the shopping cart local service.
+	 * Returns the ratings stats local service.
 	 *
-	 * @return the shopping cart local service
+	 * @return the ratings stats local service
 	 */
-	public com.liferay.portlet.shopping.service.ShoppingCartLocalService getShoppingCartLocalService() {
-		return shoppingCartLocalService;
+	public com.liferay.portlet.ratings.service.RatingsStatsLocalService getRatingsStatsLocalService() {
+		return ratingsStatsLocalService;
 	}
 
 	/**
-	 * Sets the shopping cart local service.
+	 * Sets the ratings stats local service.
 	 *
-	 * @param shoppingCartLocalService the shopping cart local service
+	 * @param ratingsStatsLocalService the ratings stats local service
 	 */
-	public void setShoppingCartLocalService(
-		com.liferay.portlet.shopping.service.ShoppingCartLocalService shoppingCartLocalService) {
-		this.shoppingCartLocalService = shoppingCartLocalService;
+	public void setRatingsStatsLocalService(
+		com.liferay.portlet.ratings.service.RatingsStatsLocalService ratingsStatsLocalService) {
+		this.ratingsStatsLocalService = ratingsStatsLocalService;
 	}
 
 	/**
-	 * Returns the shopping cart persistence.
+	 * Returns the ratings stats persistence.
 	 *
-	 * @return the shopping cart persistence
+	 * @return the ratings stats persistence
 	 */
-	public ShoppingCartPersistence getShoppingCartPersistence() {
-		return shoppingCartPersistence;
+	public RatingsStatsPersistence getRatingsStatsPersistence() {
+		return ratingsStatsPersistence;
 	}
 
 	/**
-	 * Sets the shopping cart persistence.
+	 * Sets the ratings stats persistence.
 	 *
-	 * @param shoppingCartPersistence the shopping cart persistence
+	 * @param ratingsStatsPersistence the ratings stats persistence
 	 */
-	public void setShoppingCartPersistence(
-		ShoppingCartPersistence shoppingCartPersistence) {
-		this.shoppingCartPersistence = shoppingCartPersistence;
+	public void setRatingsStatsPersistence(
+		RatingsStatsPersistence ratingsStatsPersistence) {
+		this.ratingsStatsPersistence = ratingsStatsPersistence;
+	}
+
+	/**
+	 * Returns the ratings stats finder.
+	 *
+	 * @return the ratings stats finder
+	 */
+	public RatingsStatsFinder getRatingsStatsFinder() {
+		return ratingsStatsFinder;
+	}
+
+	/**
+	 * Sets the ratings stats finder.
+	 *
+	 * @param ratingsStatsFinder the ratings stats finder
+	 */
+	public void setRatingsStatsFinder(RatingsStatsFinder ratingsStatsFinder) {
+		this.ratingsStatsFinder = ratingsStatsFinder;
 	}
 
 	/**
@@ -3132,7 +3151,7 @@ public abstract class UserLocalServiceBaseImpl extends BaseLocalServiceImpl
 		}
 	}
 
-	@BeanReference(type = UserLocalService.class)
+	@BeanReference(type = com.liferay.portal.service.UserLocalService.class)
 	protected UserLocalService userLocalService;
 	@BeanReference(type = com.liferay.portal.service.UserService.class)
 	protected com.liferay.portal.service.UserService userService;
@@ -3298,10 +3317,12 @@ public abstract class UserLocalServiceBaseImpl extends BaseLocalServiceImpl
 	protected com.liferay.portlet.messageboards.service.MBThreadFlagLocalService mbThreadFlagLocalService;
 	@BeanReference(type = MBThreadFlagPersistence.class)
 	protected MBThreadFlagPersistence mbThreadFlagPersistence;
-	@BeanReference(type = com.liferay.portlet.shopping.service.ShoppingCartLocalService.class)
-	protected com.liferay.portlet.shopping.service.ShoppingCartLocalService shoppingCartLocalService;
-	@BeanReference(type = ShoppingCartPersistence.class)
-	protected ShoppingCartPersistence shoppingCartPersistence;
+	@BeanReference(type = com.liferay.portlet.ratings.service.RatingsStatsLocalService.class)
+	protected com.liferay.portlet.ratings.service.RatingsStatsLocalService ratingsStatsLocalService;
+	@BeanReference(type = RatingsStatsPersistence.class)
+	protected RatingsStatsPersistence ratingsStatsPersistence;
+	@BeanReference(type = RatingsStatsFinder.class)
+	protected RatingsStatsFinder ratingsStatsFinder;
 	@BeanReference(type = com.liferay.portlet.social.service.SocialActivityLocalService.class)
 	protected com.liferay.portlet.social.service.SocialActivityLocalService socialActivityLocalService;
 	@BeanReference(type = com.liferay.portlet.social.service.SocialActivityService.class)

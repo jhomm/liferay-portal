@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
 import com.liferay.portal.kernel.security.access.control.AccessControlled;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -38,6 +39,8 @@ import com.liferay.portal.service.BaseService;
  */
 @AccessControlled
 @JSONWebService
+@OSGiBeanProperties(property =  {
+	"json.web.service.context.name=bookmarks", "json.web.service.context.path=BookmarksFolder"}, service = BookmarksFolderService.class)
 @ProviderType
 @Transactional(isolation = Isolation.PORTAL, rollbackFor =  {
 	PortalException.class, SystemException.class})
@@ -130,6 +133,9 @@ public interface BookmarksFolderService extends BaseService {
 	public java.util.List<java.lang.Long> getSubfolderIds(long groupId,
 		long folderId, boolean recurse);
 
+	public void mergeFolders(long folderId, long parentFolderId)
+		throws PortalException;
+
 	public com.liferay.bookmarks.model.BookmarksFolder moveFolder(
 		long folderId, long parentFolderId) throws PortalException;
 
@@ -154,9 +160,21 @@ public interface BookmarksFolderService extends BaseService {
 	public void unsubscribeFolder(long groupId, long folderId)
 		throws PortalException;
 
+	/**
+	* @deprecated As of 7.0.0, replaced by {@link #updateFolder(long, long,
+	String, String, ServiceContext)} and {@link #mergeFolders(
+	long, long)}
+	*/
+	@java.lang.Deprecated
 	public com.liferay.bookmarks.model.BookmarksFolder updateFolder(
 		long folderId, long parentFolderId, java.lang.String name,
 		java.lang.String description, boolean mergeWithParentFolder,
+		com.liferay.portal.service.ServiceContext serviceContext)
+		throws PortalException;
+
+	public com.liferay.bookmarks.model.BookmarksFolder updateFolder(
+		long folderId, long parentFolderId, java.lang.String name,
+		java.lang.String description,
 		com.liferay.portal.service.ServiceContext serviceContext)
 		throws PortalException;
 }

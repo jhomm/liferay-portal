@@ -25,7 +25,55 @@ taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %><%@
 taglib uri="http://liferay.com/tld/util" prefix="liferay-util" %>
 
-<%@ page import="com.liferay.portal.LocaleException" %><%@
+<%@ page import="com.liferay.dynamic.data.mapping.configuration.DDMServiceConfigurationKeys" %><%@
+page import="com.liferay.dynamic.data.mapping.constants.DDMPortletKeys" %><%@
+page import="com.liferay.dynamic.data.mapping.constants.DDMWebKeys" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.NoSuchStructureException" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.RequiredStructureException" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.RequiredTemplateException" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.StructureDefinitionException" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.StructureDuplicateElementException" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.StructureFieldException" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.StructureNameException" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.TemplateNameException" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.TemplateScriptException" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.TemplateSmallImageNameException" %><%@
+page import="com.liferay.dynamic.data.mapping.exception.TemplateSmallImageSizeException" %><%@
+page import="com.liferay.dynamic.data.mapping.io.DDMFormJSONDeserializerUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.model.DDMForm" %><%@
+page import="com.liferay.dynamic.data.mapping.model.DDMStructure" %><%@
+page import="com.liferay.dynamic.data.mapping.model.DDMStructureConstants" %><%@
+page import="com.liferay.dynamic.data.mapping.model.DDMStructureVersion" %><%@
+page import="com.liferay.dynamic.data.mapping.model.DDMTemplate" %><%@
+page import="com.liferay.dynamic.data.mapping.model.DDMTemplateConstants" %><%@
+page import="com.liferay.dynamic.data.mapping.model.DDMTemplateVersion" %><%@
+page import="com.liferay.dynamic.data.mapping.search.StructureDisplayTerms" %><%@
+page import="com.liferay.dynamic.data.mapping.search.StructureSearch" %><%@
+page import="com.liferay.dynamic.data.mapping.search.StructureSearchTerms" %><%@
+page import="com.liferay.dynamic.data.mapping.search.TemplateDisplayTerms" %><%@
+page import="com.liferay.dynamic.data.mapping.search.TemplateSearch" %><%@
+page import="com.liferay.dynamic.data.mapping.search.TemplateSearchTerms" %><%@
+page import="com.liferay.dynamic.data.mapping.service.DDMStorageLinkLocalServiceUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.service.DDMStructureServiceUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.service.DDMStructureVersionServiceUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.service.DDMTemplateLocalServiceUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.service.DDMTemplateServiceUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.service.DDMTemplateVersionServiceUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.service.permission.DDMPermission" %><%@
+page import="com.liferay.dynamic.data.mapping.service.permission.DDMStructurePermission" %><%@
+page import="com.liferay.dynamic.data.mapping.service.permission.DDMTemplatePermission" %><%@
+page import="com.liferay.dynamic.data.mapping.storage.StorageType" %><%@
+page import="com.liferay.dynamic.data.mapping.util.DDMDisplay" %><%@
+page import="com.liferay.dynamic.data.mapping.util.DDMDisplayRegistryUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.util.DDMPermissionHandler" %><%@
+page import="com.liferay.dynamic.data.mapping.util.DDMTemplateHelperUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.util.DDMUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.web.configuration.DDMWebConfigurationKeys" %><%@
+page import="com.liferay.dynamic.data.mapping.web.configuration.DDMWebConfigurationUtil" %><%@
+page import="com.liferay.dynamic.data.mapping.web.configuration.DDMWebConfigurationValues" %><%@
+page import="com.liferay.portal.LocaleException" %><%@
+page import="com.liferay.portal.PortletPreferencesException" %><%@
 page import="com.liferay.portal.kernel.bean.BeanParamUtil" %><%@
 page import="com.liferay.portal.kernel.configuration.Filter" %><%@
 page import="com.liferay.portal.kernel.dao.search.RowChecker" %><%@
@@ -51,69 +99,27 @@ page import="com.liferay.portal.kernel.util.ListUtil" %><%@
 page import="com.liferay.portal.kernel.util.LocaleUtil" %><%@
 page import="com.liferay.portal.kernel.util.OrderByComparator" %><%@
 page import="com.liferay.portal.kernel.util.ParamUtil" %><%@
-page import="com.liferay.portal.kernel.util.PropsKeys" %><%@
 page import="com.liferay.portal.kernel.util.StringBundler" %><%@
 page import="com.liferay.portal.kernel.util.StringPool" %><%@
 page import="com.liferay.portal.kernel.util.StringUtil" %><%@
 page import="com.liferay.portal.kernel.util.TextFormatter" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %><%@
+page import="com.liferay.portal.kernel.workflow.WorkflowConstants" %><%@
 page import="com.liferay.portal.model.Group" %><%@
-page import="com.liferay.portal.security.auth.PrincipalException" %><%@
 page import="com.liferay.portal.security.permission.ActionKeys" %><%@
 page import="com.liferay.portal.security.permission.ResourceActionsUtil" %><%@
 page import="com.liferay.portal.service.GroupLocalServiceUtil" %><%@
 page import="com.liferay.portal.template.TemplateContextHelper" %><%@
 page import="com.liferay.portal.util.PortalUtil" %><%@
-page import="com.liferay.portal.util.PortletKeys" %><%@
 page import="com.liferay.portal.util.PrefsPropsUtil" %><%@
-page import="com.liferay.portal.util.PropsUtil" %><%@
-page import="com.liferay.portal.util.PropsValues" %><%@
 page import="com.liferay.portal.util.WebKeys" %><%@
 page import="com.liferay.portlet.PortalPreferences" %><%@
 page import="com.liferay.portlet.PortletPreferencesFactoryUtil" %><%@
 page import="com.liferay.portlet.PortletURLFactoryUtil" %><%@
 page import="com.liferay.portlet.PortletURLUtil" %><%@
-page import="com.liferay.portlet.documentlibrary.model.DLFileEntryMetadata" %><%@
-page import="com.liferay.portlet.dynamicdatalists.model.DDLRecordSet" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.NoSuchStructureException" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.RequiredStructureException" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.RequiredTemplateException" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.StructureDefinitionException" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.StructureDuplicateElementException" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.StructureFieldException" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.StructureNameException" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.TemplateNameException" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.TemplateScriptException" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.TemplateSmallImageNameException" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.TemplateSmallImageSizeException" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.io.DDMFormJSONDeserializerUtil" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.model.DDMForm" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.model.DDMStructure" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.model.DDMStructureConstants" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.model.DDMTemplate" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.model.DDMTemplateConstants" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.search.StructureDisplayTerms" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.search.StructureSearch" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.search.StructureSearchTerms" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.search.TemplateDisplayTerms" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.search.TemplateSearch" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.search.TemplateSearchTerms" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.service.DDMStorageLinkLocalServiceUtil" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.service.DDMStructureLocalServiceUtil" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.service.DDMStructureServiceUtil" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.service.DDMTemplateLocalServiceUtil" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.service.DDMTemplateServiceUtil" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.service.permission.DDMPermission" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.service.permission.DDMStructurePermission" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.service.permission.DDMTemplatePermission" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.storage.StorageType" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.util.DDMDisplay" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.util.DDMDisplayRegistryUtil" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.util.DDMPermissionHandler" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.util.DDMTemplateHelperUtil" %><%@
-page import="com.liferay.portlet.dynamicdatamapping.util.DDMUtil" %><%@
-page import="com.liferay.portlet.portletdisplaytemplate.util.PortletDisplayTemplate" %><%@
-page import="com.liferay.portlet.portletdisplaytemplate.util.PortletDisplayTemplateUtil" %><%@
+page import="com.liferay.portlet.display.template.PortletDisplayTemplate" %><%@
+page import="com.liferay.registry.Registry" %><%@
+page import="com.liferay.registry.RegistryUtil" %><%@
 page import="com.liferay.taglib.search.ResultRow" %><%@
 page import="com.liferay.util.ContentUtil" %>
 
@@ -183,3 +189,51 @@ else if (scopeTemplateType.equals(DDMTemplateConstants.TEMPLATE_TYPE_FORM)) {
 %>
 
 <%@ include file="/init-ext.jsp" %>
+
+<%!
+private void _addFormTemplateFieldAttributes(DDMStructure structure, JSONArray jsonArray) throws Exception {
+	for (int i = 0; i < jsonArray.length(); i++) {
+		JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+		String fieldName = jsonObject.getString("name");
+
+		try {
+			jsonObject.put("readOnlyAttributes", _getFieldReadOnlyAttributes(structure, fieldName));
+			jsonObject.put("unique", true);
+		}
+		catch (StructureFieldException sfe) {
+		}
+	}
+}
+
+private JSONArray _getFieldReadOnlyAttributes(DDMStructure structure, String fieldName) throws Exception {
+	JSONArray readOnlyAttributesJSONArray = JSONFactoryUtil.createJSONArray();
+
+	readOnlyAttributesJSONArray.put("indexType");
+	readOnlyAttributesJSONArray.put("name");
+	readOnlyAttributesJSONArray.put("options");
+	readOnlyAttributesJSONArray.put("repeatable");
+
+	boolean required = structure.getFieldRequired(fieldName);
+
+	if (required) {
+		readOnlyAttributesJSONArray.put("required");
+	}
+
+	return readOnlyAttributesJSONArray;
+}
+
+private JSONArray _getFormTemplateFieldsJSONArray(DDMStructure structure, String script) throws Exception {
+	JSONArray jsonArray = DDMUtil.getDDMFormFieldsJSONArray(structure, script);
+
+	_addFormTemplateFieldAttributes(structure, jsonArray);
+
+	return jsonArray;
+}
+
+private PortletDisplayTemplate _getPortletDisplayTemplate() {
+	Registry registry = RegistryUtil.getRegistry();
+
+	return registry.getService(PortletDisplayTemplate.class);
+}
+%>

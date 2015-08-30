@@ -395,8 +395,9 @@ public class RatingsStatsPersistenceImpl extends BasePersistenceImpl<RatingsStat
 		}
 	}
 
-	protected void cacheUniqueFindersCache(RatingsStats ratingsStats) {
-		if (ratingsStats.isNew()) {
+	protected void cacheUniqueFindersCache(RatingsStats ratingsStats,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					ratingsStats.getClassNameId(), ratingsStats.getClassPK()
 				};
@@ -551,6 +552,8 @@ public class RatingsStatsPersistenceImpl extends BasePersistenceImpl<RatingsStat
 
 		boolean isNew = ratingsStats.isNew();
 
+		RatingsStatsModelImpl ratingsStatsModelImpl = (RatingsStatsModelImpl)ratingsStats;
+
 		Session session = null;
 
 		try {
@@ -562,7 +565,7 @@ public class RatingsStatsPersistenceImpl extends BasePersistenceImpl<RatingsStat
 				ratingsStats.setNew(false);
 			}
 			else {
-				session.merge(ratingsStats);
+				ratingsStats = (RatingsStats)session.merge(ratingsStats);
 			}
 		}
 		catch (Exception e) {
@@ -582,8 +585,8 @@ public class RatingsStatsPersistenceImpl extends BasePersistenceImpl<RatingsStat
 			RatingsStatsImpl.class, ratingsStats.getPrimaryKey(), ratingsStats,
 			false);
 
-		clearUniqueFindersCache(ratingsStats);
-		cacheUniqueFindersCache(ratingsStats);
+		clearUniqueFindersCache((RatingsStats)ratingsStatsModelImpl);
+		cacheUniqueFindersCache((RatingsStats)ratingsStatsModelImpl, isNew);
 
 		ratingsStats.resetOriginalValues();
 
@@ -961,6 +964,11 @@ public class RatingsStatsPersistenceImpl extends BasePersistenceImpl<RatingsStat
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return RatingsStatsModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

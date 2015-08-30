@@ -94,8 +94,8 @@ public class JavaSourceProcessorTest extends BaseSourceProcessorTestCase {
 		test(
 			"IncorrectImports2.testjava",
 			new String[] {
-				"Proxy:", "edu.emory.mathcs.backport.java:",
-				"jodd.util.StringPool:"
+				"edu.emory.mathcs.backport.java:", "jodd.util.StringPool:",
+				"Proxy:"
 			});
 	}
 
@@ -107,22 +107,26 @@ public class JavaSourceProcessorTest extends BaseSourceProcessorTestCase {
 				"line break:", "line break:", "line break:", "line break:",
 				"line break:", "line break:", "line break:", "line break:",
 				"line break:", "line break:", "line break:", "line break:",
-				"line break:", "line break:", "line break:", "line break:"
+				"line break:", "line break:", "line break:", "line break:",
+				"line break:", "line break:", "line break:"
 			},
 			new Integer[] {
-				23, 27, 31, 38, 42, 45, 48, 52, 55, 60, 66, 70, 76, 84, 87, 94
+				23, 27, 31, 38, 42, 46, 51, 55, 57, 60, 64, 67, 72, 78, 82, 88,
+				96, 99, 106
 			});
 		test("IncorrectLineBreaks2.testjava");
 	}
 
 	@Test
-	public void testIncorrectTabs() throws Exception {
-		/*
+	public void testIncorrectVariableNames() throws Exception {
 		test(
-			"IncorrectTabs.testjava",
-			new String[] {"tab:", "tab:", "tab:", "tab:"},
-			new Integer[] {23, 27, 33, 40});
-		*/
+			"IncorrectVariableNames1.testjava",
+			new String[] {
+				"Only private var should start with underscore:",
+				"Only private var should start with underscore:"
+			},
+			new Integer[] {19, 25});
+		test("IncorrectVariableNames2.testjava");
 	}
 
 	@Test
@@ -228,6 +232,11 @@ public class JavaSourceProcessorTest extends BaseSourceProcessorTestCase {
 	@Test
 	public void testTruncateLongLines() throws Exception {
 		test("TruncateLongLines.testjava");
+	}
+
+	@Test
+	public void testUnassignedVariables() throws Exception {
+		test("UnassignedVariables.testjava");
 	}
 
 	@Test

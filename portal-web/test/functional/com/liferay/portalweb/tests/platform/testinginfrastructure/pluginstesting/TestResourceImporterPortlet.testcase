@@ -11,7 +11,7 @@
 		<execute macro="Page#tearDownPG" />
 	</tear-down>
 
-	<command known-issues="LPS-45835" name="ViewResourcesImporter" priority="5">
+	<command known-issues="LPS-45835" name="ViewResourcesImporter" priority="4">
 		<execute macro="Page#addPG">
 			<var name="pageName" value="Test Resources Importer Page" />
 		</execute>
@@ -20,6 +20,6 @@
 			<var name="portletName" value="Test Resources Importer" />
 		</execute>
 
-		<execute function="AssertElementNotPresent" locator1="PGTestPortlet#TEST_PORTLET_BODY_FAILED" value1="FAILED" />
+		<execute function="AssertElementNotPresent" locator1="TestBlob#TEST_PORTLET_BODY_FAILED" value1="FAILED" />
 	</command>
 </definition>

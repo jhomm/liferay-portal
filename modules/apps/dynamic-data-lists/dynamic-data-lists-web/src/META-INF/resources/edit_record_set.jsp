@@ -21,7 +21,7 @@ String redirect = ParamUtil.getString(request, "redirect");
 
 String portletResource = ParamUtil.getString(request, "portletResource");
 
-DDLRecordSet recordSet = (DDLRecordSet)request.getAttribute(WebKeys.DYNAMIC_DATA_LISTS_RECORD_SET);
+DDLRecordSet recordSet = (DDLRecordSet)request.getAttribute(DDLWebKeys.DYNAMIC_DATA_LISTS_RECORD_SET);
 
 long recordSetId = BeanParamUtil.getLong(recordSet, request, "recordSetId");
 
@@ -116,7 +116,7 @@ if (ddmStructureId > 0) {
 				<aui:option><%= LanguageUtil.get(request, "no-workflow") %></aui:option>
 
 				<%
-				List<WorkflowDefinition> workflowDefinitions = WorkflowDefinitionManagerUtil.getActiveWorkflowDefinitions(company.getCompanyId(), 0, 100, null);
+				List<WorkflowDefinition> workflowDefinitions = WorkflowDefinitionManagerUtil.getActiveWorkflowDefinitions(company.getCompanyId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
 				for (WorkflowDefinition workflowDefinition : workflowDefinitions) {
 					boolean selected = false;
@@ -155,7 +155,7 @@ if (ddmStructureId > 0) {
 	function <portlet:namespace />openDDMStructureSelector() {
 		Liferay.Util.openDDMPortlet(
 			{
-				basePortletURL: '<%= PortletURLFactoryUtil.create(request, PortletKeys.DYNAMIC_DATA_MAPPING, themeDisplay.getPlid(), PortletRequest.RENDER_PHASE) %>',
+				basePortletURL: '<%= PortletURLFactoryUtil.create(request, PortletProviderUtil.getPortletId(DDMStructure.class.getName(), PortletProvider.Action.VIEW), themeDisplay.getPlid(), PortletRequest.RENDER_PHASE) %>',
 				classPK: <%= ddmStructureId %>,
 				dialog: {
 					destroyOnHide: true
@@ -169,7 +169,7 @@ if (ddmStructureId > 0) {
 				%>
 
 				refererPortletName: '<%= portlet.getPortletName() %>',
-				refererWebDAVToken: '<%= portlet.getWebDAVStorageToken() %>',
+				refererWebDAVToken: '<%= WebDAVUtil.getStorageToken(portlet) %>',
 				showAncestorScopes: true,
 				title: '<%= UnicodeLanguageUtil.get(request, "data-definitions") %>'
 			},

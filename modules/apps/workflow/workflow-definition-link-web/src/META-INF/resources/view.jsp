@@ -21,7 +21,7 @@ long groupId = themeDisplay.getSiteGroupIdOrLiveGroupId();
 
 List<WorkflowHandler<?>> workflowHandlers = null;
 
-if (portletName.equals(PortletKeys.WORKFLOW_DEFINITION)) {
+if (portletName.equals(WorkflowDefinitionLinkPortletKeys.WORKFLOW_DEFINITION_LINK_CONTROL_PANEL)) {
 	groupId = WorkflowConstants.DEFAULT_GROUP_ID;
 
 	workflowHandlers = WorkflowHandlerRegistryUtil.getWorkflowHandlers();
@@ -44,7 +44,7 @@ while (itr.hasNext()) {
 	}
 }
 
-List<WorkflowDefinition> workflowDefinitions = WorkflowDefinitionManagerUtil.getActiveWorkflowDefinitions(company.getCompanyId(), 0, 100, WorkflowComparatorFactoryUtil.getDefinitionNameComparator(true));
+List<WorkflowDefinition> workflowDefinitions = WorkflowDefinitionManagerUtil.getActiveWorkflowDefinitions(company.getCompanyId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS, WorkflowComparatorFactoryUtil.getDefinitionNameComparator(true));
 
 PortletURL portletURL = renderResponse.createRenderURL();
 
@@ -95,7 +95,7 @@ portletURL.setParameter("tabs1", "default-configuration");
 					WorkflowDefinitionLink workflowDefinitionLink = null;
 
 					try {
-						if (portletName.equals(PortletKeys.WORKFLOW_DEFINITION)) {
+						if (portletName.equals(WorkflowDefinitionLinkPortletKeys.WORKFLOW_DEFINITION_LINK_CONTROL_PANEL)) {
 							workflowDefinitionLink = WorkflowDefinitionLinkLocalServiceUtil.getDefaultWorkflowDefinitionLink(company.getCompanyId(), workflowHandler.getClassName(), 0, 0);
 						}
 						else {
@@ -107,7 +107,7 @@ portletURL.setParameter("tabs1", "default-configuration");
 
 					String defaultOptionMessage = null;
 
-					if (!portletName.equals(PortletKeys.WORKFLOW_DEFINITION)) {
+					if (!portletName.equals(WorkflowDefinitionLinkPortletKeys.WORKFLOW_DEFINITION_LINK_CONTROL_PANEL)) {
 						try {
 							WorkflowDefinitionLink defaultWorkflowDefinitionLink = WorkflowDefinitionLinkLocalServiceUtil.getDefaultWorkflowDefinitionLink(company.getCompanyId(), workflowHandler.getClassName(), 0, 0);
 

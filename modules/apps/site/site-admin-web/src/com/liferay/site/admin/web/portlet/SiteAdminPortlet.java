@@ -25,17 +25,18 @@ import com.liferay.portal.NoSuchBackgroundTaskException;
 import com.liferay.portal.NoSuchGroupException;
 import com.liferay.portal.NoSuchLayoutException;
 import com.liferay.portal.PendingBackgroundTaskException;
-import com.liferay.portal.RemoteExportException;
 import com.liferay.portal.RemoteOptionsException;
 import com.liferay.portal.RequiredGroupException;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManagerUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.servlet.MultiSessionMessages;
 import com.liferay.portal.kernel.servlet.SessionErrors;
-import com.liferay.portal.kernel.staging.StagingUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionAttribute;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
@@ -55,6 +56,7 @@ import com.liferay.portal.model.GroupConstants;
 import com.liferay.portal.model.Layout;
 import com.liferay.portal.model.LayoutConstants;
 import com.liferay.portal.model.LayoutSet;
+import com.liferay.portal.model.LayoutSetPrototype;
 import com.liferay.portal.model.MembershipRequest;
 import com.liferay.portal.model.MembershipRequestConstants;
 import com.liferay.portal.model.Role;
@@ -62,10 +64,11 @@ import com.liferay.portal.model.Team;
 import com.liferay.portal.security.auth.AuthException;
 import com.liferay.portal.security.auth.PrincipalException;
 import com.liferay.portal.security.auth.RemoteAuthException;
-import com.liferay.portal.service.BackgroundTaskLocalServiceUtil;
 import com.liferay.portal.service.GroupLocalServiceUtil;
 import com.liferay.portal.service.GroupServiceUtil;
 import com.liferay.portal.service.LayoutLocalServiceUtil;
+import com.liferay.portal.service.LayoutSetLocalServiceUtil;
+import com.liferay.portal.service.LayoutSetPrototypeServiceUtil;
 import com.liferay.portal.service.LayoutSetServiceUtil;
 import com.liferay.portal.service.MembershipRequestLocalServiceUtil;
 import com.liferay.portal.service.MembershipRequestServiceUtil;
@@ -76,12 +79,12 @@ import com.liferay.portal.service.ServiceContextThreadLocal;
 import com.liferay.portal.service.TeamLocalServiceUtil;
 import com.liferay.portal.service.UserLocalServiceUtil;
 import com.liferay.portal.service.UserServiceUtil;
-import com.liferay.portal.spring.transaction.TransactionAttributeBuilder;
-import com.liferay.portal.spring.transaction.TransactionHandlerUtil;
 import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portlet.asset.AssetCategoryException;
 import com.liferay.portlet.asset.AssetTagException;
+import com.liferay.portlet.exportimport.RemoteExportException;
+import com.liferay.portlet.exportimport.staging.StagingUtil;
 import com.liferay.portlet.sites.util.Sites;
 import com.liferay.portlet.sites.util.SitesUtil;
 import com.liferay.site.admin.web.constants.SiteAdminPortletKeys;
@@ -108,8 +111,6 @@ import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-
-import org.springframework.transaction.interceptor.TransactionAttribute;
 
 /**
  * @author Eudaldo Alonso
@@ -162,7 +163,7 @@ public class SiteAdminPortlet extends MVCPortlet {
 		long backgroundTaskId = ParamUtil.getLong(
 			actionRequest, "backgroundTaskId");
 
-		BackgroundTaskLocalServiceUtil.deleteBackgroundTask(backgroundTaskId);
+		BackgroundTaskManagerUtil.deleteBackgroundTask(backgroundTaskId);
 	}
 
 	public void deleteGroups(
@@ -200,20 +201,18 @@ public class SiteAdminPortlet extends MVCPortlet {
 
 		Callable<Group> groupCallable = new GroupCallable(actionRequest);
 
-		Group group = TransactionHandlerUtil.invoke(
+		Group group = TransactionInvokerUtil.invoke(
 			_transactionAttribute, groupCallable);
 
-		String redirect = StringPool.BLANK;
+		String redirect = ParamUtil.getString(actionRequest, "redirect");
 
 		long liveGroupId = ParamUtil.getLong(actionRequest, "liveGroupId");
 
 		if (liveGroupId <= 0) {
-			themeDisplay.setScopeGroupId(group.getGroupId());
-
 			PortletURL siteAdministrationURL =
-				PortalUtil.getSiteAdministrationURL(
-					actionResponse, themeDisplay,
-					SiteAdminPortletKeys.SITE_SETTINGS);
+				PortalUtil.getControlPanelPortletURL(
+					actionRequest, group, SiteAdminPortletKeys.SITE_SETTINGS, 0,
+					PortletRequest.RENDER_PHASE);
 
 			String controlPanelURL = HttpUtil.setParameter(
 				themeDisplay.getURLControlPanel(), "p_p_id",
@@ -232,10 +231,6 @@ public class SiteAdminPortlet extends MVCPortlet {
 			MultiSessionMessages.add(
 				actionRequest,
 				SiteAdminPortletKeys.SITE_SETTINGS + "requestProcessed");
-
-			actionRequest.setAttribute(WebKeys.REDIRECT, redirect);
-
-			sendRedirect(actionRequest, actionResponse);
 		}
 		else {
 			long newRefererPlid = getRefererPlid(
@@ -245,9 +240,11 @@ public class SiteAdminPortlet extends MVCPortlet {
 				redirect, "doAsGroupId", group.getGroupId());
 			redirect = HttpUtil.setParameter(
 				redirect, "refererPlid", newRefererPlid);
-
-			actionRequest.setAttribute(WebKeys.REDIRECT, redirect);
 		}
+
+		actionRequest.setAttribute(WebKeys.REDIRECT, redirect);
+
+		sendRedirect(actionRequest, actionResponse);
 	}
 
 	public void editGroupAssignments(
@@ -273,6 +270,55 @@ public class SiteAdminPortlet extends MVCPortlet {
 			themeDisplay.getCompanyId(), groupId, removeUserIds);
 	}
 
+	/**
+	 * Resets the number of failed merge attempts for the site template, which
+	 * is accessed by retrieving the layout set prototype ID. Once the counter
+	 * is reset, the modified site template is merged back into its linked site,
+	 * which is accessed by retrieving the group ID and private layout set.
+	 *
+	 * <p>
+	 * If the number of failed merge attempts is not equal to zero after the
+	 * merge, an error key is submitted to {@link SessionErrors}.
+	 * </p>
+	 *
+	 * @param  actionRequest the portlet request used to retrieve parameters
+	 * @throws Exception if an exception occurred
+	 */
+	public void resetMergeFailCountAndMerge(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws Exception {
+
+		long layoutSetPrototypeId = ParamUtil.getLong(
+			actionRequest, "layoutSetPrototypeId");
+
+		LayoutSetPrototype layoutSetPrototype =
+			LayoutSetPrototypeServiceUtil.getLayoutSetPrototype(
+				layoutSetPrototypeId);
+
+		SitesUtil.setMergeFailCount(layoutSetPrototype, 0);
+
+		long groupId = ParamUtil.getLong(actionRequest, "groupId");
+		boolean privateLayoutSet = ParamUtil.getBoolean(
+			actionRequest, "privateLayoutSet");
+
+		LayoutSet layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
+			groupId, privateLayoutSet);
+
+		SitesUtil.resetPrototype(layoutSet);
+
+		Group group = GroupLocalServiceUtil.getGroup(groupId);
+
+		SitesUtil.mergeLayoutSetPrototypeLayouts(group, layoutSet);
+
+		layoutSetPrototype =
+			LayoutSetPrototypeServiceUtil.getLayoutSetPrototype(
+				layoutSetPrototypeId);
+
+		if (SitesUtil.getMergeFailCount(layoutSetPrototype) > 0) {
+			SessionErrors.add(actionRequest, "resetMergeFailCountAndMerge");
+		}
+	}
+
 	@Override
 	protected void doDispatch(
 			RenderRequest renderRequest, RenderResponse renderResponse)
@@ -283,7 +329,7 @@ public class SiteAdminPortlet extends MVCPortlet {
 			SessionErrors.contains(
 				renderRequest, NoSuchGroupException.class.getName()) ||
 			SessionErrors.contains(
-				renderRequest, PrincipalException.class.getName())) {
+				renderRequest, PrincipalException.getNestedClasses())) {
 
 			include("/error.jsp", renderRequest, renderResponse);
 		}
@@ -625,16 +671,6 @@ public class SiteAdminPortlet extends MVCPortlet {
 			}
 		}
 
-		String publicRobots = ParamUtil.getString(
-			actionRequest, "publicRobots",
-			liveGroup.getTypeSettingsProperty("false-robots.txt"));
-		String privateRobots = ParamUtil.getString(
-			actionRequest, "privateRobots",
-			liveGroup.getTypeSettingsProperty("true-robots.txt"));
-
-		typeSettingsProperties.setProperty("false-robots.txt", publicRobots);
-		typeSettingsProperties.setProperty("true-robots.txt", privateRobots);
-
 		boolean trashEnabled = ParamUtil.getBoolean(
 			actionRequest, "trashEnabled",
 			GetterUtil.getBoolean(
@@ -807,20 +843,13 @@ public class SiteAdminPortlet extends MVCPortlet {
 			StagingUtil.updateStaging(actionRequest, liveGroup);
 		}
 
-		boolean forceDisable = ParamUtil.getBoolean(
-			actionRequest, "forceDisable");
-
-		if (forceDisable) {
-			GroupLocalServiceUtil.disableStaging(liveGroupId);
-		}
-
 		return liveGroup;
 	}
 
 	private static final int _LAYOUT_SET_VISIBILITY_PRIVATE = 1;
 
-	private final TransactionAttribute _transactionAttribute =
-		TransactionAttributeBuilder.build(
+	private static final TransactionAttribute _transactionAttribute =
+		TransactionAttribute.Factory.create(
 			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	private class GroupCallable implements Callable<Group> {

@@ -2404,8 +2404,8 @@ public class TrashEntryPersistenceImpl extends BasePersistenceImpl<TrashEntry>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(TrashEntry trashEntry) {
-		if (trashEntry.isNew()) {
+	protected void cacheUniqueFindersCache(TrashEntry trashEntry, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					trashEntry.getClassNameId(), trashEntry.getClassPK()
 				};
@@ -2572,7 +2572,7 @@ public class TrashEntryPersistenceImpl extends BasePersistenceImpl<TrashEntry>
 				trashEntry.setNew(false);
 			}
 			else {
-				session.merge(trashEntry);
+				trashEntry = (TrashEntry)session.merge(trashEntry);
 			}
 		}
 		catch (Exception e) {
@@ -2650,8 +2650,8 @@ public class TrashEntryPersistenceImpl extends BasePersistenceImpl<TrashEntry>
 		EntityCacheUtil.putResult(TrashEntryModelImpl.ENTITY_CACHE_ENABLED,
 			TrashEntryImpl.class, trashEntry.getPrimaryKey(), trashEntry, false);
 
-		clearUniqueFindersCache(trashEntry);
-		cacheUniqueFindersCache(trashEntry);
+		clearUniqueFindersCache((TrashEntry)trashEntryModelImpl);
+		cacheUniqueFindersCache((TrashEntry)trashEntryModelImpl, isNew);
 
 		trashEntry.resetOriginalValues();
 
@@ -3034,6 +3034,11 @@ public class TrashEntryPersistenceImpl extends BasePersistenceImpl<TrashEntry>
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return TrashEntryModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

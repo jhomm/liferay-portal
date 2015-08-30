@@ -919,7 +919,7 @@ public class WorkflowInstanceLinkPersistenceImpl extends BasePersistenceImpl<Wor
 				workflowInstanceLink.setNew(false);
 			}
 			else {
-				session.merge(workflowInstanceLink);
+				workflowInstanceLink = (WorkflowInstanceLink)session.merge(workflowInstanceLink);
 			}
 		}
 		catch (Exception e) {
@@ -1351,6 +1351,11 @@ public class WorkflowInstanceLinkPersistenceImpl extends BasePersistenceImpl<Wor
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return WorkflowInstanceLinkModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

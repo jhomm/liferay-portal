@@ -1418,8 +1418,8 @@ public class LayoutSetPersistenceImpl extends BasePersistenceImpl<LayoutSet>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(LayoutSet layoutSet) {
-		if (layoutSet.isNew()) {
+	protected void cacheUniqueFindersCache(LayoutSet layoutSet, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					layoutSet.getGroupId(), layoutSet.getPrivateLayout()
 				};
@@ -1608,7 +1608,7 @@ public class LayoutSetPersistenceImpl extends BasePersistenceImpl<LayoutSet>
 				layoutSet.setNew(false);
 			}
 			else {
-				session.merge(layoutSet);
+				layoutSet = (LayoutSet)session.merge(layoutSet);
 			}
 		}
 		catch (Exception e) {
@@ -1667,8 +1667,8 @@ public class LayoutSetPersistenceImpl extends BasePersistenceImpl<LayoutSet>
 		EntityCacheUtil.putResult(LayoutSetModelImpl.ENTITY_CACHE_ENABLED,
 			LayoutSetImpl.class, layoutSet.getPrimaryKey(), layoutSet, false);
 
-		clearUniqueFindersCache(layoutSet);
-		cacheUniqueFindersCache(layoutSet);
+		clearUniqueFindersCache((LayoutSet)layoutSetModelImpl);
+		cacheUniqueFindersCache((LayoutSet)layoutSetModelImpl, isNew);
 
 		layoutSet.resetOriginalValues();
 
@@ -2062,6 +2062,11 @@ public class LayoutSetPersistenceImpl extends BasePersistenceImpl<LayoutSet>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return LayoutSetModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

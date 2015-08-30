@@ -20,6 +20,8 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
+import com.liferay.portal.kernel.lock.Lock;
+import com.liferay.portal.kernel.lock.LockManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.InvalidRepositoryIdException;
@@ -36,7 +38,7 @@ import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackRegistryUtil;
+import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -48,7 +50,6 @@ import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.TempFileEntryUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.model.Lock;
 import com.liferay.portal.security.permission.ActionKeys;
 import com.liferay.portal.service.ServiceContext;
 import com.liferay.portlet.documentlibrary.NoSuchFileEntryException;
@@ -168,7 +169,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 
 	/**
 	 * Adds a file entry and associated metadata. It is created based on a
-	 * {@link java.io.File} object.
+	 * {@link File} object.
 	 *
 	 * <p>
 	 * This method takes two file names, the <code>sourceFileName</code> and the
@@ -378,7 +379,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * @param  mimeType the file's MIME type
 	 * @return the temporary file entry
 	 * @throws PortalException if the file name was invalid
-	 * @see    com.liferay.portal.kernel.util.TempFileEntryUtil
+	 * @see    TempFileEntryUtil
 	 */
 	@Override
 	public FileEntry addTempFileEntry(
@@ -413,7 +414,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * @return the temporary file entry
 	 * @throws PortalException if the file name was invalid or if a portal
 	 *         exception occurred
-	 * @see    com.liferay.portal.kernel.util.TempFileEntryUtil
+	 * @see    TempFileEntryUtil
 	 */
 	@Override
 	public FileEntry addTempFileEntry(
@@ -767,7 +768,8 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 				TrashCapability.class);
 
 			if (trashCapability.isInTrash(folder)) {
-				trashCapability.deleteFolder(folder);
+				trashEntryService.deleteEntry(
+					DLFolderConstants.getClassName(), folder.getFolderId());
 
 				return;
 			}
@@ -808,7 +810,8 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 				TrashCapability.class);
 
 			if (trashCapability.isInTrash(folder)) {
-				trashCapability.deleteFolder(folder);
+				trashEntryService.deleteEntry(
+					DLFolderConstants.getClassName(), folder.getFolderId());
 
 				return;
 			}
@@ -826,7 +829,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * @param  folderName the temporary folder's name
 	 * @param  fileName the file's original name
 	 * @throws PortalException if the file name was invalid
-	 * @see    com.liferay.portal.kernel.util.TempFileEntryUtil
+	 * @see    TempFileEntryUtil
 	 */
 	@Override
 	public void deleteTempFileEntry(
@@ -864,8 +867,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -894,8 +896,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1019,8 +1020,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1330,8 +1330,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1365,8 +1364,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1403,8 +1401,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1443,8 +1440,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1475,8 +1471,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1510,8 +1505,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1546,8 +1540,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1720,8 +1713,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1754,8 +1746,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1792,8 +1783,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1828,8 +1818,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1956,8 +1945,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -1990,8 +1978,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
 	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
 	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link
-	 * com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	 * result set.
 	 * </p>
 	 *
@@ -2096,7 +2083,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	 * @return the temporary file entry names
 	 * @throws PortalException if the folder was invalid
 	 * @see    #addTempFileEntry(long, long, String, String, File, String)
-	 * @see    com.liferay.portal.kernel.util.TempFileEntryUtil
+	 * @see    TempFileEntryUtil
 	 */
 	@Override
 	public String[] getTempFileNames(
@@ -2108,36 +2095,6 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 
 		return TempFileEntryUtil.getTempFileNames(
 			groupId, getUserId(), folderName);
-	}
-
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link #checkOutFileEntry(long,
-	 *             ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public Lock lockFileEntry(long fileEntryId) throws PortalException {
-		checkOutFileEntry(fileEntryId, new ServiceContext());
-
-		FileEntry fileEntry = getFileEntry(fileEntryId);
-
-		return fileEntry.getLock();
-	}
-
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link #checkOutFileEntry(long,
-	 *             String, long, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public Lock lockFileEntry(
-			long fileEntryId, String owner, long expirationTime)
-		throws PortalException {
-
-		FileEntry fileEntry = checkOutFileEntry(
-			fileEntryId, owner, expirationTime, new ServiceContext());
-
-		return fileEntry.getLock();
 	}
 
 	/**
@@ -2477,7 +2434,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 			String lockUuid, long companyId, long expirationTime)
 		throws PortalException {
 
-		Lock lock = lockLocalService.getLockByUuidAndCompanyId(
+		Lock lock = LockManagerUtil.getLockByUuidAndCompanyId(
 			lockUuid, companyId);
 
 		long fileEntryId = GetterUtil.getLong(lock.getKey());
@@ -2505,7 +2462,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 			String lockUuid, long companyId, long expirationTime)
 		throws PortalException {
 
-		Lock lock = lockLocalService.getLockByUuidAndCompanyId(
+		Lock lock = LockManagerUtil.getLockByUuidAndCompanyId(
 			lockUuid, companyId);
 
 		long folderId = GetterUtil.getLong(lock.getKey());
@@ -2868,11 +2825,10 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 	}
 
 	/**
-	 * Updates a file entry and associated metadata based on a {@link
-	 * java.io.File} object. If the file data is <code>null</code>, then only
-	 * the associated metadata (i.e., <code>title</code>,
-	 * <code>description</code>, and parameters in the
-	 * <code>serviceContext</code>) will be updated.
+	 * Updates a file entry and associated metadata based on a {@link File}
+	 * object. If the file data is <code>null</code>, then only the associated
+	 * metadata (i.e., <code>title</code>, <code>description</code>, and
+	 * parameters in the <code>serviceContext</code>) will be updated.
 	 *
 	 * <p>
 	 * This method takes two file names, the <code>sourceFileName</code> and the
@@ -3297,7 +3253,7 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 			}
 		}
 
-		TransactionCommitCallbackRegistryUtil.registerCallback(
+		TransactionCommitCallbackUtil.registerCallback(
 			new Callable<Void>() {
 
 				@Override
@@ -3345,6 +3301,10 @@ public class DLAppServiceImpl extends DLAppServiceBaseImpl {
 			return repository.getFileEntryByUuid(uuid);
 		}
 		catch (NoSuchFileEntryException nsfee) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(nsfee, nsfee);
+			}
+
 			return null;
 		}
 		catch (RepositoryException re) {

@@ -15,14 +15,14 @@
 package com.liferay.wiki.lar;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.lar.BaseStagedModelDataHandler;
-import com.liferay.portal.kernel.lar.ExportImportPathUtil;
-import com.liferay.portal.kernel.lar.PortletDataContext;
-import com.liferay.portal.kernel.lar.StagedModelDataHandler;
 import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.service.ServiceContext;
+import com.liferay.portlet.exportimport.lar.BaseStagedModelDataHandler;
+import com.liferay.portlet.exportimport.lar.ExportImportPathUtil;
+import com.liferay.portlet.exportimport.lar.PortletDataContext;
+import com.liferay.portlet.exportimport.lar.StagedModelDataHandler;
 import com.liferay.wiki.configuration.WikiGroupServiceConfiguration;
 import com.liferay.wiki.model.WikiNode;
 import com.liferay.wiki.service.WikiNodeLocalServiceUtil;
@@ -124,24 +124,10 @@ public class WikiNodeStagedModelDataHandler
 		WikiGroupServiceConfiguration wikiGroupServiceConfiguration =
 			wikiServiceComponentProvider.getWikiGroupServiceConfiguration();
 
+		WikiNode existingNode = fetchStagedModelByUuidAndGroupId(
+			node.getUuid(), portletDataContext.getScopeGroupId());
+
 		if (portletDataContext.isDataStrategyMirror()) {
-			WikiNode existingNode = fetchStagedModelByUuidAndGroupId(
-				node.getUuid(), portletDataContext.getScopeGroupId());
-
-			String initialNodeName =
-				wikiGroupServiceConfiguration.initialNodeName();
-
-			if ((existingNode == null) &&
-				initialNodeName.equals(node.getName())) {
-
-				WikiNode initialNode = WikiNodeLocalServiceUtil.fetchNode(
-					portletDataContext.getScopeGroupId(), node.getName());
-
-				if (initialNode != null) {
-					WikiNodeLocalServiceUtil.deleteWikiNode(initialNode);
-				}
-			}
-
 			if (existingNode == null) {
 				serviceContext.setUuid(node.getUuid());
 
@@ -159,20 +145,20 @@ public class WikiNodeStagedModelDataHandler
 			String initialNodeName =
 				wikiGroupServiceConfiguration.initialNodeName();
 
-			if (initialNodeName.equals(node.getName())) {
-				WikiNode initialNode = WikiNodeLocalServiceUtil.fetchNode(
-					portletDataContext.getScopeGroupId(), node.getName());
+			if ((existingNode != null) &&
+				initialNodeName.equals(existingNode.getName())) {
 
-				if (initialNode != null) {
-					WikiNodeLocalServiceUtil.deleteWikiNode(initialNode);
-				}
+				importedNode = WikiNodeLocalServiceUtil.updateNode(
+					existingNode.getNodeId(), node.getName(),
+					node.getDescription(), serviceContext);
 			}
+			else {
+				String nodeName = getNodeName(
+					portletDataContext, node, node.getName(), 2);
 
-			String nodeName = getNodeName(
-				portletDataContext, node, node.getName(), 2);
-
-			importedNode = WikiNodeLocalServiceUtil.addNode(
-				userId, nodeName, node.getDescription(), serviceContext);
+				importedNode = WikiNodeLocalServiceUtil.addNode(
+					userId, nodeName, node.getDescription(), serviceContext);
+			}
 		}
 
 		portletDataContext.importClassedModel(node, importedNode);

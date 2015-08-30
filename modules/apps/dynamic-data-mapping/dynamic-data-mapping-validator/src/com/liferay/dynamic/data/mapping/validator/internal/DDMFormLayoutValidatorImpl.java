@@ -14,13 +14,14 @@
 
 package com.liferay.dynamic.data.mapping.validator.internal;
 
+import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
+import com.liferay.dynamic.data.mapping.model.DDMFormLayoutColumn;
+import com.liferay.dynamic.data.mapping.model.DDMFormLayoutPage;
+import com.liferay.dynamic.data.mapping.model.DDMFormLayoutRow;
+import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.validator.DDMFormLayoutValidationException;
 import com.liferay.dynamic.data.mapping.validator.DDMFormLayoutValidator;
-import com.liferay.portlet.dynamicdatamapping.model.DDMFormLayout;
-import com.liferay.portlet.dynamicdatamapping.model.DDMFormLayoutColumn;
-import com.liferay.portlet.dynamicdatamapping.model.DDMFormLayoutPage;
-import com.liferay.portlet.dynamicdatamapping.model.DDMFormLayoutRow;
-import com.liferay.portlet.dynamicdatamapping.model.LocalizedValue;
+import com.liferay.portal.kernel.util.SetUtil;
 
 import java.util.HashSet;
 import java.util.Locale;
@@ -71,16 +72,18 @@ public class DDMFormLayoutValidatorImpl implements DDMFormLayoutValidator {
 				for (DDMFormLayoutColumn ddmFormLayoutColumn :
 						ddmFormLayoutRow.getDDMFormLayoutColumns()) {
 
-					String ddmFormFieldName =
-						ddmFormLayoutColumn.getDDMFormFieldName();
+					Set<String> intersectDDMFormFieldNames = SetUtil.intersect(
+						ddmFormFieldNames,
+						ddmFormLayoutColumn.getDDMFormFieldNames());
 
-					if (ddmFormFieldNames.contains(ddmFormFieldName)) {
+					if (!intersectDDMFormFieldNames.isEmpty()) {
 						throw new DDMFormLayoutValidationException(
-							"Field name " + ddmFormFieldName +
-								" is defined more than once");
+							"Field names " + intersectDDMFormFieldNames +
+								" were defined more than once");
 					}
 
-					ddmFormFieldNames.add(ddmFormFieldName);
+					ddmFormFieldNames.addAll(
+						ddmFormLayoutColumn.getDDMFormFieldNames());
 				}
 			}
 		}

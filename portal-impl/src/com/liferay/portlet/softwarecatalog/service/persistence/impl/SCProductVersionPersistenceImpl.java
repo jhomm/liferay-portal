@@ -923,8 +923,9 @@ public class SCProductVersionPersistenceImpl extends BasePersistenceImpl<SCProdu
 		}
 	}
 
-	protected void cacheUniqueFindersCache(SCProductVersion scProductVersion) {
-		if (scProductVersion.isNew()) {
+	protected void cacheUniqueFindersCache(SCProductVersion scProductVersion,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { scProductVersion.getDirectDownloadURL() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_DIRECTDOWNLOADURL,
@@ -1117,7 +1118,7 @@ public class SCProductVersionPersistenceImpl extends BasePersistenceImpl<SCProdu
 				scProductVersion.setNew(false);
 			}
 			else {
-				session.merge(scProductVersion);
+				scProductVersion = (SCProductVersion)session.merge(scProductVersion);
 			}
 		}
 		catch (Exception e) {
@@ -1160,8 +1161,9 @@ public class SCProductVersionPersistenceImpl extends BasePersistenceImpl<SCProdu
 			SCProductVersionImpl.class, scProductVersion.getPrimaryKey(),
 			scProductVersion, false);
 
-		clearUniqueFindersCache(scProductVersion);
-		cacheUniqueFindersCache(scProductVersion);
+		clearUniqueFindersCache((SCProductVersion)scProductVersionModelImpl);
+		cacheUniqueFindersCache((SCProductVersion)scProductVersionModelImpl,
+			isNew);
 
 		scProductVersion.resetOriginalValues();
 
@@ -1827,6 +1829,11 @@ public class SCProductVersionPersistenceImpl extends BasePersistenceImpl<SCProdu
 		catch (Exception e) {
 			throw processException(e);
 		}
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SCProductVersionModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

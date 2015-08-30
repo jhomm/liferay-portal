@@ -103,6 +103,11 @@ public abstract class BaseSeleniumImpl
 	}
 
 	@Override
+	public void assertEditable(String locator) throws Exception {
+		LiferaySeleniumHelper.assertEditable(this, locator);
+	}
+
+	@Override
 	public void assertElementNotPresent(String locator) throws Exception {
 		LiferaySeleniumHelper.assertElementNotPresent(this, locator);
 	}
@@ -171,6 +176,11 @@ public abstract class BaseSeleniumImpl
 	@Override
 	public void assertNotChecked(String locator) throws Exception {
 		LiferaySeleniumHelper.assertNotChecked(this, locator);
+	}
+
+	@Override
+	public void assertNotEditable(String locator) throws Exception {
+		LiferaySeleniumHelper.assertNotEditable(this, locator);
 	}
 
 	@Override
@@ -408,6 +418,11 @@ public abstract class BaseSeleniumImpl
 	}
 
 	@Override
+	public boolean isNotEditable(String locator) {
+		return !isEditable(locator);
+	}
+
+	@Override
 	public boolean isNotPartialText(String locator, String value) {
 		return LiferaySeleniumHelper.isNotPartialText(this, locator, value);
 	}
@@ -446,6 +461,11 @@ public abstract class BaseSeleniumImpl
 	}
 
 	@Override
+	public boolean isSikuliImagePresent(String image) throws Exception {
+		return LiferaySeleniumHelper.isSikuliImagePresent(this, image);
+	}
+
+	@Override
 	public boolean isTCatEnabled() {
 		return LiferaySeleniumHelper.isTCatEnabled();
 	}
@@ -463,6 +483,16 @@ public abstract class BaseSeleniumImpl
 	@Override
 	public boolean isValue(String locator, String value) {
 		return value.equals(getValue(locator));
+	}
+
+	@Override
+	public void javaScriptMouseDown(String locator) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public void javaScriptMouseUp(String locator) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -670,6 +700,13 @@ public abstract class BaseSeleniumImpl
 	}
 
 	@Override
+	public void sikuliClickByIndex(String image, String index)
+		throws Exception {
+
+		LiferaySeleniumHelper.sikuliClickByIndex(this, image, index);
+	}
+
+	@Override
 	public void sikuliDragAndDrop(String image, String coordString)
 		throws Exception {
 
@@ -741,13 +778,13 @@ public abstract class BaseSeleniumImpl
 	}
 
 	@Override
-	public void typeCKEditor(String locator, String value) {
+	public void typeAlloyEditor(String locator, String value) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public void typeFrame(String locator, String value) {
-		LiferaySeleniumHelper.typeFrame(this, locator, value);
+	public void typeCKEditor(String locator, String value) {
+		LiferaySeleniumHelper.typeCKEditor(this, locator, value);
 	}
 
 	@Override

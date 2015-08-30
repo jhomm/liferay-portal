@@ -16,14 +16,13 @@
 
 <%@ include file="/html/portlet/login/init.jsp" %>
 
-<portlet:actionURL var="createAnonymousAccountURL">
-	<portlet:param name="struts_action" value="/login/create_anonymous_account" />
-</portlet:actionURL>
+<portlet:actionURL name="/login/create_anonymous_account" var="createAnonymousAccountURL" />
 
 <aui:form action="<%= createAnonymousAccountURL %>" method="post" name="fm">
 	<aui:input name="saveLastPath" type="hidden" value="<%= false %>" />
 	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.ADD %>" />
 
+	<liferay-ui:error exception="<%= CaptchaConfigurationException.class %>" message="a-captcha-error-occurred-please-contact-an-administrator" />
 	<liferay-ui:error exception="<%= CaptchaTextException.class %>" message="text-verification-failed" />
 	<liferay-ui:error exception="<%= CompanyMaxUsersException.class %>" message="unable-to-create-user-account-because-the-maximum-number-of-users-has-been-reached" />
 	<liferay-ui:error exception="<%= ContactNameException.MustHaveFirstName.class %>" message="please-enter-a-valid-first-name" />
@@ -74,7 +73,7 @@
 		<aui:col width="<%= 50 %>">
 			<c:if test="<%= PropsValues.CAPTCHA_CHECK_PORTAL_CREATE_ACCOUNT %>">
 				<portlet:resourceURL var="captchaURL">
-					<portlet:param name="struts_action" value="/login/captcha" />
+					<portlet:param name="mvcRenderCommandName" value="/login/captcha" />
 				</portlet:resourceURL>
 
 				<liferay-ui:captcha url="<%= captchaURL %>" />

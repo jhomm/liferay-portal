@@ -15,11 +15,13 @@
 package com.liferay.portlet.documentlibrary.service.permission;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.portlet.PortletProvider;
+import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.security.auth.PrincipalException;
 import com.liferay.portal.security.permission.BaseResourcePermissionChecker;
 import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.util.PortletKeys;
 
 /**
  * @author Jorge Ferrer
@@ -37,16 +39,19 @@ public class DLPermission extends BaseResourcePermissionChecker {
 		throws PortalException {
 
 		if (!contains(permissionChecker, groupId, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, RESOURCE_NAME, groupId, actionId);
 		}
 	}
 
 	public static boolean contains(
 		PermissionChecker permissionChecker, long classPK, String actionId) {
 
+		String portletId = PortletProviderUtil.getPortletId(
+			FileEntry.class.getName(), PortletProvider.Action.EDIT);
+
 		return contains(
-			permissionChecker, RESOURCE_NAME, PortletKeys.DOCUMENT_LIBRARY,
-			classPK, actionId);
+			permissionChecker, RESOURCE_NAME, portletId, classPK, actionId);
 	}
 
 	@Override

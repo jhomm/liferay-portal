@@ -108,6 +108,16 @@ public class JavaClass {
 
 			checkUnusedParameters(javaTerm);
 
+			if (_fileName.endsWith("LocalServiceImpl.java") &&
+				javaTerm.hasAnnotation("Indexable") &&
+				!javaTerm.hasReturnType()) {
+
+				_javaSourceProcessor.processErrorMessage(
+					_fileName,
+					"Missing return type for method with @Indexable: " +
+						_fileName + " " + javaTerm.getLineCount());
+			}
+
 			if (!BaseSourceProcessor.isExcludedFile(
 					checkJavaFieldTypesExclusionFiles, _absolutePath)) {
 
@@ -150,6 +160,14 @@ public class JavaClass {
 		fixJavaTermsDividers(_javaTerms, javaTermSortExclusionFiles);
 
 		return _content;
+	}
+
+	public String getClassName() {
+		if (_outerClass != null) {
+			return _outerClass.getClassName() + StringPool.DOLLAR + _name;
+		}
+
+		return _packagePath + StringPool.PERIOD + _name;
 	}
 
 	public String getContent() {
@@ -202,19 +220,13 @@ public class JavaClass {
 		JavaTerm javaTerm, String annotation, String requiredMethodNameRegex,
 		int requiredMethodType, String fileName) {
 
-		String methodContent = javaTerm.getContent();
 		String methodName = javaTerm.getName();
 
 		Pattern pattern = Pattern.compile(requiredMethodNameRegex);
 
 		Matcher matcher = pattern.matcher(methodName);
 
-		if (methodContent.contains(
-				_indent + StringPool.AT + annotation + "\n") ||
-			methodContent.contains(
-				_indent + StringPool.AT + annotation +
-					StringPool.OPEN_PARENTHESIS)) {
-
+		if (javaTerm.hasAnnotation(annotation)) {
 			if (!matcher.find()) {
 				_javaSourceProcessor.processErrorMessage(
 					fileName,
@@ -228,9 +240,7 @@ public class JavaClass {
 						fileName);
 			}
 		}
-		else if (matcher.find() &&
-				 !methodContent.contains(_indent + "@Override")) {
-
+		else if (matcher.find() && !javaTerm.hasAnnotation("Override")) {
 			_javaSourceProcessor.processErrorMessage(
 				fileName,
 				"Annotation @" + annotation + " required for " + methodName +
@@ -287,8 +297,7 @@ public class JavaClass {
 		javaDocBuilder.addSource(_file);
 
 		com.thoughtworks.qdox.model.JavaClass javaClass =
-			javaDocBuilder.getClassByName(
-				_packagePath + StringPool.PERIOD + _name);
+			javaClass = javaDocBuilder.getClassByName(getClassName());
 
 		com.thoughtworks.qdox.model.JavaClass superJavaClass =
 			javaClass.getSuperJavaClass();
@@ -344,12 +353,8 @@ public class JavaClass {
 			String modifierDefinition)
 		throws Exception {
 
-		String javaTermContent = javaTerm.getContent();
-
 		for (String annotation : annotationsExclusions) {
-			if (javaTermContent.contains(
-					_indent + StringPool.AT + annotation)) {
-
+			if (javaTerm.hasAnnotation(annotation)) {
 				return;
 			}
 		}
@@ -371,6 +376,8 @@ public class JavaClass {
 			return;
 		}
 
+		String javaTermContent = javaTerm.getContent();
+
 		String newJavaTermContent = StringUtil.replaceFirst(
 			javaTermContent, modifierDefinition, modifierDefinition + " final");
 
@@ -379,24 +386,20 @@ public class JavaClass {
 	}
 
 	protected void checkImmutableFieldType(JavaTerm javaTerm) {
-		String oldName = javaTerm.getName();
+		String javaTermName = javaTerm.getName();
 
-		if (oldName.equals("serialVersionUID")) {
+		if (javaTermName.equals("serialVersionUID")) {
 			return;
 		}
 
-		Matcher matcher = _camelCasePattern.matcher(oldName);
+		Matcher matcher = _camelCasePattern.matcher(javaTermName);
 
 		String newName = matcher.replaceAll("$1_$2");
 
 		newName = StringUtil.toUpperCase(newName);
 
-		if (newName.charAt(0) != CharPool.UNDERLINE) {
-			newName = StringPool.UNDERLINE.concat(newName);
-		}
-
 		_content = _content.replaceAll(
-			"(?<=[\\W&&[^.\"]])(" + oldName + ")\\b", newName);
+			"(?<=[\\W&&[^.\"]])(" + javaTermName + ")\\b", newName);
 	}
 
 	protected void checkJavaFieldType(
@@ -408,10 +411,12 @@ public class JavaClass {
 			return;
 		}
 
+		String javaTermName = javaTerm.getName();
+
 		Pattern pattern = Pattern.compile(
 			"\t(private |protected |public )" +
 				"(((final|static|transient)( |\n))*)([\\s\\S]*?)" +
-					javaTerm.getName());
+					javaTermName);
 
 		String javaTermContent = javaTerm.getContent();
 
@@ -419,6 +424,22 @@ public class JavaClass {
 
 		if (!matcher.find()) {
 			return;
+		}
+
+		if ((javaTerm.isPrivate() && !javaTermName.equals("serialVersionUID")) ^
+			(javaTermName.charAt(0) == CharPool.UNDERLINE)) {
+
+			if (javaTerm.isPrivate()) {
+				_content = _content.replaceAll(
+					"(?<=[\\W&&[^.\"]])(" + javaTermName + ")\\b",
+					StringPool.UNDERLINE.concat(javaTermName));
+			}
+			else {
+				_javaSourceProcessor.processErrorMessage(
+					_fileName,
+					"Only private var should start with underscore: " +
+						_fileName + " " + javaTerm.getLineCount());
+			}
 		}
 
 		String modifierDefinition = StringUtil.trim(
@@ -453,41 +474,37 @@ public class JavaClass {
 	}
 
 	protected void checkMutableFieldType(JavaTerm javaTerm) {
-		String oldName = javaTerm.getName();
+		String javaTermName = javaTerm.getName();
 
-		String newName = oldName;
-
-		if (javaTerm.isPrivate() && (newName.charAt(0) != CharPool.UNDERLINE)) {
-			newName = StringPool.UNDERLINE.concat(newName);
+		if (!StringUtil.isUpperCase(javaTermName)) {
+			return;
 		}
 
-		if (StringUtil.isUpperCase(newName)) {
-			StringBundler sb = new StringBundler(newName.length());
+		StringBundler sb = new StringBundler(javaTermName.length());
 
-			for (int i = 0; i < newName.length(); i++) {
-				char c = newName.charAt(i);
+		for (int i = 0; i < javaTermName.length(); i++) {
+			char c = javaTermName.charAt(i);
 
-				if (i > 1) {
-					if (c == CharPool.UNDERLINE) {
-						continue;
-					}
-
-					if (newName.charAt(i - 1) == CharPool.UNDERLINE) {
-						sb.append(c);
-
-						continue;
-					}
+			if (i > 1) {
+				if (c == CharPool.UNDERLINE) {
+					continue;
 				}
 
-				sb.append(Character.toLowerCase(c));
+				if (javaTermName.charAt(i - 1) == CharPool.UNDERLINE) {
+					sb.append(c);
+
+					continue;
+				}
 			}
 
-			newName = sb.toString();
+			sb.append(Character.toLowerCase(c));
 		}
 
-		if (!newName.equals(oldName)) {
+		String newName = sb.toString();
+
+		if (!newName.equals(javaTermName)) {
 			_content = _content.replaceAll(
-				"(?<=[\\W&&[^.\"]])(" + oldName + ")\\b", newName);
+				"(?<=[\\W&&[^.\"]])(" + javaTermName + ")\\b", newName);
 		}
 	}
 
@@ -835,14 +852,14 @@ public class JavaClass {
 		}
 
 		if (pos == -1) {
-			pos = line.indexOf(StringPool.OPEN_CURLY_BRACE);
+			pos = line.indexOf(CharPool.OPEN_CURLY_BRACE);
 		}
 
 		if (pos != -1) {
 			line = line.substring(0, pos);
 		}
 
-		pos = line.indexOf(StringPool.LESS_THAN);
+		pos = line.indexOf(CharPool.LESS_THAN);
 
 		if (pos != -1) {
 			line = line.substring(0, pos);
@@ -850,7 +867,7 @@ public class JavaClass {
 
 		line = line.trim();
 
-		pos = line.lastIndexOf(StringPool.SPACE);
+		pos = line.lastIndexOf(CharPool.SPACE);
 
 		return line.substring(pos + 1);
 	}
@@ -858,7 +875,7 @@ public class JavaClass {
 	protected String getConstructorOrMethodName(String line, int pos) {
 		line = line.substring(0, pos);
 
-		int x = line.lastIndexOf(StringPool.SPACE);
+		int x = line.lastIndexOf(CharPool.SPACE);
 
 		return line.substring(x + 1);
 	}
@@ -874,7 +891,7 @@ public class JavaClass {
 		}
 
 		JavaTerm javaTerm = new JavaTerm(
-			name, type, javaTermContent, lineCount);
+			name, type, javaTermContent, lineCount, _indent);
 
 		if (javaTerm.isConstructor()) {
 			_constructorCount++;
@@ -1007,7 +1024,7 @@ public class JavaClass {
 
 		if (javaTermStartPosition != -1) {
 			int javaTermEndPosition =
-				_content.lastIndexOf(StringPool.CLOSE_CURLY_BRACE) -
+				_content.lastIndexOf(CharPool.CLOSE_CURLY_BRACE) -
 					_indent.length() + 1;
 
 			JavaTerm javaTerm = getJavaTerm(
@@ -1034,8 +1051,8 @@ public class JavaClass {
 			return null;
 		}
 
-		int x = line.indexOf(StringPool.EQUAL);
-		int y = line.indexOf(StringPool.OPEN_PARENTHESIS);
+		int x = line.indexOf(CharPool.EQUAL);
+		int y = line.indexOf(CharPool.OPEN_PARENTHESIS);
 
 		if (line.startsWith(_indent + accessModifier + " static ")) {
 			if (line.contains(" class ") || line.contains(" enum ")) {
@@ -1116,10 +1133,10 @@ public class JavaClass {
 			   !line.endsWith(StringPool.SEMICOLON)) {
 
 			posStartNextLine =
-				content.indexOf(StringPool.NEW_LINE, posStartNextLine) + 1;
+				content.indexOf(CharPool.NEW_LINE, posStartNextLine) + 1;
 
 			int posEndNextline = content.indexOf(
-				StringPool.NEW_LINE, posStartNextLine);
+				CharPool.NEW_LINE, posStartNextLine);
 
 			String nextLine = content.substring(
 				posStartNextLine, posEndNextline);
@@ -1167,14 +1184,14 @@ public class JavaClass {
 	}
 
 	protected String getVariableName(String line) {
-		int x = line.indexOf(StringPool.EQUAL);
-		int y = line.lastIndexOf(StringPool.SPACE);
+		int x = line.indexOf(CharPool.EQUAL);
+		int y = line.lastIndexOf(CharPool.SPACE);
 
 		if (x != -1) {
 			line = line.substring(0, x);
 			line = StringUtil.trim(line);
 
-			y = line.lastIndexOf(StringPool.SPACE);
+			y = line.lastIndexOf(CharPool.SPACE);
 
 			return line.substring(y + 1);
 		}
@@ -1211,6 +1228,10 @@ public class JavaClass {
 	protected boolean isFinalableField(
 		JavaTerm javaTerm, String javaTermClassName, Pattern pattern,
 		boolean checkOuterClass) {
+
+		if (_javaTerms == null) {
+			return false;
+		}
 
 		if (checkOuterClass && (_outerClass != null)) {
 			return _outerClass.isFinalableField(
@@ -1254,7 +1275,7 @@ public class JavaClass {
 			   !content.startsWith(_indent + "protected") &&
 			   !content.startsWith(_indent + "public")) {
 
-			content = content.substring(content.indexOf("\n") + 1);
+			content = content.substring(content.indexOf(CharPool.NEW_LINE) + 1);
 		}
 
 		int indentLinesCount =

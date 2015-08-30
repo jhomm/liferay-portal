@@ -3990,7 +3990,7 @@ public class LayoutSetPrototypePersistenceImpl extends BasePersistenceImpl<Layou
 				layoutSetPrototype.setNew(false);
 			}
 			else {
-				session.merge(layoutSetPrototype);
+				layoutSetPrototype = (LayoutSetPrototype)session.merge(layoutSetPrototype);
 			}
 		}
 		catch (Exception e) {
@@ -4118,6 +4118,7 @@ public class LayoutSetPrototypePersistenceImpl extends BasePersistenceImpl<Layou
 		layoutSetPrototypeImpl.setDescription(layoutSetPrototype.getDescription());
 		layoutSetPrototypeImpl.setSettings(layoutSetPrototype.getSettings());
 		layoutSetPrototypeImpl.setActive(layoutSetPrototype.isActive());
+		layoutSetPrototypeImpl.setLastPublishDate(layoutSetPrototype.getLastPublishDate());
 
 		return layoutSetPrototypeImpl;
 	}
@@ -4481,6 +4482,11 @@ public class LayoutSetPrototypePersistenceImpl extends BasePersistenceImpl<Layou
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return LayoutSetPrototypeModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

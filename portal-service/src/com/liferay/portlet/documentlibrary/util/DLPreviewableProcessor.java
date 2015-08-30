@@ -18,8 +18,6 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.image.ImageBag;
 import com.liferay.portal.kernel.image.ImageToolUtil;
 import com.liferay.portal.kernel.io.FileFilter;
-import com.liferay.portal.kernel.lar.ExportImportPathUtil;
-import com.liferay.portal.kernel.lar.PortletDataContext;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.MessageBusUtil;
@@ -40,6 +38,8 @@ import com.liferay.portal.model.CompanyConstants;
 import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.PortletKeys;
 import com.liferay.portlet.documentlibrary.store.DLStoreUtil;
+import com.liferay.portlet.exportimport.lar.ExportImportPathUtil;
+import com.liferay.portlet.exportimport.lar.PortletDataContext;
 
 import java.awt.image.RenderedImage;
 
@@ -81,19 +81,9 @@ public abstract class DLPreviewableProcessor implements DLProcessor {
 		long[] companyIds = PortalUtil.getCompanyIds();
 
 		for (long companyId : companyIds) {
-			try {
-				DLStoreUtil.deleteDirectory(
-					companyId, REPOSITORY_ID, PREVIEW_PATH);
-			}
-			catch (Exception e) {
-			}
-
-			try {
-				DLStoreUtil.deleteDirectory(
-					companyId, REPOSITORY_ID, THUMBNAIL_PATH);
-			}
-			catch (Exception e) {
-			}
+			DLStoreUtil.deleteDirectory(companyId, REPOSITORY_ID, PREVIEW_PATH);
+			DLStoreUtil.deleteDirectory(
+				companyId, REPOSITORY_ID, THUMBNAIL_PATH);
 		}
 	}
 
@@ -322,12 +312,7 @@ public abstract class DLPreviewableProcessor implements DLProcessor {
 		String previewFilePath = getPreviewFilePath(
 			groupId, fileEntryId, fileVersionId, null);
 
-		try {
-			DLStoreUtil.deleteDirectory(
-				companyId, REPOSITORY_ID, previewFilePath);
-		}
-		catch (Exception e) {
-		}
+		DLStoreUtil.deleteDirectory(companyId, REPOSITORY_ID, previewFilePath);
 	}
 
 	protected void deleteThumbnail(
@@ -338,7 +323,8 @@ public abstract class DLPreviewableProcessor implements DLProcessor {
 			String thumbnailFilePath = getThumbnailFilePath(
 				groupId, fileEntryId, fileVersionId, thumbnailType, index);
 
-			DLStoreUtil.deleteFile(companyId, REPOSITORY_ID, thumbnailFilePath);
+			DLStoreUtil.deleteDirectory(
+				companyId, REPOSITORY_ID, thumbnailFilePath);
 		}
 		catch (Exception e) {
 		}

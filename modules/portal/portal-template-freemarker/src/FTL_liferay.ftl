@@ -5,7 +5,7 @@ Use computer number format to prevent issues with locale settings. See
 LPS-30525.
 -->
 
-<#setting number_format="computer">
+<#setting number_format = "computer">
 
 <#assign css_main_file = "" />
 
@@ -39,10 +39,16 @@ LPS-30525.
 	${theme.runtime("com.liferay.portal.kernel.servlet.taglib.ui.BreadcrumbEntry", portletProviderAction.VIEW)}
 </#macro>
 
+<#macro control_menu>
+	<#if $is_setup_complete && $is_signed_in>
+		${theme.runtime("com.liferay.portlet.admin.util.PortalControlMenuApplicationType$ControlMenu", portletProviderAction.VIEW)}
+	</#if>
+</#macro>
+
 <#macro css
 	file_name
 >
-	<#if file_name = css_main_file>
+	<#if file_name == css_main_file>
 		<link class="lfr-css-file" href="${file_name}" id="mainLiferayThemeCSS" rel="stylesheet" type="text/css" />
 	<#else>
 		<link class="lfr-css-file" href="${file_name}" rel="stylesheet" type="text/css" />
@@ -83,14 +89,48 @@ ${languageUtil.format(locale, key, arguments)}</#macro>
 	${theme.runtime("com.liferay.portal.kernel.servlet.taglib.ui.LanguageEntry", portletProviderAction.VIEW)}
 </#macro>
 
+<#macro navigation_menu>
+	${theme.runtime("com.liferay.portal.theme.NavItem", portletProviderAction.VIEW)}
+</#macro>
+
+<#macro product_menu>
+	<#if $is_setup_complete && $is_signed_in>
+		${theme.runtime("com.liferay.portlet.admin.util.PortalProductMenuApplicationType$ProductMenu", portletProviderAction.VIEW)}
+	</#if>
+</#macro>
+
+<#macro product_menu_sidebar
+	state
+>
+	<#if $is_setup_complete && $is_signed_in>
+		<div class="${state} lfr-product-menu-panel sidenav-fixed sidenav-menu-slider" id="sidenavSliderId">
+			<div class="product-menu sidebar sidebar-inverse sidenav-menu">
+				<@liferay.product_menu() />
+			</div>
+		</div>
+	</#if>
+</#macro>
+
 <#macro quick_access
 	content_id
 >
 	${theme.quickAccess(content_id)}
 </#macro>
 
+<#macro search>
+	<#if $is_setup_complete>
+		${theme.runtime("com.liferay.portlet.admin.util.PortalSearchApplicationType$Search", portletProviderAction.VIEW)}
+	</#if>
+</#macro>
+
 <#macro silently
 	foo
 >
 	<#assign foo = foo />
+</#macro>
+
+<#macro user_personal_bar>
+	<#if $is_setup_complete>
+		${theme.runtime("com.liferay.portlet.admin.util.PortalUserPersonalBarApplicationType$UserPersonalBar", portletProviderAction.VIEW)}
+	</#if>
 </#macro>

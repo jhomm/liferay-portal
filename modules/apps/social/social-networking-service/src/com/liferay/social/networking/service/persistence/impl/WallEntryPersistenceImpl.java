@@ -1771,7 +1771,7 @@ public class WallEntryPersistenceImpl extends BasePersistenceImpl<WallEntry>
 				wallEntry.setNew(false);
 			}
 			else {
-				session.merge(wallEntry);
+				wallEntry = (WallEntry)session.merge(wallEntry);
 			}
 		}
 		catch (Exception e) {
@@ -2225,6 +2225,11 @@ public class WallEntryPersistenceImpl extends BasePersistenceImpl<WallEntry>
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return WallEntryModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

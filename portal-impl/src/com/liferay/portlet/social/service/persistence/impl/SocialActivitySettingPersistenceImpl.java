@@ -2595,8 +2595,8 @@ public class SocialActivitySettingPersistenceImpl extends BasePersistenceImpl<So
 	}
 
 	protected void cacheUniqueFindersCache(
-		SocialActivitySetting socialActivitySetting) {
-		if (socialActivitySetting.isNew()) {
+		SocialActivitySetting socialActivitySetting, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					socialActivitySetting.getGroupId(),
 					socialActivitySetting.getClassNameId(),
@@ -2779,7 +2779,7 @@ public class SocialActivitySettingPersistenceImpl extends BasePersistenceImpl<So
 				socialActivitySetting.setNew(false);
 			}
 			else {
-				session.merge(socialActivitySetting);
+				socialActivitySetting = (SocialActivitySetting)session.merge(socialActivitySetting);
 			}
 		}
 		catch (Exception e) {
@@ -2883,8 +2883,9 @@ public class SocialActivitySettingPersistenceImpl extends BasePersistenceImpl<So
 			SocialActivitySettingImpl.class,
 			socialActivitySetting.getPrimaryKey(), socialActivitySetting, false);
 
-		clearUniqueFindersCache(socialActivitySetting);
-		cacheUniqueFindersCache(socialActivitySetting);
+		clearUniqueFindersCache((SocialActivitySetting)socialActivitySettingModelImpl);
+		cacheUniqueFindersCache((SocialActivitySetting)socialActivitySettingModelImpl,
+			isNew);
 
 		socialActivitySetting.resetOriginalValues();
 
@@ -3267,6 +3268,11 @@ public class SocialActivitySettingPersistenceImpl extends BasePersistenceImpl<So
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return SocialActivitySettingModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

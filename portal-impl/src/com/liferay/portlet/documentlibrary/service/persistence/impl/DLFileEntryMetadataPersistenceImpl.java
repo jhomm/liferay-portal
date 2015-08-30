@@ -1912,8 +1912,8 @@ public class DLFileEntryMetadataPersistenceImpl extends BasePersistenceImpl<DLFi
 	}
 
 	protected void cacheUniqueFindersCache(
-		DLFileEntryMetadata dlFileEntryMetadata) {
-		if (dlFileEntryMetadata.isNew()) {
+		DLFileEntryMetadata dlFileEntryMetadata, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					dlFileEntryMetadata.getDDMStructureId(),
 					dlFileEntryMetadata.getFileVersionId()
@@ -2098,7 +2098,7 @@ public class DLFileEntryMetadataPersistenceImpl extends BasePersistenceImpl<DLFi
 				dlFileEntryMetadata.setNew(false);
 			}
 			else {
-				session.merge(dlFileEntryMetadata);
+				dlFileEntryMetadata = (DLFileEntryMetadata)session.merge(dlFileEntryMetadata);
 			}
 		}
 		catch (Exception e) {
@@ -2179,8 +2179,9 @@ public class DLFileEntryMetadataPersistenceImpl extends BasePersistenceImpl<DLFi
 			DLFileEntryMetadataImpl.class, dlFileEntryMetadata.getPrimaryKey(),
 			dlFileEntryMetadata, false);
 
-		clearUniqueFindersCache(dlFileEntryMetadata);
-		cacheUniqueFindersCache(dlFileEntryMetadata);
+		clearUniqueFindersCache((DLFileEntryMetadata)dlFileEntryMetadataModelImpl);
+		cacheUniqueFindersCache((DLFileEntryMetadata)dlFileEntryMetadataModelImpl,
+			isNew);
 
 		dlFileEntryMetadata.resetOriginalValues();
 
@@ -2567,6 +2568,11 @@ public class DLFileEntryMetadataPersistenceImpl extends BasePersistenceImpl<DLFi
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return DLFileEntryMetadataModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

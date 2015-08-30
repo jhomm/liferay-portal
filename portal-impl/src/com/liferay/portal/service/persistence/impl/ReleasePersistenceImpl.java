@@ -414,8 +414,8 @@ public class ReleasePersistenceImpl extends BasePersistenceImpl<Release>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(Release release) {
-		if (release.isNew()) {
+	protected void cacheUniqueFindersCache(Release release, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { release.getServletContextName() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_SERVLETCONTEXTNAME,
@@ -599,7 +599,7 @@ public class ReleasePersistenceImpl extends BasePersistenceImpl<Release>
 				release.setNew(false);
 			}
 			else {
-				session.merge(release);
+				release = (Release)session.merge(release);
 			}
 		}
 		catch (Exception e) {
@@ -618,8 +618,8 @@ public class ReleasePersistenceImpl extends BasePersistenceImpl<Release>
 		EntityCacheUtil.putResult(ReleaseModelImpl.ENTITY_CACHE_ENABLED,
 			ReleaseImpl.class, release.getPrimaryKey(), release, false);
 
-		clearUniqueFindersCache(release);
-		cacheUniqueFindersCache(release);
+		clearUniqueFindersCache((Release)releaseModelImpl);
+		cacheUniqueFindersCache((Release)releaseModelImpl, isNew);
 
 		release.resetOriginalValues();
 
@@ -641,6 +641,7 @@ public class ReleasePersistenceImpl extends BasePersistenceImpl<Release>
 		releaseImpl.setCreateDate(release.getCreateDate());
 		releaseImpl.setModifiedDate(release.getModifiedDate());
 		releaseImpl.setServletContextName(release.getServletContextName());
+		releaseImpl.setVersion(release.getVersion());
 		releaseImpl.setBuildNumber(release.getBuildNumber());
 		releaseImpl.setBuildDate(release.getBuildDate());
 		releaseImpl.setVerified(release.isVerified());
@@ -1005,6 +1006,11 @@ public class ReleasePersistenceImpl extends BasePersistenceImpl<Release>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return ReleaseModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

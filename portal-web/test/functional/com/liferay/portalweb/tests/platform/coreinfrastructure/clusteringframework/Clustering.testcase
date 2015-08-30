@@ -12,10 +12,10 @@
 		<execute macro="BlogsEntry#tearDownCP" />
 	</tear-down>
 
-	<command name="AddAndDeleteBlogEntriesOnSeparateNodes" priority="5">
+	<command name="AddAndDeleteBlogEntriesOnSeparateNodes" priority="4">
 		<property name="app.server.bundles.size" value="1" />
 
-		<execute macro="Page#assertnodePortPG">
+		<execute macro="Page#assertNodePortPG">
 			<var name="nodePort" value="8080" />
 		</execute>
 
@@ -35,7 +35,7 @@
 			<var name="pageName" value="Test Page1" />
 		</execute>
 
-		<execute macro="BlogsEntry#addPG">
+		<execute macro="Blogs#addEntry">
 			<var name="entryContent" value="Blogs Entry1 Content" />
 			<var name="entryTitle" value="Blogs Entry1 Title" />
 		</execute>
@@ -51,7 +51,7 @@
 			<var name="userEmailAddress" value="test@liferay.com" />
 		</execute>
 
-		<execute macro="Page#assertnodePortPG">
+		<execute macro="Page#assertNodePortPG">
 			<var name="nodePort" value="9080" />
 		</execute>
 
@@ -119,7 +119,7 @@
 			<var name="pageName" value="Test Page2" />
 		</execute>
 
-		<execute macro="BlogsEntry#addPG">
+		<execute macro="Blogs#addEntry">
 			<var name="entryContent" value="Blogs Entry2 Content" />
 			<var name="entryTitle" value="Blogs Entry2 Title" />
 		</execute>
@@ -183,11 +183,11 @@
 		</execute>
 	</command>
 
-	<command name="ValidateDocumentOnSeparateNodes" priority="5">
+	<command name="ValidateDocumentOnSeparateNodes" priority="4">
 		<property name="custom.properties" value="dl.store.impl=com.liferay.portlet.documentlibrary.store.DBStore" />
 		<property name="app.server.bundles.size" value="1" />
 
-		<execute macro="Page#assertnodePortPG">
+		<execute macro="Page#assertNodePortPG">
 			<var name="nodePort" value="8080" />
 		</execute>
 
@@ -228,7 +228,7 @@
 			<var name="userEmailAddress" value="test@liferay.com" />
 		</execute>
 
-		<execute macro="Page#assertnodePortPG">
+		<execute macro="Page#assertNodePortPG">
 			<var name="nodePort" value="9080" />
 		</execute>
 
@@ -254,16 +254,16 @@
 		</execute>
 	</command>
 
-	<command name="ValidateSchedulerOnSeparateNodes" priority="5">
+	<command name="ValidateSchedulerOnSeparateNodes" priority="4">
 		<property name="app.server.bundles.size" value="1" />
 		<var name="pageName" value="Home" />
 
-		<execute macro="Page#assertnodePortPG">
+		<execute macro="Page#assertNodePortPG">
 			<var name="nodePort" value="8080" />
 		</execute>
 
-		<execute macro="Page#gotoConfigurationCP">
-			<var name="portletName" value="Site Settings" />
+		<execute macro="Page#gotoPublishingtools">
+			<var name="portletName" value="Staging Configuration" />
 			<var name="siteURL" value="true" />
 		</execute>
 
@@ -305,7 +305,7 @@
 			<var name="userEmailAddress" value="test@liferay.com" />
 		</execute>
 
-		<execute macro="Page#assertnodePortPG">
+		<execute macro="Page#assertNodePortPG">
 			<var name="nodePort" value="9080" />
 		</execute>
 

@@ -12,33 +12,14 @@
 	<!-- Listeners -->
 
 	<bean id="messageListener.async_service" class="com.liferay.portal.messaging.async.AsyncMessageListener" />
-	<bean id="messageListener.background_task" class="com.liferay.portal.backgroundtask.messaging.BackgroundTaskMessageListener">
-		<property name="backgroundTaskThreadLocalManager" ref="com.liferay.portal.kernel.backgroundtask.BackgroundTaskThreadLocalManager" />
-	</bean>
-	<bean id="messageListener.background_task_queuing" class="com.liferay.portal.backgroundtask.messaging.BackgroundTaskQueuingMessageListener" />
 	<bean id="messageListener.convert_process" class="com.liferay.portal.convert.messaging.ConvertProcessMessageListener" />
 	<bean id="messageListener.document_library_audio_processor" class="com.liferay.portlet.documentlibrary.messaging.AudioProcessorMessageListener" />
 	<bean id="messageListener.document_library_image_processor" class="com.liferay.portlet.documentlibrary.messaging.ImageProcessorMessageListener" />
 	<bean id="messageListener.document_library_pdf_processor" class="com.liferay.portlet.documentlibrary.messaging.PDFProcessorMessageListener" />
 	<bean id="messageListener.document_library_raw_metadata_processor" class="com.liferay.portlet.documentlibrary.messaging.RawMetadataProcessorMessageListener" />
 	<bean id="messageListener.document_library_video_processor" class="com.liferay.portlet.documentlibrary.messaging.VideoProcessorMessageListener" />
-	<bean id="messageListener.export_import_lifecycle_event" class="com.liferay.portal.lar.lifecycle.ExportImportLifecycleMessageListener" />
 	<bean id="messageListener.flags" class="com.liferay.portlet.flags.messaging.FlagsRequestMessageListener" />
 	<bean id="messageListener.hot_deploy" class="com.liferay.portal.deploy.hot.messaging.HotDeployMessageListener" />
-	<bean id="messageListener.layouts_local_publisher" class="com.liferay.portal.kernel.scheduler.messaging.SchedulerEventMessageListenerWrapper">
-		<property name="messageListener">
-			<bean class="com.liferay.portal.lar.messaging.LayoutsLocalPublisherMessageListener">
-				<property name="destinationName" value="liferay/message_bus/message_status" />
-			</bean>
-		</property>
-	</bean>
-	<bean id="messageListener.layouts_remote_publisher" class="com.liferay.portal.kernel.scheduler.messaging.SchedulerEventMessageListenerWrapper">
-		<property name="messageListener">
-			<bean class="com.liferay.portal.lar.messaging.LayoutsRemotePublisherMessageListener">
-				<property name="destinationName" value="liferay/message_bus/message_status" />
-			</bean>
-		</property>
-	</bean>
 	<bean id="messageListener.live_users" class="com.liferay.portal.liveusers.messaging.LiveUsersMessageListener" />
 	<bean id="messageListener.live_users_cluster" class="com.liferay.portal.kernel.cluster.messaging.ClusterBridgeMessageListener">
 		<property name="priority">
@@ -60,18 +41,6 @@
 			<util:set>
 				<bean class="com.liferay.portal.kernel.messaging.DestinationConfiguration">
 					<constructor-arg name="destinationName" value="liferay/async_service" />
-					<constructor-arg name="destinationType">
-						<util:constant static-field="com.liferay.portal.kernel.messaging.DestinationConfiguration.DESTINATION_TYPE_PARALLEL" />
-					</constructor-arg>
-				</bean>
-				<bean class="com.liferay.portal.kernel.messaging.DestinationConfiguration">
-					<constructor-arg name="destinationName" value="liferay/background_task" />
-					<constructor-arg name="destinationType">
-						<util:constant static-field="com.liferay.portal.kernel.messaging.DestinationConfiguration.DESTINATION_TYPE_PARALLEL" />
-					</constructor-arg>
-				</bean>
-				<bean class="com.liferay.portal.kernel.messaging.DestinationConfiguration">
-					<constructor-arg name="destinationName" value="liferay/background_task_status" />
 					<constructor-arg name="destinationType">
 						<util:constant static-field="com.liferay.portal.kernel.messaging.DestinationConfiguration.DESTINATION_TYPE_PARALLEL" />
 					</constructor-arg>
@@ -110,42 +79,6 @@
 					<constructor-arg name="destinationName" value="liferay/document_library_video_processor" />
 					<constructor-arg name="destinationType">
 						<util:constant static-field="com.liferay.portal.kernel.messaging.DestinationConfiguration.DESTINATION_TYPE_SERIAL" />
-					</constructor-arg>
-				</bean>
-				<bean class="com.liferay.portal.kernel.messaging.DestinationConfiguration">
-					<constructor-arg name="destinationName" value="liferay/export_import_lifecycle_event_async" />
-					<constructor-arg name="destinationType">
-						<util:constant static-field="com.liferay.portal.kernel.messaging.DestinationConfiguration.DESTINATION_TYPE_SERIAL" />
-					</constructor-arg>
-				</bean>
-				<bean class="com.liferay.portal.kernel.messaging.DestinationConfiguration">
-					<constructor-arg name="destinationName" value="liferay/export_import_lifecycle_event_sync" />
-					<constructor-arg name="destinationType">
-						<util:constant static-field="com.liferay.portal.kernel.messaging.DestinationConfiguration.DESTINATION_TYPE_SYNCHRONOUS" />
-					</constructor-arg>
-				</bean>
-				<bean class="com.liferay.portal.kernel.messaging.DestinationConfiguration">
-					<constructor-arg name="destinationName" value="liferay/flags" />
-					<constructor-arg name="destinationType">
-						<util:constant static-field="com.liferay.portal.kernel.messaging.DestinationConfiguration.DESTINATION_TYPE_PARALLEL" />
-					</constructor-arg>
-				</bean>
-				<bean class="com.liferay.portal.kernel.messaging.DestinationConfiguration">
-					<constructor-arg name="destinationName" value="liferay/flags" />
-					<constructor-arg name="destinationType">
-						<util:constant static-field="com.liferay.portal.kernel.messaging.DestinationConfiguration.DESTINATION_TYPE_PARALLEL" />
-					</constructor-arg>
-				</bean>
-				<bean class="com.liferay.portal.kernel.messaging.DestinationConfiguration">
-					<constructor-arg name="destinationName" value="liferay/flags" />
-					<constructor-arg name="destinationType">
-						<util:constant static-field="com.liferay.portal.kernel.messaging.DestinationConfiguration.DESTINATION_TYPE_PARALLEL" />
-					</constructor-arg>
-				</bean>
-				<bean class="com.liferay.portal.kernel.messaging.DestinationConfiguration">
-					<constructor-arg name="destinationName" value="liferay/flags" />
-					<constructor-arg name="destinationType">
-						<util:constant static-field="com.liferay.portal.kernel.messaging.DestinationConfiguration.DESTINATION_TYPE_PARALLEL" />
 					</constructor-arg>
 				</bean>
 				<bean class="com.liferay.portal.kernel.messaging.DestinationConfiguration">
@@ -211,16 +144,6 @@
 						<ref bean="messageListener.async_service" />
 					</list>
 				</entry>
-				<entry key="liferay/background_task">
-					<list value-type="com.liferay.portal.kernel.messaging.MessageListener">
-						<ref bean="messageListener.background_task" />
-					</list>
-				</entry>
-				<entry key="liferay/background_task_status">
-					<list value-type="com.liferay.portal.kernel.messaging.MessageListener">
-						<ref bean="messageListener.background_task_queuing" />
-					</list>
-				</entry>
 				<entry key="liferay/convert_process">
 					<list value-type="com.liferay.portal.kernel.messaging.MessageListener">
 						<ref bean="messageListener.convert_process" />
@@ -251,16 +174,6 @@
 						<ref bean="messageListener.document_library_video_processor" />
 					</list>
 				</entry>
-				<entry key="liferay/export_import_lifecycle_event_async">
-					<list value-type="com.liferay.portal.kernel.messaging.MessageListener">
-						<ref bean="messageListener.export_import_lifecycle_event" />
-					</list>
-				</entry>
-				<entry key="liferay/export_import_lifecycle_event_sync">
-					<list value-type="com.liferay.portal.kernel.messaging.MessageListener">
-						<ref bean="messageListener.export_import_lifecycle_event" />
-					</list>
-				</entry>
 				<entry key="liferay/flags">
 					<list value-type="com.liferay.portal.kernel.messaging.MessageListener">
 						<ref bean="messageListener.flags" />
@@ -269,16 +182,6 @@
 				<entry key="liferay/hot_deploy">
 					<list value-type="com.liferay.portal.kernel.messaging.MessageListener">
 						<ref bean="messageListener.hot_deploy" />
-					</list>
-				</entry>
-				<entry key="liferay/layouts_local_publisher">
-					<list value-type="com.liferay.portal.kernel.messaging.MessageListener">
-						<ref bean="messageListener.layouts_local_publisher" />
-					</list>
-				</entry>
-				<entry key="liferay/layouts_remote_publisher">
-					<list value-type="com.liferay.portal.kernel.messaging.MessageListener">
-						<ref bean="messageListener.layouts_remote_publisher" />
 					</list>
 				</entry>
 				<entry key="liferay/live_users">

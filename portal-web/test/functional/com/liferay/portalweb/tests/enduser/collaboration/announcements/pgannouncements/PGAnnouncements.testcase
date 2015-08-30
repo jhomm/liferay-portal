@@ -17,7 +17,9 @@
 	</set-up>
 
 	<tear-down>
-		<execute macro="AnnouncementsEntry#tearDownPG" />
+		<execute macro="AnnouncementsEntry#tearDownPG">
+			<var name="pageName" value="${pageName}" />
+		</execute>
 
 		<execute macro="Page#tearDownPG" />
 	</tear-down>
@@ -53,7 +55,7 @@
 		</execute>
 	</command>
 
-	<command name="AddAnnouncementsEntryFutureDate" priority="5">
+	<command name="AddAnnouncementsEntryFutureDate" priority="4">
 		<var name="announcementType" value="General" />
 		<var name="distributionScope" value="General" />
 		<var name="entryContent" value="Announcements Entry Content" />
@@ -72,18 +74,18 @@
 			<var name="pageName" value="${pageName}" />
 		</execute>
 
-		<execute function="Click" locator1="PGAnnouncements#NAVIGATION_MANAGE_ENTRIES" />
+		<execute function="Click" locator1="Announcements#NAVIGATION_MANAGE_ENTRIES" />
 
-		<execute function="Select#selectAndWait" locator1="PGAnnouncementsManageentries#DISTRIBUTION_SCOPE_SELECT" value1="${distributionScope}" />
-		<execute function="Click" locator1="PGAnnouncementsManageentries#ADD_ENTRY_BUTTON" />
+		<execute function="Select#selectAndWait" locator1="AnnouncementsManageEntries#DISTRIBUTION_SCOPE_SELECT" value1="${distributionScope}" />
+		<execute function="Click" locator1="Button#ADD_ENTRY" />
 
-		<execute function="Type" locator1="PGAnnouncementsAddentry#TITLE_FIELD" value1="${entryTitle}" />
-		<execute function="Type" locator1="PGAnnouncementsAddentry#URL_FIELD" value1="${entryURL}" />
-		<execute function="Type#typeFrameWaitForCKEditor" locator1="PGAnnouncementsAddentry#CONTENT_FIELD" value1="${entryContent}" />
+		<execute function="Type" locator1="TextInput#TITLE" value1="${entryTitle}" />
+		<execute function="Type" locator1="TextInput#URL" value1="${entryURL}" />
+		<execute function="Type#typeCKEditorWaitForCKEditor" locator1="CKEditor#BODY_FIELD" value1="${entryContent}" />
 
-		<execute function="Uncheck" locator1="PGAnnouncementsAddentry#DISPLAY_DATE_DISPLAY_IMMEDIATELY_CHECKBOX" />
+		<execute function="Uncheck" locator1="AnnouncementsEditEntry#DISPLAY_IMMEDIATELY_CHECKBOX" />
 
-		<var attribute="value" locator="//input[@id='_84_displayDateHour']" name="displayDateHour" />
+		<var attribute="value" locator="//input[contains(@id,'displayDateHour')]" name="displayDateHour" />
 		<var name="displayDateHourLength" value="${displayDateHour?length()}" />
 
 		<if>
@@ -93,11 +95,11 @@
 			</then>
 		</if>
 
-		<var attribute="value" locator="//input[@id='_84_displayDateAmPm']" name="displayDateAMPM" />
+		<var attribute="value" locator="//input[contains(@id,'displayDateAmPm')]" name="displayDateAMPM" />
 		<var method="StringUtil#replace('${displayDateAMPM}', '0', 'AM')" name="displayDateAMPM" />
 		<var method="StringUtil#replace('${displayDateAMPM}', '1', 'PM')" name="displayDateAMPM" />
 
-		<var attribute="value" locator="//input[@id='_84_displayDateMinute']" name="displayDateMinute" />
+		<var attribute="value" locator="//input[contains(@id,'displayDateMinute')]" name="displayDateMinute" />
 		<var method="MathUtil#sum('${displayDateMinute}', '2')" name="displayDateMinuteFuture" />
 		<var name="displayDateMinuteFutureLength" value="${displayDateMinuteFuture?length()}" />
 
@@ -110,8 +112,8 @@
 
 		<var name="displayDate" value="${displayDateHour}:${displayDateMinuteFuture} ${displayDateAMPM}" />
 
-		<execute function="Type" locator1="PGAnnouncementsAddentry#DISPLAY_DATE_TIME_INPUT" value1="${displayDate}" />
-		<execute function="AssertClick" locator1="PGAnnouncementsAddentry#SAVE_BUTTON" value1="Save" />
+		<execute function="Type" locator1="TextInput#DISPLAY_DATE_TIME" value1="${displayDate}" />
+		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
 
 		<execute macro="Page#gotoPG">
 			<var name="pageName" value="${pageName}" />
@@ -133,7 +135,7 @@
 		</execute>
 	</command>
 
-	<command name="AddAnnouncementsEntryPastExpirationDate" priority="5">
+	<command name="AddAnnouncementsEntryPastExpirationDate" priority="4">
 		<var name="distributionScope" value="General" />
 		<var name="entryContent" value="Announcements Entry Content" />
 		<var name="entryTitle" value="Announcements Entry Title" />
@@ -157,17 +159,17 @@
 		</execute>
 
 		<execute function="AssertTextNotPresent" value1="${entryTitle}" />
-		<execute function="Click" locator1="PGAnnouncements#NAVIGATION_MANAGE_ENTRIES" />
+		<execute function="Click" locator1="Announcements#NAVIGATION_MANAGE_ENTRIES" />
 
-		<execute function="Select#selectAndWait" locator1="PGAnnouncementsManageentries#DISTRIBUTION_SCOPE_SELECT" value1="${distributionScope}" />
+		<execute function="Select#selectAndWait" locator1="AnnouncementsManageEntries#DISTRIBUTION_SCOPE_SELECT" value1="${distributionScope}" />
 
 		<var name="key_entryTitle" value="${entryTitle}" />
 
-		<execute function="AssertTextEquals" locator1="PGAnnouncementsManageentries#ENTRY_TABLE_TITLE" value1="${entryTitle}" />
-		<execute function="AssertTextEquals" locator1="PGAnnouncementsManageentries#ENTRY_TABLE_TYPE" value1="${distributionScope}" />
+		<execute function="AssertTextEquals" locator1="AnnouncementsManageEntries#ENTRY_TABLE_TITLE" value1="${entryTitle}" />
+		<execute function="AssertTextEquals" locator1="AnnouncementsManageEntries#ENTRY_TABLE_TYPE" value1="${distributionScope}" />
 	</command>
 
-	<command name="AddAnnouncementsEntryPriorityImportant" priority="5">
+	<command name="AddAnnouncementsEntryPriorityImportant" priority="4">
 		<var name="announcementType" value="General" />
 		<var name="distributionScope" value="General" />
 		<var name="entryContent" value="Announcements Entry Content" />
@@ -199,7 +201,7 @@
 		</execute>
 	</command>
 
-	<command name="AddAnnouncementsEntrySite" priority="5">
+	<command name="AddAnnouncementsEntrySite" priority="4">
 		<var name="announcementType" value="General" />
 		<var name="distributionScope" value="General" />
 		<var name="entryContent" value="Announcements Entry Content" />
@@ -256,7 +258,7 @@
 		</execute>
 	</command>
 
-	<command name="DeleteAnnoucementsEntry" priority="5">
+	<command name="DeleteAnnouncementsEntry" priority="5">
 		<var name="distributionScope" value="General" />
 		<var name="entryContent" value="Announcements Entry Content" />
 		<var name="entryTitle" value="Announcements Entry Title" />
@@ -371,7 +373,7 @@
 		</execute>
 	</command>
 
-	<command name="MarkAsReadAnnouncementsEntry" priority="5">
+	<command name="MarkAsReadAnnouncementsEntry" priority="4">
 		<var name="distributionScope" value="General" />
 		<var name="entryContent" value="Announcements Entry Content" />
 		<var name="entryTitle" value="Announcements Entry Title" />
@@ -401,7 +403,7 @@
 		</execute>
 	</command>
 
-	<command name="ShowAnnouncementsEntry" priority="5">
+	<command name="ShowAnnouncementsEntry" priority="4">
 		<var name="announcementType" value="General" />
 		<var name="distributionScope" value="General" />
 		<var name="entryContent" value="Announcements Entry Content" />

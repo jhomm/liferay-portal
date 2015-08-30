@@ -4762,8 +4762,9 @@ public class LayoutFriendlyURLPersistenceImpl extends BasePersistenceImpl<Layout
 		}
 	}
 
-	protected void cacheUniqueFindersCache(LayoutFriendlyURL layoutFriendlyURL) {
-		if (layoutFriendlyURL.isNew()) {
+	protected void cacheUniqueFindersCache(
+		LayoutFriendlyURL layoutFriendlyURL, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					layoutFriendlyURL.getUuid(), layoutFriendlyURL.getGroupId()
 				};
@@ -5058,7 +5059,7 @@ public class LayoutFriendlyURLPersistenceImpl extends BasePersistenceImpl<Layout
 				layoutFriendlyURL.setNew(false);
 			}
 			else {
-				session.merge(layoutFriendlyURL);
+				layoutFriendlyURL = (LayoutFriendlyURL)session.merge(layoutFriendlyURL);
 			}
 		}
 		catch (Exception e) {
@@ -5215,8 +5216,9 @@ public class LayoutFriendlyURLPersistenceImpl extends BasePersistenceImpl<Layout
 			LayoutFriendlyURLImpl.class, layoutFriendlyURL.getPrimaryKey(),
 			layoutFriendlyURL, false);
 
-		clearUniqueFindersCache(layoutFriendlyURL);
-		cacheUniqueFindersCache(layoutFriendlyURL);
+		clearUniqueFindersCache((LayoutFriendlyURL)layoutFriendlyURLModelImpl);
+		cacheUniqueFindersCache((LayoutFriendlyURL)layoutFriendlyURLModelImpl,
+			isNew);
 
 		layoutFriendlyURL.resetOriginalValues();
 
@@ -5247,6 +5249,7 @@ public class LayoutFriendlyURLPersistenceImpl extends BasePersistenceImpl<Layout
 		layoutFriendlyURLImpl.setPrivateLayout(layoutFriendlyURL.isPrivateLayout());
 		layoutFriendlyURLImpl.setFriendlyURL(layoutFriendlyURL.getFriendlyURL());
 		layoutFriendlyURLImpl.setLanguageId(layoutFriendlyURL.getLanguageId());
+		layoutFriendlyURLImpl.setLastPublishDate(layoutFriendlyURL.getLastPublishDate());
 
 		return layoutFriendlyURLImpl;
 	}
@@ -5609,6 +5612,11 @@ public class LayoutFriendlyURLPersistenceImpl extends BasePersistenceImpl<Layout
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return LayoutFriendlyURLModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

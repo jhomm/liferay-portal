@@ -20,6 +20,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
 import com.liferay.portal.kernel.security.access.control.AccessControlled;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -38,6 +39,8 @@ import com.liferay.portal.service.BaseService;
  */
 @AccessControlled
 @JSONWebService
+@OSGiBeanProperties(property =  {
+	"json.web.service.context.name=wiki", "json.web.service.context.path=WikiPage"}, service = WikiPageService.class)
 @ProviderType
 @Transactional(isolation = Isolation.PORTAL, rollbackFor =  {
 	PortalException.class, SystemException.class})
@@ -60,21 +63,24 @@ public interface WikiPageService extends BaseService {
 		com.liferay.portal.service.ServiceContext serviceContext)
 		throws PortalException;
 
-	public void addPageAttachment(long nodeId, java.lang.String title,
-		java.lang.String fileName, java.io.File file, java.lang.String mimeType)
+	public com.liferay.portal.kernel.repository.model.FileEntry addPageAttachment(
+		long nodeId, java.lang.String title, java.lang.String fileName,
+		java.io.File file, java.lang.String mimeType) throws PortalException;
+
+	public com.liferay.portal.kernel.repository.model.FileEntry addPageAttachment(
+		long nodeId, java.lang.String title, java.lang.String fileName,
+		java.io.InputStream inputStream, java.lang.String mimeType)
 		throws PortalException;
 
-	public void addPageAttachment(long nodeId, java.lang.String title,
-		java.lang.String fileName, java.io.InputStream inputStream,
-		java.lang.String mimeType) throws PortalException;
-
-	public void addPageAttachments(long nodeId, java.lang.String title,
+	public java.util.List<com.liferay.portal.kernel.repository.model.FileEntry> addPageAttachments(
+		long nodeId, java.lang.String title,
 		java.util.List<com.liferay.portal.kernel.util.ObjectValuePair<java.lang.String, java.io.InputStream>> inputStreamOVPs)
 		throws PortalException;
 
-	public void addTempFileEntry(long nodeId, java.lang.String folderName,
-		java.lang.String fileName, java.io.InputStream inputStream,
-		java.lang.String mimeType) throws PortalException;
+	public com.liferay.portal.kernel.repository.model.FileEntry addTempFileEntry(
+		long nodeId, java.lang.String folderName, java.lang.String fileName,
+		java.io.InputStream inputStream, java.lang.String mimeType)
+		throws PortalException;
 
 	/**
 	* @deprecated As of 7.0.0 replaced by {@link #addTempFileEntry(long,
@@ -191,6 +197,13 @@ public interface WikiPageService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public java.util.List<com.liferay.wiki.model.WikiPage> getPages(
+		long groupId, long nodeId, boolean head, long userId,
+		boolean includeOwner, int status, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<com.liferay.wiki.model.WikiPage> obc)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public java.util.List<com.liferay.wiki.model.WikiPage> getPages(
 		long groupId, long userId, long nodeId, int status, int start, int end)
 		throws PortalException;
 
@@ -199,19 +212,17 @@ public interface WikiPageService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getPagesCount(long groupId, long userId, long nodeId, int status)
+	public int getPagesCount(long groupId, long nodeId, boolean head,
+		long userId, boolean includeOwner, int status)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public java.lang.String getPagesRSS(long companyId, long nodeId,
-		java.lang.String title, int max, java.lang.String type, double version,
-		java.lang.String displayStyle, java.lang.String feedURL,
-		java.lang.String entryURL, java.lang.String attachmentURLPrefix,
-		java.util.Locale locale) throws PortalException;
+	public int getPagesCount(long groupId, long userId, long nodeId, int status)
+		throws PortalException;
 
 	/**
-	* @deprecated As of 6.2.0, replaced by {@link #getPagesRSS(long, long,
-	String, int, String, double, String, String, String, String,
+	* @deprecated As of 6.2.0, replaced by {@link #getPagesRSS(long, String,
+	int, String, double, String, String, String, String,
 	java.util.Locale)}
 	*/
 	@java.lang.Deprecated
@@ -221,6 +232,13 @@ public interface WikiPageService extends BaseService {
 		java.lang.String displayStyle, java.lang.String feedURL,
 		java.lang.String entryURL, java.util.Locale locale)
 		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public java.lang.String getPagesRSS(long nodeId, java.lang.String title,
+		int max, java.lang.String type, double version,
+		java.lang.String displayStyle, java.lang.String feedURL,
+		java.lang.String entryURL, java.lang.String attachmentURLPrefix,
+		java.util.Locale locale) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public java.util.List<com.liferay.wiki.model.WikiPage> getRecentChanges(

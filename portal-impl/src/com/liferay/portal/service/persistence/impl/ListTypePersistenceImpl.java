@@ -983,8 +983,8 @@ public class ListTypePersistenceImpl extends BasePersistenceImpl<ListType>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(ListType listType) {
-		if (listType.isNew()) {
+	protected void cacheUniqueFindersCache(ListType listType, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { listType.getName(), listType.getType() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_N_T, args,
@@ -1147,7 +1147,7 @@ public class ListTypePersistenceImpl extends BasePersistenceImpl<ListType>
 				listType.setNew(false);
 			}
 			else {
-				session.merge(listType);
+				listType = (ListType)session.merge(listType);
 			}
 		}
 		catch (Exception e) {
@@ -1183,8 +1183,8 @@ public class ListTypePersistenceImpl extends BasePersistenceImpl<ListType>
 		EntityCacheUtil.putResult(ListTypeModelImpl.ENTITY_CACHE_ENABLED,
 			ListTypeImpl.class, listType.getPrimaryKey(), listType, false);
 
-		clearUniqueFindersCache(listType);
-		cacheUniqueFindersCache(listType);
+		clearUniqueFindersCache((ListType)listTypeModelImpl);
+		cacheUniqueFindersCache((ListType)listTypeModelImpl, isNew);
 
 		listType.resetOriginalValues();
 
@@ -1564,6 +1564,11 @@ public class ListTypePersistenceImpl extends BasePersistenceImpl<ListType>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return ListTypeModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

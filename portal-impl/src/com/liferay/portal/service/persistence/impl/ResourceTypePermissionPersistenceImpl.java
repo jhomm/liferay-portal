@@ -1578,8 +1578,8 @@ public class ResourceTypePermissionPersistenceImpl extends BasePersistenceImpl<R
 	}
 
 	protected void cacheUniqueFindersCache(
-		ResourceTypePermission resourceTypePermission) {
-		if (resourceTypePermission.isNew()) {
+		ResourceTypePermission resourceTypePermission, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					resourceTypePermission.getCompanyId(),
 					resourceTypePermission.getGroupId(),
@@ -1762,7 +1762,7 @@ public class ResourceTypePermissionPersistenceImpl extends BasePersistenceImpl<R
 				resourceTypePermission.setNew(false);
 			}
 			else {
-				session.merge(resourceTypePermission);
+				resourceTypePermission = (ResourceTypePermission)session.merge(resourceTypePermission);
 			}
 		}
 		catch (Exception e) {
@@ -1825,8 +1825,9 @@ public class ResourceTypePermissionPersistenceImpl extends BasePersistenceImpl<R
 			resourceTypePermission.getPrimaryKey(), resourceTypePermission,
 			false);
 
-		clearUniqueFindersCache(resourceTypePermission);
-		cacheUniqueFindersCache(resourceTypePermission);
+		clearUniqueFindersCache((ResourceTypePermission)resourceTypePermissionModelImpl);
+		cacheUniqueFindersCache((ResourceTypePermission)resourceTypePermissionModelImpl,
+			isNew);
 
 		resourceTypePermission.resetOriginalValues();
 
@@ -2211,6 +2212,11 @@ public class ResourceTypePermissionPersistenceImpl extends BasePersistenceImpl<R
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return ResourceTypePermissionModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

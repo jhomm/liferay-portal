@@ -23,12 +23,8 @@ import com.liferay.portal.kernel.events.ActionException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.image.ImageToolUtil;
 import com.liferay.portal.kernel.interval.IntervalActionProcessor;
-import com.liferay.portal.kernel.lar.PortletDataHandlerKeys;
-import com.liferay.portal.kernel.lar.exportimportconfiguration.ExportImportConfigurationConstants;
-import com.liferay.portal.kernel.lar.exportimportconfiguration.ExportImportConfigurationSettingsMapFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.servlet.BrowserSnifferUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
@@ -37,7 +33,6 @@ import com.liferay.portal.kernel.servlet.PortalWebResources;
 import com.liferay.portal.kernel.servlet.PortalWebResourcesUtil;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ColorSchemeFactoryUtil;
-import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -52,10 +47,8 @@ import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.model.ColorScheme;
 import com.liferay.portal.model.Company;
-import com.liferay.portal.model.ExportImportConfiguration;
 import com.liferay.portal.model.Group;
 import com.liferay.portal.model.GroupConstants;
 import com.liferay.portal.model.Image;
@@ -77,8 +70,6 @@ import com.liferay.portal.security.permission.ActionKeys;
 import com.liferay.portal.security.permission.PermissionChecker;
 import com.liferay.portal.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.security.permission.PermissionThreadLocal;
-import com.liferay.portal.service.ExportImportConfigurationLocalServiceUtil;
-import com.liferay.portal.service.ExportImportLocalServiceUtil;
 import com.liferay.portal.service.GroupLocalServiceUtil;
 import com.liferay.portal.service.ImageLocalServiceUtil;
 import com.liferay.portal.service.LayoutLocalServiceUtil;
@@ -109,6 +100,12 @@ import com.liferay.portal.webserver.WebServerServletTokenUtil;
 import com.liferay.portlet.PortalPreferences;
 import com.liferay.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portlet.PortletURLImpl;
+import com.liferay.portlet.exportimport.configuration.ExportImportConfigurationConstants;
+import com.liferay.portlet.exportimport.configuration.ExportImportConfigurationSettingsMapFactory;
+import com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys;
+import com.liferay.portlet.exportimport.model.ExportImportConfiguration;
+import com.liferay.portlet.exportimport.service.ExportImportConfigurationLocalServiceUtil;
+import com.liferay.portlet.exportimport.service.ExportImportLocalServiceUtil;
 import com.liferay.portlet.sites.util.SitesUtil;
 
 import java.io.File;
@@ -125,7 +122,6 @@ import java.util.TimeZone;
 import javax.portlet.PortletMode;
 import javax.portlet.PortletRequest;
 import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -357,7 +353,7 @@ public class ServicePreAction extends Action {
 				Group sourceGroup = GroupLocalServiceUtil.getGroup(
 					sourceGroupId);
 
-				if (layout.isPublicLayout() ||
+				if (layout.isTypeControlPanel() || layout.isPublicLayout() ||
 					SitesUtil.isUserGroupLayoutSetViewable(
 						permissionChecker, layout.getGroup())) {
 
@@ -446,7 +442,8 @@ public class ServicePreAction extends Action {
 				if (user.isDefaultUser() &&
 					PropsValues.AUTH_LOGIN_PROMPT_ENABLED) {
 
-					throw new PrincipalException("User is not authenticated");
+					throw new PrincipalException.MustBeAuthenticated(
+						user.getUserId());
 				}
 
 				sb = new StringBundler(6);
@@ -475,7 +472,7 @@ public class ServicePreAction extends Action {
 					layout.getGroupId(), layout.isPrivateLayout(),
 					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID);
 
-				if (!group.isControlPanel() && !group.isUserPersonalPanel()) {
+				if (!group.isControlPanel()) {
 					doAsGroupId = 0;
 				}
 			}
@@ -693,9 +690,7 @@ public class ServicePreAction extends Action {
 		long siteGroupId = 0;
 
 		if (layout != null) {
-			if (layout.isTypeControlPanel() ||
-				layout.isTypeUserPersonalPanel()) {
-
+			if (layout.isTypeControlPanel()) {
 				siteGroupId = PortalUtil.getSiteGroupId(scopeGroupId);
 			}
 			else {
@@ -711,7 +706,7 @@ public class ServicePreAction extends Action {
 		boolean wapTheme = BrowserSnifferUtil.isWap(request);
 
 		if ((layout != null) &&
-			(group.isControlPanel() || group.isUserPersonalPanel())) {
+			(layout.isTypeControlPanel() || group.isControlPanel())) {
 
 			String themeId = PrefsPropsUtil.getString(
 				companyId, PropsKeys.CONTROL_PANEL_LAYOUT_REGULAR_THEME_ID);
@@ -833,8 +828,7 @@ public class ServicePreAction extends Action {
 
 			// Temporary workaround for LPS-56017
 
-			themeDisplay.setPathEditors(
-				portalWebResources.getContextPath() + "/html");
+			themeDisplay.setPathEditors(portalWebResources.getContextPath());
 		}
 
 		themeDisplay.setPathFlash(contextPath.concat("/flash"));
@@ -843,12 +837,9 @@ public class ServicePreAction extends Action {
 		themeDisplay.setPathFriendlyURLPrivateUser(friendlyURLPrivateUserPath);
 		themeDisplay.setPathFriendlyURLPublic(friendlyURLPublicPath);
 		themeDisplay.setPathImage(imagePath);
-
-		String javaScriptPath = PortalWebResourcesUtil.getContextPath(
-			PortalWebResourceConstants.RESOURCE_TYPE_JS);
-
-		themeDisplay.setPathJavaScript(javaScriptPath.concat("/html/js"));
-
+		themeDisplay.setPathJavaScript(
+			PortalWebResourcesUtil.getContextPath(
+				PortalWebResourceConstants.RESOURCE_TYPE_JS));
 		themeDisplay.setPathMain(mainPath);
 		themeDisplay.setPathSound(contextPath.concat("/html/sound"));
 		themeDisplay.setPermissionChecker(permissionChecker);
@@ -988,8 +979,6 @@ public class ServicePreAction extends Action {
 
 		themeDisplay.setURLSiteAdministration(siteAdministrationURL);
 
-		long controlPanelPlid = PortalUtil.getControlPanelPlid(companyId);
-
 		if (layout != null) {
 			if (layout.isTypePortlet()) {
 				boolean freeformLayout =
@@ -1029,40 +1018,6 @@ public class ServicePreAction extends Action {
 			if (hasUpdateLayoutPermission) {
 				themeDisplay.setShowPageSettingsIcon(true);
 
-				LiferayPortletURL pageSettingsURL = new PortletURLImpl(
-					request, PortletKeys.GROUP_PAGES, controlPanelPlid,
-					PortletRequest.RENDER_PHASE);
-
-				pageSettingsURL.setDoAsGroupId(scopeGroupId);
-				pageSettingsURL.setParameter(
-					"struts_action", "/group_pages/edit_layouts");
-
-				if (layout.isPrivateLayout()) {
-					pageSettingsURL.setParameter("tabs1", "private-pages");
-				}
-				else {
-					pageSettingsURL.setParameter("tabs1", "public-pages");
-				}
-
-				pageSettingsURL.setParameter(
-					"groupId", String.valueOf(scopeGroupId));
-				pageSettingsURL.setParameter("selPlid", String.valueOf(plid));
-				pageSettingsURL.setPortletMode(PortletMode.VIEW);
-
-				if (PropsValues.DOCKBAR_ADMINISTRATIVE_LINKS_SHOW_IN_POP_UP) {
-					pageSettingsURL.setControlPanelCategory(
-						PortletCategoryKeys.PORTLET);
-					pageSettingsURL.setWindowState(LiferayWindowState.POP_UP);
-				}
-				else {
-					pageSettingsURL.setParameter(
-						"redirect", themeDisplay.getURLHome());
-					pageSettingsURL.setPlid(plid);
-					pageSettingsURL.setWindowState(WindowState.MAXIMIZED);
-				}
-
-				themeDisplay.setURLPageSettings(pageSettingsURL);
-
 				boolean site = group.isSite();
 
 				if (!site && group.isStagingGroup()) {
@@ -1100,8 +1055,7 @@ public class ServicePreAction extends Action {
 				permissionChecker, scopeGroup, ActionKeys.VIEW_STAGING);
 
 			if (!group.isControlPanel() && !group.isUser() &&
-				!group.isUserGroup() && !group.isUserPersonalPanel() &&
-				hasUpdateGroupPermission) {
+				!group.isUserGroup() && hasUpdateGroupPermission) {
 
 				themeDisplay.setShowSiteSettingsIcon(true);
 			}
@@ -1119,7 +1073,7 @@ public class ServicePreAction extends Action {
 				themeDisplay.setURLPublishToLive(null);
 			}
 
-			if (group.isControlPanel() || group.isUserPersonalPanel()) {
+			if (group.isControlPanel()) {
 				themeDisplay.setShowPageSettingsIcon(false);
 				themeDisplay.setURLPublishToLive(null);
 			}
@@ -1139,7 +1093,7 @@ public class ServicePreAction extends Action {
 						PortletRequest.RENDER_PHASE);
 
 					publishToLiveURL.setParameter(
-						"struts_action", "/export_import/publish_layouts");
+						"mvcRenderCommandName", "publishLayouts");
 
 					if (layout.isPrivateLayout()) {
 						publishToLiveURL.setParameter("tabs1", "private-pages");
@@ -1225,12 +1179,6 @@ public class ServicePreAction extends Action {
 
 		themeDisplay.setURLSignOut(mainPath.concat(_PATH_PORTAL_LOGOUT));
 
-		PortletURL updateManagerURL = new PortletURLImpl(
-			request, PortletKeys.MARKETPLACE_STORE, controlPanelPlid,
-			PortletRequest.RENDER_PHASE);
-
-		themeDisplay.setURLUpdateManager(updateManagerURL);
-
 		return themeDisplay;
 	}
 
@@ -1293,20 +1241,17 @@ public class ServicePreAction extends Action {
 			PortletDataHandlerKeys.THEME_REFERENCE,
 			new String[] {Boolean.TRUE.toString()});
 
-		Map<String, Serializable> importSettingsMap =
-			ExportImportConfigurationSettingsMapFactory.buildImportSettingsMap(
-				user.getUserId(), groupId, privateLayout, null, parameterMap,
-				Constants.IMPORT, user.getLocale(), user.getTimeZone(),
-				larFile.getName());
+		Map<String, Serializable> importLayoutSettingsMap =
+			ExportImportConfigurationSettingsMapFactory.
+				buildImportLayoutSettingsMap(
+					user, groupId, privateLayout, null, parameterMap);
 
 		ExportImportConfiguration exportImportConfiguration =
 			ExportImportConfigurationLocalServiceUtil.
-				addExportImportConfiguration(
-					user.getUserId(), groupId, StringPool.BLANK,
-					StringPool.BLANK,
+				addDraftExportImportConfiguration(
+					user.getUserId(),
 					ExportImportConfigurationConstants.TYPE_IMPORT_LAYOUT,
-					importSettingsMap, WorkflowConstants.STATUS_DRAFT,
-					new ServiceContext());
+					importLayoutSettingsMap);
 
 		ExportImportLocalServiceUtil.importLayouts(
 			exportImportConfiguration, larFile);
@@ -1558,7 +1503,7 @@ public class ServicePreAction extends Action {
 
 		final LinkedHashMap<String, Object> groupParams = new LinkedHashMap<>();
 
-		groupParams.put("usersGroups", new Long(user.getUserId()));
+		groupParams.put("usersGroups", Long.valueOf(user.getUserId()));
 
 		int count = GroupLocalServiceUtil.searchCount(
 			user.getCompanyId(), null, null, groupParams);
@@ -1783,7 +1728,8 @@ public class ServicePreAction extends Action {
 				if (user.isDefaultUser() &&
 					PropsValues.AUTH_LOGIN_PROMPT_ENABLED) {
 
-					throw new PrincipalException("User is not authenticated");
+					throw new PrincipalException.MustBeAuthenticated(
+						String.valueOf(user.getUserId()));
 				}
 
 				SessionErrors.add(
@@ -1824,10 +1770,11 @@ public class ServicePreAction extends Action {
 			}
 
 			if (controlPanelCategory.startsWith(
-					PortletCategoryKeys.CURRENT_SITE)) {
+					PortletCategoryKeys.CURRENT_SITE) ||
+				controlPanelCategory.startsWith(PortletCategoryKeys.SITES)) {
 
 				if (doAsGroupId <= 0) {
-					return false;
+					doAsGroupId = layout.getGroupId();
 				}
 
 				Group group = GroupLocalServiceUtil.getGroup(doAsGroupId);
@@ -2098,9 +2045,10 @@ public class ServicePreAction extends Action {
 							Portlet firstPortlet = categoryPortlets.get(0);
 
 							PortletURL redirectURL =
-								PortalUtil.getSiteAdministrationURL(
-									request, themeDisplay,
-									firstPortlet.getPortletId());
+								PortalUtil.getControlPanelPortletURL(
+									request, themeDisplay.getScopeGroup(),
+									firstPortlet.getPortletId(), 0,
+									PortletRequest.RENDER_PHASE);
 
 							response.sendRedirect(redirectURL.toString());
 						}
@@ -2189,15 +2137,15 @@ public class ServicePreAction extends Action {
 			WebKeys.VISITED_GROUP_ID_PREVIOUS);
 
 		if (recentGroupId == null) {
-			recentGroupId = new Long(currentGroupId);
+			recentGroupId = Long.valueOf(currentGroupId);
 
 			session.setAttribute(
 				WebKeys.VISITED_GROUP_ID_RECENT, recentGroupId);
 		}
 		else if (recentGroupId.longValue() != currentGroupId) {
-			previousGroupId = new Long(recentGroupId.longValue());
+			previousGroupId = Long.valueOf(recentGroupId.longValue());
 
-			recentGroupId = new Long(currentGroupId);
+			recentGroupId = Long.valueOf(currentGroupId);
 
 			session.setAttribute(
 				WebKeys.VISITED_GROUP_ID_RECENT, recentGroupId);

@@ -33,7 +33,6 @@ import com.liferay.portal.service.configuration.configurator.ServiceConfigurator
 import com.liferay.registry.Registry;
 import com.liferay.registry.RegistryUtil;
 import com.liferay.registry.ServiceRegistrar;
-import com.liferay.util.log4j.Log4JUtil;
 
 import java.net.URL;
 import java.util.HashMap;
@@ -68,8 +67,6 @@ public class ServiceConfiguratorImpl implements ServiceConfigurator {
 			ClassLoader classLoader)
 		throws Exception {
 
-		initLog4J(classLoader);
-
 		initServiceComponent(serviceComponentConfiguration, classLoader);
 
 		reconfigureCaches(classLoader);
@@ -103,11 +100,6 @@ public class ServiceConfiguratorImpl implements ServiceConfigurator {
 		}
 
 		return classLoader.getResource(cacheConfigurationLocation);
-	}
-
-	protected void initLog4J(ClassLoader classLoader) {
-		Log4JUtil.configureLog4J(
-			classLoader.getResource("META-INF/portal-log4j.xml"));
 	}
 
 	protected void initServiceComponent(
@@ -166,8 +158,19 @@ public class ServiceConfiguratorImpl implements ServiceConfigurator {
 	}
 
 	protected void readResourceActions(ClassLoader classLoader) {
-		Configuration configuration = ConfigurationFactoryUtil.getConfiguration(
-			classLoader, "portlet");
+		Configuration configuration = null;
+
+		try {
+			configuration = ConfigurationFactoryUtil.getConfiguration(
+				classLoader, "portlet");
+		}
+		catch (Exception e) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Unable to read portlet.properties");
+			}
+
+			return;
+		}
 
 		String[] resourceActionsConfigs = StringUtil.split(
 			configuration.get(PropsKeys.RESOURCE_ACTIONS_CONFIGS));

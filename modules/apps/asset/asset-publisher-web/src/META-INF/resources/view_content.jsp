@@ -32,8 +32,8 @@ boolean print = ParamUtil.getString(request, "viewMode").equals(Constants.PRINT)
 
 AssetEntry assetEntry = null;
 
-AssetRendererFactory assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByType(type);
-AssetRenderer assetRenderer = null;
+AssetRendererFactory<?> assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByType(type);
+AssetRenderer<?> assetRenderer = null;
 
 if (Validator.isNotNull(urlTitle)) {
 	assetRenderer = assetRendererFactory.getAssetRenderer(groupId, urlTitle);
@@ -54,12 +54,12 @@ else {
 		String title = assetRenderer.getTitle(locale);
 
 		request.setAttribute("view.jsp-results", new ArrayList());
-		request.setAttribute("view.jsp-assetEntryIndex", new Integer(0));
+		request.setAttribute("view.jsp-assetEntryIndex", Integer.valueOf(0));
 		request.setAttribute("view.jsp-assetEntry", assetEntry);
 		request.setAttribute("view.jsp-assetRendererFactory", assetRendererFactory);
 		request.setAttribute("view.jsp-assetRenderer", assetRenderer);
 		request.setAttribute("view.jsp-title", title);
-		request.setAttribute("view.jsp-print", new Boolean(print));
+		request.setAttribute("view.jsp-print", Boolean.valueOf(print));
 
 		PortalUtil.addPortletBreadcrumbEntry(request, title, currentURL);
 		%>

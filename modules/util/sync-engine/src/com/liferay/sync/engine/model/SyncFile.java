@@ -54,6 +54,8 @@ public class SyncFile extends StateAwareModel {
 
 	public static final String TYPE_FOLDER = "folder";
 
+	public static final String TYPE_PRIVATE_WORKING_COPY = "privateWorkingCopy";
+
 	public static final String TYPE_SYSTEM = "system";
 
 	public static final int UI_EVENT_ADDED_LOCAL = 1;
@@ -86,6 +88,8 @@ public class SyncFile extends StateAwareModel {
 
 	public static final int UI_EVENT_MOVED_REMOTE = 14;
 
+	public static final int UI_EVENT_PARENT_MISSING = 24;
+
 	public static final int UI_EVENT_RENAMED_LOCAL = 21;
 
 	public static final int UI_EVENT_RENAMED_REMOTE = 22;
@@ -97,6 +101,8 @@ public class SyncFile extends StateAwareModel {
 	public static final int UI_EVENT_UPDATED_LOCAL = 17;
 
 	public static final int UI_EVENT_UPDATED_REMOTE = 18;
+
+	public static final int UI_EVENT_UPLOAD_EXCEPTION = 25;
 
 	public static final int UI_EVENT_UPLOADED = 19;
 
@@ -244,7 +250,15 @@ public class SyncFile extends StateAwareModel {
 	}
 
 	public boolean isFolder() {
-		return !isFile();
+		if (!isFile() && !isPrivateWorkingCopy()) {
+			return true;
+		}
+
+		return false;
+	}
+
+	public boolean isPrivateWorkingCopy() {
+		return type.equals(TYPE_PRIVATE_WORKING_COPY);
 	}
 
 	public boolean isSystem() {
@@ -366,7 +380,7 @@ public class SyncFile extends StateAwareModel {
 	@DatabaseField(defaultValue = "", useGetSet = true)
 	protected String changeLog;
 
-	@DatabaseField(useGetSet = true)
+	@DatabaseField(index = true, useGetSet = true)
 	protected String checksum;
 
 	@DatabaseField(useGetSet = true)

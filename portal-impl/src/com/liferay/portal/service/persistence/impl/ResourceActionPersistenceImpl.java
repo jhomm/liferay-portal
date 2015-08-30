@@ -981,8 +981,9 @@ public class ResourceActionPersistenceImpl extends BasePersistenceImpl<ResourceA
 		}
 	}
 
-	protected void cacheUniqueFindersCache(ResourceAction resourceAction) {
-		if (resourceAction.isNew()) {
+	protected void cacheUniqueFindersCache(ResourceAction resourceAction,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					resourceAction.getName(), resourceAction.getActionId()
 				};
@@ -1151,7 +1152,7 @@ public class ResourceActionPersistenceImpl extends BasePersistenceImpl<ResourceA
 				resourceAction.setNew(false);
 			}
 			else {
-				session.merge(resourceAction);
+				resourceAction = (ResourceAction)session.merge(resourceAction);
 			}
 		}
 		catch (Exception e) {
@@ -1190,8 +1191,8 @@ public class ResourceActionPersistenceImpl extends BasePersistenceImpl<ResourceA
 			ResourceActionImpl.class, resourceAction.getPrimaryKey(),
 			resourceAction, false);
 
-		clearUniqueFindersCache(resourceAction);
-		cacheUniqueFindersCache(resourceAction);
+		clearUniqueFindersCache((ResourceAction)resourceActionModelImpl);
+		cacheUniqueFindersCache((ResourceAction)resourceActionModelImpl, isNew);
 
 		resourceAction.resetOriginalValues();
 
@@ -1569,6 +1570,11 @@ public class ResourceActionPersistenceImpl extends BasePersistenceImpl<ResourceA
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return ResourceActionModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

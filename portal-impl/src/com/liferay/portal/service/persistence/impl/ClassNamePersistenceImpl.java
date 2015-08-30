@@ -402,8 +402,8 @@ public class ClassNamePersistenceImpl extends BasePersistenceImpl<ClassName>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(ClassName className) {
-		if (className.isNew()) {
+	protected void cacheUniqueFindersCache(ClassName className, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { className.getValue() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_VALUE, args,
@@ -549,6 +549,8 @@ public class ClassNamePersistenceImpl extends BasePersistenceImpl<ClassName>
 
 		boolean isNew = className.isNew();
 
+		ClassNameModelImpl classNameModelImpl = (ClassNameModelImpl)className;
+
 		Session session = null;
 
 		try {
@@ -560,7 +562,7 @@ public class ClassNamePersistenceImpl extends BasePersistenceImpl<ClassName>
 				className.setNew(false);
 			}
 			else {
-				session.merge(className);
+				className = (ClassName)session.merge(className);
 			}
 		}
 		catch (Exception e) {
@@ -579,8 +581,8 @@ public class ClassNamePersistenceImpl extends BasePersistenceImpl<ClassName>
 		EntityCacheUtil.putResult(ClassNameModelImpl.ENTITY_CACHE_ENABLED,
 			ClassNameImpl.class, className.getPrimaryKey(), className, false);
 
-		clearUniqueFindersCache(className);
-		cacheUniqueFindersCache(className);
+		clearUniqueFindersCache((ClassName)classNameModelImpl);
+		cacheUniqueFindersCache((ClassName)classNameModelImpl, isNew);
 
 		className.resetOriginalValues();
 
@@ -955,6 +957,11 @@ public class ClassNamePersistenceImpl extends BasePersistenceImpl<ClassName>
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return ClassNameModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

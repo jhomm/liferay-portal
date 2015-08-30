@@ -26,6 +26,8 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.lock.Lock;
+import com.liferay.portal.kernel.lock.LockManager;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.RepositoryException;
@@ -53,7 +55,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.TransientValue;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Lock;
 import com.liferay.portal.model.RepositoryEntry;
 import com.liferay.portal.security.auth.PrincipalException;
 import com.liferay.portal.security.auth.PrincipalThreadLocal;
@@ -129,11 +130,13 @@ public class CMISRepository extends BaseCmisRepository {
 	public CMISRepository(
 		CMISRepositoryConfiguration cmisRepositoryConfiguration,
 		CMISRepositoryHandler cmisRepositoryHandler,
-		CMISSearchQueryBuilder cmisSearchQueryBuilder) {
+		CMISSearchQueryBuilder cmisSearchQueryBuilder,
+		LockManager lockManager) {
 
 		_cmisRepositoryConfiguration = cmisRepositoryConfiguration;
 		_cmisRepositoryHandler = cmisRepositoryHandler;
 		_cmisSearchQueryBuilder = cmisSearchQueryBuilder;
+		_lockManager = lockManager;
 	}
 
 	@Override
@@ -1573,13 +1576,15 @@ public class CMISRepository extends BaseCmisRepository {
 
 		if (properties != null) {
 			if (!allowableActionsSet.contains(Action.CAN_UPDATE_PROPERTIES)) {
-				throw new PrincipalException();
+				throw new PrincipalException.MustHavePermission(
+					0, Action.CAN_UPDATE_PROPERTIES.toString());
 			}
 		}
 
 		if (contentStream != null) {
 			if (!allowableActionsSet.contains(Action.CAN_SET_CONTENT_STREAM)) {
-				throw new PrincipalException();
+				throw new PrincipalException.MustHavePermission(
+					0, Action.CAN_SET_CONTENT_STREAM.toString());
 			}
 		}
 	}
@@ -1638,6 +1643,9 @@ public class CMISRepository extends BaseCmisRepository {
 					}
 				}
 				catch (NoSuchRepositoryEntryException nsree) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(nsree, nsree);
+					}
 				}
 			}
 		}
@@ -2117,17 +2125,15 @@ public class CMISRepository extends BaseCmisRepository {
 			 e.getMessage().contains("authorized")) ||
 			(e instanceof CmisPermissionDeniedException)) {
 
-			String message = e.getMessage();
+			String login = null;
 
 			try {
-				message =
-					"Unable to login with user " +
-						_cmisRepositoryHandler.getLogin();
+				login = _cmisRepositoryHandler.getLogin();
 			}
 			catch (Exception e2) {
 			}
 
-			throw new PrincipalException(message, e);
+			throw new PrincipalException.MustBeAuthenticated(login);
 		}
 	}
 
@@ -2174,7 +2180,7 @@ public class CMISRepository extends BaseCmisRepository {
 
 		FileEntry fileEntry = new CMISFileEntry(
 			this, repositoryEntry.getUuid(),
-			repositoryEntry.getRepositoryEntryId(), document);
+			repositoryEntry.getRepositoryEntryId(), document, _lockManager);
 
 		FileVersion fileVersion = null;
 
@@ -2365,6 +2371,7 @@ public class CMISRepository extends BaseCmisRepository {
 	private CMISRepositoryDetector _cmisRepositoryDetector;
 	private final CMISRepositoryHandler _cmisRepositoryHandler;
 	private final CMISSearchQueryBuilder _cmisSearchQueryBuilder;
+	private final LockManager _lockManager;
 	private String _sessionKey;
 
 }

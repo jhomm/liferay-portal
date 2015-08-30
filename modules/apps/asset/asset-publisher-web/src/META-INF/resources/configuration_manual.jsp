@@ -41,7 +41,7 @@ String eventName = "_" + HtmlUtil.escapeJS(assetPublisherDisplayContext.getPortl
 		<aui:fieldset label="model.resource.com.liferay.portlet.asset">
 
 			<%
-			List<AssetEntry> assetEntries = AssetPublisherUtil.getAssetEntries(renderRequest, portletPreferences, permissionChecker, assetPublisherDisplayContext.getGroupIds(), true, assetPublisherDisplayContext.isEnablePermissions());
+			List<AssetEntry> assetEntries = AssetPublisherUtil.getAssetEntries(renderRequest, portletPreferences, permissionChecker, assetPublisherDisplayContext.getGroupIds(), true, assetPublisherDisplayContext.isEnablePermissions(), true);
 			%>
 
 			<liferay-ui:search-container
@@ -61,15 +61,24 @@ String eventName = "_" + HtmlUtil.escapeJS(assetPublisherDisplayContext.getPortl
 				>
 
 					<%
-					AssetRendererFactory assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(assetEntry.getClassName());
+					AssetRendererFactory<?> assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(assetEntry.getClassName());
 
-					AssetRenderer assetRenderer = assetRendererFactory.getAssetRenderer(assetEntry.getClassPK());
+					AssetRenderer<?> assetRenderer = assetRendererFactory.getAssetRenderer(assetEntry.getClassPK(), AssetRendererFactory.TYPE_LATEST);
 					%>
 
 					<liferay-ui:search-container-column-text name="title">
 						<i class="<%= assetRenderer.getIconCssClass() %>"></i>
 
 						<%= HtmlUtil.escape(assetRenderer.getTitle(locale)) %>
+
+						<c:if test="<%= !assetEntry.isVisible() %>">
+							(<aui:workflow-status
+								showIcon="<%= false %>"
+								showLabel="<%= false %>"
+								status="<%= assetRenderer.getStatus() %>"
+								statusMessage='<%= assetRenderer.getStatus() == 0 ? "not-visible" : WorkflowConstants.getStatusLabel(assetRenderer.getStatus()) %>'
+							/>)
+						</c:if>
 					</liferay-ui:search-container-column-text>
 
 					<liferay-ui:search-container-column-text
@@ -114,9 +123,9 @@ String eventName = "_" + HtmlUtil.escapeJS(assetPublisherDisplayContext.getPortl
 						>
 
 							<%
-							List <AssetRendererFactory> assetRendererFactories = ListUtil.sort(AssetRendererFactoryRegistryUtil.getAssetRendererFactories(company.getCompanyId()), new AssetRendererFactoryTypeNameComparator(locale));
+							List<AssetRendererFactory<?>> assetRendererFactories = ListUtil.sort(AssetRendererFactoryRegistryUtil.getAssetRendererFactories(company.getCompanyId()), new AssetRendererFactoryTypeNameComparator(locale));
 
-							for (AssetRendererFactory curRendererFactory : assetRendererFactories) {
+							for (AssetRendererFactory<?> curRendererFactory : assetRendererFactories) {
 								if (!curRendererFactory.isSelectable()) {
 									continue;
 								}

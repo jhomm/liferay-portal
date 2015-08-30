@@ -36,8 +36,8 @@ if (Validator.isNull(redirect) && results.isEmpty()) {
 int assetEntryIndex = ((Integer)request.getAttribute("view.jsp-assetEntryIndex")).intValue();
 
 AssetEntry assetEntry = (AssetEntry)request.getAttribute("view.jsp-assetEntry");
-AssetRendererFactory assetRendererFactory = (AssetRendererFactory)request.getAttribute("view.jsp-assetRendererFactory");
-AssetRenderer assetRenderer = (AssetRenderer)request.getAttribute("view.jsp-assetRenderer");
+AssetRendererFactory<?> assetRendererFactory = (AssetRendererFactory<?>)request.getAttribute("view.jsp-assetRendererFactory");
+AssetRenderer<?> assetRenderer = (AssetRenderer<?>)request.getAttribute("view.jsp-assetRenderer");
 
 String languageId = LanguageUtil.getLanguageId(request);
 
@@ -45,7 +45,7 @@ String title = assetRenderer.getTitle(LocaleUtil.fromLanguageId(languageId));
 
 boolean print = ((Boolean)request.getAttribute("view.jsp-print")).booleanValue();
 
-request.setAttribute(WebKeys.LAYOUT_ASSET_ENTRY, assetEntry);
+assetPublisherDisplayContext.setLayoutAssetEntry(assetEntry);
 
 assetEntry = assetPublisherDisplayContext.incrementViewCounter(assetEntry);
 
@@ -61,7 +61,7 @@ request.setAttribute("view.jsp-showIconLabel", true);
 	/>
 </c:if>
 
-<div class="asset-full-content <%= AssetUtil.isDefaultAssetPublisher(layout, portletDisplay.getId(), assetPublisherDisplayContext.getPortletResource()) ? "default-asset-publisher" : StringPool.BLANK %> <%= assetPublisherDisplayContext.isShowAssetTitle() ? "show-asset-title" : "no-title" %>">
+<div class="asset-full-content <%= assetPublisherDisplayContext.isDefaultAssetPublisher() ? "default-asset-publisher" : StringPool.BLANK %> <%= assetPublisherDisplayContext.isShowAssetTitle() ? "show-asset-title" : "no-title" %>">
 	<c:if test="<%= !print %>">
 		<liferay-util:include page="/asset_actions.jsp" servletContext="<%= application %>" />
 	</c:if>
@@ -180,18 +180,10 @@ request.setAttribute("view.jsp-showIconLabel", true);
 		<c:if test="<%= Validator.isNotNull(assetRenderer.getDiscussionPath()) && assetPublisherDisplayContext.isEnableComments() %>">
 			<br />
 
-			<portlet:actionURL name="invokeTaglibDiscussion" var="discussionURL" />
-
-			<portlet:resourceURL var="discussionPaginationURL">
-				<portlet:param name="invokeTaglibDiscussion" value="<%= Boolean.TRUE.toString() %>" />
-			</portlet:resourceURL>
-
 			<liferay-ui:discussion
 				className="<%= assetEntry.getClassName() %>"
 				classPK="<%= assetEntry.getClassPK() %>"
-				formAction="<%= discussionURL %>"
 				formName='<%= "fm" + assetEntry.getClassPK() %>'
-				paginationURL="<%= discussionPaginationURL %>"
 				ratingsEnabled="<%= assetPublisherDisplayContext.isEnableCommentRatings() %>"
 				redirect="<%= currentURL %>"
 				userId="<%= assetRenderer.getUserId() %>"

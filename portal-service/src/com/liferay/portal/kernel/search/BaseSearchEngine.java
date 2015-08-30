@@ -17,10 +17,6 @@ package com.liferay.portal.kernel.search;
 import com.liferay.portal.kernel.search.dummy.DummyIndexSearcher;
 import com.liferay.portal.kernel.search.dummy.DummyIndexWriter;
 import com.liferay.portal.kernel.search.generic.BooleanClauseFactoryImpl;
-import com.liferay.portal.kernel.search.generic.BooleanQueryFactoryImpl;
-import com.liferay.portal.kernel.search.generic.TermQueryFactoryImpl;
-import com.liferay.portal.kernel.search.generic.TermRangeQueryFactoryImpl;
-import com.liferay.portal.kernel.search.generic.WildcardQueryFactoryImpl;
 import com.liferay.portal.kernel.security.pacl.DoPrivileged;
 
 /**
@@ -41,6 +37,10 @@ public class BaseSearchEngine implements SearchEngine {
 		return null;
 	}
 
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
 	@Override
 	public BooleanClauseFactory getBooleanClauseFactory() {
 		if (_booleanClauseFactory == null) {
@@ -50,10 +50,16 @@ public class BaseSearchEngine implements SearchEngine {
 		return _booleanClauseFactory;
 	}
 
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
 	@Override
 	public BooleanQueryFactory getBooleanQueryFactory() {
 		if (_booleanQueryFactory == null) {
-			_booleanQueryFactory = new BooleanQueryFactoryImpl();
+			_booleanQueryFactory =
+				new com.liferay.portal.kernel.search.generic.
+					BooleanQueryFactoryImpl();
 		}
 
 		return _booleanQueryFactory;
@@ -69,19 +75,31 @@ public class BaseSearchEngine implements SearchEngine {
 		return _indexWriter;
 	}
 
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
 	@Override
 	public TermQueryFactory getTermQueryFactory() {
 		if (_termQueryFactory == null) {
-			_termQueryFactory = new TermQueryFactoryImpl();
+			_termQueryFactory =
+				new com.liferay.portal.kernel.search.generic.
+					TermQueryFactoryImpl();
 		}
 
 		return _termQueryFactory;
 	}
 
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
 	@Override
 	public TermRangeQueryFactory getTermRangeQueryFactory() {
 		if (_termRangeQueryFactory == null) {
-			_termRangeQueryFactory = new TermRangeQueryFactoryImpl();
+			_termRangeQueryFactory =
+				new com.liferay.portal.kernel.search.generic.
+					TermRangeQueryFactoryImpl();
 		}
 
 		return _termRangeQueryFactory;
@@ -90,15 +108,6 @@ public class BaseSearchEngine implements SearchEngine {
 	@Override
 	public String getVendor() {
 		return _vendor;
-	}
-
-	@Override
-	public WildcardQueryFactory getWildcardQueryFactory() {
-		if (_wildcardQueryFactory == null) {
-			_wildcardQueryFactory = new WildcardQueryFactoryImpl();
-		}
-
-		return _wildcardQueryFactory;
 	}
 
 	@Override
@@ -125,12 +134,20 @@ public class BaseSearchEngine implements SearchEngine {
 		throws SearchException {
 	}
 
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
 	public void setBooleanClauseFactory(
 		BooleanClauseFactory booleanClauseFactory) {
 
 		_booleanClauseFactory = booleanClauseFactory;
 	}
 
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
 	public void setBooleanQueryFactory(
 		BooleanQueryFactory booleanQueryFactory) {
 
@@ -145,10 +162,18 @@ public class BaseSearchEngine implements SearchEngine {
 		_indexWriter = indexWriter;
 	}
 
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
 	public void setTermQueryFactory(TermQueryFactory termQueryFactory) {
 		_termQueryFactory = termQueryFactory;
 	}
 
+	/**
+	 * @deprecated As of 7.0.0
+	 */
+	@Deprecated
 	public void setTermRangeQueryFactory(
 		TermRangeQueryFactory termRangeQueryFactory) {
 
@@ -160,12 +185,19 @@ public class BaseSearchEngine implements SearchEngine {
 	}
 
 	private BooleanClauseFactory _booleanClauseFactory;
+
+	@SuppressWarnings("deprecation")
 	private BooleanQueryFactory _booleanQueryFactory;
+
 	private IndexSearcher _indexSearcher = new DummyIndexSearcher();
 	private IndexWriter _indexWriter = new DummyIndexWriter();
+
+	@SuppressWarnings("deprecation")
 	private TermQueryFactory _termQueryFactory;
+
+	@SuppressWarnings("deprecation")
 	private TermRangeQueryFactory _termRangeQueryFactory;
+
 	private String _vendor;
-	private WildcardQueryFactory _wildcardQueryFactory;
 
 }

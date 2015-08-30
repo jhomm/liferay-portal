@@ -5539,8 +5539,9 @@ public class DLFileVersionPersistenceImpl extends BasePersistenceImpl<DLFileVers
 		}
 	}
 
-	protected void cacheUniqueFindersCache(DLFileVersion dlFileVersion) {
-		if (dlFileVersion.isNew()) {
+	protected void cacheUniqueFindersCache(DLFileVersion dlFileVersion,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					dlFileVersion.getUuid(), dlFileVersion.getGroupId()
 				};
@@ -5782,7 +5783,7 @@ public class DLFileVersionPersistenceImpl extends BasePersistenceImpl<DLFileVers
 				dlFileVersion.setNew(false);
 			}
 			else {
-				session.merge(dlFileVersion);
+				dlFileVersion = (DLFileVersion)session.merge(dlFileVersion);
 			}
 		}
 		catch (Exception e) {
@@ -5966,8 +5967,8 @@ public class DLFileVersionPersistenceImpl extends BasePersistenceImpl<DLFileVers
 			DLFileVersionImpl.class, dlFileVersion.getPrimaryKey(),
 			dlFileVersion, false);
 
-		clearUniqueFindersCache(dlFileVersion);
-		cacheUniqueFindersCache(dlFileVersion);
+		clearUniqueFindersCache((DLFileVersion)dlFileVersionModelImpl);
+		cacheUniqueFindersCache((DLFileVersion)dlFileVersionModelImpl, isNew);
 
 		dlFileVersion.resetOriginalValues();
 
@@ -6007,6 +6008,7 @@ public class DLFileVersionPersistenceImpl extends BasePersistenceImpl<DLFileVers
 		dlFileVersionImpl.setVersion(dlFileVersion.getVersion());
 		dlFileVersionImpl.setSize(dlFileVersion.getSize());
 		dlFileVersionImpl.setChecksum(dlFileVersion.getChecksum());
+		dlFileVersionImpl.setLastPublishDate(dlFileVersion.getLastPublishDate());
 		dlFileVersionImpl.setStatus(dlFileVersion.getStatus());
 		dlFileVersionImpl.setStatusByUserId(dlFileVersion.getStatusByUserId());
 		dlFileVersionImpl.setStatusByUserName(dlFileVersion.getStatusByUserName());
@@ -6371,6 +6373,11 @@ public class DLFileVersionPersistenceImpl extends BasePersistenceImpl<DLFileVers
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return DLFileVersionModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

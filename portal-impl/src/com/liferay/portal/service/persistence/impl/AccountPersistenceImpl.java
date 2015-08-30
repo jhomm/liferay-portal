@@ -303,7 +303,7 @@ public class AccountPersistenceImpl extends BasePersistenceImpl<Account>
 				account.setNew(false);
 			}
 			else {
-				session.merge(account);
+				account = (Account)session.merge(account);
 			}
 		}
 		catch (Exception e) {
@@ -713,6 +713,11 @@ public class AccountPersistenceImpl extends BasePersistenceImpl<Account>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return AccountModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

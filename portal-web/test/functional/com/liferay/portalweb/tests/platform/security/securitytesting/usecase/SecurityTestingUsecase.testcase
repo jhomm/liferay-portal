@@ -11,7 +11,7 @@
 		<execute macro="Page#tearDownPG" />
 	</tear-down>
 
-	<command name="NoGuestRoleFromWCDArticleHistoryURL" priority="5">
+	<command name="NoGuestRoleFromWCDArticleHistoryURL" priority="4">
 		<var name="url" value="http://localhost:8080/web/guest/home?&amp;p_p_id=15&amp;p_p_lifecycle=0&amp;p_p_state=maximized&amp;p_p_mode=view&amp;_15_struts_action=%2Fjournal%2Fview_article_history&amp;_15_groupId=10180&amp;_15_articleId=" />
 
 		<execute macro="Page#addPG">
@@ -28,11 +28,11 @@
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
-		<execute function="Click" locator1="PGWebcontentdisplay#EDIT_WEB_CONTENT" />
+		<execute function="Click" locator1="WCD#EDIT_WEB_CONTENT" />
 
 		<execute function="SelectFrame" locator1="PGWebcontentdisplayEditwebcontent#WEB_CONTENT_IFRAME" />
 
-		<var locator="PGWebcontentdisplayEditwebcontent#ARTICLE_ID" name="articleID" />
+		<var locator="WCEditWebContent#ARTICLE_ID" name="articleID" />
 
 		<execute macro="User#logoutPG" />
 
@@ -47,17 +47,17 @@
 		<execute macro="Api#gotoPAuthURL" />
 
 		<execute function="Pause" locator1="1000" />
-		<execute function="AssertElementNotPresent" locator1="Jsonwebservices#SECURITY_TEST_PAGE_POPULATED" />
+		<execute function="AssertElementNotPresent" locator1="JSONWS#SECURITY_TEST_PAGE_POPULATED" />
 	</command>
 
-	<command known-issues="LPS-49848" name="ValidateCannotStealAdminAccount" priority="5">
+	<command known-issues="LPS-49848" name="ValidateCannotStealAdminAccount" priority="4">
 		<var name="url" value="http://localhost:8080/c/portal/json_service?serviceClassName=com.liferay.portal.service.UserServiceUtil&amp;serviceMethodName=updateStatus&amp;serviceParameters=[userId,status]&amp;userId=10202&amp;status=6&amp;p_auth=" />
 
 		<execute macro="Api#gotoPAuthURL" />
 
-		<execute function="AssertTextEquals" locator1="Jsonwebservices#SECURITY_TEST_PAGE_BODY" value1="{&quot;message&quot;:&quot;com.liferay.portal.security.auth.PrincipalException&quot;,&quot;exception&quot;:&quot;com.liferay.portal.security.auth.PrincipalException&quot;}" />
+		<execute function="AssertTextEquals" locator1="JSONWS#SECURITY_TEST_PAGE_BODY" value1="{&quot;message&quot;:&quot;com.liferay.portal.security.auth.PrincipalException&quot;,&quot;exception&quot;:&quot;com.liferay.portal.security.auth.PrincipalException&quot;}" />
 
-		<execute function="AssertTextNotEquals#assertNotPartialText" locator1="Jsonwebservices#SECURITY_TEST_PAGE_BODY" value1="companyId" />
+		<execute function="AssertTextNotEquals#assertNotPartialText" locator1="JSONWS#SECURITY_TEST_PAGE_BODY" value1="companyId" />
 	</command>
 
 	<command name="ValidateForwardURLPG" priority="4">
@@ -70,8 +70,8 @@
 
 		<execute function="AssertElementPresent" locator1="Home#PAGE" value1="Welcome" />
 
-		<execute function="AssertTextEquals#assertText" locator1="PGHelloworld#PORTLET_TITLE" value1="Hello World" />
-		<execute function="AssertElementPresent" locator1="PGHelloworld#PORTLET_CONTENT" value1="Welcome to Liferay Portal" />
+		<execute function="AssertTextEquals#assertText" locator1="HelloWorld#PORTLET_TITLE" value1="Hello World" />
+		<execute function="AssertElementPresent" locator1="HelloWorld#PORTLET_CONTENT" value1="Welcome to Liferay Portal" />
 
 		<execute macro="Page#addPG">
 			<var name="pageName" value="Test" />
@@ -84,7 +84,7 @@
 		<execute function="AssertElementPresent" locator1="Home#PAGE" value1="Test" />
 	</command>
 
-	<command name="ViewExternalWebappsPG" priority="5">
+	<command name="ViewExternalWebappsPG" priority="4">
 		<property name="portlet.plugins.includes" value="opensocial-portlet" />
 
 		<execute macro="Page#addPG">
@@ -107,10 +107,10 @@
 			<var name="pageName" value="External Webapps Test Page" />
 		</execute>
 
-		<execute function="AssertTextEquals" locator1="PGOpensocialgadget#PORTLET_TITLE" value1="To-Do List" />
+		<execute function="AssertTextEquals" locator1="Portlet#H1_HEADER" value1="To-Do List" />
 	</command>
 
-	<command known-issues="LPS-47697" name="ViewUpdateUserViaJSONWS" priority="5">
+	<command known-issues="LPS-47697" name="ViewUpdateUserViaJSONWS" priority="4">
 		<property name="custom.properties" value="company.security.strangers.verify=true" />
 
 		<execute macro="Api#apiJsonwsUserView" />
@@ -137,8 +137,8 @@
 			<var name="userScreenName" value="test1" />
 		</execute>
 
-		<execute function="AssertValue" locator1="CPUsersandorganizationsUser#DETAILS_USER_ID_FIELD" value1="${userId}" />
-		<execute function="AssertSelectedLabel" locator1="CPUsersandorganizationsUser#DETAILS_GENDER_SELECT" value1="Male" />
-		<execute function="AssertValue" locator1="CPUsersandorganizationsUser#DETAILS_BIRTHDAY_FIELD" value1="${userBirthdayMonth}/${userBirthdayDay}/${userBirthdayYear}" />
+		<execute function="AssertValue" locator1="UsersAndOrganizationsEditUser#DETAILS_USER_ID_FIELD" value1="${userId}" />
+		<execute function="AssertSelectedLabel" locator1="UsersAndOrganizationsEditUser#DETAILS_GENDER_SELECT" value1="Male" />
+		<execute function="AssertValue" locator1="UsersAndOrganizationsEditUser#DETAILS_BIRTHDAY_FIELD" value1="${userBirthdayMonth}/${userBirthdayDay}/${userBirthdayYear}" />
 	</command>
 </definition>

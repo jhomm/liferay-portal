@@ -138,24 +138,7 @@ public class AUIUtil {
 	}
 
 	public static String buildData(Map<String, Object> data) {
-		if ((data == null) || data.isEmpty()) {
-			return StringPool.BLANK;
-		}
-
-		StringBundler sb = new StringBundler(data.size() * 5);
-
-		for (Map.Entry<String, Object> entry : data.entrySet()) {
-			String dataKey = entry.getKey();
-			String dataValue = String.valueOf(entry.getValue());
-
-			sb.append("data-");
-			sb.append(dataKey);
-			sb.append("=\"");
-			sb.append(HtmlUtil.escapeAttribute(dataValue));
-			sb.append("\" ");
-		}
-
-		return sb.toString();
+		return HtmlUtil.buildData(data);
 	}
 
 	public static String buildLabel(
@@ -219,6 +202,11 @@ public class AUIUtil {
 		}
 
 		return null;
+	}
+
+	public static String getNamespace(HttpServletRequest request) {
+		return GetterUtil.getString(
+			request.getAttribute("aui:form:portletNamespace"));
 	}
 
 	public static String getNamespace(

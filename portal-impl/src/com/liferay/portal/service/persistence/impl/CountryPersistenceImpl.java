@@ -1348,8 +1348,8 @@ public class CountryPersistenceImpl extends BasePersistenceImpl<Country>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(Country country) {
-		if (country.isNew()) {
+	protected void cacheUniqueFindersCache(Country country, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { country.getName() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_NAME, args,
@@ -1562,7 +1562,7 @@ public class CountryPersistenceImpl extends BasePersistenceImpl<Country>
 				country.setNew(false);
 			}
 			else {
-				session.merge(country);
+				country = (Country)session.merge(country);
 			}
 		}
 		catch (Exception e) {
@@ -1600,8 +1600,8 @@ public class CountryPersistenceImpl extends BasePersistenceImpl<Country>
 		EntityCacheUtil.putResult(CountryModelImpl.ENTITY_CACHE_ENABLED,
 			CountryImpl.class, country.getPrimaryKey(), country, false);
 
-		clearUniqueFindersCache(country);
-		cacheUniqueFindersCache(country);
+		clearUniqueFindersCache((Country)countryModelImpl);
+		cacheUniqueFindersCache((Country)countryModelImpl, isNew);
 
 		country.resetOriginalValues();
 
@@ -1986,6 +1986,11 @@ public class CountryPersistenceImpl extends BasePersistenceImpl<Country>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return CountryModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

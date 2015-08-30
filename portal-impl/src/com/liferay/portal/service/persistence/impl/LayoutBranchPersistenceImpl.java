@@ -2012,8 +2012,9 @@ public class LayoutBranchPersistenceImpl extends BasePersistenceImpl<LayoutBranc
 		}
 	}
 
-	protected void cacheUniqueFindersCache(LayoutBranch layoutBranch) {
-		if (layoutBranch.isNew()) {
+	protected void cacheUniqueFindersCache(LayoutBranch layoutBranch,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					layoutBranch.getLayoutSetBranchId(), layoutBranch.getPlid(),
 					layoutBranch.getName()
@@ -2186,7 +2187,7 @@ public class LayoutBranchPersistenceImpl extends BasePersistenceImpl<LayoutBranc
 				layoutBranch.setNew(false);
 			}
 			else {
-				session.merge(layoutBranch);
+				layoutBranch = (LayoutBranch)session.merge(layoutBranch);
 			}
 		}
 		catch (Exception e) {
@@ -2271,8 +2272,8 @@ public class LayoutBranchPersistenceImpl extends BasePersistenceImpl<LayoutBranc
 			LayoutBranchImpl.class, layoutBranch.getPrimaryKey(), layoutBranch,
 			false);
 
-		clearUniqueFindersCache(layoutBranch);
-		cacheUniqueFindersCache(layoutBranch);
+		clearUniqueFindersCache((LayoutBranch)layoutBranchModelImpl);
+		cacheUniqueFindersCache((LayoutBranch)layoutBranchModelImpl, isNew);
 
 		layoutBranch.resetOriginalValues();
 
@@ -2655,6 +2656,11 @@ public class LayoutBranchPersistenceImpl extends BasePersistenceImpl<LayoutBranc
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return LayoutBranchModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

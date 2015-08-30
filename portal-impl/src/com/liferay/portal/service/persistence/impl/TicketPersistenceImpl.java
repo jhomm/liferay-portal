@@ -962,8 +962,8 @@ public class TicketPersistenceImpl extends BasePersistenceImpl<Ticket>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(Ticket ticket) {
-		if (ticket.isNew()) {
+	protected void cacheUniqueFindersCache(Ticket ticket, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] { ticket.getKey() };
 
 			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_KEY, args,
@@ -1118,7 +1118,7 @@ public class TicketPersistenceImpl extends BasePersistenceImpl<Ticket>
 				ticket.setNew(false);
 			}
 			else {
-				session.merge(ticket);
+				ticket = (Ticket)session.merge(ticket);
 			}
 		}
 		catch (Exception e) {
@@ -1161,8 +1161,8 @@ public class TicketPersistenceImpl extends BasePersistenceImpl<Ticket>
 		EntityCacheUtil.putResult(TicketModelImpl.ENTITY_CACHE_ENABLED,
 			TicketImpl.class, ticket.getPrimaryKey(), ticket, false);
 
-		clearUniqueFindersCache(ticket);
-		cacheUniqueFindersCache(ticket);
+		clearUniqueFindersCache((Ticket)ticketModelImpl);
+		cacheUniqueFindersCache((Ticket)ticketModelImpl, isNew);
 
 		ticket.resetOriginalValues();
 
@@ -1547,6 +1547,11 @@ public class TicketPersistenceImpl extends BasePersistenceImpl<Ticket>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return TicketModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

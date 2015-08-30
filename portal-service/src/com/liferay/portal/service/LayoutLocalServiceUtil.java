@@ -67,34 +67,27 @@ public class LayoutLocalServiceUtil {
 	* @param groupId the primary key of the group
 	* @param privateLayout whether the layout is private to the group
 	* @param parentLayoutId the primary key of the parent layout (optionally
-	{@link
-	com.liferay.portal.model.LayoutConstants#DEFAULT_PARENT_LAYOUT_ID}).
-	The possible values can be found in {@link
-	com.liferay.portal.model.LayoutConstants}.
+	{@link LayoutConstants#DEFAULT_PARENT_LAYOUT_ID}). The possible
+	values can be found in {@link LayoutConstants}.
 	* @param name the layout's name (optionally {@link
-	com.liferay.portal.util.PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_NAME}
-	or {@link
-	com.liferay.portal.util.PropsValues#DEFAULT_USER_PUBLIC_LAYOUT_NAME}).
-	The default values can be overridden in
-	<code>portal-ext.properties</code> by specifying new values for
-	the corresponding properties defined in {@link
-	com.liferay.portal.util.PropsValues}
+	PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_NAME} or {@link
+	PropsValues#DEFAULT_USER_PUBLIC_LAYOUT_NAME}). The default values
+	can be overridden in <code>portal-ext.properties</code> by
+	specifying new values for the corresponding properties defined in
+	{@link PropsValues}
 	* @param title the layout's title
 	* @param description the layout's description
 	* @param type the layout's type (optionally {@link
-	com.liferay.portal.model.LayoutConstants#TYPE_PORTLET}). The
-	possible types can be found in {@link
-	com.liferay.portal.model.LayoutConstants}.
+	LayoutConstants#TYPE_PORTLET}). The possible types can be found
+	in {@link LayoutConstants}.
 	* @param hidden whether the layout is hidden
 	* @param friendlyURL the friendly URL of the layout (optionally {@link
-	com.liferay.portal.util.PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL}
-	or {@link
-	com.liferay.portal.util.PropsValues#DEFAULT_USER_PUBLIC_LAYOUT_FRIENDLY_URL}).
-	The default values can be overridden in
+	PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL} or {@link
+	PropsValues#DEFAULT_USER_PUBLIC_LAYOUT_FRIENDLY_URL}). The
+	default values can be overridden in
 	<code>portal-ext.properties</code> by specifying new values for
-	the corresponding properties defined in {@link
-	com.liferay.portal.util.PropsValues}. To see how the URL is
-	normalized when accessed, see {@link
+	the corresponding properties defined in {@link PropsValues}. To
+	see how the URL is normalized when accessed, see {@link
 	com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
 	String)}.
 	* @param serviceContext the service context to be applied. Must set the
@@ -133,8 +126,7 @@ public class LayoutLocalServiceUtil {
 	* @param groupId the primary key of the group
 	* @param privateLayout whether the layout is private to the group
 	* @param parentLayoutId the primary key of the parent layout
-	(optionally {@link
-	com.liferay.portal.model.LayoutConstants#DEFAULT_PARENT_LAYOUT_ID})
+	(optionally {@link LayoutConstants#DEFAULT_PARENT_LAYOUT_ID})
 	* @param nameMap the layout's locales and localized names
 	* @param titleMap the layout's locales and localized titles
 	* @param descriptionMap the layout's locales and localized
@@ -142,19 +134,17 @@ public class LayoutLocalServiceUtil {
 	* @param keywordsMap the layout's locales and localized keywords
 	* @param robotsMap the layout's locales and localized robots
 	* @param type the layout's type (optionally {@link
-	com.liferay.portal.model.LayoutConstants#TYPE_PORTLET}). The
-	possible types can be found in {@link
-	com.liferay.portal.model.LayoutConstants}.
+	LayoutConstants#TYPE_PORTLET}). The possible types can be
+	found in {@link LayoutConstants}.
 	* @param hidden whether the layout is hidden
 	* @param friendlyURL the layout's friendly URL (optionally {@link
-	com.liferay.portal.util.PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL}
-	or {@link
-	com.liferay.portal.util.PropsValues#DEFAULT_USER_PUBLIC_LAYOUT_FRIENDLY_URL}).
+	PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL} or
+	{@link PropsValues#DEFAULT_USER_PUBLIC_LAYOUT_FRIENDLY_URL}).
 	The default values can be overridden in
 	<code>portal-ext.properties</code> by specifying new values
 	for the corresponding properties defined in {@link
-	com.liferay.portal.util.PropsValues}. To see how the URL is
-	normalized when accessed, see {@link
+	PropsValues}. To see how the URL is normalized when accessed,
+	see {@link
 	com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
 	String)}.
 	* @param serviceContext the service context to be applied. Must set
@@ -209,20 +199,17 @@ public class LayoutLocalServiceUtil {
 	* @param groupId the primary key of the group
 	* @param privateLayout whether the layout is private to the group
 	* @param parentLayoutId the primary key of the parent layout (optionally
-	{@link
-	com.liferay.portal.model.LayoutConstants#DEFAULT_PARENT_LAYOUT_ID})
+	{@link LayoutConstants#DEFAULT_PARENT_LAYOUT_ID})
 	* @param nameMap the layout's locales and localized names
 	* @param titleMap the layout's locales and localized titles
 	* @param descriptionMap the layout's locales and localized descriptions
 	* @param keywordsMap the layout's locales and localized keywords
 	* @param robotsMap the layout's locales and localized robots
 	* @param type the layout's type (optionally {@link
-	com.liferay.portal.model.LayoutConstants#TYPE_PORTLET}). The
-	possible types can be found in {@link
-	com.liferay.portal.model.LayoutConstants}.
+	LayoutConstants#TYPE_PORTLET}). The possible types can be found
+	in {@link LayoutConstants}.
 	* @param typeSettings the settings to load the unicode properties object.
-	See {@link com.liferay.portal.kernel.util.UnicodeProperties
-	#fastLoad(String)}.
+	See {@link UnicodeProperties #fastLoad(String)}.
 	* @param hidden whether the layout is hidden
 	* @param friendlyURLMap the layout's locales and localized friendly URLs.
 	To see how the URL is normalized when accessed, see {@link
@@ -461,7 +448,7 @@ public class LayoutLocalServiceUtil {
 	* @param parameterMap the mapping of parameters indicating which
 	information to export. For information on the keys used in
 	the map see {@link
-	com.liferay.portal.kernel.lar.PortletDataHandlerKeys}.
+	com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
 	* @param startDate the export's start date
 	* @param endDate the export's end date
 	* @return the layouts as a byte array
@@ -489,7 +476,7 @@ public class LayoutLocalServiceUtil {
 	* @param parameterMap the mapping of parameters indicating which
 	information to export. For information on the keys used in
 	the map see {@link
-	com.liferay.portal.kernel.lar.PortletDataHandlerKeys}.
+	com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
 	* @param startDate the export's start date
 	* @param endDate the export's end date
 	* @return the layout as a byte array
@@ -510,12 +497,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#exportLayoutsAsFile(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#exportLayoutsAsFile(
 	ExportImportConfiguration)}
 	*/
 	@Deprecated
 	public static java.io.File exportLayoutsAsFile(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration)
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().exportLayoutsAsFile(exportImportConfiguration);
 	}
@@ -530,7 +517,7 @@ public class LayoutLocalServiceUtil {
 	* @param parameterMap the mapping of parameters indicating which
 	information to export. For information on the keys used in
 	the map see {@link
-	com.liferay.portal.kernel.lar.PortletDataHandlerKeys}.
+	com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
 	* @param startDate the export's start date
 	* @param endDate the export's end date
 	* @return the layouts as a File
@@ -553,12 +540,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#exportLayoutsAsFileInBackground(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#exportLayoutsAsFileInBackground(
 	long, ExportImportConfiguration)}
 	*/
 	@Deprecated
 	public static long exportLayoutsAsFileInBackground(long userId,
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration)
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .exportLayoutsAsFileInBackground(userId,
@@ -568,7 +555,7 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#exportLayoutsAsFileInBackground(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#exportLayoutsAsFileInBackground(
 	long, long)}
 	*/
 	@Deprecated
@@ -638,7 +625,7 @@ public class LayoutLocalServiceUtil {
 	* @param parameterMap the mapping of parameters indicating which
 	information to export. For information on the keys used in
 	the map see {@link
-	com.liferay.portal.kernel.lar.PortletDataHandlerKeys}.
+	com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
 	* @param startDate the export's start date
 	* @param endDate the export's end date
 	* @return the portlet information as a byte array
@@ -676,12 +663,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#exportPortletInfoAsFile(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#exportPortletInfoAsFile(
 	ExportImportConfiguration)}}
 	*/
 	@Deprecated
 	public static java.io.File exportPortletInfoAsFile(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration)
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService().exportPortletInfoAsFile(exportImportConfiguration);
 	}
@@ -696,7 +683,7 @@ public class LayoutLocalServiceUtil {
 	* @param parameterMap the mapping of parameters indicating which
 	information to export. For information on the keys used in
 	the map see {@link
-	com.liferay.portal.kernel.lar.PortletDataHandlerKeys}.
+	com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
 	* @param startDate the export's start date
 	* @param endDate the export's end date
 	* @return the portlet information as a file
@@ -719,12 +706,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#exportPortletInfoAsFileInBackground(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#exportPortletInfoAsFileInBackground(
 	long, ExportImportConfiguration)}}
 	*/
 	@Deprecated
 	public static long exportPortletInfoAsFileInBackground(long userId,
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration)
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
 				   .exportPortletInfoAsFileInBackground(userId,
@@ -734,7 +721,7 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#exportPortletInfoAsFileInBackground(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#exportPortletInfoAsFileInBackground(
 	long, long)}}
 	*/
 	@Deprecated
@@ -832,7 +819,7 @@ public class LayoutLocalServiceUtil {
 	*
 	* @param groupId the primary key of the group
 	* @return the primary key of the default layout for the group (optionally
-	{@link com.liferay.portal.model.LayoutConstants#DEFAULT_PLID})
+	{@link LayoutConstants#DEFAULT_PLID})
 	*/
 	public static long getDefaultPlid(long groupId) {
 		return getService().getDefaultPlid(groupId);
@@ -844,7 +831,7 @@ public class LayoutLocalServiceUtil {
 	* @param groupId the primary key of the group
 	* @param privateLayout whether the layout is private to the group
 	* @return the primary key of the default layout for the group; {@link
-	com.liferay.portal.model.LayoutConstants#DEFAULT_PLID}) otherwise
+	LayoutConstants#DEFAULT_PLID}) otherwise
 	*/
 	public static long getDefaultPlid(long groupId, boolean privateLayout) {
 		return getService().getDefaultPlid(groupId, privateLayout);
@@ -857,8 +844,7 @@ public class LayoutLocalServiceUtil {
 	* @param privateLayout whether the layout is private to the group
 	* @param portletId the primary key of the portlet
 	* @return the primary key of the default portlet layout for the group;
-	{@link com.liferay.portal.model.LayoutConstants#DEFAULT_PLID}
-	otherwise
+	{@link LayoutConstants#DEFAULT_PLID} otherwise
 	* @throws PortalException if a portlet with the primary key could not be
 	found
 	*/
@@ -869,7 +855,7 @@ public class LayoutLocalServiceUtil {
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery getExportActionableDynamicQuery(
-		com.liferay.portal.kernel.lar.PortletDataContext portletDataContext) {
+		com.liferay.portlet.exportimport.lar.PortletDataContext portletDataContext) {
 		return getService().getExportActionableDynamicQuery(portletDataContext);
 	}
 
@@ -892,7 +878,7 @@ public class LayoutLocalServiceUtil {
 
 	/**
 	* Returns the layout matching the primary key, group, and privacy; throws a
-	* {@link com.liferay.portal.NoSuchLayoutException} otherwise.
+	* {@link NoSuchLayoutException} otherwise.
 	*
 	* @param groupId the primary key of the group
 	* @param privateLayout whether the layout is private to the group
@@ -920,7 +906,7 @@ public class LayoutLocalServiceUtil {
 
 	/**
 	* Returns the layout for the icon image; throws a {@link
-	* com.liferay.portal.NoSuchLayoutException} otherwise.
+	* NoSuchLayoutException} otherwise.
 	*
 	* @param iconImageId the primary key of the icon image
 	* @return Returns the layout for the icon image
@@ -1021,8 +1007,7 @@ public class LayoutLocalServiceUtil {
 	* start</code> instances. <code>start</code> and <code>end</code> are not
 	* primary keys, they are indexes in the result set. Thus, <code>0</code>
 	* refers to the first result in the set. Setting both <code>start</code>
-	* and <code>end</code> to {@link
-	* com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full
+	* and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
 	* result set.
 	* </p>
 	*
@@ -1049,7 +1034,7 @@ public class LayoutLocalServiceUtil {
 	* @param groupId the primary key of the group
 	* @param privateLayout whether the layout is private to the group
 	* @param type the type of the layouts (optionally {@link
-	com.liferay.portal.model.LayoutConstants#TYPE_PORTLET})
+	LayoutConstants#TYPE_PORTLET})
 	* @return the matching layouts, or <code>null</code> if no matches were
 	found
 	*/
@@ -1268,12 +1253,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#importLayouts(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#importLayouts(
 	ExportImportConfiguration, File)}}
 	*/
 	@Deprecated
 	public static void importLayouts(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.File file)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().importLayouts(exportImportConfiguration, file);
@@ -1282,12 +1267,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#importLayouts(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#importLayouts(
 	ExportImportConfiguration, InputStream)}}
 	*/
 	@Deprecated
 	public static void importLayouts(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.InputStream is)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().importLayouts(exportImportConfiguration, is);
@@ -1302,11 +1287,11 @@ public class LayoutLocalServiceUtil {
 	* @param parameterMap the mapping of parameters indicating which
 	information will be imported. For information on the keys
 	used in the map see {@link
-	com.liferay.portal.kernel.lar.PortletDataHandlerKeys}.
+	com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
 	* @param bytes the byte array with the data
 	* @throws PortalException if a group or user with the primary key could
 	not be found, or if some other portal exception occurred
-	* @see com.liferay.portal.lar.LayoutImporter
+	* @see com.liferay.portlet.exportimport.lar.LayoutImporter
 	* @deprecated As of 7.0.0, with no direct replacement
 	*/
 	@Deprecated
@@ -1328,11 +1313,11 @@ public class LayoutLocalServiceUtil {
 	* @param parameterMap the mapping of parameters indicating which
 	information will be imported. For information on the keys
 	used in the map see {@link
-	com.liferay.portal.kernel.lar.PortletDataHandlerKeys}.
+	com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
 	* @param file the LAR file with the data
 	* @throws PortalException if a group or user with the primary key could
 	not be found, or if some other portal exception occurred
-	* @see com.liferay.portal.lar.LayoutImporter
+	* @see com.liferay.portlet.exportimport.lar.LayoutImporter
 	* @deprecated As of 7.0.0, with no direct replacement
 	*/
 	@Deprecated
@@ -1354,11 +1339,11 @@ public class LayoutLocalServiceUtil {
 	* @param parameterMap the mapping of parameters indicating which
 	information will be imported. For information on the keys
 	used in the map see {@link
-	com.liferay.portal.kernel.lar.PortletDataHandlerKeys}.
+	com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
 	* @param is the input stream
 	* @throws PortalException if a group or user with the primary key could
 	not be found, or if some other portal exception occurred
-	* @see com.liferay.portal.lar.LayoutImporter
+	* @see com.liferay.portlet.exportimport.lar.LayoutImporter
 	* @deprecated As of 7.0.0, with no direct replacement
 	*/
 	@Deprecated
@@ -1374,12 +1359,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#importLayoutsDataDeletions(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#importLayoutsDataDeletions(
 	ExportImportConfiguration, File)}
 	*/
 	@Deprecated
 	public static void importLayoutsDataDeletions(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.File file)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().importLayoutsDataDeletions(exportImportConfiguration, file);
@@ -1388,12 +1373,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#importLayoutsInBackground(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#importLayoutsInBackground(
 	long, ExportImportConfiguration, File)}
 	*/
 	@Deprecated
 	public static long importLayoutsInBackground(long userId,
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.File file)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
@@ -1404,7 +1389,7 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#importLayoutsInBackground(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#importLayoutsInBackground(
 	long, long, File)}
 	*/
 	@Deprecated
@@ -1449,12 +1434,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#importPortletDataDeletions(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#importPortletDataDeletions(
 	ExportImportConfiguration, File)}
 	*/
 	@Deprecated
 	public static void importPortletDataDeletions(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.File file)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().importPortletDataDeletions(exportImportConfiguration, file);
@@ -1463,12 +1448,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#importPortletInfo(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#importPortletInfo(
 	ExportImportConfiguration, File)}
 	*/
 	@Deprecated
 	public static void importPortletInfo(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.File file)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().importPortletInfo(exportImportConfiguration, file);
@@ -1477,12 +1462,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#importPortletInfo(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#importPortletInfo(
 	ExportImportConfiguration, InputStream)}
 	*/
 	@Deprecated
 	public static void importPortletInfo(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.InputStream is)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		getService().importPortletInfo(exportImportConfiguration, is);
@@ -1499,7 +1484,7 @@ public class LayoutLocalServiceUtil {
 	* @param parameterMap the mapping of parameters indicating which
 	information will be imported. For information on the keys
 	used in the map see {@link
-	com.liferay.portal.kernel.lar.PortletDataHandlerKeys}.
+	com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
 	* @param file the LAR file with the data
 	* @throws PortalException if a group, layout, portlet or user with the
 	primary key could not be found
@@ -1527,7 +1512,7 @@ public class LayoutLocalServiceUtil {
 	* @param parameterMap the mapping of parameters indicating which
 	information will be imported. For information on the keys
 	used in the map see {@link
-	com.liferay.portal.kernel.lar.PortletDataHandlerKeys}.
+	com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
 	* @param is the input stream
 	* @throws PortalException if a group, portlet, layout or user with the
 	primary key could not be found
@@ -1573,12 +1558,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#importPortletInfoInBackground(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#importPortletInfoInBackground(
 	long, ExportImportConfiguration, File)}
 	*/
 	@Deprecated
 	public static long importPortletInfoInBackground(long userId,
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.File file)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
@@ -1589,7 +1574,7 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#importPortletInfoInBackground(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#importPortletInfoInBackground(
 	long, long, File)}
 	*/
 	@Deprecated
@@ -1765,17 +1750,17 @@ public class LayoutLocalServiceUtil {
 	* @param robotsMap the locales and localized robots to merge
 	(optionally <code>null</code>)
 	* @param type the layout's new type (optionally {@link
-	com.liferay.portal.model.LayoutConstants#TYPE_PORTLET})
+	LayoutConstants#TYPE_PORTLET})
 	* @param hidden whether the layout is hidden
 	* @param friendlyURL the layout's new friendly URL (optionally {@link
-	com.liferay.portal.util.PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL}
-	or {@link
-	com.liferay.portal.util.PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL}).
-	The default values can be overridden in
+	PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL} or
+	{@link
+	PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL}). The
+	default values can be overridden in
 	<code>portal-ext.properties</code> by specifying new values
 	for the corresponding properties defined in {@link
-	com.liferay.portal.util.PropsValues}. To see how the URL is
-	normalized when accessed, see {@link
+	PropsValues}. To see how the URL is normalized when accessed,
+	see {@link
 	com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
 	String)}.
 	* @param iconImage whether the icon image will be updated
@@ -1836,7 +1821,7 @@ public class LayoutLocalServiceUtil {
 	* @param robotsMap the locales and localized robots to merge (optionally
 	<code>null</code>)
 	* @param type the layout's new type (optionally {@link
-	com.liferay.portal.model.LayoutConstants#TYPE_PORTLET})
+	LayoutConstants#TYPE_PORTLET})
 	* @param hidden whether the layout is hidden
 	* @param friendlyURLMap the layout's locales and localized friendly URLs.
 	To see how the URL is normalized when accessed, see {@link
@@ -1885,8 +1870,7 @@ public class LayoutLocalServiceUtil {
 	* @param privateLayout whether the layout is private to the group
 	* @param layoutId the primary key of the layout
 	* @param typeSettings the settings to load the unicode properties object.
-	See {@link com.liferay.portal.kernel.util.UnicodeProperties
-	#fastLoad(String)}.
+	See {@link UnicodeProperties #fastLoad(String)}.
 	* @return the updated layout
 	* @throws PortalException if a matching layout could not be found or if a
 	portal exception occurred
@@ -1941,7 +1925,7 @@ public class LayoutLocalServiceUtil {
 	* @param layoutId the primary key of the layout
 	* @param name the layout's new name
 	* @param languageId the primary key of the language. For more information
-	see {@link java.util.Locale}.
+	see {@link Locale}.
 	* @return the updated layout
 	* @throws PortalException if a matching layout could not be found or if the
 	new name was <code>null</code>
@@ -1961,7 +1945,7 @@ public class LayoutLocalServiceUtil {
 	* @param layout the layout to be updated
 	* @param name the layout's new name
 	* @param languageId the primary key of the language. For more information
-	see {@link java.util.Locale}.
+	see {@link Locale}.
 	* @return the updated layout
 	* @throws PortalException if the new name was <code>null</code>
 	*/
@@ -1978,7 +1962,7 @@ public class LayoutLocalServiceUtil {
 	* @param plid the primary key of the layout
 	* @param name the name to be assigned
 	* @param languageId the primary key of the language. For more information
-	see {@link java.util.Locale}.
+	see {@link Locale}.
 	* @return the updated layout
 	* @throws PortalException if a layout with the primary key could not be
 	found or if the name was <code>null</code>
@@ -2014,8 +1998,7 @@ public class LayoutLocalServiceUtil {
 	* Updates the parent layout ID of the layout matching the primary key. If a
 	* layout matching the parent primary key is found, the layout ID of that
 	* layout is assigned, otherwise {@link
-	* com.liferay.portal.model.LayoutConstants#DEFAULT_PARENT_LAYOUT_ID} is
-	* assigned.
+	* LayoutConstants#DEFAULT_PARENT_LAYOUT_ID} is assigned.
 	*
 	* @param plid the primary key of the layout
 	* @param parentPlid the primary key of the parent layout
@@ -2167,12 +2150,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#validateImportLayoutsFile(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#validateImportLayoutsFile(
 	ExportImportConfiguration, File)}
 	*/
 	@Deprecated
-	public static com.liferay.portal.kernel.lar.MissingReferences validateImportLayoutsFile(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+	public static com.liferay.portlet.exportimport.lar.MissingReferences validateImportLayoutsFile(
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.File file)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
@@ -2182,12 +2165,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#validateImportLayoutsFile(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#validateImportLayoutsFile(
 	ExportImportConfiguration, InputStream)}
 	*/
 	@Deprecated
-	public static com.liferay.portal.kernel.lar.MissingReferences validateImportLayoutsFile(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+	public static com.liferay.portlet.exportimport.lar.MissingReferences validateImportLayoutsFile(
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.InputStream inputStream)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
@@ -2200,7 +2183,7 @@ public class LayoutLocalServiceUtil {
 	* @deprecated As of 7.0.0, with no direct replacement
 	*/
 	@Deprecated
-	public static com.liferay.portal.kernel.lar.MissingReferences validateImportLayoutsFile(
+	public static com.liferay.portlet.exportimport.lar.MissingReferences validateImportLayoutsFile(
 		long userId, long groupId, boolean privateLayout,
 		java.util.Map<java.lang.String, java.lang.String[]> parameterMap,
 		java.io.File file)
@@ -2215,7 +2198,7 @@ public class LayoutLocalServiceUtil {
 	* @deprecated As of 7.0.0, with no direct replacement
 	*/
 	@Deprecated
-	public static com.liferay.portal.kernel.lar.MissingReferences validateImportLayoutsFile(
+	public static com.liferay.portlet.exportimport.lar.MissingReferences validateImportLayoutsFile(
 		long userId, long groupId, boolean privateLayout,
 		java.util.Map<java.lang.String, java.lang.String[]> parameterMap,
 		java.io.InputStream inputStream)
@@ -2228,12 +2211,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#validateImportPortletInfo(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#validateImportPortletInfo(
 	ExportImportConfiguration, File)}
 	*/
 	@Deprecated
-	public static com.liferay.portal.kernel.lar.MissingReferences validateImportPortletInfo(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+	public static com.liferay.portlet.exportimport.lar.MissingReferences validateImportPortletInfo(
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.File file)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
@@ -2243,12 +2226,12 @@ public class LayoutLocalServiceUtil {
 	/**
 	* @throws PortalException
 	* @deprecated As of 7.0.0, replaced by {@link
-	com.liferay.portal.service.ExportImportLocalService#validateImportPortletInfo(
+	com.liferay.portlet.exportimport.service.ExportImportLocalService#validateImportPortletInfo(
 	ExportImportConfiguration, InputStream)}
 	*/
 	@Deprecated
-	public static com.liferay.portal.kernel.lar.MissingReferences validateImportPortletInfo(
-		com.liferay.portal.model.ExportImportConfiguration exportImportConfiguration,
+	public static com.liferay.portlet.exportimport.lar.MissingReferences validateImportPortletInfo(
+		com.liferay.portlet.exportimport.model.ExportImportConfiguration exportImportConfiguration,
 		java.io.InputStream inputStream)
 		throws com.liferay.portal.kernel.exception.PortalException {
 		return getService()
@@ -2261,7 +2244,7 @@ public class LayoutLocalServiceUtil {
 	* @deprecated As of 7.0.0, with no direct replacement
 	*/
 	@Deprecated
-	public static com.liferay.portal.kernel.lar.MissingReferences validateImportPortletInfo(
+	public static com.liferay.portlet.exportimport.lar.MissingReferences validateImportPortletInfo(
 		long userId, long plid, long groupId, java.lang.String portletId,
 		java.util.Map<java.lang.String, java.lang.String[]> parameterMap,
 		java.io.File file)
@@ -2276,7 +2259,7 @@ public class LayoutLocalServiceUtil {
 	* @deprecated As of 7.0.0, with no direct replacement
 	*/
 	@Deprecated
-	public static com.liferay.portal.kernel.lar.MissingReferences validateImportPortletInfo(
+	public static com.liferay.portlet.exportimport.lar.MissingReferences validateImportPortletInfo(
 		long userId, long plid, long groupId, java.lang.String portletId,
 		java.util.Map<java.lang.String, java.lang.String[]> parameterMap,
 		java.io.InputStream inputStream)

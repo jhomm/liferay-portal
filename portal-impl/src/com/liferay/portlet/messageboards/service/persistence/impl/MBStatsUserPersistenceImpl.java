@@ -1886,8 +1886,9 @@ public class MBStatsUserPersistenceImpl extends BasePersistenceImpl<MBStatsUser>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(MBStatsUser mbStatsUser) {
-		if (mbStatsUser.isNew()) {
+	protected void cacheUniqueFindersCache(MBStatsUser mbStatsUser,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					mbStatsUser.getGroupId(), mbStatsUser.getUserId()
 				};
@@ -2055,7 +2056,7 @@ public class MBStatsUserPersistenceImpl extends BasePersistenceImpl<MBStatsUser>
 				mbStatsUser.setNew(false);
 			}
 			else {
-				session.merge(mbStatsUser);
+				mbStatsUser = (MBStatsUser)session.merge(mbStatsUser);
 			}
 		}
 		catch (Exception e) {
@@ -2111,8 +2112,8 @@ public class MBStatsUserPersistenceImpl extends BasePersistenceImpl<MBStatsUser>
 			MBStatsUserImpl.class, mbStatsUser.getPrimaryKey(), mbStatsUser,
 			false);
 
-		clearUniqueFindersCache(mbStatsUser);
-		cacheUniqueFindersCache(mbStatsUser);
+		clearUniqueFindersCache((MBStatsUser)mbStatsUserModelImpl);
+		cacheUniqueFindersCache((MBStatsUser)mbStatsUserModelImpl, isNew);
 
 		mbStatsUser.resetOriginalValues();
 
@@ -2489,6 +2490,11 @@ public class MBStatsUserPersistenceImpl extends BasePersistenceImpl<MBStatsUser>
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return MBStatsUserModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

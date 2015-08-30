@@ -396,8 +396,9 @@ public class WebDAVPropsPersistenceImpl extends BasePersistenceImpl<WebDAVProps>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(WebDAVProps webDAVProps) {
-		if (webDAVProps.isNew()) {
+	protected void cacheUniqueFindersCache(WebDAVProps webDAVProps,
+		boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					webDAVProps.getClassNameId(), webDAVProps.getClassPK()
 				};
@@ -588,7 +589,7 @@ public class WebDAVPropsPersistenceImpl extends BasePersistenceImpl<WebDAVProps>
 				webDAVProps.setNew(false);
 			}
 			else {
-				session.merge(webDAVProps);
+				webDAVProps = (WebDAVProps)session.merge(webDAVProps);
 			}
 		}
 		catch (Exception e) {
@@ -608,8 +609,8 @@ public class WebDAVPropsPersistenceImpl extends BasePersistenceImpl<WebDAVProps>
 			WebDAVPropsImpl.class, webDAVProps.getPrimaryKey(), webDAVProps,
 			false);
 
-		clearUniqueFindersCache(webDAVProps);
-		cacheUniqueFindersCache(webDAVProps);
+		clearUniqueFindersCache((WebDAVProps)webDAVPropsModelImpl);
+		cacheUniqueFindersCache((WebDAVProps)webDAVPropsModelImpl, isNew);
 
 		webDAVProps.resetOriginalValues();
 
@@ -989,6 +990,11 @@ public class WebDAVPropsPersistenceImpl extends BasePersistenceImpl<WebDAVProps>
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return WebDAVPropsModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

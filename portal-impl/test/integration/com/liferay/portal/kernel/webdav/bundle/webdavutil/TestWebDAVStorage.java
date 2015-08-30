@@ -14,12 +14,12 @@
 
 package com.liferay.portal.kernel.webdav.bundle.webdavutil;
 
+import com.liferay.portal.kernel.lock.Lock;
 import com.liferay.portal.kernel.webdav.Resource;
 import com.liferay.portal.kernel.webdav.Status;
 import com.liferay.portal.kernel.webdav.WebDAVRequest;
 import com.liferay.portal.kernel.webdav.WebDAVStorage;
 import com.liferay.portal.kernel.webdav.methods.MethodFactory;
-import com.liferay.portal.model.Lock;
 
 import java.util.List;
 
@@ -30,7 +30,10 @@ import org.osgi.service.component.annotations.Component;
  */
 @Component(
 	immediate = true,
-	property = {"service.ranking:Integer=" + Integer.MAX_VALUE}
+	property = {
+		"service.ranking:Integer=" + Integer.MAX_VALUE,
+		"webdav.storage.token=" + TestWebDAVStorage.TOKEN
+	}
 )
 public class TestWebDAVStorage implements WebDAVStorage {
 
@@ -79,7 +82,7 @@ public class TestWebDAVStorage implements WebDAVStorage {
 
 	@Override
 	public String getToken() {
-		return TOKEN;
+		return _token;
 	}
 
 	@Override
@@ -139,12 +142,14 @@ public class TestWebDAVStorage implements WebDAVStorage {
 
 	@Override
 	public void setToken(String token) {
-		return;
+		_token = token;
 	}
 
 	@Override
 	public boolean unlockResource(WebDAVRequest webDAVRequest, String token) {
 		return false;
 	}
+
+	private String _token;
 
 }

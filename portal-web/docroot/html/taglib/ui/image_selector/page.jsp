@@ -37,7 +37,7 @@ if (fileEntryId != 0) {
 }
 %>
 
-<div class="taglib-image-selector <%= fileEntryId == 0 ? "drop-zone" : StringPool.BLANK %> <%= !draggableImage.equals("none") ? "draggable-image " + draggableImage : StringPool.BLANK %>" id="<%= randomNamespace %>taglibImageSelector">
+<div class="drop-zone <%= fileEntryId == 0 ? "drop-enabled" : StringPool.BLANK %> <%= !draggableImage.equals("none") ? "draggable-image " + draggableImage : StringPool.BLANK %> taglib-image-selector" id="<%= randomNamespace %>taglibImageSelector">
 	<aui:input name='<%= paramName + "Id" %>' type="hidden" value="<%= fileEntryId %>" />
 	<aui:input name='<%= paramName + "CropRegion" %>' type="hidden" value="<%= cropRegion %>" />
 
@@ -88,30 +88,37 @@ if (fileEntryId != 0) {
 	</div>
 
 	<div class="change-image-controls <%= (fileEntryId != 0) ? StringPool.BLANK : "hide" %>">
-		<aui:button cssClass="browse-image btn-primary" value="change-picture" />
+		<aui:button cssClass="browse-image icon-monospaced" icon="icon-refresh" />
 
-		<aui:button icon="icon-trash" id='<%= randomNamespace + "removeImage" %>' useNamespace="<%= false %>" />
+		<aui:button cssClass="icon-monospaced" icon="icon-trash" id='<%= randomNamespace + "removeImage" %>' useNamespace="<%= false %>" />
 	</div>
 </div>
 
 <%
 PortletURL itemSelectorURL = liferayPortletResponse.createRenderURL(PortletKeys.ITEM_SELECTOR);
 
-itemSelectorURL.setParameter("criteria", "com.liferay.document.library.item.selector.web.DLItemSelectorCriterion");
-itemSelectorURL.setParameter("itemSelectedEventName", liferayPortletResponse.getNamespace() + "selectImage");
+itemSelectorURL.setParameter("criteria", "com.liferay.blogs.item.selector.criterion.BlogsItemSelectorCriterion,com.liferay.item.selector.criteria.image.criterion.ImageItemSelectorCriterion,com.liferay.item.selector.criteria.upload.criterion.UploadItemSelectorCriterion");
+itemSelectorURL.setParameter("itemSelectedEventName", randomNamespace + "selectImage");
 
-StringBundler sb = new StringBundler(8);
+JSONObject itemSelectorJSONParamJSONObject = JSONFactoryUtil.createJSONObject();
 
-sb.append("{");
-sb.append("\"desiredReturnTypes\":[\"java.net.URL\",\"com.liferay.portal.kernel.repository.model.FileEntry\"],");
-sb.append("\"folderId\":");
-sb.append(DLFolderConstants.DEFAULT_PARENT_FOLDER_ID);
-sb.append(",\"mimeTypes\":[\"image\\/bmp\",\"image\\/gif\",\"image\\/jpeg\",\"image\\/pjpeg\",\"image\\/png\",\"image\\/tiff\",\"image\\/x-citrix-jpeg\",\"image\\/x-citrix-png\",\"image\\/x-ms-bmp\",\"image\\/x-png\",\"image\\/x-tiff\"],");
-sb.append("\"repositoryId\":");
-sb.append(scopeGroupId);
-sb.append("}");
+itemSelectorJSONParamJSONObject.put("desiredItemSelectorReturnTypes", "com.liferay.item.selector.criteria.FileEntryItemSelectorReturnType,com.liferay.item.selector.criteria.UploadableFileReturnType");
 
-itemSelectorURL.setParameter("0_json", sb.toString());
+JSONObject itemSelectorUploadParamJSONObject = JSONFactoryUtil.createJSONObject();
+
+itemSelectorUploadParamJSONObject.put("desiredItemSelectorReturnTypes", "com.liferay.item.selector.criteria.UploadableFileReturnType");
+
+itemSelectorURL.setParameter("0_json", itemSelectorJSONParamJSONObject.toString());
+itemSelectorURL.setParameter("1_json", itemSelectorJSONParamJSONObject.toString());
+
+PortletURL uploadItemSelectorCriterionUploadURL = liferayPortletResponse.createActionURL(PortletKeys.BLOGS);
+
+uploadItemSelectorCriterionUploadURL.setParameter(ActionRequest.ACTION_NAME, "/blogs/upload_image");
+
+itemSelectorUploadParamJSONObject.put("repositoryName", LanguageUtil.get(locale, "blogs"));
+itemSelectorUploadParamJSONObject.put("URL", uploadItemSelectorCriterionUploadURL.toString());
+
+itemSelectorURL.setParameter("2_json", itemSelectorUploadParamJSONObject.toString());
 
 itemSelectorURL.setPortletMode(PortletMode.VIEW);
 itemSelectorURL.setWindowState(LiferayWindowState.POP_UP);

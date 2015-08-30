@@ -7,15 +7,21 @@
  * @param dir
  * @param label
  * @param name
+ * @param required
  * @param value
+ * @param visible
  */
 {template .text}
-	<div class="form-group field-wrapper" data-fieldname="{$name}">
-		<label class="control-fieldLabel" for="{$name}">
+	<div class="form-group{$visible ? '' : ' hide'}" data-fieldname="{$name}">
+		<label class="control-label" for="{$name}">
 			{$label}
+
+			{if $required}
+				<b>*</b>
+			{/if}
 		</label>
 
-		 <input class="field form-control" dir="{$dir}" id="{$name}" name="{$name}" type="text" value="{$value}">
+		<input class="field form-control" dir="{$dir}" id="{$name}" name="{$name}" type="text" value="{$value}">
 
 		{$childElementsHTML|noAutoescape}
 	</div>

@@ -36,7 +36,10 @@ import javax.portlet.PortletURL;
 import javax.portlet.WindowState;
 import javax.portlet.WindowStateException;
 
+import javax.servlet.ServletContext;
+
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Julio Camarero
@@ -46,20 +49,26 @@ import org.osgi.service.component.annotations.Component;
  */
 @Component(
 	immediate = true,
-	property = {"search.asset.type=com.liferay.bookmarks.model.BookmarksEntry"},
+	property = {
+		"javax.portlet.name=" + BookmarksPortletKeys.BOOKMARKS,
+		"search.asset.type=com.liferay.bookmarks.model.BookmarksEntry"
+	},
 	service = AssetRendererFactory.class
 )
 public class BookmarksEntryAssetRendererFactory
-	extends BaseAssetRendererFactory {
+	extends BaseAssetRendererFactory<BookmarksEntry> {
 
 	public static final String TYPE = "bookmark";
 
 	public BookmarksEntryAssetRendererFactory() {
+		setClassName(BookmarksEntry.class.getName());
 		setLinkable(true);
+		setPortletId(BookmarksPortletKeys.BOOKMARKS);
 	}
 
 	@Override
-	public AssetRenderer getAssetRenderer(long classPK, int type)
+	public AssetRenderer<BookmarksEntry> getAssetRenderer(
+			long classPK, int type)
 		throws PortalException {
 
 		BookmarksEntry entry = BookmarksEntryLocalServiceUtil.getEntry(classPK);
@@ -68,6 +77,7 @@ public class BookmarksEntryAssetRendererFactory
 			new BookmarksEntryAssetRenderer(entry);
 
 		bookmarksEntryAssetRenderer.setAssetRendererType(type);
+		bookmarksEntryAssetRenderer.setServletContext(_servletContext);
 
 		return bookmarksEntryAssetRenderer;
 	}
@@ -139,9 +149,19 @@ public class BookmarksEntryAssetRendererFactory
 			permissionChecker, classPK, actionId);
 	}
 
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.bookmarks.web)",
+		unbind = "-"
+	)
+	public void setServletContext(ServletContext servletContext) {
+		_servletContext = servletContext;
+	}
+
 	@Override
 	protected String getIconPath(ThemeDisplay themeDisplay) {
 		return themeDisplay.getPathThemeImages() + "/ratings/star_hover.png";
 	}
+
+	private ServletContext _servletContext;
 
 }

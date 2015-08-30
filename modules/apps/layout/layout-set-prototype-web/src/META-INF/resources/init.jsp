@@ -37,18 +37,17 @@ page import="com.liferay.portal.kernel.util.GetterUtil" %><%@
 page import="com.liferay.portal.kernel.util.ParamUtil" %><%@
 page import="com.liferay.portal.kernel.util.StringPool" %><%@
 page import="com.liferay.portal.kernel.util.UnicodeProperties" %><%@
+page import="com.liferay.portal.kernel.util.Validator" %><%@
 page import="com.liferay.portal.kernel.util.WebKeys" %><%@
 page import="com.liferay.portal.model.Group" %><%@
 page import="com.liferay.portal.model.LayoutSetPrototype" %><%@
 page import="com.liferay.portal.model.impl.LayoutSetPrototypeImpl" %><%@
-page import="com.liferay.portal.security.auth.PrincipalException" %><%@
 page import="com.liferay.portal.security.permission.ActionKeys" %><%@
 page import="com.liferay.portal.service.LayoutSetPrototypeLocalServiceUtil" %><%@
 page import="com.liferay.portal.service.LayoutSetPrototypeServiceUtil" %><%@
 page import="com.liferay.portal.service.permission.GroupPermissionUtil" %><%@
 page import="com.liferay.portal.service.permission.LayoutSetPrototypePermissionUtil" %><%@
 page import="com.liferay.portal.service.permission.PortalPermissionUtil" %><%@
-page import="com.liferay.portal.theme.ThemeDisplay" %><%@
 page import="com.liferay.portal.util.CustomJspRegistryUtil" %><%@
 page import="com.liferay.portal.util.PortalUtil" %><%@
 page import="com.liferay.portal.util.PortletKeys" %><%@
@@ -58,7 +57,8 @@ page import="com.liferay.portlet.sites.util.SitesUtil" %>
 
 <%@ page import="java.util.Set" %>
 
-<%@ page import="javax.portlet.PortletURL" %><%@
+<%@ page import="javax.portlet.PortletRequest" %><%@
+page import="javax.portlet.PortletURL" %><%@
 page import="javax.portlet.WindowState" %>
 
 <portlet:defineObjects />

@@ -1761,7 +1761,7 @@ public class UserTrackerPersistenceImpl extends BasePersistenceImpl<UserTracker>
 				userTracker.setNew(false);
 			}
 			else {
-				session.merge(userTracker);
+				userTracker = (UserTracker)session.merge(userTracker);
 			}
 		}
 		catch (Exception e) {
@@ -2217,6 +2217,11 @@ public class UserTrackerPersistenceImpl extends BasePersistenceImpl<UserTracker>
 		}
 
 		return count.intValue();
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return UserTrackerModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

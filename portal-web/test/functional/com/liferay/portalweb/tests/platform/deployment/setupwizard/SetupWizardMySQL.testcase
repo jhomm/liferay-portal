@@ -2,7 +2,7 @@
 	<property name="setup.wizard.enabled" value="true" />
 	<property name="testray.main.component.name" value="Setup Wizard" />
 
-	<command name="MySQLtoMySQL" priority="5">
+	<command name="MySQLtoMySQL" priority="4">
 		<execute macro="SetupWizard#configureDefaultPG" />
 
 		<execute macro="Smoke#viewWelcomePage" />
@@ -10,14 +10,14 @@
 		<execute macro="Smoke#runSmoke" />
 	</command>
 
-	<command name="MySQLtoMySQLLportal1" priority="5">
+	<command name="MySQLtoMySQLLportal1" priority="4">
 		<property name="databases.size" value="1" />
 
 		<execute macro="SetupWizard#configurePG">
 			<var name="administratorEmail" value="test@liferay.com" />
 			<var name="administratorFirstName" value="Test" />
 			<var name="administratorLastName" value="Test" />
-			<var name="databaseNameDefault" value="false" />
+			<var name="databaseName" value="lportal1" />
 			<var name="databasePassword" property-value="database.mysql.password" />
 			<var name="databaseType" value="MySQL" />
 			<var name="databaseUserName" property-value="database.mysql.username" />
@@ -33,7 +33,7 @@
 		<execute macro="Smoke#runSmoke" />
 	</command>
 
-	<command name="MySQLtoMySQLLportal1SampleDataDisabled" priority="5">
+	<command name="MySQLtoMySQLLportal1SampleDataDisabled" priority="4">
 		<property name="databases.size" value="1" />
 
 		<execute macro="SetupWizard#configurePG">
@@ -41,7 +41,7 @@
 			<var name="administratorEmail" value="test@liferay.com" />
 			<var name="administratorFirstName" value="Test" />
 			<var name="administratorLastName" value="Test" />
-			<var name="databaseNameDefault" value="false" />
+			<var name="databaseName" value="lportal1" />
 			<var name="databasePassword" property-value="database.mysql.password" />
 			<var name="databaseType" value="MySQL" />
 			<var name="databaseUserName" property-value="database.mysql.username" />
@@ -54,7 +54,7 @@
 		<execute macro="Smoke#runSmoke" />
 	</command>
 
-	<command name="MySQLtoMySQLSampleDataDisabled" priority="5">
+	<command name="MySQLtoMySQLSampleDataDisabled" priority="4">
 		<execute macro="SetupWizard#configureDefaultPG">
 			<var name="addSampleData" value="false" />
 		</execute>

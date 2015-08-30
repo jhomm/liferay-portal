@@ -15,7 +15,6 @@
 package com.liferay.sync.engine.documentlibrary.handler;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.liferay.sync.engine.documentlibrary.event.Event;
 import com.liferay.sync.engine.model.SyncAccount;
@@ -23,6 +22,9 @@ import com.liferay.sync.engine.model.SyncSite;
 import com.liferay.sync.engine.service.SyncAccountService;
 import com.liferay.sync.engine.service.SyncSiteService;
 import com.liferay.sync.engine.util.FileUtil;
+import com.liferay.sync.engine.util.JSONUtil;
+
+import java.nio.file.Paths;
 
 import java.util.HashSet;
 import java.util.List;
@@ -45,9 +47,7 @@ public class GetUserSitesGroupsHandler extends BaseJSONHandler {
 		Set<Long> remoteSyncSiteIds = new HashSet<>();
 
 		if (_remoteSyncSites == null) {
-			ObjectMapper objectMapper = new ObjectMapper();
-
-			_remoteSyncSites = objectMapper.readValue(
+			_remoteSyncSites = JSONUtil.readValue(
 				response, new TypeReference<List<SyncSite>>() {});
 		}
 
@@ -55,20 +55,20 @@ public class GetUserSitesGroupsHandler extends BaseJSONHandler {
 			SyncSite localSyncSite = SyncSiteService.fetchSyncSite(
 				remoteSyncSite.getGroupId(), getSyncAccountId());
 
+			SyncAccount syncAccount = SyncAccountService.fetchSyncAccount(
+				getSyncAccountId());
+
+			String remoteSyncSiteName = remoteSyncSite.getName();
+
+			if (!FileUtil.isValidFileName(remoteSyncSiteName)) {
+				remoteSyncSiteName = String.valueOf(
+					remoteSyncSite.getGroupId());
+			}
+
 			if (localSyncSite == null) {
-				SyncAccount syncAccount = SyncAccountService.fetchSyncAccount(
-					getSyncAccountId());
-
-				String name = remoteSyncSite.getName();
-
-				if (!FileUtil.isValidFileName(name)) {
-					name = String.valueOf(remoteSyncSite.getGroupId());
-				}
-
 				remoteSyncSite.setFilePathName(
 					FileUtil.getFilePathName(
-						syncAccount.getFilePathName(), name));
-
+						syncAccount.getFilePathName(), remoteSyncSiteName));
 				remoteSyncSite.setRemoteSyncTime(-1);
 				remoteSyncSite.setSyncAccountId(getSyncAccountId());
 
@@ -77,6 +77,8 @@ public class GetUserSitesGroupsHandler extends BaseJSONHandler {
 				remoteSyncSiteIds.add(remoteSyncSite.getSyncSiteId());
 			}
 			else {
+				String localSyncSiteName = localSyncSite.getName();
+
 				localSyncSite.setDescription(remoteSyncSite.getDescription());
 				localSyncSite.setFriendlyURL(remoteSyncSite.getFriendlyURL());
 				localSyncSite.setName(remoteSyncSite.getName());
@@ -85,6 +87,16 @@ public class GetUserSitesGroupsHandler extends BaseJSONHandler {
 				localSyncSite.setSite(remoteSyncSite.getSite());
 
 				SyncSiteService.update(localSyncSite);
+
+				if (!localSyncSiteName.equals(remoteSyncSite.getName())) {
+					SyncSiteService.setFilePathName(
+						localSyncSite.getSyncSiteId(), remoteSyncSiteName);
+
+					FileUtil.moveFile(
+						Paths.get(localSyncSite.getFilePathName()),
+						FileUtil.getFilePath(
+							syncAccount.getFilePathName(), remoteSyncSiteName));
+				}
 
 				remoteSyncSiteIds.add(localSyncSite.getSyncSiteId());
 			}
@@ -105,9 +117,7 @@ public class GetUserSitesGroupsHandler extends BaseJSONHandler {
 	@Override
 	protected void logResponse(String response) {
 		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-
-			_remoteSyncSites = objectMapper.readValue(
+			_remoteSyncSites = JSONUtil.readValue(
 				response, new TypeReference<List<SyncSite>>() {});
 
 			super.logResponse("{\"count\":" + _remoteSyncSites.size() + "}");

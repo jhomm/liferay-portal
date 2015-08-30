@@ -773,7 +773,7 @@ public class UserTrackerPathPersistenceImpl extends BasePersistenceImpl<UserTrac
 				userTrackerPath.setNew(false);
 			}
 			else {
-				session.merge(userTrackerPath);
+				userTrackerPath = (UserTrackerPath)session.merge(userTrackerPath);
 			}
 		}
 		catch (Exception e) {
@@ -1195,6 +1195,11 @@ public class UserTrackerPathPersistenceImpl extends BasePersistenceImpl<UserTrac
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return UserTrackerPathModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

@@ -24,7 +24,7 @@
 		</execute>
 	</command>
 
-	<command name="AddStructure" priority="5">
+	<command name="AddStructure" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -227,7 +227,7 @@
 		</execute>
 	</command>
 
-	<command name="AddStructureWithSubfield" priority="5">
+	<command name="AddStructureWithSubfield" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -271,13 +271,21 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContentNavigator#gotoAddWithStructureCP" />
+		<execute macro="WebContentNavigator#gotoAddWithStructureCP">
+			<var name="structureName" value="WC Structure Name" />
+		</execute>
 
 		<execute macro="WebContent#addWithStructureCP">
 			<var name="structureName" value="WC Structure Name" />
 			<var name="templateName" value="WC Template Name" />
 			<var name="webContentInteger" value="123" />
 			<var name="webContentText" value="Text" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -290,10 +298,13 @@
 		</execute>
 
 		<execute macro="WebContent#viewCP">
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#viewNestedField">
 			<var name="fieldName" value="Text" />
 			<var name="nestedField" value="Integer" />
 			<var name="nestedFieldData" value="123" />
-			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
 		<execute macro="WebContentNavigator#gotoManageStructures" />
@@ -363,13 +374,21 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContentNavigator#gotoAddWithStructureCP" />
+		<execute macro="WebContentNavigator#gotoAddWithStructureCP">
+			<var name="structureName" value="WC Structure Name" />
+		</execute>
 
 		<execute macro="WebContent#addWithStructureCP">
 			<var name="structureName" value="WC Structure Name" />
 			<var name="templateName" value="WC Template Name" />
 			<var name="webContentText" value="Text" />
 			<var name="webContentTextBox" value="Text Box" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -409,7 +428,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-55977" name="AddTemplate" priority="5">
+	<command name="AddTemplate" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -429,7 +448,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-55977" name="AddTemplateWithStructure" priority="5">
+	<command name="AddTemplateWithStructure" priority="5">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -476,7 +495,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-55977" name="AddTemplateXSL" priority="5">
+	<command name="AddTemplateXSL" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -500,7 +519,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51687" name="AddWebContent" priority="5">
+	<command name="AddWebContent" priority="5">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -509,6 +528,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -526,7 +551,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51687" name="AddWebContentDraft" priority="5">
+	<command name="AddWebContentDraft" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -542,14 +567,19 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContent#viewCPStatus">
+		<execute macro="WebContentNavigator#gotoViewStatus">
+			<var name="webContentStatus" value="Draft" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#viewStatus">
 			<var name="webContentContent" value="WC WebContent Content" />
 			<var name="webContentStatus" value="Draft" />
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51687" name="AddWebContentExpirationDate" priority="4">
+	<command name="AddWebContentExpirationDate" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -557,10 +587,15 @@
 		<execute macro="WebContentNavigator#gotoAddCP" />
 
 		<execute macro="WebContent#addCP">
-			<var name="expirationDate" value="01/02/3000" />
 			<var name="webContentContent" value="WC WebContent Content" />
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
+
+		<execute macro="WebContent#addExpirationDateCP">
+			<var name="expirationDate" value="01/02/3000" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
 
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
@@ -571,13 +606,16 @@
 		</execute>
 
 		<execute macro="WebContent#viewCP">
-			<var name="expirationDate" value="01/02/3000" />
 			<var name="webContentContent" value="WC WebContent Content" />
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
+
+		<execute macro="WebContent#viewExpirationDateCP">
+			<var name="expirationDate" value="01/02/3000" />
+		</execute>
 	</command>
 
-	<command known-issues="LPS-51687" name="AddWebContentMultiple" priority="4">
+	<command name="AddWebContentMultiple" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -586,6 +624,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content 1" />
+			<var name="webContentTitle" value="WC WebContent Title 1" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title 1" />
 		</execute>
 
@@ -600,6 +644,12 @@
 			<var name="webContentTitle" value="WC WebContent Title 2" />
 		</execute>
 
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
+			<var name="webContentTitle" value="WC WebContent Title 2" />
+		</execute>
+
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -608,6 +658,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content 3" />
+			<var name="webContentTitle" value="WC WebContent Title 3" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title 3" />
 		</execute>
 
@@ -651,7 +707,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51687" name="AddWebContentTitleEscapeCharacter" priority="5">
+	<command name="AddWebContentTitleEscapeCharacter" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -663,21 +719,29 @@
 			<var name="webContentTitle"><![CDATA[<!-- -->]]></var>
 		</execute>
 
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
+			<var name="webContentTitle"><![CDATA[<!-- -->]]></var>
+			<var name="webContentTitleEscapeCharacter"><![CDATA[&lt;!-- --&gt;]]></var>
+		</execute>
+
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
 
 		<execute macro="WebContentNavigator#gotoEditCP">
 			<var name="webContentTitle"><![CDATA[<!-- -->]]></var>
+			<var name="webContentTitleEscapeCharacter"><![CDATA[&lt;!-- --&gt;]]></var>
 		</execute>
 
 		<execute macro="WebContent#viewCP">
 			<var name="webContentContent" value="WC WebContent Content" />
-			<var name="webContentTitle"><![CDATA[<!-- -->]]></var>
+			<var name="webContentTitleEscapeCharacter"><![CDATA[&lt;!-- --&gt;]]></var>
 		</execute>
 	</command>
 
-	<command known-issues="LPS-55977" name="AddWebContentWithStructure" priority="5">
+	<command name="AddWebContentWithStructure" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -714,7 +778,9 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContentNavigator#gotoAddWithStructureCP" />
+		<execute macro="WebContentNavigator#gotoAddWithStructureCP">
+			<var name="structureName" value="WC Structure Name" />
+		</execute>
 
 		<execute macro="WebContent#addWithStructureCP">
 			<var name="structureName" value="WC Structure Name" />
@@ -722,9 +788,15 @@
 			<var name="webContentText" value="WC WebContent Text" />
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
 	</command>
 
-	<command name="AddWebContentWithTemplateXSL" priority="5">
+	<command name="AddWebContentWithTemplateXSL" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -762,12 +834,20 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContentNavigator#gotoAddWithStructureCP" />
+		<execute macro="WebContentNavigator#gotoAddWithStructureCP">
+			<var name="structureName" value="WC Structure Name" />
+		</execute>
 
 		<execute macro="WebContent#addWithStructureCP">
 			<var name="structureName" value="WC Structure Name" />
 			<var name="templateName" value="WC Template Name" />
 			<var name="webContentText" value="WC WebContent Text" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -848,6 +928,12 @@
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -857,10 +943,7 @@
 		</execute>
 	</command>
 
-	<command name="DeleteWebContentTitleEscapeCharacter" priority="5">
-		<var name="webContentContent" value="WC WebContent Content" />
-		<var name="webContentTitle"><![CDATA[<!-- -->]]></var>
-
+	<command name="DeleteWebContentTitleEscapeCharacter" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -872,12 +955,20 @@
 			<var name="webContentTitle"><![CDATA[<!-- -->]]></var>
 		</execute>
 
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
+			<var name="webContentTitle"><![CDATA[<!-- -->]]></var>
+			<var name="webContentTitleEscapeCharacter"><![CDATA[&lt;!-- --&gt;]]></var>
+		</execute>
+
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
 
 		<execute macro="WebContent#deleteCP">
 			<var name="webContentTitle"><![CDATA[<!-- -->]]></var>
+			<var name="webContentTitleEscapeCharacter"><![CDATA[&lt;!-- --&gt;]]></var>
 		</execute>
 	</command>
 
@@ -940,7 +1031,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51687" name="EditWCAddLocalization" priority="4">
+	<command name="EditWCAddLocalization" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -949,6 +1040,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -974,14 +1071,19 @@
 		</execute>
 
 		<execute macro="WebContent#viewCP">
+			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#viewTranslation">
 			<var name="localizedContent" value="WC Contenido de la web Contenido" />
+			<var name="localizedLanguage" value="Spanish (Spain)" />
 			<var name="localizedTitle" value="WC Contenido de la web Titulo" />
-			<var name="webContentContent" value="WC WebContent Content" />
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51687" name="EditWebContent" priority="5">
+	<command known-issues="LPS-56754" name="EditWebContent" priority="5">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -990,6 +1092,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -1017,7 +1125,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51687" name="ExpireEditWebContent" priority="4">
+	<command name="ExpireEditWebContent" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -1026,6 +1134,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -1056,13 +1170,18 @@
 		</execute>
 
 		<execute macro="WebContent#viewCP">
-			<var name="expireContent" value="true" />
 			<var name="webContentContent" value="WC WebContent Content Edit" />
+			<var name="webContentTitle" value="WC WebContent Title Edit" />
+		</execute>
+
+		<execute macro="WebContent#viewStatus">
+			<var name="webContentContent" value="WC WebContent Content Edit" />
+			<var name="webContentStatus" value="Expired" />
 			<var name="webContentTitle" value="WC WebContent Title Edit" />
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51687" name="ExpireWebContent" priority="4">
+	<command name="ExpireWebContent" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -1071,6 +1190,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -1087,13 +1212,18 @@
 		</execute>
 
 		<execute macro="WebContent#viewCP">
-			<var name="expireContent" value="true" />
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#viewStatus">
+			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentStatus" value="Expired" />
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 	</command>
 
-	<command known-issues="LPS-55977" name="ImportLAR" priority="5">
+	<command name="ImportLAR" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -1130,12 +1260,20 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContentNavigator#gotoAddWithStructureCP" />
+		<execute macro="WebContentNavigator#gotoAddWithStructureCP">
+			<var name="structureName" value="WC Structure Name" />
+		</execute>
 
 		<execute macro="WebContent#addWithStructureCP">
 			<var name="structureName" value="WC Structure Name" />
 			<var name="templateName" value="WC Template Name" />
 			<var name="webContentText" value="WC WebContent Text" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -1200,7 +1338,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-55977" name="ImportLARLinkToPageValidation" priority="4">
+	<command name="ImportLARLinkToPageValidation" priority="4">
 		<execute macro="Page#addPG">
 			<var name="pageName" value="Test Page" />
 		</execute>
@@ -1240,13 +1378,21 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContentNavigator#gotoAddWithStructureCP" />
+		<execute macro="WebContentNavigator#gotoAddWithStructureCP">
+			<var name="structureName" value="Test Structure" />
+		</execute>
 
 		<execute macro="WebContent#addWithStructureCP">
 			<var name="linkedPageName" value="Test Page" />
 			<var name="structureName" value="Test Structure" />
 			<var name="templateName" value="Test Template" />
 			<var name="webContentLinkToPage" value="true" />
+			<var name="webContentTitle" value="WC Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC Title" />
 		</execute>
 
@@ -1275,7 +1421,7 @@
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51687" name="PublishDraftWebContent" priority="4">
+	<command name="PublishDraftWebContent" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -1291,7 +1437,12 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContent#viewCPStatus">
+		<execute macro="WebContentNavigator#gotoViewStatus">
+			<var name="webContentStatus" value="Draft" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#viewStatus">
 			<var name="webContentContent" value="WC WebContent Content" />
 			<var name="webContentStatus" value="Draft" />
 			<var name="webContentTitle" value="WC WebContent Title" />
@@ -1314,14 +1465,12 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContent#viewCPStatus">
-			<var name="webContentContent" value="WC WebContent Content" />
-			<var name="webContentStatus" value="Approved" />
+		<execute macro="WebContent#viewApprovedStatus">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 	</command>
 
-	<command known-issues="LPS-51687" name="PublishExpireWebContent" priority="4">
+	<command name="PublishExpireWebContent" priority="4">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -1330,6 +1479,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -1346,8 +1501,13 @@
 		</execute>
 
 		<execute macro="WebContent#viewCP">
-			<var name="expireContent" value="true" />
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#viewStatus">
+			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentStatus" value="Expired" />
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -1355,7 +1515,12 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContent#viewCPStatus">
+		<execute macro="WebContentNavigator#gotoViewStatus">
+			<var name="webContentStatus" value="Expired" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#viewStatus">
 			<var name="webContentContent" value="WC WebContent Content" />
 			<var name="webContentStatus" value="Expired" />
 			<var name="webContentTitle" value="WC WebContent Title" />
@@ -1378,14 +1543,12 @@
 			<var name="portletName" value="Web Content" />
 		</execute>
 
-		<execute macro="WebContent#viewCPStatus">
-			<var name="webContentContent" value="WC WebContent Content" />
-			<var name="webContentStatus" value="Approved" />
+		<execute macro="WebContent#viewApprovedStatus">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 	</command>
 
-	<command name="SearchWebContent" priority="4">
+	<command name="SearchWebContent" priority="5">
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
@@ -1397,12 +1560,17 @@
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
 		<execute macro="Page#gotoContentCP">
 			<var name="portletName" value="Web Content" />
 		</execute>
 
 		<execute macro="WebContent#searchCP">
-			<var name="webContentContent" value="WC WebContent Content" />
 			<var name="webContentFolder" value="Home" />
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
@@ -1413,13 +1581,12 @@
 
 		<execute macro="WebContent#searchNoResultsCP">
 			<var name="searchQuery" value="WC2 WebContent2 Title2" />
-			<var name="webContentContent" value="WC WebContent Content" />
 			<var name="webContentFolder" value="Home" />
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 	</command>
 
-	<command known-issues="LPS-54712" name="UserEditWebContent" priority="4">
+	<command name="UserEditWebContent" priority="4">
 		<var name="roleType" value="Regular" />
 
 		<execute macro="Page#gotoContentCP">
@@ -1430,6 +1597,12 @@
 
 		<execute macro="WebContent#addCP">
 			<var name="webContentContent" value="WC WebContent Content" />
+			<var name="webContentTitle" value="WC WebContent Title" />
+		</execute>
+
+		<execute macro="WebContent#publish" />
+
+		<execute macro="WebContent#viewTitle">
 			<var name="webContentTitle" value="WC WebContent Title" />
 		</execute>
 
@@ -1536,7 +1709,11 @@
 			<var name="webContentTitleEdit" value="WC WebContent Title Edit" />
 		</execute>
 
-		<execute macro="WebContent#viewCPUserEdit">
+		<execute macro="WebContent#viewTitle">
+			<var name="webContentTitle" value="WC WebContent Title Edit" />
+		</execute>
+
+		<execute macro="WebContent#viewUserEditCP">
 			<var name="userFirstLast" value="userfn userln" />
 			<var name="webContentContent" value="WC WebContent Content Edit" />
 			<var name="webContentTitle" value="WC WebContent Title Edit" />

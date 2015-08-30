@@ -2216,8 +2216,8 @@ public class DLContentPersistenceImpl extends BasePersistenceImpl<DLContent>
 		}
 	}
 
-	protected void cacheUniqueFindersCache(DLContent dlContent) {
-		if (dlContent.isNew()) {
+	protected void cacheUniqueFindersCache(DLContent dlContent, boolean isNew) {
+		if (isNew) {
 			Object[] args = new Object[] {
 					dlContent.getCompanyId(), dlContent.getRepositoryId(),
 					dlContent.getPath(), dlContent.getVersion()
@@ -2459,8 +2459,8 @@ public class DLContentPersistenceImpl extends BasePersistenceImpl<DLContent>
 		EntityCacheUtil.putResult(DLContentModelImpl.ENTITY_CACHE_ENABLED,
 			DLContentImpl.class, dlContent.getPrimaryKey(), dlContent, false);
 
-		clearUniqueFindersCache(dlContent);
-		cacheUniqueFindersCache(dlContent);
+		clearUniqueFindersCache((DLContent)dlContentModelImpl);
+		cacheUniqueFindersCache((DLContent)dlContentModelImpl, isNew);
 
 		dlContent.resetOriginalValues();
 
@@ -2845,6 +2845,11 @@ public class DLContentPersistenceImpl extends BasePersistenceImpl<DLContent>
 	@Override
 	protected Set<String> getBadColumnNames() {
 		return _badColumnNames;
+	}
+
+	@Override
+	protected Map<String, Integer> getTableColumnsMap() {
+		return DLContentModelImpl.TABLE_COLUMNS_MAP;
 	}
 
 	/**

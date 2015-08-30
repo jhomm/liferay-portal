@@ -11,7 +11,7 @@
 		<execute macro="Page#tearDownPG" />
 	</tear-down>
 
-	<command name="AuthenticationCAS" priority="5">
+	<command name="AuthenticationCAS" priority="4">
 		<property name="web.plugins.includes" value="cas-web" />
 
 		<var name="userEmailAddress" value="userea@liferay.com" />
@@ -62,7 +62,7 @@
 
 		<execute macro="Page#openURL" />
 
-		<execute function="AssertClick" locator1="Dockbar#USER_SIGN_IN" value1="Sign In" />
+		<execute function="AssertClick" locator1="ControlMenu#USER_SIGN_IN" value1="Sign In" />
 
 		<execute function="Type" locator1="CAS#NETID_FIELD" value1="${userScreenName}" />
 		<execute function="Type" locator1="CAS#PASSWORD_FIELD" value1="${userScreenName}" />

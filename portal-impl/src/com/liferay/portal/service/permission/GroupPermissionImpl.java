@@ -41,7 +41,9 @@ public class GroupPermissionImpl
 		throws PortalException {
 
 		if (!contains(permissionChecker, group, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, Group.class.getName(), group.getGroupId(),
+				actionId);
 		}
 	}
 
@@ -51,7 +53,8 @@ public class GroupPermissionImpl
 		throws PortalException {
 
 		if (!contains(permissionChecker, groupId, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, Group.class.getName(), groupId, actionId);
 		}
 	}
 
@@ -60,7 +63,9 @@ public class GroupPermissionImpl
 		throws PortalException {
 
 		if (!contains(permissionChecker, actionId)) {
-			throw new PrincipalException();
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, Group.class.getName(), Long.valueOf(0),
+				actionId);
 		}
 	}
 
@@ -82,6 +87,12 @@ public class GroupPermissionImpl
 			 actionId.equals(ActionKeys.MANAGE_LAYOUTS)) &&
 			(group.hasLocalOrRemoteStagingGroup() ||
 			 group.isLayoutPrototype())) {
+
+			return false;
+		}
+
+		if (actionId.equals(ActionKeys.VIEW_SITE_ADMINISTRATION) &&
+			group.isLayoutPrototype()) {
 
 			return false;
 		}

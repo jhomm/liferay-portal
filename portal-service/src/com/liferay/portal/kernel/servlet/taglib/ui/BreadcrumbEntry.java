@@ -14,7 +14,6 @@
 
 package com.liferay.portal.kernel.servlet.taglib.ui;
 
-import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.model.BaseModel;
 
 import java.util.HashMap;
@@ -38,11 +37,15 @@ public class BreadcrumbEntry {
 	}
 
 	public String getTitle() {
-		return HtmlUtil.escape(_title);
+		return _title;
 	}
 
 	public String getURL() {
 		return _url;
+	}
+
+	public boolean isBrowsable() {
+		return _browsable;
 	}
 
 	public void putData(String key, Object value) {
@@ -55,6 +58,10 @@ public class BreadcrumbEntry {
 
 	public void setBaseModel(BaseModel<?> baseModel) {
 		_baseModel = baseModel;
+	}
+
+	public void setBrowsable(boolean browsable) {
+		_browsable = browsable;
 	}
 
 	public void setData(Map<String, Object> data) {
@@ -70,6 +77,7 @@ public class BreadcrumbEntry {
 	}
 
 	private BaseModel<?> _baseModel;
+	private boolean _browsable = true;
 	private Map<String, Object> _data;
 	private String _title;
 	private String _url;
