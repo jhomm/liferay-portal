@@ -1,5 +1,10 @@
 dependencies {
-	compile project(":apps:journal:journal-test")
-
-	testCompile group: "com.liferay", name: "com.liferay.arquillian.extension.junit.bridge", version: "1.0.0-SNAPSHOT"
+	testIntegrationCompile group: "com.liferay.portal", name: "com.liferay.portal.impl", version: "default"
+	testIntegrationCompile project(":apps:export-import:export-import-api")
+	testIntegrationCompile project(":apps:export-import:export-import-changeset-api")
+	testIntegrationCompile project(":apps:journal:journal-api")
+	testIntegrationCompile project(":apps:journal:journal-test-util")
+	testIntegrationCompile project(":apps:layout:layout-test-util")
+	testIntegrationCompile project(":apps:staging:staging-api")
+	testIntegrationCompile project(":test:arquillian-extension-junit-bridge")
 }

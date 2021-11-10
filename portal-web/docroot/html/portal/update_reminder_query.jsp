@@ -26,60 +26,93 @@ if (referer.equals(themeDisplay.getPathMain() + "/portal/update_reminder_query")
 }
 %>
 
-<aui:form action='<%= themeDisplay.getPathMain() + "/portal/update_reminder_query" %>' autocomplete='<%= PropsValues.COMPANY_SECURITY_PASSWORD_REMINDER_QUERY_FORM_AUTOCOMPLETE ? "on" : "off" %>' cssClass="update-reminder-query" method="post" name="fm">
-	<aui:input name="p_auth" type="hidden" value="<%= AuthTokenUtil.getToken(request) %>" />
-	<aui:input name="doAsUserId" type="hidden" value="<%= themeDisplay.getDoAsUserId() %>" />
-	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
-	<aui:input name="<%= WebKeys.REFERER %>" type="hidden" value="<%= referer %>" />
+<div class="mt-4 sheet sheet-lg">
+	<div class="sheet-header">
+		<div class="autofit-padded-no-gutters-x autofit-row">
+			<div class="autofit-col autofit-col-expand">
+				<h2 class="sheet-title">
+					<liferay-ui:message key="password-reminder" />
+				</h2>
+			</div>
 
-	<div class="alert alert-info">
-		<liferay-ui:message key="please-choose-a-reminder-query" />
+			<div class="autofit-col">
+				<%@ include file="/html/portal/select_language.jspf" %>
+			</div>
+		</div>
 	</div>
 
-	<c:if test="<%= SessionErrors.contains(request, UserReminderQueryException.class.getName()) %>">
-		<div class="alert alert-danger">
-			<liferay-ui:message key="reminder-query-and-answer-cannot-be-empty" />
-		</div>
-	</c:if>
+	<div class="sheet-text">
+		<aui:form action='<%= themeDisplay.getPathMain() + "/portal/update_reminder_query" %>' autocomplete='<%= PropsValues.COMPANY_SECURITY_PASSWORD_REMINDER_QUERY_FORM_AUTOCOMPLETE ? "on" : "off" %>' cssClass="update-reminder-query" method="post" name="fm">
+			<aui:input name="p_auth" type="hidden" value="<%= AuthTokenUtil.getToken(request) %>" />
+			<aui:input name="doAsUserId" type="hidden" value="<%= themeDisplay.getDoAsUserId() %>" />
+			<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
+			<aui:input name="<%= WebKeys.REFERER %>" type="hidden" value="<%= referer %>" />
 
-	<aui:fieldset label="password-reminder">
-		<%@ include file="/html/portal/update_reminder_query_question.jspf" %>
+			<c:if test="<%= SessionErrors.contains(request, UserReminderQueryException.class.getName()) %>">
+				<div class="alert alert-danger">
+					<liferay-ui:message key="reminder-query-and-answer-cannot-be-empty" />
+				</div>
+			</c:if>
 
-		<c:if test="<%= PropsValues.USERS_REMINDER_QUERIES_CUSTOM_QUESTION_ENABLED %>">
-			<div class="hide" id="customQuestionContainer">
-				<aui:input autoFocus="<%= true %>" bean="<%= user %>" cssClass="reminder-query-custom" fieldParam="reminderQueryCustomQuestion" label="" model="<%= User.class %>" name="reminderQueryQuestion" />
-			</div>
-		</c:if>
+			<aui:fieldset>
+				<%@ include file="/html/portal/update_reminder_query_question.jspf" %>
 
-		<aui:input cssClass="reminder-query-answer" label="answer" maxlength="<%= ModelHintsConstants.TEXT_MAX_LENGTH %>" name="reminderQueryAnswer" size="50" type="text" value="<%= user.getReminderQueryAnswer() %>" />
-	</aui:fieldset>
-
-	<aui:button-row>
-		<aui:button type="submit" />
-	</aui:button-row>
-</aui:form>
-
-<aui:script sandbox="<%= true %>">
-	var reminderQueryQuestion = $('#reminderQueryQuestion');
-	var customQuestionContainer = $('#customQuestionContainer');
-
-	customQuestionContainer.toggleClass('hide', reminderQueryQuestion.val() != '<%= UsersAdmin.CUSTOM_QUESTION %>');
-
-	reminderQueryQuestion.on(
-		'change',
-		function(event) {
-			if (reminderQueryQuestion.val() == '<%= UsersAdmin.CUSTOM_QUESTION %>') {
-				<c:if test="<%= PropsValues.USERS_REMINDER_QUERIES_CUSTOM_QUESTION_ENABLED %>">
-					customQuestionContainer.removeClass('hide');
-
-					Liferay.Util.focusFormField('#reminderQueryCustomQuestion');
+				<c:if test="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.USERS_REMINDER_QUERIES_CUSTOM_QUESTION_ENABLED, PropsValues.USERS_REMINDER_QUERIES_CUSTOM_QUESTION_ENABLED) %>">
+					<div class="hide" id="customQuestionContainer">
+						<aui:input autoFocus="<%= true %>" bean="<%= user %>" cssClass="reminder-query-custom" fieldParam="reminderQueryCustomQuestion" label="" model="<%= User.class %>" name="reminderQueryQuestion" />
+					</div>
 				</c:if>
+
+				<%
+				String answer = user.getReminderQueryAnswer();
+
+				if (!PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.USERS_REMINDER_QUERIES_DISPLAY_IN_PLAIN_TEXT, PropsValues.USERS_REMINDER_QUERIES_DISPLAY_IN_PLAIN_TEXT) && Validator.isNotNull(answer)) {
+					answer = Portal.TEMP_OBFUSCATION_VALUE;
+				}
+				%>
+
+				<aui:input autocomplete="off" cssClass="reminder-query-answer" label="answer" maxlength="<%= ModelHintsConstants.TEXT_MAX_LENGTH %>" name="reminderQueryAnswer" showRequiredLabel="<%= false %>" size="50" type='<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.USERS_REMINDER_QUERIES_DISPLAY_IN_PLAIN_TEXT, PropsValues.USERS_REMINDER_QUERIES_DISPLAY_IN_PLAIN_TEXT) ? "text" : "password" %>' value="<%= answer %>">
+					<aui:validator name="required" />
+				</aui:input>
+			</aui:fieldset>
+
+			<aui:button-row>
+				<aui:button type="submit" />
+			</aui:button-row>
+		</aui:form>
+	</div>
+</div>
+
+<script>
+	(function() {
+		var customQuestionContainer = document.getElementById('customQuestionContainer');
+		var reminderQueryQuestion = document.getElementById('reminderQueryQuestion');
+
+		if (customQuestionContainer && reminderQueryQuestion) {
+			if (reminderQueryQuestion.value === '<%= UsersAdmin.CUSTOM_QUESTION %>') {
+				customQuestionContainer.classList.remove('hide');
 			}
 			else {
-				customQuestionContainer.addClass('hide');
-
-				Liferay.Util.focusFormField('#reminderQueryAnswer');
+				customQuestionContainer.classList.add('hide');
 			}
+
+			reminderQueryQuestion.addEventListener(
+				'change',
+				function(event) {
+					if (reminderQueryQuestion.value === '<%= UsersAdmin.CUSTOM_QUESTION %>') {
+						<c:if test="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.USERS_REMINDER_QUERIES_CUSTOM_QUESTION_ENABLED, PropsValues.USERS_REMINDER_QUERIES_CUSTOM_QUESTION_ENABLED) %>">
+							customQuestionContainer.classList.remove('hide');
+
+							Liferay.Util.focusFormField('#reminderQueryCustomQuestion');
+						</c:if>
+					}
+					else {
+						customQuestionContainer.classList.add('hide');
+
+						Liferay.Util.focusFormField('#reminderQueryAnswer');
+					}
+				}
+			);
 		}
-	);
-</aui:script>
+	})();
+</script>

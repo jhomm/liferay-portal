@@ -14,9 +14,11 @@
 
 package com.liferay.portlet.social.service.persistence.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
+import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
+import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderCacheUtil;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
 import com.liferay.portal.kernel.dao.orm.Query;
@@ -25,27 +27,36 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelperUtil;
+import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.service.persistence.impl.BasePersistenceImpl;
-
-import com.liferay.portlet.social.NoSuchActivityLimitException;
-import com.liferay.portlet.social.model.SocialActivityLimit;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portlet.social.model.impl.SocialActivityLimitImpl;
 import com.liferay.portlet.social.model.impl.SocialActivityLimitModelImpl;
-import com.liferay.portlet.social.service.persistence.SocialActivityLimitPersistence;
+import com.liferay.social.kernel.exception.NoSuchActivityLimitException;
+import com.liferay.social.kernel.model.SocialActivityLimit;
+import com.liferay.social.kernel.model.SocialActivityLimitTable;
+import com.liferay.social.kernel.service.persistence.SocialActivityLimitPersistence;
+import com.liferay.social.kernel.service.persistence.SocialActivityLimitUtil;
 
 import java.io.Serializable;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -56,55 +67,32 @@ import java.util.Set;
  * </p>
  *
  * @author Brian Wing Shun Chan
- * @see SocialActivityLimitPersistence
- * @see com.liferay.portlet.social.service.persistence.SocialActivityLimitUtil
  * @generated
  */
-@ProviderType
-public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<SocialActivityLimit>
+public class SocialActivityLimitPersistenceImpl
+	extends BasePersistenceImpl<SocialActivityLimit>
 	implements SocialActivityLimitPersistence {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Always use {@link SocialActivityLimitUtil} to access the social activity limit persistence. Modify <code>service.xml</code> and rerun ServiceBuilder to regenerate this class.
+	 * Never modify or reference this class directly. Always use <code>SocialActivityLimitUtil</code> to access the social activity limit persistence. Modify <code>service.xml</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static final String FINDER_CLASS_NAME_ENTITY = SocialActivityLimitImpl.class.getName();
-	public static final String FINDER_CLASS_NAME_LIST_WITH_PAGINATION = FINDER_CLASS_NAME_ENTITY +
-		".List1";
-	public static final String FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION = FINDER_CLASS_NAME_ENTITY +
-		".List2";
-	public static final FinderPath FINDER_PATH_WITH_PAGINATION_FIND_ALL = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED,
-			SocialActivityLimitImpl.class,
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findAll", new String[0]);
-	public static final FinderPath FINDER_PATH_WITHOUT_PAGINATION_FIND_ALL = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED,
-			SocialActivityLimitImpl.class,
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findAll", new String[0]);
-	public static final FinderPath FINDER_PATH_COUNT_ALL = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED, Long.class,
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countAll", new String[0]);
-	public static final FinderPath FINDER_PATH_WITH_PAGINATION_FIND_BY_GROUPID = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED,
-			SocialActivityLimitImpl.class,
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByGroupId",
-			new String[] {
-				Long.class.getName(),
-				
-			Integer.class.getName(), Integer.class.getName(),
-				OrderByComparator.class.getName()
-			});
-	public static final FinderPath FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_GROUPID =
-		new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED,
-			SocialActivityLimitImpl.class,
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByGroupId",
-			new String[] { Long.class.getName() },
-			SocialActivityLimitModelImpl.GROUPID_COLUMN_BITMASK);
-	public static final FinderPath FINDER_PATH_COUNT_BY_GROUPID = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED, Long.class,
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByGroupId",
-			new String[] { Long.class.getName() });
+	public static final String FINDER_CLASS_NAME_ENTITY =
+		SocialActivityLimitImpl.class.getName();
+
+	public static final String FINDER_CLASS_NAME_LIST_WITH_PAGINATION =
+		FINDER_CLASS_NAME_ENTITY + ".List1";
+
+	public static final String FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION =
+		FINDER_CLASS_NAME_ENTITY + ".List2";
+
+	private FinderPath _finderPathWithPaginationFindAll;
+	private FinderPath _finderPathWithoutPaginationFindAll;
+	private FinderPath _finderPathCountAll;
+	private FinderPath _finderPathWithPaginationFindByGroupId;
+	private FinderPath _finderPathWithoutPaginationFindByGroupId;
+	private FinderPath _finderPathCountByGroupId;
 
 	/**
 	 * Returns all the social activity limits where groupId = &#63;.
@@ -114,14 +102,15 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 */
 	@Override
 	public List<SocialActivityLimit> findByGroupId(long groupId) {
-		return findByGroupId(groupId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+		return findByGroupId(
+			groupId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 	}
 
 	/**
 	 * Returns a range of all the social activity limits where groupId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link SocialActivityLimitModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
 	 * </p>
 	 *
 	 * @param groupId the group ID
@@ -130,8 +119,9 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @return the range of matching social activity limits
 	 */
 	@Override
-	public List<SocialActivityLimit> findByGroupId(long groupId, int start,
-		int end) {
+	public List<SocialActivityLimit> findByGroupId(
+		long groupId, int start, int end) {
+
 		return findByGroupId(groupId, start, end, null);
 	}
 
@@ -139,7 +129,7 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * Returns an ordered range of all the social activity limits where groupId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link SocialActivityLimitModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
 	 * </p>
 	 *
 	 * @param groupId the group ID
@@ -149,94 +139,116 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @return the ordered range of matching social activity limits
 	 */
 	@Override
-	public List<SocialActivityLimit> findByGroupId(long groupId, int start,
-		int end, OrderByComparator<SocialActivityLimit> orderByComparator) {
-		boolean pagination = true;
+	public List<SocialActivityLimit> findByGroupId(
+		long groupId, int start, int end,
+		OrderByComparator<SocialActivityLimit> orderByComparator) {
+
+		return findByGroupId(groupId, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the social activity limits where groupId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param start the lower bound of the range of social activity limits
+	 * @param end the upper bound of the range of social activity limits (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching social activity limits
+	 */
+	@Override
+	public List<SocialActivityLimit> findByGroupId(
+		long groupId, int start, int end,
+		OrderByComparator<SocialActivityLimit> orderByComparator,
+		boolean useFinderCache) {
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialActivityLimit.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-				(orderByComparator == null)) {
-			pagination = false;
-			finderPath = FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_GROUPID;
-			finderArgs = new Object[] { groupId };
+			(orderByComparator == null)) {
+
+			if (useFinderCache && productionMode) {
+				finderPath = _finderPathWithoutPaginationFindByGroupId;
+				finderArgs = new Object[] {groupId};
+			}
 		}
-		else {
-			finderPath = FINDER_PATH_WITH_PAGINATION_FIND_BY_GROUPID;
-			finderArgs = new Object[] { groupId, start, end, orderByComparator };
+		else if (useFinderCache && productionMode) {
+			finderPath = _finderPathWithPaginationFindByGroupId;
+			finderArgs = new Object[] {groupId, start, end, orderByComparator};
 		}
 
-		List<SocialActivityLimit> list = (List<SocialActivityLimit>)FinderCacheUtil.getResult(finderPath,
-				finderArgs, this);
+		List<SocialActivityLimit> list = null;
 
-		if ((list != null) && !list.isEmpty()) {
-			for (SocialActivityLimit socialActivityLimit : list) {
-				if ((groupId != socialActivityLimit.getGroupId())) {
-					list = null;
+		if (useFinderCache && productionMode) {
+			list = (List<SocialActivityLimit>)FinderCacheUtil.getResult(
+				finderPath, finderArgs);
 
-					break;
+			if ((list != null) && !list.isEmpty()) {
+				for (SocialActivityLimit socialActivityLimit : list) {
+					if (groupId != socialActivityLimit.getGroupId()) {
+						list = null;
+
+						break;
+					}
 				}
 			}
 		}
 
 		if (list == null) {
-			StringBundler query = null;
+			StringBundler sb = null;
 
 			if (orderByComparator != null) {
-				query = new StringBundler(3 +
-						(orderByComparator.getOrderByFields().length * 3));
+				sb = new StringBundler(
+					3 + (orderByComparator.getOrderByFields().length * 2));
 			}
 			else {
-				query = new StringBundler(3);
+				sb = new StringBundler(3);
 			}
 
-			query.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
+			sb.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
 
-			query.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
+			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
 
 			if (orderByComparator != null) {
-				appendOrderByComparator(query, _ORDER_BY_ENTITY_ALIAS,
-					orderByComparator);
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
 			}
-			else
-			 if (pagination) {
-				query.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
+			else {
+				sb.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
 			}
 
-			String sql = query.toString();
+			String sql = sb.toString();
 
 			Session session = null;
 
 			try {
 				session = openSession();
 
-				Query q = session.createQuery(sql);
+				Query query = session.createQuery(sql);
 
-				QueryPos qPos = QueryPos.getInstance(q);
+				QueryPos queryPos = QueryPos.getInstance(query);
 
-				qPos.add(groupId);
+				queryPos.add(groupId);
 
-				if (!pagination) {
-					list = (List<SocialActivityLimit>)QueryUtil.list(q,
-							getDialect(), start, end, false);
-
-					Collections.sort(list);
-
-					list = Collections.unmodifiableList(list);
-				}
-				else {
-					list = (List<SocialActivityLimit>)QueryUtil.list(q,
-							getDialect(), start, end);
-				}
+				list = (List<SocialActivityLimit>)QueryUtil.list(
+					query, getDialect(), start, end);
 
 				cacheResult(list);
 
-				FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (useFinderCache && productionMode) {
+					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				}
 			}
-			catch (Exception e) {
-				FinderCacheUtil.removeResult(finderPath, finderArgs);
-
-				throw processException(e);
+			catch (Exception exception) {
+				throw processException(exception);
 			}
 			finally {
 				closeSession(session);
@@ -255,26 +267,28 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @throws NoSuchActivityLimitException if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit findByGroupId_First(long groupId,
-		OrderByComparator<SocialActivityLimit> orderByComparator)
+	public SocialActivityLimit findByGroupId_First(
+			long groupId,
+			OrderByComparator<SocialActivityLimit> orderByComparator)
 		throws NoSuchActivityLimitException {
-		SocialActivityLimit socialActivityLimit = fetchByGroupId_First(groupId,
-				orderByComparator);
+
+		SocialActivityLimit socialActivityLimit = fetchByGroupId_First(
+			groupId, orderByComparator);
 
 		if (socialActivityLimit != null) {
 			return socialActivityLimit;
 		}
 
-		StringBundler msg = new StringBundler(4);
+		StringBundler sb = new StringBundler(4);
 
-		msg.append(_NO_SUCH_ENTITY_WITH_KEY);
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
 
-		msg.append("groupId=");
-		msg.append(groupId);
+		sb.append("groupId=");
+		sb.append(groupId);
 
-		msg.append(StringPool.CLOSE_CURLY_BRACE);
+		sb.append("}");
 
-		throw new NoSuchActivityLimitException(msg.toString());
+		throw new NoSuchActivityLimitException(sb.toString());
 	}
 
 	/**
@@ -285,10 +299,12 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @return the first matching social activity limit, or <code>null</code> if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit fetchByGroupId_First(long groupId,
+	public SocialActivityLimit fetchByGroupId_First(
+		long groupId,
 		OrderByComparator<SocialActivityLimit> orderByComparator) {
-		List<SocialActivityLimit> list = findByGroupId(groupId, 0, 1,
-				orderByComparator);
+
+		List<SocialActivityLimit> list = findByGroupId(
+			groupId, 0, 1, orderByComparator);
 
 		if (!list.isEmpty()) {
 			return list.get(0);
@@ -306,26 +322,28 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @throws NoSuchActivityLimitException if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit findByGroupId_Last(long groupId,
-		OrderByComparator<SocialActivityLimit> orderByComparator)
+	public SocialActivityLimit findByGroupId_Last(
+			long groupId,
+			OrderByComparator<SocialActivityLimit> orderByComparator)
 		throws NoSuchActivityLimitException {
-		SocialActivityLimit socialActivityLimit = fetchByGroupId_Last(groupId,
-				orderByComparator);
+
+		SocialActivityLimit socialActivityLimit = fetchByGroupId_Last(
+			groupId, orderByComparator);
 
 		if (socialActivityLimit != null) {
 			return socialActivityLimit;
 		}
 
-		StringBundler msg = new StringBundler(4);
+		StringBundler sb = new StringBundler(4);
 
-		msg.append(_NO_SUCH_ENTITY_WITH_KEY);
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
 
-		msg.append("groupId=");
-		msg.append(groupId);
+		sb.append("groupId=");
+		sb.append(groupId);
 
-		msg.append(StringPool.CLOSE_CURLY_BRACE);
+		sb.append("}");
 
-		throw new NoSuchActivityLimitException(msg.toString());
+		throw new NoSuchActivityLimitException(sb.toString());
 	}
 
 	/**
@@ -336,16 +354,18 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @return the last matching social activity limit, or <code>null</code> if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit fetchByGroupId_Last(long groupId,
+	public SocialActivityLimit fetchByGroupId_Last(
+		long groupId,
 		OrderByComparator<SocialActivityLimit> orderByComparator) {
+
 		int count = countByGroupId(groupId);
 
 		if (count == 0) {
 			return null;
 		}
 
-		List<SocialActivityLimit> list = findByGroupId(groupId, count - 1,
-				count, orderByComparator);
+		List<SocialActivityLimit> list = findByGroupId(
+			groupId, count - 1, count, orderByComparator);
 
 		if (!list.isEmpty()) {
 			return list.get(0);
@@ -365,10 +385,12 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 */
 	@Override
 	public SocialActivityLimit[] findByGroupId_PrevAndNext(
-		long activityLimitId, long groupId,
-		OrderByComparator<SocialActivityLimit> orderByComparator)
+			long activityLimitId, long groupId,
+			OrderByComparator<SocialActivityLimit> orderByComparator)
 		throws NoSuchActivityLimitException {
-		SocialActivityLimit socialActivityLimit = findByPrimaryKey(activityLimitId);
+
+		SocialActivityLimit socialActivityLimit = findByPrimaryKey(
+			activityLimitId);
 
 		Session session = null;
 
@@ -377,121 +399,126 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 
 			SocialActivityLimit[] array = new SocialActivityLimitImpl[3];
 
-			array[0] = getByGroupId_PrevAndNext(session, socialActivityLimit,
-					groupId, orderByComparator, true);
+			array[0] = getByGroupId_PrevAndNext(
+				session, socialActivityLimit, groupId, orderByComparator, true);
 
 			array[1] = socialActivityLimit;
 
-			array[2] = getByGroupId_PrevAndNext(session, socialActivityLimit,
-					groupId, orderByComparator, false);
+			array[2] = getByGroupId_PrevAndNext(
+				session, socialActivityLimit, groupId, orderByComparator,
+				false);
 
 			return array;
 		}
-		catch (Exception e) {
-			throw processException(e);
+		catch (Exception exception) {
+			throw processException(exception);
 		}
 		finally {
 			closeSession(session);
 		}
 	}
 
-	protected SocialActivityLimit getByGroupId_PrevAndNext(Session session,
-		SocialActivityLimit socialActivityLimit, long groupId,
+	protected SocialActivityLimit getByGroupId_PrevAndNext(
+		Session session, SocialActivityLimit socialActivityLimit, long groupId,
 		OrderByComparator<SocialActivityLimit> orderByComparator,
 		boolean previous) {
-		StringBundler query = null;
+
+		StringBundler sb = null;
 
 		if (orderByComparator != null) {
-			query = new StringBundler(6 +
-					(orderByComparator.getOrderByFields().length * 6));
+			sb = new StringBundler(
+				4 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
 		}
 		else {
-			query = new StringBundler(3);
+			sb = new StringBundler(3);
 		}
 
-		query.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
+		sb.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
 
-		query.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
+		sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
 
 		if (orderByComparator != null) {
-			String[] orderByConditionFields = orderByComparator.getOrderByConditionFields();
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
 
 			if (orderByConditionFields.length > 0) {
-				query.append(WHERE_AND);
+				sb.append(WHERE_AND);
 			}
 
 			for (int i = 0; i < orderByConditionFields.length; i++) {
-				query.append(_ORDER_BY_ENTITY_ALIAS);
-				query.append(orderByConditionFields[i]);
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
 
 				if ((i + 1) < orderByConditionFields.length) {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(WHERE_GREATER_THAN_HAS_NEXT);
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
 					}
 					else {
-						query.append(WHERE_LESSER_THAN_HAS_NEXT);
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
 					}
 				}
 				else {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(WHERE_GREATER_THAN);
+						sb.append(WHERE_GREATER_THAN);
 					}
 					else {
-						query.append(WHERE_LESSER_THAN);
+						sb.append(WHERE_LESSER_THAN);
 					}
 				}
 			}
 
-			query.append(ORDER_BY_CLAUSE);
+			sb.append(ORDER_BY_CLAUSE);
 
 			String[] orderByFields = orderByComparator.getOrderByFields();
 
 			for (int i = 0; i < orderByFields.length; i++) {
-				query.append(_ORDER_BY_ENTITY_ALIAS);
-				query.append(orderByFields[i]);
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
 
 				if ((i + 1) < orderByFields.length) {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(ORDER_BY_ASC_HAS_NEXT);
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
 					}
 					else {
-						query.append(ORDER_BY_DESC_HAS_NEXT);
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
 					}
 				}
 				else {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(ORDER_BY_ASC);
+						sb.append(ORDER_BY_ASC);
 					}
 					else {
-						query.append(ORDER_BY_DESC);
+						sb.append(ORDER_BY_DESC);
 					}
 				}
 			}
 		}
 		else {
-			query.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
+			sb.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
 		}
 
-		String sql = query.toString();
+		String sql = sb.toString();
 
-		Query q = session.createQuery(sql);
+		Query query = session.createQuery(sql);
 
-		q.setFirstResult(0);
-		q.setMaxResults(2);
+		query.setFirstResult(0);
+		query.setMaxResults(2);
 
-		QueryPos qPos = QueryPos.getInstance(q);
+		QueryPos queryPos = QueryPos.getInstance(query);
 
-		qPos.add(groupId);
+		queryPos.add(groupId);
 
 		if (orderByComparator != null) {
-			Object[] values = orderByComparator.getOrderByConditionValues(socialActivityLimit);
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						socialActivityLimit)) {
 
-			for (Object value : values) {
-				qPos.add(value);
+				queryPos.add(orderByConditionValue);
 			}
 		}
 
-		List<SocialActivityLimit> list = q.list();
+		List<SocialActivityLimit> list = query.list();
 
 		if (list.size() == 2) {
 			return list.get(1);
@@ -508,8 +535,10 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 */
 	@Override
 	public void removeByGroupId(long groupId) {
-		for (SocialActivityLimit socialActivityLimit : findByGroupId(groupId,
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+		for (SocialActivityLimit socialActivityLimit :
+				findByGroupId(
+					groupId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+
 			remove(socialActivityLimit);
 		}
 	}
@@ -522,41 +551,50 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 */
 	@Override
 	public int countByGroupId(long groupId) {
-		FinderPath finderPath = FINDER_PATH_COUNT_BY_GROUPID;
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialActivityLimit.class);
 
-		Object[] finderArgs = new Object[] { groupId };
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs,
-				this);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByGroupId;
+
+			finderArgs = new Object[] {groupId};
+
+			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		}
 
 		if (count == null) {
-			StringBundler query = new StringBundler(2);
+			StringBundler sb = new StringBundler(2);
 
-			query.append(_SQL_COUNT_SOCIALACTIVITYLIMIT_WHERE);
+			sb.append(_SQL_COUNT_SOCIALACTIVITYLIMIT_WHERE);
 
-			query.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
+			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
 
-			String sql = query.toString();
+			String sql = sb.toString();
 
 			Session session = null;
 
 			try {
 				session = openSession();
 
-				Query q = session.createQuery(sql);
+				Query query = session.createQuery(sql);
 
-				QueryPos qPos = QueryPos.getInstance(q);
+				QueryPos queryPos = QueryPos.getInstance(query);
 
-				qPos.add(groupId);
+				queryPos.add(groupId);
 
-				count = (Long)q.uniqueResult();
+				count = (Long)query.uniqueResult();
 
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					FinderCacheUtil.putResult(finderPath, finderArgs, count);
+				}
 			}
-			catch (Exception e) {
-				FinderCacheUtil.removeResult(finderPath, finderArgs);
-
-				throw processException(e);
+			catch (Exception exception) {
+				throw processException(exception);
 			}
 			finally {
 				closeSession(session);
@@ -566,28 +604,12 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 		return count.intValue();
 	}
 
-	private static final String _FINDER_COLUMN_GROUPID_GROUPID_2 = "socialActivityLimit.groupId = ?";
-	public static final FinderPath FINDER_PATH_WITH_PAGINATION_FIND_BY_USERID = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED,
-			SocialActivityLimitImpl.class,
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUserId",
-			new String[] {
-				Long.class.getName(),
-				
-			Integer.class.getName(), Integer.class.getName(),
-				OrderByComparator.class.getName()
-			});
-	public static final FinderPath FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_USERID =
-		new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED,
-			SocialActivityLimitImpl.class,
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByUserId",
-			new String[] { Long.class.getName() },
-			SocialActivityLimitModelImpl.USERID_COLUMN_BITMASK);
-	public static final FinderPath FINDER_PATH_COUNT_BY_USERID = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED, Long.class,
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUserId",
-			new String[] { Long.class.getName() });
+	private static final String _FINDER_COLUMN_GROUPID_GROUPID_2 =
+		"socialActivityLimit.groupId = ?";
+
+	private FinderPath _finderPathWithPaginationFindByUserId;
+	private FinderPath _finderPathWithoutPaginationFindByUserId;
+	private FinderPath _finderPathCountByUserId;
 
 	/**
 	 * Returns all the social activity limits where userId = &#63;.
@@ -604,7 +626,7 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * Returns a range of all the social activity limits where userId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link SocialActivityLimitModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
 	 * </p>
 	 *
 	 * @param userId the user ID
@@ -613,8 +635,9 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @return the range of matching social activity limits
 	 */
 	@Override
-	public List<SocialActivityLimit> findByUserId(long userId, int start,
-		int end) {
+	public List<SocialActivityLimit> findByUserId(
+		long userId, int start, int end) {
+
 		return findByUserId(userId, start, end, null);
 	}
 
@@ -622,7 +645,7 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * Returns an ordered range of all the social activity limits where userId = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link SocialActivityLimitModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
 	 * </p>
 	 *
 	 * @param userId the user ID
@@ -632,94 +655,116 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @return the ordered range of matching social activity limits
 	 */
 	@Override
-	public List<SocialActivityLimit> findByUserId(long userId, int start,
-		int end, OrderByComparator<SocialActivityLimit> orderByComparator) {
-		boolean pagination = true;
+	public List<SocialActivityLimit> findByUserId(
+		long userId, int start, int end,
+		OrderByComparator<SocialActivityLimit> orderByComparator) {
+
+		return findByUserId(userId, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the social activity limits where userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
+	 * </p>
+	 *
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of social activity limits
+	 * @param end the upper bound of the range of social activity limits (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching social activity limits
+	 */
+	@Override
+	public List<SocialActivityLimit> findByUserId(
+		long userId, int start, int end,
+		OrderByComparator<SocialActivityLimit> orderByComparator,
+		boolean useFinderCache) {
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialActivityLimit.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-				(orderByComparator == null)) {
-			pagination = false;
-			finderPath = FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_USERID;
-			finderArgs = new Object[] { userId };
+			(orderByComparator == null)) {
+
+			if (useFinderCache && productionMode) {
+				finderPath = _finderPathWithoutPaginationFindByUserId;
+				finderArgs = new Object[] {userId};
+			}
 		}
-		else {
-			finderPath = FINDER_PATH_WITH_PAGINATION_FIND_BY_USERID;
-			finderArgs = new Object[] { userId, start, end, orderByComparator };
+		else if (useFinderCache && productionMode) {
+			finderPath = _finderPathWithPaginationFindByUserId;
+			finderArgs = new Object[] {userId, start, end, orderByComparator};
 		}
 
-		List<SocialActivityLimit> list = (List<SocialActivityLimit>)FinderCacheUtil.getResult(finderPath,
-				finderArgs, this);
+		List<SocialActivityLimit> list = null;
 
-		if ((list != null) && !list.isEmpty()) {
-			for (SocialActivityLimit socialActivityLimit : list) {
-				if ((userId != socialActivityLimit.getUserId())) {
-					list = null;
+		if (useFinderCache && productionMode) {
+			list = (List<SocialActivityLimit>)FinderCacheUtil.getResult(
+				finderPath, finderArgs);
 
-					break;
+			if ((list != null) && !list.isEmpty()) {
+				for (SocialActivityLimit socialActivityLimit : list) {
+					if (userId != socialActivityLimit.getUserId()) {
+						list = null;
+
+						break;
+					}
 				}
 			}
 		}
 
 		if (list == null) {
-			StringBundler query = null;
+			StringBundler sb = null;
 
 			if (orderByComparator != null) {
-				query = new StringBundler(3 +
-						(orderByComparator.getOrderByFields().length * 3));
+				sb = new StringBundler(
+					3 + (orderByComparator.getOrderByFields().length * 2));
 			}
 			else {
-				query = new StringBundler(3);
+				sb = new StringBundler(3);
 			}
 
-			query.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
+			sb.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
 
-			query.append(_FINDER_COLUMN_USERID_USERID_2);
+			sb.append(_FINDER_COLUMN_USERID_USERID_2);
 
 			if (orderByComparator != null) {
-				appendOrderByComparator(query, _ORDER_BY_ENTITY_ALIAS,
-					orderByComparator);
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
 			}
-			else
-			 if (pagination) {
-				query.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
+			else {
+				sb.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
 			}
 
-			String sql = query.toString();
+			String sql = sb.toString();
 
 			Session session = null;
 
 			try {
 				session = openSession();
 
-				Query q = session.createQuery(sql);
+				Query query = session.createQuery(sql);
 
-				QueryPos qPos = QueryPos.getInstance(q);
+				QueryPos queryPos = QueryPos.getInstance(query);
 
-				qPos.add(userId);
+				queryPos.add(userId);
 
-				if (!pagination) {
-					list = (List<SocialActivityLimit>)QueryUtil.list(q,
-							getDialect(), start, end, false);
-
-					Collections.sort(list);
-
-					list = Collections.unmodifiableList(list);
-				}
-				else {
-					list = (List<SocialActivityLimit>)QueryUtil.list(q,
-							getDialect(), start, end);
-				}
+				list = (List<SocialActivityLimit>)QueryUtil.list(
+					query, getDialect(), start, end);
 
 				cacheResult(list);
 
-				FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (useFinderCache && productionMode) {
+					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				}
 			}
-			catch (Exception e) {
-				FinderCacheUtil.removeResult(finderPath, finderArgs);
-
-				throw processException(e);
+			catch (Exception exception) {
+				throw processException(exception);
 			}
 			finally {
 				closeSession(session);
@@ -738,26 +783,28 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @throws NoSuchActivityLimitException if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit findByUserId_First(long userId,
-		OrderByComparator<SocialActivityLimit> orderByComparator)
+	public SocialActivityLimit findByUserId_First(
+			long userId,
+			OrderByComparator<SocialActivityLimit> orderByComparator)
 		throws NoSuchActivityLimitException {
-		SocialActivityLimit socialActivityLimit = fetchByUserId_First(userId,
-				orderByComparator);
+
+		SocialActivityLimit socialActivityLimit = fetchByUserId_First(
+			userId, orderByComparator);
 
 		if (socialActivityLimit != null) {
 			return socialActivityLimit;
 		}
 
-		StringBundler msg = new StringBundler(4);
+		StringBundler sb = new StringBundler(4);
 
-		msg.append(_NO_SUCH_ENTITY_WITH_KEY);
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
 
-		msg.append("userId=");
-		msg.append(userId);
+		sb.append("userId=");
+		sb.append(userId);
 
-		msg.append(StringPool.CLOSE_CURLY_BRACE);
+		sb.append("}");
 
-		throw new NoSuchActivityLimitException(msg.toString());
+		throw new NoSuchActivityLimitException(sb.toString());
 	}
 
 	/**
@@ -768,10 +815,11 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @return the first matching social activity limit, or <code>null</code> if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit fetchByUserId_First(long userId,
-		OrderByComparator<SocialActivityLimit> orderByComparator) {
-		List<SocialActivityLimit> list = findByUserId(userId, 0, 1,
-				orderByComparator);
+	public SocialActivityLimit fetchByUserId_First(
+		long userId, OrderByComparator<SocialActivityLimit> orderByComparator) {
+
+		List<SocialActivityLimit> list = findByUserId(
+			userId, 0, 1, orderByComparator);
 
 		if (!list.isEmpty()) {
 			return list.get(0);
@@ -789,26 +837,28 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @throws NoSuchActivityLimitException if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit findByUserId_Last(long userId,
-		OrderByComparator<SocialActivityLimit> orderByComparator)
+	public SocialActivityLimit findByUserId_Last(
+			long userId,
+			OrderByComparator<SocialActivityLimit> orderByComparator)
 		throws NoSuchActivityLimitException {
-		SocialActivityLimit socialActivityLimit = fetchByUserId_Last(userId,
-				orderByComparator);
+
+		SocialActivityLimit socialActivityLimit = fetchByUserId_Last(
+			userId, orderByComparator);
 
 		if (socialActivityLimit != null) {
 			return socialActivityLimit;
 		}
 
-		StringBundler msg = new StringBundler(4);
+		StringBundler sb = new StringBundler(4);
 
-		msg.append(_NO_SUCH_ENTITY_WITH_KEY);
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
 
-		msg.append("userId=");
-		msg.append(userId);
+		sb.append("userId=");
+		sb.append(userId);
 
-		msg.append(StringPool.CLOSE_CURLY_BRACE);
+		sb.append("}");
 
-		throw new NoSuchActivityLimitException(msg.toString());
+		throw new NoSuchActivityLimitException(sb.toString());
 	}
 
 	/**
@@ -819,16 +869,17 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @return the last matching social activity limit, or <code>null</code> if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit fetchByUserId_Last(long userId,
-		OrderByComparator<SocialActivityLimit> orderByComparator) {
+	public SocialActivityLimit fetchByUserId_Last(
+		long userId, OrderByComparator<SocialActivityLimit> orderByComparator) {
+
 		int count = countByUserId(userId);
 
 		if (count == 0) {
 			return null;
 		}
 
-		List<SocialActivityLimit> list = findByUserId(userId, count - 1, count,
-				orderByComparator);
+		List<SocialActivityLimit> list = findByUserId(
+			userId, count - 1, count, orderByComparator);
 
 		if (!list.isEmpty()) {
 			return list.get(0);
@@ -848,10 +899,12 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 */
 	@Override
 	public SocialActivityLimit[] findByUserId_PrevAndNext(
-		long activityLimitId, long userId,
-		OrderByComparator<SocialActivityLimit> orderByComparator)
+			long activityLimitId, long userId,
+			OrderByComparator<SocialActivityLimit> orderByComparator)
 		throws NoSuchActivityLimitException {
-		SocialActivityLimit socialActivityLimit = findByPrimaryKey(activityLimitId);
+
+		SocialActivityLimit socialActivityLimit = findByPrimaryKey(
+			activityLimitId);
 
 		Session session = null;
 
@@ -860,121 +913,125 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 
 			SocialActivityLimit[] array = new SocialActivityLimitImpl[3];
 
-			array[0] = getByUserId_PrevAndNext(session, socialActivityLimit,
-					userId, orderByComparator, true);
+			array[0] = getByUserId_PrevAndNext(
+				session, socialActivityLimit, userId, orderByComparator, true);
 
 			array[1] = socialActivityLimit;
 
-			array[2] = getByUserId_PrevAndNext(session, socialActivityLimit,
-					userId, orderByComparator, false);
+			array[2] = getByUserId_PrevAndNext(
+				session, socialActivityLimit, userId, orderByComparator, false);
 
 			return array;
 		}
-		catch (Exception e) {
-			throw processException(e);
+		catch (Exception exception) {
+			throw processException(exception);
 		}
 		finally {
 			closeSession(session);
 		}
 	}
 
-	protected SocialActivityLimit getByUserId_PrevAndNext(Session session,
-		SocialActivityLimit socialActivityLimit, long userId,
+	protected SocialActivityLimit getByUserId_PrevAndNext(
+		Session session, SocialActivityLimit socialActivityLimit, long userId,
 		OrderByComparator<SocialActivityLimit> orderByComparator,
 		boolean previous) {
-		StringBundler query = null;
+
+		StringBundler sb = null;
 
 		if (orderByComparator != null) {
-			query = new StringBundler(6 +
-					(orderByComparator.getOrderByFields().length * 6));
+			sb = new StringBundler(
+				4 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
 		}
 		else {
-			query = new StringBundler(3);
+			sb = new StringBundler(3);
 		}
 
-		query.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
+		sb.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
 
-		query.append(_FINDER_COLUMN_USERID_USERID_2);
+		sb.append(_FINDER_COLUMN_USERID_USERID_2);
 
 		if (orderByComparator != null) {
-			String[] orderByConditionFields = orderByComparator.getOrderByConditionFields();
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
 
 			if (orderByConditionFields.length > 0) {
-				query.append(WHERE_AND);
+				sb.append(WHERE_AND);
 			}
 
 			for (int i = 0; i < orderByConditionFields.length; i++) {
-				query.append(_ORDER_BY_ENTITY_ALIAS);
-				query.append(orderByConditionFields[i]);
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
 
 				if ((i + 1) < orderByConditionFields.length) {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(WHERE_GREATER_THAN_HAS_NEXT);
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
 					}
 					else {
-						query.append(WHERE_LESSER_THAN_HAS_NEXT);
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
 					}
 				}
 				else {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(WHERE_GREATER_THAN);
+						sb.append(WHERE_GREATER_THAN);
 					}
 					else {
-						query.append(WHERE_LESSER_THAN);
+						sb.append(WHERE_LESSER_THAN);
 					}
 				}
 			}
 
-			query.append(ORDER_BY_CLAUSE);
+			sb.append(ORDER_BY_CLAUSE);
 
 			String[] orderByFields = orderByComparator.getOrderByFields();
 
 			for (int i = 0; i < orderByFields.length; i++) {
-				query.append(_ORDER_BY_ENTITY_ALIAS);
-				query.append(orderByFields[i]);
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
 
 				if ((i + 1) < orderByFields.length) {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(ORDER_BY_ASC_HAS_NEXT);
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
 					}
 					else {
-						query.append(ORDER_BY_DESC_HAS_NEXT);
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
 					}
 				}
 				else {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(ORDER_BY_ASC);
+						sb.append(ORDER_BY_ASC);
 					}
 					else {
-						query.append(ORDER_BY_DESC);
+						sb.append(ORDER_BY_DESC);
 					}
 				}
 			}
 		}
 		else {
-			query.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
+			sb.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
 		}
 
-		String sql = query.toString();
+		String sql = sb.toString();
 
-		Query q = session.createQuery(sql);
+		Query query = session.createQuery(sql);
 
-		q.setFirstResult(0);
-		q.setMaxResults(2);
+		query.setFirstResult(0);
+		query.setMaxResults(2);
 
-		QueryPos qPos = QueryPos.getInstance(q);
+		QueryPos queryPos = QueryPos.getInstance(query);
 
-		qPos.add(userId);
+		queryPos.add(userId);
 
 		if (orderByComparator != null) {
-			Object[] values = orderByComparator.getOrderByConditionValues(socialActivityLimit);
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						socialActivityLimit)) {
 
-			for (Object value : values) {
-				qPos.add(value);
+				queryPos.add(orderByConditionValue);
 			}
 		}
 
-		List<SocialActivityLimit> list = q.list();
+		List<SocialActivityLimit> list = query.list();
 
 		if (list.size() == 2) {
 			return list.get(1);
@@ -991,8 +1048,10 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 */
 	@Override
 	public void removeByUserId(long userId) {
-		for (SocialActivityLimit socialActivityLimit : findByUserId(userId,
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+		for (SocialActivityLimit socialActivityLimit :
+				findByUserId(
+					userId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+
 			remove(socialActivityLimit);
 		}
 	}
@@ -1005,41 +1064,50 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 */
 	@Override
 	public int countByUserId(long userId) {
-		FinderPath finderPath = FINDER_PATH_COUNT_BY_USERID;
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialActivityLimit.class);
 
-		Object[] finderArgs = new Object[] { userId };
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs,
-				this);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByUserId;
+
+			finderArgs = new Object[] {userId};
+
+			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		}
 
 		if (count == null) {
-			StringBundler query = new StringBundler(2);
+			StringBundler sb = new StringBundler(2);
 
-			query.append(_SQL_COUNT_SOCIALACTIVITYLIMIT_WHERE);
+			sb.append(_SQL_COUNT_SOCIALACTIVITYLIMIT_WHERE);
 
-			query.append(_FINDER_COLUMN_USERID_USERID_2);
+			sb.append(_FINDER_COLUMN_USERID_USERID_2);
 
-			String sql = query.toString();
+			String sql = sb.toString();
 
 			Session session = null;
 
 			try {
 				session = openSession();
 
-				Query q = session.createQuery(sql);
+				Query query = session.createQuery(sql);
 
-				QueryPos qPos = QueryPos.getInstance(q);
+				QueryPos queryPos = QueryPos.getInstance(query);
 
-				qPos.add(userId);
+				queryPos.add(userId);
 
-				count = (Long)q.uniqueResult();
+				count = (Long)query.uniqueResult();
 
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					FinderCacheUtil.putResult(finderPath, finderArgs, count);
+				}
 			}
-			catch (Exception e) {
-				FinderCacheUtil.removeResult(finderPath, finderArgs);
-
-				throw processException(e);
+			catch (Exception exception) {
+				throw processException(exception);
 			}
 			finally {
 				closeSession(session);
@@ -1049,58 +1117,43 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 		return count.intValue();
 	}
 
-	private static final String _FINDER_COLUMN_USERID_USERID_2 = "socialActivityLimit.userId = ?";
-	public static final FinderPath FINDER_PATH_WITH_PAGINATION_FIND_BY_C_C = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED,
-			SocialActivityLimitImpl.class,
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_C",
-			new String[] {
-				Long.class.getName(), Long.class.getName(),
-				
-			Integer.class.getName(), Integer.class.getName(),
-				OrderByComparator.class.getName()
-			});
-	public static final FinderPath FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_C_C = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED,
-			SocialActivityLimitImpl.class,
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByC_C",
-			new String[] { Long.class.getName(), Long.class.getName() },
-			SocialActivityLimitModelImpl.CLASSNAMEID_COLUMN_BITMASK |
-			SocialActivityLimitModelImpl.CLASSPK_COLUMN_BITMASK);
-	public static final FinderPath FINDER_PATH_COUNT_BY_C_C = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED, Long.class,
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_C",
-			new String[] { Long.class.getName(), Long.class.getName() });
+	private static final String _FINDER_COLUMN_USERID_USERID_2 =
+		"socialActivityLimit.userId = ?";
+
+	private FinderPath _finderPathWithPaginationFindByC_C;
+	private FinderPath _finderPathWithoutPaginationFindByC_C;
+	private FinderPath _finderPathCountByC_C;
 
 	/**
 	 * Returns all the social activity limits where classNameId = &#63; and classPK = &#63;.
 	 *
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @return the matching social activity limits
 	 */
 	@Override
 	public List<SocialActivityLimit> findByC_C(long classNameId, long classPK) {
-		return findByC_C(classNameId, classPK, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS, null);
+		return findByC_C(
+			classNameId, classPK, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 	}
 
 	/**
 	 * Returns a range of all the social activity limits where classNameId = &#63; and classPK = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link SocialActivityLimitModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
 	 * </p>
 	 *
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param start the lower bound of the range of social activity limits
 	 * @param end the upper bound of the range of social activity limits (not inclusive)
 	 * @return the range of matching social activity limits
 	 */
 	@Override
-	public List<SocialActivityLimit> findByC_C(long classNameId, long classPK,
-		int start, int end) {
+	public List<SocialActivityLimit> findByC_C(
+		long classNameId, long classPK, int start, int end) {
+
 		return findByC_C(classNameId, classPK, start, end, null);
 	}
 
@@ -1108,115 +1161,137 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * Returns an ordered range of all the social activity limits where classNameId = &#63; and classPK = &#63;.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link SocialActivityLimitModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
 	 * </p>
 	 *
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param start the lower bound of the range of social activity limits
 	 * @param end the upper bound of the range of social activity limits (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	 * @return the ordered range of matching social activity limits
 	 */
 	@Override
-	public List<SocialActivityLimit> findByC_C(long classNameId, long classPK,
-		int start, int end,
+	public List<SocialActivityLimit> findByC_C(
+		long classNameId, long classPK, int start, int end,
 		OrderByComparator<SocialActivityLimit> orderByComparator) {
-		boolean pagination = true;
+
+		return findByC_C(
+			classNameId, classPK, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the social activity limits where classNameId = &#63; and classPK = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
+	 * </p>
+	 *
+	 * @param classNameId the class name ID
+	 * @param classPK the class pk
+	 * @param start the lower bound of the range of social activity limits
+	 * @param end the upper bound of the range of social activity limits (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching social activity limits
+	 */
+	@Override
+	public List<SocialActivityLimit> findByC_C(
+		long classNameId, long classPK, int start, int end,
+		OrderByComparator<SocialActivityLimit> orderByComparator,
+		boolean useFinderCache) {
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialActivityLimit.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-				(orderByComparator == null)) {
-			pagination = false;
-			finderPath = FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_C_C;
-			finderArgs = new Object[] { classNameId, classPK };
+			(orderByComparator == null)) {
+
+			if (useFinderCache && productionMode) {
+				finderPath = _finderPathWithoutPaginationFindByC_C;
+				finderArgs = new Object[] {classNameId, classPK};
+			}
 		}
-		else {
-			finderPath = FINDER_PATH_WITH_PAGINATION_FIND_BY_C_C;
+		else if (useFinderCache && productionMode) {
+			finderPath = _finderPathWithPaginationFindByC_C;
 			finderArgs = new Object[] {
-					classNameId, classPK,
-					
-					start, end, orderByComparator
-				};
+				classNameId, classPK, start, end, orderByComparator
+			};
 		}
 
-		List<SocialActivityLimit> list = (List<SocialActivityLimit>)FinderCacheUtil.getResult(finderPath,
-				finderArgs, this);
+		List<SocialActivityLimit> list = null;
 
-		if ((list != null) && !list.isEmpty()) {
-			for (SocialActivityLimit socialActivityLimit : list) {
-				if ((classNameId != socialActivityLimit.getClassNameId()) ||
+		if (useFinderCache && productionMode) {
+			list = (List<SocialActivityLimit>)FinderCacheUtil.getResult(
+				finderPath, finderArgs);
+
+			if ((list != null) && !list.isEmpty()) {
+				for (SocialActivityLimit socialActivityLimit : list) {
+					if ((classNameId != socialActivityLimit.getClassNameId()) ||
 						(classPK != socialActivityLimit.getClassPK())) {
-					list = null;
 
-					break;
+						list = null;
+
+						break;
+					}
 				}
 			}
 		}
 
 		if (list == null) {
-			StringBundler query = null;
+			StringBundler sb = null;
 
 			if (orderByComparator != null) {
-				query = new StringBundler(4 +
-						(orderByComparator.getOrderByFields().length * 3));
+				sb = new StringBundler(
+					4 + (orderByComparator.getOrderByFields().length * 2));
 			}
 			else {
-				query = new StringBundler(4);
+				sb = new StringBundler(4);
 			}
 
-			query.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
+			sb.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
 
-			query.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
+			sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
 
-			query.append(_FINDER_COLUMN_C_C_CLASSPK_2);
+			sb.append(_FINDER_COLUMN_C_C_CLASSPK_2);
 
 			if (orderByComparator != null) {
-				appendOrderByComparator(query, _ORDER_BY_ENTITY_ALIAS,
-					orderByComparator);
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
 			}
-			else
-			 if (pagination) {
-				query.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
+			else {
+				sb.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
 			}
 
-			String sql = query.toString();
+			String sql = sb.toString();
 
 			Session session = null;
 
 			try {
 				session = openSession();
 
-				Query q = session.createQuery(sql);
+				Query query = session.createQuery(sql);
 
-				QueryPos qPos = QueryPos.getInstance(q);
+				QueryPos queryPos = QueryPos.getInstance(query);
 
-				qPos.add(classNameId);
+				queryPos.add(classNameId);
 
-				qPos.add(classPK);
+				queryPos.add(classPK);
 
-				if (!pagination) {
-					list = (List<SocialActivityLimit>)QueryUtil.list(q,
-							getDialect(), start, end, false);
-
-					Collections.sort(list);
-
-					list = Collections.unmodifiableList(list);
-				}
-				else {
-					list = (List<SocialActivityLimit>)QueryUtil.list(q,
-							getDialect(), start, end);
-				}
+				list = (List<SocialActivityLimit>)QueryUtil.list(
+					query, getDialect(), start, end);
 
 				cacheResult(list);
 
-				FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (useFinderCache && productionMode) {
+					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				}
 			}
-			catch (Exception e) {
-				FinderCacheUtil.removeResult(finderPath, finderArgs);
-
-				throw processException(e);
+			catch (Exception exception) {
+				throw processException(exception);
 			}
 			finally {
 				closeSession(session);
@@ -1230,50 +1305,54 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * Returns the first social activity limit in the ordered set where classNameId = &#63; and classPK = &#63;.
 	 *
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching social activity limit
 	 * @throws NoSuchActivityLimitException if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit findByC_C_First(long classNameId, long classPK,
-		OrderByComparator<SocialActivityLimit> orderByComparator)
+	public SocialActivityLimit findByC_C_First(
+			long classNameId, long classPK,
+			OrderByComparator<SocialActivityLimit> orderByComparator)
 		throws NoSuchActivityLimitException {
-		SocialActivityLimit socialActivityLimit = fetchByC_C_First(classNameId,
-				classPK, orderByComparator);
+
+		SocialActivityLimit socialActivityLimit = fetchByC_C_First(
+			classNameId, classPK, orderByComparator);
 
 		if (socialActivityLimit != null) {
 			return socialActivityLimit;
 		}
 
-		StringBundler msg = new StringBundler(6);
+		StringBundler sb = new StringBundler(6);
 
-		msg.append(_NO_SUCH_ENTITY_WITH_KEY);
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
 
-		msg.append("classNameId=");
-		msg.append(classNameId);
+		sb.append("classNameId=");
+		sb.append(classNameId);
 
-		msg.append(", classPK=");
-		msg.append(classPK);
+		sb.append(", classPK=");
+		sb.append(classPK);
 
-		msg.append(StringPool.CLOSE_CURLY_BRACE);
+		sb.append("}");
 
-		throw new NoSuchActivityLimitException(msg.toString());
+		throw new NoSuchActivityLimitException(sb.toString());
 	}
 
 	/**
 	 * Returns the first social activity limit in the ordered set where classNameId = &#63; and classPK = &#63;.
 	 *
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching social activity limit, or <code>null</code> if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit fetchByC_C_First(long classNameId, long classPK,
+	public SocialActivityLimit fetchByC_C_First(
+		long classNameId, long classPK,
 		OrderByComparator<SocialActivityLimit> orderByComparator) {
-		List<SocialActivityLimit> list = findByC_C(classNameId, classPK, 0, 1,
-				orderByComparator);
+
+		List<SocialActivityLimit> list = findByC_C(
+			classNameId, classPK, 0, 1, orderByComparator);
 
 		if (!list.isEmpty()) {
 			return list.get(0);
@@ -1286,56 +1365,60 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * Returns the last social activity limit in the ordered set where classNameId = &#63; and classPK = &#63;.
 	 *
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching social activity limit
 	 * @throws NoSuchActivityLimitException if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit findByC_C_Last(long classNameId, long classPK,
-		OrderByComparator<SocialActivityLimit> orderByComparator)
+	public SocialActivityLimit findByC_C_Last(
+			long classNameId, long classPK,
+			OrderByComparator<SocialActivityLimit> orderByComparator)
 		throws NoSuchActivityLimitException {
-		SocialActivityLimit socialActivityLimit = fetchByC_C_Last(classNameId,
-				classPK, orderByComparator);
+
+		SocialActivityLimit socialActivityLimit = fetchByC_C_Last(
+			classNameId, classPK, orderByComparator);
 
 		if (socialActivityLimit != null) {
 			return socialActivityLimit;
 		}
 
-		StringBundler msg = new StringBundler(6);
+		StringBundler sb = new StringBundler(6);
 
-		msg.append(_NO_SUCH_ENTITY_WITH_KEY);
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
 
-		msg.append("classNameId=");
-		msg.append(classNameId);
+		sb.append("classNameId=");
+		sb.append(classNameId);
 
-		msg.append(", classPK=");
-		msg.append(classPK);
+		sb.append(", classPK=");
+		sb.append(classPK);
 
-		msg.append(StringPool.CLOSE_CURLY_BRACE);
+		sb.append("}");
 
-		throw new NoSuchActivityLimitException(msg.toString());
+		throw new NoSuchActivityLimitException(sb.toString());
 	}
 
 	/**
 	 * Returns the last social activity limit in the ordered set where classNameId = &#63; and classPK = &#63;.
 	 *
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching social activity limit, or <code>null</code> if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit fetchByC_C_Last(long classNameId, long classPK,
+	public SocialActivityLimit fetchByC_C_Last(
+		long classNameId, long classPK,
 		OrderByComparator<SocialActivityLimit> orderByComparator) {
+
 		int count = countByC_C(classNameId, classPK);
 
 		if (count == 0) {
 			return null;
 		}
 
-		List<SocialActivityLimit> list = findByC_C(classNameId, classPK,
-				count - 1, count, orderByComparator);
+		List<SocialActivityLimit> list = findByC_C(
+			classNameId, classPK, count - 1, count, orderByComparator);
 
 		if (!list.isEmpty()) {
 			return list.get(0);
@@ -1349,17 +1432,19 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 *
 	 * @param activityLimitId the primary key of the current social activity limit
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the previous, current, and next social activity limit
 	 * @throws NoSuchActivityLimitException if a social activity limit with the primary key could not be found
 	 */
 	@Override
-	public SocialActivityLimit[] findByC_C_PrevAndNext(long activityLimitId,
-		long classNameId, long classPK,
-		OrderByComparator<SocialActivityLimit> orderByComparator)
+	public SocialActivityLimit[] findByC_C_PrevAndNext(
+			long activityLimitId, long classNameId, long classPK,
+			OrderByComparator<SocialActivityLimit> orderByComparator)
 		throws NoSuchActivityLimitException {
-		SocialActivityLimit socialActivityLimit = findByPrimaryKey(activityLimitId);
+
+		SocialActivityLimit socialActivityLimit = findByPrimaryKey(
+			activityLimitId);
 
 		Session session = null;
 
@@ -1368,125 +1453,132 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 
 			SocialActivityLimit[] array = new SocialActivityLimitImpl[3];
 
-			array[0] = getByC_C_PrevAndNext(session, socialActivityLimit,
-					classNameId, classPK, orderByComparator, true);
+			array[0] = getByC_C_PrevAndNext(
+				session, socialActivityLimit, classNameId, classPK,
+				orderByComparator, true);
 
 			array[1] = socialActivityLimit;
 
-			array[2] = getByC_C_PrevAndNext(session, socialActivityLimit,
-					classNameId, classPK, orderByComparator, false);
+			array[2] = getByC_C_PrevAndNext(
+				session, socialActivityLimit, classNameId, classPK,
+				orderByComparator, false);
 
 			return array;
 		}
-		catch (Exception e) {
-			throw processException(e);
+		catch (Exception exception) {
+			throw processException(exception);
 		}
 		finally {
 			closeSession(session);
 		}
 	}
 
-	protected SocialActivityLimit getByC_C_PrevAndNext(Session session,
-		SocialActivityLimit socialActivityLimit, long classNameId,
-		long classPK, OrderByComparator<SocialActivityLimit> orderByComparator,
+	protected SocialActivityLimit getByC_C_PrevAndNext(
+		Session session, SocialActivityLimit socialActivityLimit,
+		long classNameId, long classPK,
+		OrderByComparator<SocialActivityLimit> orderByComparator,
 		boolean previous) {
-		StringBundler query = null;
+
+		StringBundler sb = null;
 
 		if (orderByComparator != null) {
-			query = new StringBundler(6 +
-					(orderByComparator.getOrderByFields().length * 6));
+			sb = new StringBundler(
+				5 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
 		}
 		else {
-			query = new StringBundler(3);
+			sb = new StringBundler(4);
 		}
 
-		query.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
+		sb.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
 
-		query.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
+		sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
 
-		query.append(_FINDER_COLUMN_C_C_CLASSPK_2);
+		sb.append(_FINDER_COLUMN_C_C_CLASSPK_2);
 
 		if (orderByComparator != null) {
-			String[] orderByConditionFields = orderByComparator.getOrderByConditionFields();
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
 
 			if (orderByConditionFields.length > 0) {
-				query.append(WHERE_AND);
+				sb.append(WHERE_AND);
 			}
 
 			for (int i = 0; i < orderByConditionFields.length; i++) {
-				query.append(_ORDER_BY_ENTITY_ALIAS);
-				query.append(orderByConditionFields[i]);
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
 
 				if ((i + 1) < orderByConditionFields.length) {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(WHERE_GREATER_THAN_HAS_NEXT);
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
 					}
 					else {
-						query.append(WHERE_LESSER_THAN_HAS_NEXT);
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
 					}
 				}
 				else {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(WHERE_GREATER_THAN);
+						sb.append(WHERE_GREATER_THAN);
 					}
 					else {
-						query.append(WHERE_LESSER_THAN);
+						sb.append(WHERE_LESSER_THAN);
 					}
 				}
 			}
 
-			query.append(ORDER_BY_CLAUSE);
+			sb.append(ORDER_BY_CLAUSE);
 
 			String[] orderByFields = orderByComparator.getOrderByFields();
 
 			for (int i = 0; i < orderByFields.length; i++) {
-				query.append(_ORDER_BY_ENTITY_ALIAS);
-				query.append(orderByFields[i]);
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
 
 				if ((i + 1) < orderByFields.length) {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(ORDER_BY_ASC_HAS_NEXT);
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
 					}
 					else {
-						query.append(ORDER_BY_DESC_HAS_NEXT);
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
 					}
 				}
 				else {
 					if (orderByComparator.isAscending() ^ previous) {
-						query.append(ORDER_BY_ASC);
+						sb.append(ORDER_BY_ASC);
 					}
 					else {
-						query.append(ORDER_BY_DESC);
+						sb.append(ORDER_BY_DESC);
 					}
 				}
 			}
 		}
 		else {
-			query.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
+			sb.append(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
 		}
 
-		String sql = query.toString();
+		String sql = sb.toString();
 
-		Query q = session.createQuery(sql);
+		Query query = session.createQuery(sql);
 
-		q.setFirstResult(0);
-		q.setMaxResults(2);
+		query.setFirstResult(0);
+		query.setMaxResults(2);
 
-		QueryPos qPos = QueryPos.getInstance(q);
+		QueryPos queryPos = QueryPos.getInstance(query);
 
-		qPos.add(classNameId);
+		queryPos.add(classNameId);
 
-		qPos.add(classPK);
+		queryPos.add(classPK);
 
 		if (orderByComparator != null) {
-			Object[] values = orderByComparator.getOrderByConditionValues(socialActivityLimit);
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						socialActivityLimit)) {
 
-			for (Object value : values) {
-				qPos.add(value);
+				queryPos.add(orderByConditionValue);
 			}
 		}
 
-		List<SocialActivityLimit> list = q.list();
+		List<SocialActivityLimit> list = query.list();
 
 		if (list.size() == 2) {
 			return list.get(1);
@@ -1500,12 +1592,15 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * Removes all the social activity limits where classNameId = &#63; and classPK = &#63; from the database.
 	 *
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 */
 	@Override
 	public void removeByC_C(long classNameId, long classPK) {
-		for (SocialActivityLimit socialActivityLimit : findByC_C(classNameId,
-				classPK, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+		for (SocialActivityLimit socialActivityLimit :
+				findByC_C(
+					classNameId, classPK, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					null)) {
+
 			remove(socialActivityLimit);
 		}
 	}
@@ -1514,50 +1609,59 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * Returns the number of social activity limits where classNameId = &#63; and classPK = &#63;.
 	 *
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @return the number of matching social activity limits
 	 */
 	@Override
 	public int countByC_C(long classNameId, long classPK) {
-		FinderPath finderPath = FINDER_PATH_COUNT_BY_C_C;
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialActivityLimit.class);
 
-		Object[] finderArgs = new Object[] { classNameId, classPK };
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs,
-				this);
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByC_C;
+
+			finderArgs = new Object[] {classNameId, classPK};
+
+			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		}
 
 		if (count == null) {
-			StringBundler query = new StringBundler(3);
+			StringBundler sb = new StringBundler(3);
 
-			query.append(_SQL_COUNT_SOCIALACTIVITYLIMIT_WHERE);
+			sb.append(_SQL_COUNT_SOCIALACTIVITYLIMIT_WHERE);
 
-			query.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
+			sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
 
-			query.append(_FINDER_COLUMN_C_C_CLASSPK_2);
+			sb.append(_FINDER_COLUMN_C_C_CLASSPK_2);
 
-			String sql = query.toString();
+			String sql = sb.toString();
 
 			Session session = null;
 
 			try {
 				session = openSession();
 
-				Query q = session.createQuery(sql);
+				Query query = session.createQuery(sql);
 
-				QueryPos qPos = QueryPos.getInstance(q);
+				QueryPos queryPos = QueryPos.getInstance(query);
 
-				qPos.add(classNameId);
+				queryPos.add(classNameId);
 
-				qPos.add(classPK);
+				queryPos.add(classPK);
 
-				count = (Long)q.uniqueResult();
+				count = (Long)query.uniqueResult();
 
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					FinderCacheUtil.putResult(finderPath, finderArgs, count);
+				}
 			}
-			catch (Exception e) {
-				FinderCacheUtil.removeResult(finderPath, finderArgs);
-
-				throw processException(e);
+			catch (Exception exception) {
+				throw processException(exception);
 			}
 			finally {
 				closeSession(session);
@@ -1567,81 +1671,67 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 		return count.intValue();
 	}
 
-	private static final String _FINDER_COLUMN_C_C_CLASSNAMEID_2 = "socialActivityLimit.classNameId = ? AND ";
-	private static final String _FINDER_COLUMN_C_C_CLASSPK_2 = "socialActivityLimit.classPK = ?";
-	public static final FinderPath FINDER_PATH_FETCH_BY_G_U_C_C_A_A = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED,
-			SocialActivityLimitImpl.class, FINDER_CLASS_NAME_ENTITY,
-			"fetchByG_U_C_C_A_A",
-			new String[] {
-				Long.class.getName(), Long.class.getName(), Long.class.getName(),
-				Long.class.getName(), Integer.class.getName(),
-				String.class.getName()
-			},
-			SocialActivityLimitModelImpl.GROUPID_COLUMN_BITMASK |
-			SocialActivityLimitModelImpl.USERID_COLUMN_BITMASK |
-			SocialActivityLimitModelImpl.CLASSNAMEID_COLUMN_BITMASK |
-			SocialActivityLimitModelImpl.CLASSPK_COLUMN_BITMASK |
-			SocialActivityLimitModelImpl.ACTIVITYTYPE_COLUMN_BITMASK |
-			SocialActivityLimitModelImpl.ACTIVITYCOUNTERNAME_COLUMN_BITMASK);
-	public static final FinderPath FINDER_PATH_COUNT_BY_G_U_C_C_A_A = new FinderPath(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitModelImpl.FINDER_CACHE_ENABLED, Long.class,
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_U_C_C_A_A",
-			new String[] {
-				Long.class.getName(), Long.class.getName(), Long.class.getName(),
-				Long.class.getName(), Integer.class.getName(),
-				String.class.getName()
-			});
+	private static final String _FINDER_COLUMN_C_C_CLASSNAMEID_2 =
+		"socialActivityLimit.classNameId = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_C_CLASSPK_2 =
+		"socialActivityLimit.classPK = ?";
+
+	private FinderPath _finderPathFetchByG_U_C_C_A_A;
+	private FinderPath _finderPathCountByG_U_C_C_A_A;
 
 	/**
-	 * Returns the social activity limit where groupId = &#63; and userId = &#63; and classNameId = &#63; and classPK = &#63; and activityType = &#63; and activityCounterName = &#63; or throws a {@link NoSuchActivityLimitException} if it could not be found.
+	 * Returns the social activity limit where groupId = &#63; and userId = &#63; and classNameId = &#63; and classPK = &#63; and activityType = &#63; and activityCounterName = &#63; or throws a <code>NoSuchActivityLimitException</code> if it could not be found.
 	 *
 	 * @param groupId the group ID
 	 * @param userId the user ID
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param activityType the activity type
 	 * @param activityCounterName the activity counter name
 	 * @return the matching social activity limit
 	 * @throws NoSuchActivityLimitException if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit findByG_U_C_C_A_A(long groupId, long userId,
-		long classNameId, long classPK, int activityType,
-		String activityCounterName) throws NoSuchActivityLimitException {
-		SocialActivityLimit socialActivityLimit = fetchByG_U_C_C_A_A(groupId,
-				userId, classNameId, classPK, activityType, activityCounterName);
+	public SocialActivityLimit findByG_U_C_C_A_A(
+			long groupId, long userId, long classNameId, long classPK,
+			int activityType, String activityCounterName)
+		throws NoSuchActivityLimitException {
+
+		SocialActivityLimit socialActivityLimit = fetchByG_U_C_C_A_A(
+			groupId, userId, classNameId, classPK, activityType,
+			activityCounterName);
 
 		if (socialActivityLimit == null) {
-			StringBundler msg = new StringBundler(14);
+			StringBundler sb = new StringBundler(14);
 
-			msg.append(_NO_SUCH_ENTITY_WITH_KEY);
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
 
-			msg.append("groupId=");
-			msg.append(groupId);
+			sb.append("groupId=");
+			sb.append(groupId);
 
-			msg.append(", userId=");
-			msg.append(userId);
+			sb.append(", userId=");
+			sb.append(userId);
 
-			msg.append(", classNameId=");
-			msg.append(classNameId);
+			sb.append(", classNameId=");
+			sb.append(classNameId);
 
-			msg.append(", classPK=");
-			msg.append(classPK);
+			sb.append(", classPK=");
+			sb.append(classPK);
 
-			msg.append(", activityType=");
-			msg.append(activityType);
+			sb.append(", activityType=");
+			sb.append(activityType);
 
-			msg.append(", activityCounterName=");
-			msg.append(activityCounterName);
+			sb.append(", activityCounterName=");
+			sb.append(activityCounterName);
 
-			msg.append(StringPool.CLOSE_CURLY_BRACE);
+			sb.append("}");
 
-			if (_log.isWarnEnabled()) {
-				_log.warn(msg.toString());
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
 			}
 
-			throw new NoSuchActivityLimitException(msg.toString());
+			throw new NoSuchActivityLimitException(sb.toString());
 		}
 
 		return socialActivityLimit;
@@ -1653,17 +1743,19 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @param groupId the group ID
 	 * @param userId the user ID
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param activityType the activity type
 	 * @param activityCounterName the activity counter name
 	 * @return the matching social activity limit, or <code>null</code> if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit fetchByG_U_C_C_A_A(long groupId, long userId,
-		long classNameId, long classPK, int activityType,
-		String activityCounterName) {
-		return fetchByG_U_C_C_A_A(groupId, userId, classNameId, classPK,
-			activityType, activityCounterName, true);
+	public SocialActivityLimit fetchByG_U_C_C_A_A(
+		long groupId, long userId, long classNameId, long classPK,
+		int activityType, String activityCounterName) {
+
+		return fetchByG_U_C_C_A_A(
+			groupId, userId, classNameId, classPK, activityType,
+			activityCounterName, true);
 	}
 
 	/**
@@ -1672,101 +1764,113 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @param groupId the group ID
 	 * @param userId the user ID
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param activityType the activity type
 	 * @param activityCounterName the activity counter name
-	 * @param retrieveFromCache whether to use the finder cache
+	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching social activity limit, or <code>null</code> if a matching social activity limit could not be found
 	 */
 	@Override
-	public SocialActivityLimit fetchByG_U_C_C_A_A(long groupId, long userId,
-		long classNameId, long classPK, int activityType,
-		String activityCounterName, boolean retrieveFromCache) {
-		Object[] finderArgs = new Object[] {
+	public SocialActivityLimit fetchByG_U_C_C_A_A(
+		long groupId, long userId, long classNameId, long classPK,
+		int activityType, String activityCounterName, boolean useFinderCache) {
+
+		activityCounterName = Objects.toString(activityCounterName, "");
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialActivityLimit.class);
+
+		Object[] finderArgs = null;
+
+		if (useFinderCache && productionMode) {
+			finderArgs = new Object[] {
 				groupId, userId, classNameId, classPK, activityType,
 				activityCounterName
 			};
+		}
 
 		Object result = null;
 
-		if (retrieveFromCache) {
-			result = FinderCacheUtil.getResult(FINDER_PATH_FETCH_BY_G_U_C_C_A_A,
-					finderArgs, this);
+		if (useFinderCache && productionMode) {
+			result = FinderCacheUtil.getResult(
+				_finderPathFetchByG_U_C_C_A_A, finderArgs);
 		}
 
 		if (result instanceof SocialActivityLimit) {
-			SocialActivityLimit socialActivityLimit = (SocialActivityLimit)result;
+			SocialActivityLimit socialActivityLimit =
+				(SocialActivityLimit)result;
 
 			if ((groupId != socialActivityLimit.getGroupId()) ||
-					(userId != socialActivityLimit.getUserId()) ||
-					(classNameId != socialActivityLimit.getClassNameId()) ||
-					(classPK != socialActivityLimit.getClassPK()) ||
-					(activityType != socialActivityLimit.getActivityType()) ||
-					!Validator.equals(activityCounterName,
-						socialActivityLimit.getActivityCounterName())) {
+				(userId != socialActivityLimit.getUserId()) ||
+				(classNameId != socialActivityLimit.getClassNameId()) ||
+				(classPK != socialActivityLimit.getClassPK()) ||
+				(activityType != socialActivityLimit.getActivityType()) ||
+				!Objects.equals(
+					activityCounterName,
+					socialActivityLimit.getActivityCounterName())) {
+
 				result = null;
 			}
 		}
 
 		if (result == null) {
-			StringBundler query = new StringBundler(8);
+			StringBundler sb = new StringBundler(8);
 
-			query.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
+			sb.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE);
 
-			query.append(_FINDER_COLUMN_G_U_C_C_A_A_GROUPID_2);
+			sb.append(_FINDER_COLUMN_G_U_C_C_A_A_GROUPID_2);
 
-			query.append(_FINDER_COLUMN_G_U_C_C_A_A_USERID_2);
+			sb.append(_FINDER_COLUMN_G_U_C_C_A_A_USERID_2);
 
-			query.append(_FINDER_COLUMN_G_U_C_C_A_A_CLASSNAMEID_2);
+			sb.append(_FINDER_COLUMN_G_U_C_C_A_A_CLASSNAMEID_2);
 
-			query.append(_FINDER_COLUMN_G_U_C_C_A_A_CLASSPK_2);
+			sb.append(_FINDER_COLUMN_G_U_C_C_A_A_CLASSPK_2);
 
-			query.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYTYPE_2);
+			sb.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYTYPE_2);
 
 			boolean bindActivityCounterName = false;
 
-			if (activityCounterName == null) {
-				query.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_1);
-			}
-			else if (activityCounterName.equals(StringPool.BLANK)) {
-				query.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_3);
+			if (activityCounterName.isEmpty()) {
+				sb.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_3);
 			}
 			else {
 				bindActivityCounterName = true;
 
-				query.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_2);
+				sb.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_2);
 			}
 
-			String sql = query.toString();
+			String sql = sb.toString();
 
 			Session session = null;
 
 			try {
 				session = openSession();
 
-				Query q = session.createQuery(sql);
+				Query query = session.createQuery(sql);
 
-				QueryPos qPos = QueryPos.getInstance(q);
+				QueryPos queryPos = QueryPos.getInstance(query);
 
-				qPos.add(groupId);
+				queryPos.add(groupId);
 
-				qPos.add(userId);
+				queryPos.add(userId);
 
-				qPos.add(classNameId);
+				queryPos.add(classNameId);
 
-				qPos.add(classPK);
+				queryPos.add(classPK);
 
-				qPos.add(activityType);
+				queryPos.add(activityType);
 
 				if (bindActivityCounterName) {
-					qPos.add(activityCounterName);
+					queryPos.add(activityCounterName);
 				}
 
-				List<SocialActivityLimit> list = q.list();
+				List<SocialActivityLimit> list = query.list();
 
 				if (list.isEmpty()) {
-					FinderCacheUtil.putResult(FINDER_PATH_FETCH_BY_G_U_C_C_A_A,
-						finderArgs, list);
+					if (useFinderCache && productionMode) {
+						FinderCacheUtil.putResult(
+							_finderPathFetchByG_U_C_C_A_A, finderArgs, list);
+					}
 				}
 				else {
 					SocialActivityLimit socialActivityLimit = list.get(0);
@@ -1774,25 +1878,10 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 					result = socialActivityLimit;
 
 					cacheResult(socialActivityLimit);
-
-					if ((socialActivityLimit.getGroupId() != groupId) ||
-							(socialActivityLimit.getUserId() != userId) ||
-							(socialActivityLimit.getClassNameId() != classNameId) ||
-							(socialActivityLimit.getClassPK() != classPK) ||
-							(socialActivityLimit.getActivityType() != activityType) ||
-							(socialActivityLimit.getActivityCounterName() == null) ||
-							!socialActivityLimit.getActivityCounterName()
-													.equals(activityCounterName)) {
-						FinderCacheUtil.putResult(FINDER_PATH_FETCH_BY_G_U_C_C_A_A,
-							finderArgs, socialActivityLimit);
-					}
 				}
 			}
-			catch (Exception e) {
-				FinderCacheUtil.removeResult(FINDER_PATH_FETCH_BY_G_U_C_C_A_A,
-					finderArgs);
-
-				throw processException(e);
+			catch (Exception exception) {
+				throw processException(exception);
 			}
 			finally {
 				closeSession(session);
@@ -1813,17 +1902,20 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @param groupId the group ID
 	 * @param userId the user ID
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param activityType the activity type
 	 * @param activityCounterName the activity counter name
 	 * @return the social activity limit that was removed
 	 */
 	@Override
-	public SocialActivityLimit removeByG_U_C_C_A_A(long groupId, long userId,
-		long classNameId, long classPK, int activityType,
-		String activityCounterName) throws NoSuchActivityLimitException {
-		SocialActivityLimit socialActivityLimit = findByG_U_C_C_A_A(groupId,
-				userId, classNameId, classPK, activityType, activityCounterName);
+	public SocialActivityLimit removeByG_U_C_C_A_A(
+			long groupId, long userId, long classNameId, long classPK,
+			int activityType, String activityCounterName)
+		throws NoSuchActivityLimitException {
+
+		SocialActivityLimit socialActivityLimit = findByG_U_C_C_A_A(
+			groupId, userId, classNameId, classPK, activityType,
+			activityCounterName);
 
 		return remove(socialActivityLimit);
 	}
@@ -1834,86 +1926,96 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @param groupId the group ID
 	 * @param userId the user ID
 	 * @param classNameId the class name ID
-	 * @param classPK the class p k
+	 * @param classPK the class pk
 	 * @param activityType the activity type
 	 * @param activityCounterName the activity counter name
 	 * @return the number of matching social activity limits
 	 */
 	@Override
-	public int countByG_U_C_C_A_A(long groupId, long userId, long classNameId,
-		long classPK, int activityType, String activityCounterName) {
-		FinderPath finderPath = FINDER_PATH_COUNT_BY_G_U_C_C_A_A;
+	public int countByG_U_C_C_A_A(
+		long groupId, long userId, long classNameId, long classPK,
+		int activityType, String activityCounterName) {
 
-		Object[] finderArgs = new Object[] {
+		activityCounterName = Objects.toString(activityCounterName, "");
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialActivityLimit.class);
+
+		FinderPath finderPath = null;
+		Object[] finderArgs = null;
+
+		Long count = null;
+
+		if (productionMode) {
+			finderPath = _finderPathCountByG_U_C_C_A_A;
+
+			finderArgs = new Object[] {
 				groupId, userId, classNameId, classPK, activityType,
 				activityCounterName
 			};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs,
-				this);
+			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		}
 
 		if (count == null) {
-			StringBundler query = new StringBundler(7);
+			StringBundler sb = new StringBundler(7);
 
-			query.append(_SQL_COUNT_SOCIALACTIVITYLIMIT_WHERE);
+			sb.append(_SQL_COUNT_SOCIALACTIVITYLIMIT_WHERE);
 
-			query.append(_FINDER_COLUMN_G_U_C_C_A_A_GROUPID_2);
+			sb.append(_FINDER_COLUMN_G_U_C_C_A_A_GROUPID_2);
 
-			query.append(_FINDER_COLUMN_G_U_C_C_A_A_USERID_2);
+			sb.append(_FINDER_COLUMN_G_U_C_C_A_A_USERID_2);
 
-			query.append(_FINDER_COLUMN_G_U_C_C_A_A_CLASSNAMEID_2);
+			sb.append(_FINDER_COLUMN_G_U_C_C_A_A_CLASSNAMEID_2);
 
-			query.append(_FINDER_COLUMN_G_U_C_C_A_A_CLASSPK_2);
+			sb.append(_FINDER_COLUMN_G_U_C_C_A_A_CLASSPK_2);
 
-			query.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYTYPE_2);
+			sb.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYTYPE_2);
 
 			boolean bindActivityCounterName = false;
 
-			if (activityCounterName == null) {
-				query.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_1);
-			}
-			else if (activityCounterName.equals(StringPool.BLANK)) {
-				query.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_3);
+			if (activityCounterName.isEmpty()) {
+				sb.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_3);
 			}
 			else {
 				bindActivityCounterName = true;
 
-				query.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_2);
+				sb.append(_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_2);
 			}
 
-			String sql = query.toString();
+			String sql = sb.toString();
 
 			Session session = null;
 
 			try {
 				session = openSession();
 
-				Query q = session.createQuery(sql);
+				Query query = session.createQuery(sql);
 
-				QueryPos qPos = QueryPos.getInstance(q);
+				QueryPos queryPos = QueryPos.getInstance(query);
 
-				qPos.add(groupId);
+				queryPos.add(groupId);
 
-				qPos.add(userId);
+				queryPos.add(userId);
 
-				qPos.add(classNameId);
+				queryPos.add(classNameId);
 
-				qPos.add(classPK);
+				queryPos.add(classPK);
 
-				qPos.add(activityType);
+				queryPos.add(activityType);
 
 				if (bindActivityCounterName) {
-					qPos.add(activityCounterName);
+					queryPos.add(activityCounterName);
 				}
 
-				count = (Long)q.uniqueResult();
+				count = (Long)query.uniqueResult();
 
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
+				if (productionMode) {
+					FinderCacheUtil.putResult(finderPath, finderArgs, count);
+				}
 			}
-			catch (Exception e) {
-				FinderCacheUtil.removeResult(finderPath, finderArgs);
-
-				throw processException(e);
+			catch (Exception exception) {
+				throw processException(exception);
 			}
 			finally {
 				closeSession(session);
@@ -1923,20 +2025,36 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 		return count.intValue();
 	}
 
-	private static final String _FINDER_COLUMN_G_U_C_C_A_A_GROUPID_2 = "socialActivityLimit.groupId = ? AND ";
-	private static final String _FINDER_COLUMN_G_U_C_C_A_A_USERID_2 = "socialActivityLimit.userId = ? AND ";
-	private static final String _FINDER_COLUMN_G_U_C_C_A_A_CLASSNAMEID_2 = "socialActivityLimit.classNameId = ? AND ";
-	private static final String _FINDER_COLUMN_G_U_C_C_A_A_CLASSPK_2 = "socialActivityLimit.classPK = ? AND ";
-	private static final String _FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYTYPE_2 = "socialActivityLimit.activityType = ? AND ";
-	private static final String _FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_1 =
-		"socialActivityLimit.activityCounterName IS NULL";
-	private static final String _FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_2 =
-		"socialActivityLimit.activityCounterName = ?";
-	private static final String _FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_3 =
-		"(socialActivityLimit.activityCounterName IS NULL OR socialActivityLimit.activityCounterName = '')";
+	private static final String _FINDER_COLUMN_G_U_C_C_A_A_GROUPID_2 =
+		"socialActivityLimit.groupId = ? AND ";
+
+	private static final String _FINDER_COLUMN_G_U_C_C_A_A_USERID_2 =
+		"socialActivityLimit.userId = ? AND ";
+
+	private static final String _FINDER_COLUMN_G_U_C_C_A_A_CLASSNAMEID_2 =
+		"socialActivityLimit.classNameId = ? AND ";
+
+	private static final String _FINDER_COLUMN_G_U_C_C_A_A_CLASSPK_2 =
+		"socialActivityLimit.classPK = ? AND ";
+
+	private static final String _FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYTYPE_2 =
+		"socialActivityLimit.activityType = ? AND ";
+
+	private static final String
+		_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_2 =
+			"socialActivityLimit.activityCounterName = ?";
+
+	private static final String
+		_FINDER_COLUMN_G_U_C_C_A_A_ACTIVITYCOUNTERNAME_3 =
+			"(socialActivityLimit.activityCounterName IS NULL OR socialActivityLimit.activityCounterName = '')";
 
 	public SocialActivityLimitPersistenceImpl() {
 		setModelClass(SocialActivityLimit.class);
+
+		setModelImplClass(SocialActivityLimitImpl.class);
+		setModelPKClass(long.class);
+
+		setTable(SocialActivityLimitTable.INSTANCE);
 	}
 
 	/**
@@ -1946,11 +2064,16 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 */
 	@Override
 	public void cacheResult(SocialActivityLimit socialActivityLimit) {
-		EntityCacheUtil.putResult(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
+		if (socialActivityLimit.getCtCollectionId() != 0) {
+			return;
+		}
+
+		EntityCacheUtil.putResult(
 			SocialActivityLimitImpl.class, socialActivityLimit.getPrimaryKey(),
 			socialActivityLimit);
 
-		FinderCacheUtil.putResult(FINDER_PATH_FETCH_BY_G_U_C_C_A_A,
+		FinderCacheUtil.putResult(
+			_finderPathFetchByG_U_C_C_A_A,
 			new Object[] {
 				socialActivityLimit.getGroupId(),
 				socialActivityLimit.getUserId(),
@@ -1958,10 +2081,11 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 				socialActivityLimit.getClassPK(),
 				socialActivityLimit.getActivityType(),
 				socialActivityLimit.getActivityCounterName()
-			}, socialActivityLimit);
-
-		socialActivityLimit.resetOriginalValues();
+			},
+			socialActivityLimit);
 	}
+
+	private int _valueObjectFinderCacheListThreshold;
 
 	/**
 	 * Caches the social activity limits in the entity cache if it is enabled.
@@ -1970,15 +2094,24 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 */
 	@Override
 	public void cacheResult(List<SocialActivityLimit> socialActivityLimits) {
+		if ((_valueObjectFinderCacheListThreshold == 0) ||
+			((_valueObjectFinderCacheListThreshold > 0) &&
+			 (socialActivityLimits.size() >
+				 _valueObjectFinderCacheListThreshold))) {
+
+			return;
+		}
+
 		for (SocialActivityLimit socialActivityLimit : socialActivityLimits) {
-			if (EntityCacheUtil.getResult(
-						SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-						SocialActivityLimitImpl.class,
-						socialActivityLimit.getPrimaryKey()) == null) {
-				cacheResult(socialActivityLimit);
+			if (socialActivityLimit.getCtCollectionId() != 0) {
+				continue;
 			}
-			else {
-				socialActivityLimit.resetOriginalValues();
+
+			if (EntityCacheUtil.getResult(
+					SocialActivityLimitImpl.class,
+					socialActivityLimit.getPrimaryKey()) == null) {
+
+				cacheResult(socialActivityLimit);
 			}
 		}
 	}
@@ -1987,119 +2120,63 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * Clears the cache for all social activity limits.
 	 *
 	 * <p>
-	 * The {@link com.liferay.portal.kernel.dao.orm.EntityCache} and {@link com.liferay.portal.kernel.dao.orm.FinderCache} are both cleared by this method.
+	 * The <code>EntityCache</code> and <code>FinderCache</code> are both cleared by this method.
 	 * </p>
 	 */
 	@Override
 	public void clearCache() {
 		EntityCacheUtil.clearCache(SocialActivityLimitImpl.class);
 
-		FinderCacheUtil.clearCache(FINDER_CLASS_NAME_ENTITY);
-		FinderCacheUtil.clearCache(FINDER_CLASS_NAME_LIST_WITH_PAGINATION);
-		FinderCacheUtil.clearCache(FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION);
+		FinderCacheUtil.clearCache(SocialActivityLimitImpl.class);
 	}
 
 	/**
 	 * Clears the cache for the social activity limit.
 	 *
 	 * <p>
-	 * The {@link com.liferay.portal.kernel.dao.orm.EntityCache} and {@link com.liferay.portal.kernel.dao.orm.FinderCache} are both cleared by this method.
+	 * The <code>EntityCache</code> and <code>FinderCache</code> are both cleared by this method.
 	 * </p>
 	 */
 	@Override
 	public void clearCache(SocialActivityLimit socialActivityLimit) {
-		EntityCacheUtil.removeResult(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitImpl.class, socialActivityLimit.getPrimaryKey());
-
-		FinderCacheUtil.clearCache(FINDER_CLASS_NAME_LIST_WITH_PAGINATION);
-		FinderCacheUtil.clearCache(FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION);
-
-		clearUniqueFindersCache(socialActivityLimit);
+		EntityCacheUtil.removeResult(
+			SocialActivityLimitImpl.class, socialActivityLimit);
 	}
 
 	@Override
 	public void clearCache(List<SocialActivityLimit> socialActivityLimits) {
-		FinderCacheUtil.clearCache(FINDER_CLASS_NAME_LIST_WITH_PAGINATION);
-		FinderCacheUtil.clearCache(FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION);
-
 		for (SocialActivityLimit socialActivityLimit : socialActivityLimits) {
-			EntityCacheUtil.removeResult(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-				SocialActivityLimitImpl.class,
-				socialActivityLimit.getPrimaryKey());
+			EntityCacheUtil.removeResult(
+				SocialActivityLimitImpl.class, socialActivityLimit);
+		}
+	}
 
-			clearUniqueFindersCache(socialActivityLimit);
+	@Override
+	public void clearCache(Set<Serializable> primaryKeys) {
+		FinderCacheUtil.clearCache(SocialActivityLimitImpl.class);
+
+		for (Serializable primaryKey : primaryKeys) {
+			EntityCacheUtil.removeResult(
+				SocialActivityLimitImpl.class, primaryKey);
 		}
 	}
 
 	protected void cacheUniqueFindersCache(
-		SocialActivityLimit socialActivityLimit, boolean isNew) {
-		if (isNew) {
-			Object[] args = new Object[] {
-					socialActivityLimit.getGroupId(),
-					socialActivityLimit.getUserId(),
-					socialActivityLimit.getClassNameId(),
-					socialActivityLimit.getClassPK(),
-					socialActivityLimit.getActivityType(),
-					socialActivityLimit.getActivityCounterName()
-				};
-
-			FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_G_U_C_C_A_A, args,
-				Long.valueOf(1));
-			FinderCacheUtil.putResult(FINDER_PATH_FETCH_BY_G_U_C_C_A_A, args,
-				socialActivityLimit);
-		}
-		else {
-			SocialActivityLimitModelImpl socialActivityLimitModelImpl = (SocialActivityLimitModelImpl)socialActivityLimit;
-
-			if ((socialActivityLimitModelImpl.getColumnBitmask() &
-					FINDER_PATH_FETCH_BY_G_U_C_C_A_A.getColumnBitmask()) != 0) {
-				Object[] args = new Object[] {
-						socialActivityLimit.getGroupId(),
-						socialActivityLimit.getUserId(),
-						socialActivityLimit.getClassNameId(),
-						socialActivityLimit.getClassPK(),
-						socialActivityLimit.getActivityType(),
-						socialActivityLimit.getActivityCounterName()
-					};
-
-				FinderCacheUtil.putResult(FINDER_PATH_COUNT_BY_G_U_C_C_A_A,
-					args, Long.valueOf(1));
-				FinderCacheUtil.putResult(FINDER_PATH_FETCH_BY_G_U_C_C_A_A,
-					args, socialActivityLimit);
-			}
-		}
-	}
-
-	protected void clearUniqueFindersCache(
-		SocialActivityLimit socialActivityLimit) {
-		SocialActivityLimitModelImpl socialActivityLimitModelImpl = (SocialActivityLimitModelImpl)socialActivityLimit;
+		SocialActivityLimitModelImpl socialActivityLimitModelImpl) {
 
 		Object[] args = new Object[] {
-				socialActivityLimit.getGroupId(),
-				socialActivityLimit.getUserId(),
-				socialActivityLimit.getClassNameId(),
-				socialActivityLimit.getClassPK(),
-				socialActivityLimit.getActivityType(),
-				socialActivityLimit.getActivityCounterName()
-			};
+			socialActivityLimitModelImpl.getGroupId(),
+			socialActivityLimitModelImpl.getUserId(),
+			socialActivityLimitModelImpl.getClassNameId(),
+			socialActivityLimitModelImpl.getClassPK(),
+			socialActivityLimitModelImpl.getActivityType(),
+			socialActivityLimitModelImpl.getActivityCounterName()
+		};
 
-		FinderCacheUtil.removeResult(FINDER_PATH_COUNT_BY_G_U_C_C_A_A, args);
-		FinderCacheUtil.removeResult(FINDER_PATH_FETCH_BY_G_U_C_C_A_A, args);
-
-		if ((socialActivityLimitModelImpl.getColumnBitmask() &
-				FINDER_PATH_FETCH_BY_G_U_C_C_A_A.getColumnBitmask()) != 0) {
-			args = new Object[] {
-					socialActivityLimitModelImpl.getOriginalGroupId(),
-					socialActivityLimitModelImpl.getOriginalUserId(),
-					socialActivityLimitModelImpl.getOriginalClassNameId(),
-					socialActivityLimitModelImpl.getOriginalClassPK(),
-					socialActivityLimitModelImpl.getOriginalActivityType(),
-					socialActivityLimitModelImpl.getOriginalActivityCounterName()
-				};
-
-			FinderCacheUtil.removeResult(FINDER_PATH_COUNT_BY_G_U_C_C_A_A, args);
-			FinderCacheUtil.removeResult(FINDER_PATH_FETCH_BY_G_U_C_C_A_A, args);
-		}
+		FinderCacheUtil.putResult(
+			_finderPathCountByG_U_C_C_A_A, args, Long.valueOf(1));
+		FinderCacheUtil.putResult(
+			_finderPathFetchByG_U_C_C_A_A, args, socialActivityLimitModelImpl);
 	}
 
 	/**
@@ -2115,6 +2192,8 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 		socialActivityLimit.setNew(true);
 		socialActivityLimit.setPrimaryKey(activityLimitId);
 
+		socialActivityLimit.setCompanyId(CompanyThreadLocal.getCompanyId());
+
 		return socialActivityLimit;
 	}
 
@@ -2128,6 +2207,7 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	@Override
 	public SocialActivityLimit remove(long activityLimitId)
 		throws NoSuchActivityLimitException {
+
 		return remove((Serializable)activityLimitId);
 	}
 
@@ -2141,30 +2221,32 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	@Override
 	public SocialActivityLimit remove(Serializable primaryKey)
 		throws NoSuchActivityLimitException {
+
 		Session session = null;
 
 		try {
 			session = openSession();
 
-			SocialActivityLimit socialActivityLimit = (SocialActivityLimit)session.get(SocialActivityLimitImpl.class,
-					primaryKey);
+			SocialActivityLimit socialActivityLimit =
+				(SocialActivityLimit)session.get(
+					SocialActivityLimitImpl.class, primaryKey);
 
 			if (socialActivityLimit == null) {
-				if (_log.isWarnEnabled()) {
-					_log.warn(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
+				if (_log.isDebugEnabled()) {
+					_log.debug(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
 				}
 
-				throw new NoSuchActivityLimitException(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY +
-					primaryKey);
+				throw new NoSuchActivityLimitException(
+					_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
 			}
 
 			return remove(socialActivityLimit);
 		}
-		catch (NoSuchActivityLimitException nsee) {
-			throw nsee;
+		catch (NoSuchActivityLimitException noSuchEntityException) {
+			throw noSuchEntityException;
 		}
-		catch (Exception e) {
-			throw processException(e);
+		catch (Exception exception) {
+			throw processException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -2174,7 +2256,6 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	@Override
 	protected SocialActivityLimit removeImpl(
 		SocialActivityLimit socialActivityLimit) {
-		socialActivityLimit = toUnwrappedModel(socialActivityLimit);
 
 		Session session = null;
 
@@ -2182,16 +2263,19 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 			session = openSession();
 
 			if (!session.contains(socialActivityLimit)) {
-				socialActivityLimit = (SocialActivityLimit)session.get(SocialActivityLimitImpl.class,
-						socialActivityLimit.getPrimaryKeyObj());
+				socialActivityLimit = (SocialActivityLimit)session.get(
+					SocialActivityLimitImpl.class,
+					socialActivityLimit.getPrimaryKeyObj());
 			}
 
-			if (socialActivityLimit != null) {
+			if ((socialActivityLimit != null) &&
+				CTPersistenceHelperUtil.isRemove(socialActivityLimit)) {
+
 				session.delete(socialActivityLimit);
 			}
 		}
-		catch (Exception e) {
-			throw processException(e);
+		catch (Exception exception) {
+			throw processException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -2207,135 +2291,82 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	@Override
 	public SocialActivityLimit updateImpl(
 		SocialActivityLimit socialActivityLimit) {
-		socialActivityLimit = toUnwrappedModel(socialActivityLimit);
 
 		boolean isNew = socialActivityLimit.isNew();
 
-		SocialActivityLimitModelImpl socialActivityLimitModelImpl = (SocialActivityLimitModelImpl)socialActivityLimit;
+		if (!(socialActivityLimit instanceof SocialActivityLimitModelImpl)) {
+			InvocationHandler invocationHandler = null;
+
+			if (ProxyUtil.isProxyClass(socialActivityLimit.getClass())) {
+				invocationHandler = ProxyUtil.getInvocationHandler(
+					socialActivityLimit);
+
+				throw new IllegalArgumentException(
+					"Implement ModelWrapper in socialActivityLimit proxy " +
+						invocationHandler.getClass());
+			}
+
+			throw new IllegalArgumentException(
+				"Implement ModelWrapper in custom SocialActivityLimit implementation " +
+					socialActivityLimit.getClass());
+		}
+
+		SocialActivityLimitModelImpl socialActivityLimitModelImpl =
+			(SocialActivityLimitModelImpl)socialActivityLimit;
 
 		Session session = null;
 
 		try {
 			session = openSession();
 
-			if (socialActivityLimit.isNew()) {
-				session.save(socialActivityLimit);
+			if (CTPersistenceHelperUtil.isInsert(socialActivityLimit)) {
+				if (!isNew) {
+					session.evict(
+						SocialActivityLimitImpl.class,
+						socialActivityLimit.getPrimaryKeyObj());
+				}
 
-				socialActivityLimit.setNew(false);
+				session.save(socialActivityLimit);
 			}
 			else {
-				socialActivityLimit = (SocialActivityLimit)session.merge(socialActivityLimit);
+				socialActivityLimit = (SocialActivityLimit)session.merge(
+					socialActivityLimit);
 			}
 		}
-		catch (Exception e) {
-			throw processException(e);
+		catch (Exception exception) {
+			throw processException(exception);
 		}
 		finally {
 			closeSession(session);
 		}
 
-		FinderCacheUtil.clearCache(FINDER_CLASS_NAME_LIST_WITH_PAGINATION);
+		if (socialActivityLimit.getCtCollectionId() != 0) {
+			if (isNew) {
+				socialActivityLimit.setNew(false);
+			}
 
-		if (isNew || !SocialActivityLimitModelImpl.COLUMN_BITMASK_ENABLED) {
-			FinderCacheUtil.clearCache(FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION);
+			socialActivityLimit.resetOriginalValues();
+
+			return socialActivityLimit;
 		}
 
-		else {
-			if ((socialActivityLimitModelImpl.getColumnBitmask() &
-					FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_GROUPID.getColumnBitmask()) != 0) {
-				Object[] args = new Object[] {
-						socialActivityLimitModelImpl.getOriginalGroupId()
-					};
+		EntityCacheUtil.putResult(
+			SocialActivityLimitImpl.class, socialActivityLimitModelImpl, false,
+			true);
 
-				FinderCacheUtil.removeResult(FINDER_PATH_COUNT_BY_GROUPID, args);
-				FinderCacheUtil.removeResult(FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_GROUPID,
-					args);
+		cacheUniqueFindersCache(socialActivityLimitModelImpl);
 
-				args = new Object[] { socialActivityLimitModelImpl.getGroupId() };
-
-				FinderCacheUtil.removeResult(FINDER_PATH_COUNT_BY_GROUPID, args);
-				FinderCacheUtil.removeResult(FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_GROUPID,
-					args);
-			}
-
-			if ((socialActivityLimitModelImpl.getColumnBitmask() &
-					FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_USERID.getColumnBitmask()) != 0) {
-				Object[] args = new Object[] {
-						socialActivityLimitModelImpl.getOriginalUserId()
-					};
-
-				FinderCacheUtil.removeResult(FINDER_PATH_COUNT_BY_USERID, args);
-				FinderCacheUtil.removeResult(FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_USERID,
-					args);
-
-				args = new Object[] { socialActivityLimitModelImpl.getUserId() };
-
-				FinderCacheUtil.removeResult(FINDER_PATH_COUNT_BY_USERID, args);
-				FinderCacheUtil.removeResult(FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_USERID,
-					args);
-			}
-
-			if ((socialActivityLimitModelImpl.getColumnBitmask() &
-					FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_C_C.getColumnBitmask()) != 0) {
-				Object[] args = new Object[] {
-						socialActivityLimitModelImpl.getOriginalClassNameId(),
-						socialActivityLimitModelImpl.getOriginalClassPK()
-					};
-
-				FinderCacheUtil.removeResult(FINDER_PATH_COUNT_BY_C_C, args);
-				FinderCacheUtil.removeResult(FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_C_C,
-					args);
-
-				args = new Object[] {
-						socialActivityLimitModelImpl.getClassNameId(),
-						socialActivityLimitModelImpl.getClassPK()
-					};
-
-				FinderCacheUtil.removeResult(FINDER_PATH_COUNT_BY_C_C, args);
-				FinderCacheUtil.removeResult(FINDER_PATH_WITHOUT_PAGINATION_FIND_BY_C_C,
-					args);
-			}
+		if (isNew) {
+			socialActivityLimit.setNew(false);
 		}
-
-		EntityCacheUtil.putResult(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-			SocialActivityLimitImpl.class, socialActivityLimit.getPrimaryKey(),
-			socialActivityLimit, false);
-
-		clearUniqueFindersCache((SocialActivityLimit)socialActivityLimitModelImpl);
-		cacheUniqueFindersCache((SocialActivityLimit)socialActivityLimitModelImpl,
-			isNew);
 
 		socialActivityLimit.resetOriginalValues();
 
 		return socialActivityLimit;
 	}
 
-	protected SocialActivityLimit toUnwrappedModel(
-		SocialActivityLimit socialActivityLimit) {
-		if (socialActivityLimit instanceof SocialActivityLimitImpl) {
-			return socialActivityLimit;
-		}
-
-		SocialActivityLimitImpl socialActivityLimitImpl = new SocialActivityLimitImpl();
-
-		socialActivityLimitImpl.setNew(socialActivityLimit.isNew());
-		socialActivityLimitImpl.setPrimaryKey(socialActivityLimit.getPrimaryKey());
-
-		socialActivityLimitImpl.setActivityLimitId(socialActivityLimit.getActivityLimitId());
-		socialActivityLimitImpl.setGroupId(socialActivityLimit.getGroupId());
-		socialActivityLimitImpl.setCompanyId(socialActivityLimit.getCompanyId());
-		socialActivityLimitImpl.setUserId(socialActivityLimit.getUserId());
-		socialActivityLimitImpl.setClassNameId(socialActivityLimit.getClassNameId());
-		socialActivityLimitImpl.setClassPK(socialActivityLimit.getClassPK());
-		socialActivityLimitImpl.setActivityType(socialActivityLimit.getActivityType());
-		socialActivityLimitImpl.setActivityCounterName(socialActivityLimit.getActivityCounterName());
-		socialActivityLimitImpl.setValue(socialActivityLimit.getValue());
-
-		return socialActivityLimitImpl;
-	}
-
 	/**
-	 * Returns the social activity limit with the primary key or throws a {@link com.liferay.portal.NoSuchModelException} if it could not be found.
+	 * Returns the social activity limit with the primary key or throws a <code>com.liferay.portal.kernel.exception.NoSuchModelException</code> if it could not be found.
 	 *
 	 * @param primaryKey the primary key of the social activity limit
 	 * @return the social activity limit
@@ -2344,22 +2375,23 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	@Override
 	public SocialActivityLimit findByPrimaryKey(Serializable primaryKey)
 		throws NoSuchActivityLimitException {
+
 		SocialActivityLimit socialActivityLimit = fetchByPrimaryKey(primaryKey);
 
 		if (socialActivityLimit == null) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
+			if (_log.isDebugEnabled()) {
+				_log.debug(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
 			}
 
-			throw new NoSuchActivityLimitException(_NO_SUCH_ENTITY_WITH_PRIMARY_KEY +
-				primaryKey);
+			throw new NoSuchActivityLimitException(
+				_NO_SUCH_ENTITY_WITH_PRIMARY_KEY + primaryKey);
 		}
 
 		return socialActivityLimit;
 	}
 
 	/**
-	 * Returns the social activity limit with the primary key or throws a {@link NoSuchActivityLimitException} if it could not be found.
+	 * Returns the social activity limit with the primary key or throws a <code>NoSuchActivityLimitException</code> if it could not be found.
 	 *
 	 * @param activityLimitId the primary key of the social activity limit
 	 * @return the social activity limit
@@ -2368,6 +2400,7 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	@Override
 	public SocialActivityLimit findByPrimaryKey(long activityLimitId)
 		throws NoSuchActivityLimitException {
+
 		return findByPrimaryKey((Serializable)activityLimitId);
 	}
 
@@ -2379,40 +2412,31 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 */
 	@Override
 	public SocialActivityLimit fetchByPrimaryKey(Serializable primaryKey) {
-		SocialActivityLimit socialActivityLimit = (SocialActivityLimit)EntityCacheUtil.getResult(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-				SocialActivityLimitImpl.class, primaryKey);
+		if (CTPersistenceHelperUtil.isProductionMode(
+				SocialActivityLimit.class)) {
 
-		if (socialActivityLimit == _nullSocialActivityLimit) {
-			return null;
+			return super.fetchByPrimaryKey(primaryKey);
 		}
 
-		if (socialActivityLimit == null) {
-			Session session = null;
+		SocialActivityLimit socialActivityLimit = null;
 
-			try {
-				session = openSession();
+		Session session = null;
 
-				socialActivityLimit = (SocialActivityLimit)session.get(SocialActivityLimitImpl.class,
-						primaryKey);
+		try {
+			session = openSession();
 
-				if (socialActivityLimit != null) {
-					cacheResult(socialActivityLimit);
-				}
-				else {
-					EntityCacheUtil.putResult(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-						SocialActivityLimitImpl.class, primaryKey,
-						_nullSocialActivityLimit);
-				}
+			socialActivityLimit = (SocialActivityLimit)session.get(
+				SocialActivityLimitImpl.class, primaryKey);
+
+			if (socialActivityLimit != null) {
+				cacheResult(socialActivityLimit);
 			}
-			catch (Exception e) {
-				EntityCacheUtil.removeResult(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-					SocialActivityLimitImpl.class, primaryKey);
-
-				throw processException(e);
-			}
-			finally {
-				closeSession(session);
-			}
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
 		}
 
 		return socialActivityLimit;
@@ -2432,18 +2456,27 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	@Override
 	public Map<Serializable, SocialActivityLimit> fetchByPrimaryKeys(
 		Set<Serializable> primaryKeys) {
+
+		if (CTPersistenceHelperUtil.isProductionMode(
+				SocialActivityLimit.class)) {
+
+			return super.fetchByPrimaryKeys(primaryKeys);
+		}
+
 		if (primaryKeys.isEmpty()) {
 			return Collections.emptyMap();
 		}
 
-		Map<Serializable, SocialActivityLimit> map = new HashMap<Serializable, SocialActivityLimit>();
+		Map<Serializable, SocialActivityLimit> map =
+			new HashMap<Serializable, SocialActivityLimit>();
 
 		if (primaryKeys.size() == 1) {
 			Iterator<Serializable> iterator = primaryKeys.iterator();
 
 			Serializable primaryKey = iterator.next();
 
-			SocialActivityLimit socialActivityLimit = fetchByPrimaryKey(primaryKey);
+			SocialActivityLimit socialActivityLimit = fetchByPrimaryKey(
+				primaryKey);
 
 			if (socialActivityLimit != null) {
 				map.put(primaryKey, socialActivityLimit);
@@ -2452,69 +2485,64 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 			return map;
 		}
 
-		Set<Serializable> uncachedPrimaryKeys = null;
+		if ((databaseInMaxParameters > 0) &&
+			(primaryKeys.size() > databaseInMaxParameters)) {
 
-		for (Serializable primaryKey : primaryKeys) {
-			SocialActivityLimit socialActivityLimit = (SocialActivityLimit)EntityCacheUtil.getResult(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-					SocialActivityLimitImpl.class, primaryKey);
+			Iterator<Serializable> iterator = primaryKeys.iterator();
 
-			if (socialActivityLimit == null) {
-				if (uncachedPrimaryKeys == null) {
-					uncachedPrimaryKeys = new HashSet<Serializable>();
+			while (iterator.hasNext()) {
+				Set<Serializable> page = new HashSet<>();
+
+				for (int i = 0;
+					 (i < databaseInMaxParameters) && iterator.hasNext(); i++) {
+
+					page.add(iterator.next());
 				}
 
-				uncachedPrimaryKeys.add(primaryKey);
+				map.putAll(fetchByPrimaryKeys(page));
 			}
-			else {
-				map.put(primaryKey, socialActivityLimit);
-			}
-		}
 
-		if (uncachedPrimaryKeys == null) {
 			return map;
 		}
 
-		StringBundler query = new StringBundler((uncachedPrimaryKeys.size() * 2) +
-				1);
+		StringBundler sb = new StringBundler((primaryKeys.size() * 2) + 1);
 
-		query.append(_SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE_PKS_IN);
+		sb.append(getSelectSQL());
+		sb.append(" WHERE ");
+		sb.append(getPKDBName());
+		sb.append(" IN (");
 
-		for (Serializable primaryKey : uncachedPrimaryKeys) {
-			query.append(String.valueOf(primaryKey));
+		for (Serializable primaryKey : primaryKeys) {
+			sb.append((long)primaryKey);
 
-			query.append(StringPool.COMMA);
+			sb.append(",");
 		}
 
-		query.setIndex(query.index() - 1);
+		sb.setIndex(sb.index() - 1);
 
-		query.append(StringPool.CLOSE_PARENTHESIS);
+		sb.append(")");
 
-		String sql = query.toString();
+		String sql = sb.toString();
 
 		Session session = null;
 
 		try {
 			session = openSession();
 
-			Query q = session.createQuery(sql);
+			Query query = session.createQuery(sql);
 
-			for (SocialActivityLimit socialActivityLimit : (List<SocialActivityLimit>)q.list()) {
-				map.put(socialActivityLimit.getPrimaryKeyObj(),
+			for (SocialActivityLimit socialActivityLimit :
+					(List<SocialActivityLimit>)query.list()) {
+
+				map.put(
+					socialActivityLimit.getPrimaryKeyObj(),
 					socialActivityLimit);
 
 				cacheResult(socialActivityLimit);
-
-				uncachedPrimaryKeys.remove(socialActivityLimit.getPrimaryKeyObj());
-			}
-
-			for (Serializable primaryKey : uncachedPrimaryKeys) {
-				EntityCacheUtil.putResult(SocialActivityLimitModelImpl.ENTITY_CACHE_ENABLED,
-					SocialActivityLimitImpl.class, primaryKey,
-					_nullSocialActivityLimit);
 			}
 		}
-		catch (Exception e) {
-			throw processException(e);
+		catch (Exception exception) {
+			throw processException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -2537,7 +2565,7 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * Returns a range of all the social activity limits.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link SocialActivityLimitModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
 	 * </p>
 	 *
 	 * @param start the lower bound of the range of social activity limits
@@ -2553,7 +2581,7 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * Returns an ordered range of all the social activity limits.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link SocialActivityLimitModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
 	 * </p>
 	 *
 	 * @param start the lower bound of the range of social activity limits
@@ -2562,47 +2590,77 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 * @return the ordered range of social activity limits
 	 */
 	@Override
-	public List<SocialActivityLimit> findAll(int start, int end,
+	public List<SocialActivityLimit> findAll(
+		int start, int end,
 		OrderByComparator<SocialActivityLimit> orderByComparator) {
-		boolean pagination = true;
+
+		return findAll(start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the social activity limits.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SocialActivityLimitModelImpl</code>.
+	 * </p>
+	 *
+	 * @param start the lower bound of the range of social activity limits
+	 * @param end the upper bound of the range of social activity limits (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of social activity limits
+	 */
+	@Override
+	public List<SocialActivityLimit> findAll(
+		int start, int end,
+		OrderByComparator<SocialActivityLimit> orderByComparator,
+		boolean useFinderCache) {
+
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialActivityLimit.class);
+
 		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
 		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-				(orderByComparator == null)) {
-			pagination = false;
-			finderPath = FINDER_PATH_WITHOUT_PAGINATION_FIND_ALL;
-			finderArgs = FINDER_ARGS_EMPTY;
+			(orderByComparator == null)) {
+
+			if (useFinderCache && productionMode) {
+				finderPath = _finderPathWithoutPaginationFindAll;
+				finderArgs = FINDER_ARGS_EMPTY;
+			}
 		}
-		else {
-			finderPath = FINDER_PATH_WITH_PAGINATION_FIND_ALL;
-			finderArgs = new Object[] { start, end, orderByComparator };
+		else if (useFinderCache && productionMode) {
+			finderPath = _finderPathWithPaginationFindAll;
+			finderArgs = new Object[] {start, end, orderByComparator};
 		}
 
-		List<SocialActivityLimit> list = (List<SocialActivityLimit>)FinderCacheUtil.getResult(finderPath,
-				finderArgs, this);
+		List<SocialActivityLimit> list = null;
+
+		if (useFinderCache && productionMode) {
+			list = (List<SocialActivityLimit>)FinderCacheUtil.getResult(
+				finderPath, finderArgs);
+		}
 
 		if (list == null) {
-			StringBundler query = null;
+			StringBundler sb = null;
 			String sql = null;
 
 			if (orderByComparator != null) {
-				query = new StringBundler(2 +
-						(orderByComparator.getOrderByFields().length * 3));
+				sb = new StringBundler(
+					2 + (orderByComparator.getOrderByFields().length * 2));
 
-				query.append(_SQL_SELECT_SOCIALACTIVITYLIMIT);
+				sb.append(_SQL_SELECT_SOCIALACTIVITYLIMIT);
 
-				appendOrderByComparator(query, _ORDER_BY_ENTITY_ALIAS,
-					orderByComparator);
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
 
-				sql = query.toString();
+				sql = sb.toString();
 			}
 			else {
 				sql = _SQL_SELECT_SOCIALACTIVITYLIMIT;
 
-				if (pagination) {
-					sql = sql.concat(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
-				}
+				sql = sql.concat(SocialActivityLimitModelImpl.ORDER_BY_JPQL);
 			}
 
 			Session session = null;
@@ -2610,29 +2668,19 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 			try {
 				session = openSession();
 
-				Query q = session.createQuery(sql);
+				Query query = session.createQuery(sql);
 
-				if (!pagination) {
-					list = (List<SocialActivityLimit>)QueryUtil.list(q,
-							getDialect(), start, end, false);
-
-					Collections.sort(list);
-
-					list = Collections.unmodifiableList(list);
-				}
-				else {
-					list = (List<SocialActivityLimit>)QueryUtil.list(q,
-							getDialect(), start, end);
-				}
+				list = (List<SocialActivityLimit>)QueryUtil.list(
+					query, getDialect(), start, end);
 
 				cacheResult(list);
 
-				FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (useFinderCache && productionMode) {
+					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				}
 			}
-			catch (Exception e) {
-				FinderCacheUtil.removeResult(finderPath, finderArgs);
-
-				throw processException(e);
+			catch (Exception exception) {
+				throw processException(exception);
 			}
 			finally {
 				closeSession(session);
@@ -2660,8 +2708,15 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	 */
 	@Override
 	public int countAll() {
-		Long count = (Long)FinderCacheUtil.getResult(FINDER_PATH_COUNT_ALL,
-				FINDER_ARGS_EMPTY, this);
+		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
+			SocialActivityLimit.class);
+
+		Long count = null;
+
+		if (productionMode) {
+			count = (Long)FinderCacheUtil.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY);
+		}
 
 		if (count == null) {
 			Session session = null;
@@ -2669,18 +2724,18 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 			try {
 				session = openSession();
 
-				Query q = session.createQuery(_SQL_COUNT_SOCIALACTIVITYLIMIT);
+				Query query = session.createQuery(
+					_SQL_COUNT_SOCIALACTIVITYLIMIT);
 
-				count = (Long)q.uniqueResult();
+				count = (Long)query.uniqueResult();
 
-				FinderCacheUtil.putResult(FINDER_PATH_COUNT_ALL,
-					FINDER_ARGS_EMPTY, count);
+				if (productionMode) {
+					FinderCacheUtil.putResult(
+						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
+				}
 			}
-			catch (Exception e) {
-				FinderCacheUtil.removeResult(FINDER_PATH_COUNT_ALL,
-					FINDER_ARGS_EMPTY);
-
-				throw processException(e);
+			catch (Exception exception) {
+				throw processException(exception);
 			}
 			finally {
 				closeSession(session);
@@ -2691,49 +2746,236 @@ public class SocialActivityLimitPersistenceImpl extends BasePersistenceImpl<Soci
 	}
 
 	@Override
-	protected Map<String, Integer> getTableColumnsMap() {
+	protected EntityCache getEntityCache() {
+		return EntityCacheUtil.getEntityCache();
+	}
+
+	@Override
+	protected String getPKDBName() {
+		return "activityLimitId";
+	}
+
+	@Override
+	protected String getSelectSQL() {
+		return _SQL_SELECT_SOCIALACTIVITYLIMIT;
+	}
+
+	@Override
+	public Set<String> getCTColumnNames(
+		CTColumnResolutionType ctColumnResolutionType) {
+
+		return _ctColumnNamesMap.getOrDefault(
+			ctColumnResolutionType, Collections.emptySet());
+	}
+
+	@Override
+	public List<String> getMappingTableNames() {
+		return _mappingTableNames;
+	}
+
+	@Override
+	public Map<String, Integer> getTableColumnsMap() {
 		return SocialActivityLimitModelImpl.TABLE_COLUMNS_MAP;
+	}
+
+	@Override
+	public String getTableName() {
+		return "SocialActivityLimit";
+	}
+
+	@Override
+	public List<String[]> getUniqueIndexColumnNames() {
+		return _uniqueIndexColumnNames;
+	}
+
+	private static final Map<CTColumnResolutionType, Set<String>>
+		_ctColumnNamesMap = new EnumMap<CTColumnResolutionType, Set<String>>(
+			CTColumnResolutionType.class);
+	private static final List<String> _mappingTableNames =
+		new ArrayList<String>();
+	private static final List<String[]> _uniqueIndexColumnNames =
+		new ArrayList<String[]>();
+
+	static {
+		Set<String> ctControlColumnNames = new HashSet<String>();
+		Set<String> ctStrictColumnNames = new HashSet<String>();
+
+		ctControlColumnNames.add("mvccVersion");
+		ctControlColumnNames.add("ctCollectionId");
+		ctStrictColumnNames.add("groupId");
+		ctStrictColumnNames.add("companyId");
+		ctStrictColumnNames.add("userId");
+		ctStrictColumnNames.add("classNameId");
+		ctStrictColumnNames.add("classPK");
+		ctStrictColumnNames.add("activityType");
+		ctStrictColumnNames.add("activityCounterName");
+		ctStrictColumnNames.add("value");
+
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.CONTROL, ctControlColumnNames);
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.PK,
+			Collections.singleton("activityLimitId"));
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.STRICT, ctStrictColumnNames);
+
+		_uniqueIndexColumnNames.add(
+			new String[] {
+				"groupId", "userId", "classNameId", "classPK", "activityType",
+				"activityCounterName"
+			});
 	}
 
 	/**
 	 * Initializes the social activity limit persistence.
 	 */
 	public void afterPropertiesSet() {
+		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
+			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
+
+		_finderPathWithPaginationFindAll = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findAll", new String[0],
+			new String[0], true);
+
+		_finderPathWithoutPaginationFindAll = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findAll", new String[0],
+			new String[0], true);
+
+		_finderPathCountAll = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countAll",
+			new String[0], new String[0], false);
+
+		_finderPathWithPaginationFindByGroupId = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByGroupId",
+			new String[] {
+				Long.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), OrderByComparator.class.getName()
+			},
+			new String[] {"groupId"}, true);
+
+		_finderPathWithoutPaginationFindByGroupId = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByGroupId",
+			new String[] {Long.class.getName()}, new String[] {"groupId"},
+			true);
+
+		_finderPathCountByGroupId = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByGroupId",
+			new String[] {Long.class.getName()}, new String[] {"groupId"},
+			false);
+
+		_finderPathWithPaginationFindByUserId = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUserId",
+			new String[] {
+				Long.class.getName(), Integer.class.getName(),
+				Integer.class.getName(), OrderByComparator.class.getName()
+			},
+			new String[] {"userId"}, true);
+
+		_finderPathWithoutPaginationFindByUserId = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByUserId",
+			new String[] {Long.class.getName()}, new String[] {"userId"}, true);
+
+		_finderPathCountByUserId = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUserId",
+			new String[] {Long.class.getName()}, new String[] {"userId"},
+			false);
+
+		_finderPathWithPaginationFindByC_C = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_C",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Integer.class.getName(), Integer.class.getName(),
+				OrderByComparator.class.getName()
+			},
+			new String[] {"classNameId", "classPK"}, true);
+
+		_finderPathWithoutPaginationFindByC_C = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByC_C",
+			new String[] {Long.class.getName(), Long.class.getName()},
+			new String[] {"classNameId", "classPK"}, true);
+
+		_finderPathCountByC_C = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_C",
+			new String[] {Long.class.getName(), Long.class.getName()},
+			new String[] {"classNameId", "classPK"}, false);
+
+		_finderPathFetchByG_U_C_C_A_A = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByG_U_C_C_A_A",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Long.class.getName(), Long.class.getName(),
+				Integer.class.getName(), String.class.getName()
+			},
+			new String[] {
+				"groupId", "userId", "classNameId", "classPK", "activityType",
+				"activityCounterName"
+			},
+			true);
+
+		_finderPathCountByG_U_C_C_A_A = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_U_C_C_A_A",
+			new String[] {
+				Long.class.getName(), Long.class.getName(),
+				Long.class.getName(), Long.class.getName(),
+				Integer.class.getName(), String.class.getName()
+			},
+			new String[] {
+				"groupId", "userId", "classNameId", "classPK", "activityType",
+				"activityCounterName"
+			},
+			false);
+
+		_setSocialActivityLimitUtilPersistence(this);
 	}
 
 	public void destroy() {
+		_setSocialActivityLimitUtilPersistence(null);
+
 		EntityCacheUtil.removeCache(SocialActivityLimitImpl.class.getName());
-		FinderCacheUtil.removeCache(FINDER_CLASS_NAME_ENTITY);
-		FinderCacheUtil.removeCache(FINDER_CLASS_NAME_LIST_WITH_PAGINATION);
-		FinderCacheUtil.removeCache(FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION);
 	}
 
-	private static final String _SQL_SELECT_SOCIALACTIVITYLIMIT = "SELECT socialActivityLimit FROM SocialActivityLimit socialActivityLimit";
-	private static final String _SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE_PKS_IN = "SELECT socialActivityLimit FROM SocialActivityLimit socialActivityLimit WHERE activityLimitId IN (";
-	private static final String _SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE = "SELECT socialActivityLimit FROM SocialActivityLimit socialActivityLimit WHERE ";
-	private static final String _SQL_COUNT_SOCIALACTIVITYLIMIT = "SELECT COUNT(socialActivityLimit) FROM SocialActivityLimit socialActivityLimit";
-	private static final String _SQL_COUNT_SOCIALACTIVITYLIMIT_WHERE = "SELECT COUNT(socialActivityLimit) FROM SocialActivityLimit socialActivityLimit WHERE ";
+	private void _setSocialActivityLimitUtilPersistence(
+		SocialActivityLimitPersistence socialActivityLimitPersistence) {
+
+		try {
+			Field field = SocialActivityLimitUtil.class.getDeclaredField(
+				"_persistence");
+
+			field.setAccessible(true);
+
+			field.set(null, socialActivityLimitPersistence);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new RuntimeException(reflectiveOperationException);
+		}
+	}
+
+	private static final String _SQL_SELECT_SOCIALACTIVITYLIMIT =
+		"SELECT socialActivityLimit FROM SocialActivityLimit socialActivityLimit";
+
+	private static final String _SQL_SELECT_SOCIALACTIVITYLIMIT_WHERE =
+		"SELECT socialActivityLimit FROM SocialActivityLimit socialActivityLimit WHERE ";
+
+	private static final String _SQL_COUNT_SOCIALACTIVITYLIMIT =
+		"SELECT COUNT(socialActivityLimit) FROM SocialActivityLimit socialActivityLimit";
+
+	private static final String _SQL_COUNT_SOCIALACTIVITYLIMIT_WHERE =
+		"SELECT COUNT(socialActivityLimit) FROM SocialActivityLimit socialActivityLimit WHERE ";
+
 	private static final String _ORDER_BY_ENTITY_ALIAS = "socialActivityLimit.";
-	private static final String _NO_SUCH_ENTITY_WITH_PRIMARY_KEY = "No SocialActivityLimit exists with the primary key ";
-	private static final String _NO_SUCH_ENTITY_WITH_KEY = "No SocialActivityLimit exists with the key {";
-	private static final Log _log = LogFactoryUtil.getLog(SocialActivityLimitPersistenceImpl.class);
-	private static final SocialActivityLimit _nullSocialActivityLimit = new SocialActivityLimitImpl() {
-			@Override
-			public Object clone() {
-				return this;
-			}
 
-			@Override
-			public CacheModel<SocialActivityLimit> toCacheModel() {
-				return _nullSocialActivityLimitCacheModel;
-			}
-		};
+	private static final String _NO_SUCH_ENTITY_WITH_PRIMARY_KEY =
+		"No SocialActivityLimit exists with the primary key ";
 
-	private static final CacheModel<SocialActivityLimit> _nullSocialActivityLimitCacheModel =
-		new CacheModel<SocialActivityLimit>() {
-			@Override
-			public SocialActivityLimit toEntityModel() {
-				return _nullSocialActivityLimit;
-			}
-		};
+	private static final String _NO_SUCH_ENTITY_WITH_KEY =
+		"No SocialActivityLimit exists with the key {";
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		SocialActivityLimitPersistenceImpl.class);
+
+	@Override
+	protected FinderCache getFinderCache() {
+		return FinderCacheUtil.getFinderCache();
+	}
+
 }

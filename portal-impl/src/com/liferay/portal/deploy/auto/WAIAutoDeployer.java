@@ -14,16 +14,15 @@
 
 package com.liferay.portal.deploy.auto;
 
-import com.liferay.portal.kernel.deploy.auto.AutoDeployException;
 import com.liferay.portal.kernel.plugin.PluginPackage;
 import com.liferay.portal.kernel.portlet.DefaultFriendlyURLMapper;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.util.bridges.wai.WAIPortlet;
 
 import java.io.File;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
@@ -32,15 +31,6 @@ import java.util.Properties;
  * @author Connor McKay
  */
 public class WAIAutoDeployer extends PortletAutoDeployer {
-
-	public WAIAutoDeployer() throws AutoDeployException {
-		try {
-			addRequiredJar(jars, "portals-bridges.jar");
-		}
-		catch (Exception e) {
-			throw new AutoDeployException(e);
-		}
-	}
 
 	@Override
 	public void copyXmls(
@@ -62,10 +52,11 @@ public class WAIAutoDeployer extends PortletAutoDeployer {
 			portletName = pluginPackage.getName();
 		}
 
-		Map<String, String> filterMap = new HashMap<>();
-
-		filterMap.put("portlet_name", displayName);
-		filterMap.put("portlet_title", portletName);
+		Map<String, String> filterMap = HashMapBuilder.put(
+			"portlet_name", displayName
+		).put(
+			"portlet_title", portletName
+		).build();
 
 		if (pluginPackage != null) {
 			Properties deploymentSettings =
@@ -91,8 +82,8 @@ public class WAIAutoDeployer extends PortletAutoDeployer {
 				"friendly_url_routes",
 				deploymentSettings.getProperty(
 					"wai.friendly.url.routes",
-					"com/liferay/util/bridges/wai/" +
-						"wai-friendly-url-routes.xml"));
+					"com/liferay/util/bridges/wai" +
+						"/wai-friendly-url-routes.xml"));
 		}
 		else {
 			filterMap.put("portlet_class", WAIPortlet.class.getName());
@@ -142,11 +133,9 @@ public class WAIAutoDeployer extends PortletAutoDeployer {
 		}
 	}
 
-	private static final String[] _INIT_PARAM_DEFAULT_VALUES = new String[] {
-		"500"
-	};
+	private static final String[] _INIT_PARAM_DEFAULT_VALUES = {"500"};
 
-	private static final String[] _INIT_PARAM_NAMES = new String[] {
+	private static final String[] _INIT_PARAM_NAMES = {
 		"wai.connector.iframe.height.default"
 	};
 

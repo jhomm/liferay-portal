@@ -14,7 +14,7 @@
 
 package com.liferay.portal.kernel.test;
 
-import com.liferay.portal.kernel.util.ReflectionUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
@@ -39,8 +39,8 @@ public class SyncThrowableThread<V> extends Thread {
 
 			return _futureTask.get();
 		}
-		catch (Throwable t) {
-			return ReflectionUtil.throwException(t);
+		catch (Throwable throwable) {
+			return ReflectionUtil.throwException(throwable);
 		}
 	}
 

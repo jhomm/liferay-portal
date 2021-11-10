@@ -1,0 +1,92 @@
+definition {
+
+	macro setAllowManualMembershipManagement {
+		if ("${allowManualMembershipManagement}" == "false") {
+			var manualMembership = "false";
+		}
+
+		else {
+			var manualMembership = "true";
+		}
+
+		return "${manualMembership}";
+	}
+
+	macro setGrandParentGroupId {
+		if (isSet(grandParentGroupName)) {
+			if (!(isSet(site))) {
+				var site = "true";
+			}
+
+			var grandParentGroupId = JSONGroupAPI._getGrandParentGroupIdByName(groupName = "${grandParentGroupName}", site = "${site}");
+		}
+		else {
+			var grandParentGroupId = "0";
+		}
+
+		return "${grandParentGroupId}";
+	}
+
+	macro setGroupDescriptionMap {
+		if (isSet(groupDescription)) {
+			var groupDescription = URLUtil.encodeUTF8("${groupDescription}");
+
+			var groupDescriptionMap = '''{"en_US":"${groupDescriptionEncoded}"}''';
+		}
+		else {
+			var groupDescriptionMap = "{}";
+		}
+
+		return "${groupDescriptionMap}";
+	}
+
+	macro setGroupId {
+		Variables.assertDefined(parameterList = "${groupName}");
+
+		if (!(isSet(site))) {
+			var site = "true";
+		}
+
+		var groupId = JSONGroupAPI._getGroupIdByName(groupName = "${groupName}", parentGroupName = "${parentGroupName}", portalURL = "${portalURL}", site = "${site}");
+
+		return "${groupId}";
+	}
+
+	macro setGroupNameMap {
+		Variables.assertDefined(parameterList = "${groupName}");
+
+		var groupNameMap = URLUtil.encodeUTF8("${groupName}");
+
+		var groupNameMap = '''{"en_US":"${groupName}"}''';
+
+		return "${groupNameMap}";
+	}
+
+	macro setMembershipType {
+		if ("${membershipType}" == "Private") {
+			var type = "3";
+		}
+
+		else if ("${membershipType}" == "Restricted") {
+			var type = "2";
+		}
+
+		else {
+			var type = "1";
+		}
+
+		return "${type}";
+	}
+
+	macro setParentGroupId {
+		if (isSet(parentGroupName)) {
+			var parentGroupId = JSONGroupAPI._getParentGroupIdByName(groupName = "${parentGroupName}", grandParentGroupName = "${grandParentGroupName}");
+		}
+		else {
+			var parentGroupId = "0";
+		}
+
+		return "${parentGroupId}";
+	}
+
+}

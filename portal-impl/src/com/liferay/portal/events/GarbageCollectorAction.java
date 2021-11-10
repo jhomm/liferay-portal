@@ -14,6 +14,7 @@
 
 package com.liferay.portal.events;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.events.SessionAction;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -28,27 +29,27 @@ import javax.servlet.http.HttpSession;
 public class GarbageCollectorAction extends SessionAction {
 
 	@Override
-	public void run(HttpSession session) {
+	public void run(HttpSession httpSession) {
 		Runtime runtime = Runtime.getRuntime();
 
 		NumberFormat nf = NumberFormat.getInstance();
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Before:\t\t" +
-					nf.format(runtime.freeMemory()) + "\t" +
-						nf.format(runtime.totalMemory()) + "\t" +
-							nf.format(runtime.maxMemory()));
+				StringBundler.concat(
+					"Before:\t\t", nf.format(runtime.freeMemory()), "\t",
+					nf.format(runtime.totalMemory()), "\t",
+					nf.format(runtime.maxMemory())));
 		}
 
 		System.gc();
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"After:\t\t" +
-					nf.format(runtime.freeMemory()) + "\t" +
-						nf.format(runtime.totalMemory()) + "\t" +
-							nf.format(runtime.maxMemory()));
+				StringBundler.concat(
+					"After:\t\t", nf.format(runtime.freeMemory()), "\t",
+					nf.format(runtime.totalMemory()), "\t",
+					nf.format(runtime.maxMemory())));
 		}
 	}
 

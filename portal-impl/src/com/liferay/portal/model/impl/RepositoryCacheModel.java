@@ -14,14 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.Repository;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.Repository;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -34,26 +31,27 @@ import java.util.Date;
  * The cache model class for representing Repository in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see Repository
  * @generated
  */
-@ProviderType
-public class RepositoryCacheModel implements CacheModel<Repository>,
-	Externalizable, MVCCModel {
+public class RepositoryCacheModel
+	implements CacheModel<Repository>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof RepositoryCacheModel)) {
+		if (!(object instanceof RepositoryCacheModel)) {
 			return false;
 		}
 
-		RepositoryCacheModel repositoryCacheModel = (RepositoryCacheModel)obj;
+		RepositoryCacheModel repositoryCacheModel =
+			(RepositoryCacheModel)object;
 
 		if ((repositoryId == repositoryCacheModel.repositoryId) &&
-				(mvccVersion == repositoryCacheModel.mvccVersion)) {
+			(mvccVersion == repositoryCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -125,7 +123,7 @@ public class RepositoryCacheModel implements CacheModel<Repository>,
 		repositoryImpl.setMvccVersion(mvccVersion);
 
 		if (uuid == null) {
-			repositoryImpl.setUuid(StringPool.BLANK);
+			repositoryImpl.setUuid("");
 		}
 		else {
 			repositoryImpl.setUuid(uuid);
@@ -137,7 +135,7 @@ public class RepositoryCacheModel implements CacheModel<Repository>,
 		repositoryImpl.setUserId(userId);
 
 		if (userName == null) {
-			repositoryImpl.setUserName(StringPool.BLANK);
+			repositoryImpl.setUserName("");
 		}
 		else {
 			repositoryImpl.setUserName(userName);
@@ -160,28 +158,28 @@ public class RepositoryCacheModel implements CacheModel<Repository>,
 		repositoryImpl.setClassNameId(classNameId);
 
 		if (name == null) {
-			repositoryImpl.setName(StringPool.BLANK);
+			repositoryImpl.setName("");
 		}
 		else {
 			repositoryImpl.setName(name);
 		}
 
 		if (description == null) {
-			repositoryImpl.setDescription(StringPool.BLANK);
+			repositoryImpl.setDescription("");
 		}
 		else {
 			repositoryImpl.setDescription(description);
 		}
 
 		if (portletId == null) {
-			repositoryImpl.setPortletId(StringPool.BLANK);
+			repositoryImpl.setPortletId("");
 		}
 		else {
 			repositoryImpl.setPortletId(portletId);
 		}
 
 		if (typeSettings == null) {
-			repositoryImpl.setTypeSettings(StringPool.BLANK);
+			repositoryImpl.setTypeSettings("");
 		}
 		else {
 			repositoryImpl.setTypeSettings(typeSettings);
@@ -202,44 +200,54 @@ public class RepositoryCacheModel implements CacheModel<Repository>,
 	}
 
 	@Override
-	public void readExternal(ObjectInput objectInput) throws IOException {
+	public void readExternal(ObjectInput objectInput)
+		throws ClassNotFoundException, IOException {
+
 		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
+
 		repositoryId = objectInput.readLong();
+
 		groupId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
+
 		userId = objectInput.readLong();
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
+
 		classNameId = objectInput.readLong();
 		name = objectInput.readUTF();
 		description = objectInput.readUTF();
 		portletId = objectInput.readUTF();
-		typeSettings = objectInput.readUTF();
+		typeSettings = (String)objectInput.readObject();
+
 		dlFolderId = objectInput.readLong();
 		lastPublishDate = objectInput.readLong();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
 
 		if (uuid == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(uuid);
 		}
 
 		objectOutput.writeLong(repositoryId);
+
 		objectOutput.writeLong(groupId);
+
 		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(userId);
 
 		if (userName == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(userName);
@@ -247,34 +255,35 @@ public class RepositoryCacheModel implements CacheModel<Repository>,
 
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
+
 		objectOutput.writeLong(classNameId);
 
 		if (name == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(name);
 		}
 
 		if (description == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(description);
 		}
 
 		if (portletId == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(portletId);
 		}
 
 		if (typeSettings == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeObject("");
 		}
 		else {
-			objectOutput.writeUTF(typeSettings);
+			objectOutput.writeObject(typeSettings);
 		}
 
 		objectOutput.writeLong(dlFolderId);
@@ -297,4 +306,5 @@ public class RepositoryCacheModel implements CacheModel<Repository>,
 	public String typeSettings;
 	public long dlFolderId;
 	public long lastPublishDate;
+
 }

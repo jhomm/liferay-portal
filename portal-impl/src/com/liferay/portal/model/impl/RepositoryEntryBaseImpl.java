@@ -14,10 +14,8 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.model.RepositoryEntry;
-import com.liferay.portal.service.RepositoryEntryLocalServiceUtil;
+import com.liferay.portal.kernel.model.RepositoryEntry;
+import com.liferay.portal.kernel.service.RepositoryEntryLocalServiceUtil;
 
 /**
  * The extended model base implementation for the RepositoryEntry service. Represents a row in the &quot;RepositoryEntry&quot; database table, with each column mapped to a property of this class.
@@ -31,13 +29,13 @@ import com.liferay.portal.service.RepositoryEntryLocalServiceUtil;
  * @see RepositoryEntry
  * @generated
  */
-@ProviderType
-public abstract class RepositoryEntryBaseImpl extends RepositoryEntryModelImpl
-	implements RepositoryEntry {
+public abstract class RepositoryEntryBaseImpl
+	extends RepositoryEntryModelImpl implements RepositoryEntry {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. All methods that expect a repository entry model instance should use the {@link RepositoryEntry} interface instead.
+	 * Never modify or reference this class directly. All methods that expect a repository entry model instance should use the <code>RepositoryEntry</code> interface instead.
 	 */
 	@Override
 	public void persist() {
@@ -48,4 +46,5 @@ public abstract class RepositoryEntryBaseImpl extends RepositoryEntryModelImpl
 			RepositoryEntryLocalServiceUtil.updateRepositoryEntry(this);
 		}
 	}
+
 }

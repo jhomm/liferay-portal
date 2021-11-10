@@ -16,13 +16,15 @@ package com.liferay.portal.model.impl;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.PluginSetting;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserGroupRoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.model.PluginSetting;
-import com.liferay.portal.model.RoleConstants;
-import com.liferay.portal.model.User;
-import com.liferay.portal.service.RoleLocalServiceUtil;
-import com.liferay.portal.service.UserLocalServiceUtil;
 
 /**
  * @author Brian Wing Shun Chan
@@ -37,7 +39,7 @@ public class PluginSettingImpl extends PluginSettingBaseImpl {
 		setPluginId(pluginSetting.getPluginId());
 		setPluginType(pluginSetting.getPluginType());
 		setRoles(pluginSetting.getRoles());
-		setActive(pluginSetting.getActive());
+		setActive(pluginSetting.isActive());
 	}
 
 	/**
@@ -66,15 +68,35 @@ public class PluginSettingImpl extends PluginSettingBaseImpl {
 	 */
 	@Override
 	public boolean hasPermission(long userId) {
+		return hasPermission(userId, 0);
+	}
+
+	/**
+	 * Returns <code>true</code> if the user has permission to use this plugin
+	 *
+	 * @param  userId the primary key of the user
+	 * @param  groupId the primary key of the group
+	 * @return <code>true</code> if the user has permission to use this plugin
+	 */
+	@Override
+	public boolean hasPermission(long userId, long groupId) {
 		try {
 			if (_rolesArray.length == 0) {
 				return true;
 			}
 
-			if (RoleLocalServiceUtil.hasUserRoles(
-					userId, getCompanyId(), _rolesArray, true)) {
+			for (String roleName : _rolesArray) {
+				Role role = RoleLocalServiceUtil.getRole(
+					getCompanyId(), roleName);
 
-				return true;
+				if (((role.getType() == RoleConstants.TYPE_REGULAR) &&
+					 RoleLocalServiceUtil.hasUserRole(
+						 userId, getCompanyId(), roleName, true)) ||
+					UserGroupRoleLocalServiceUtil.hasUserGroupRole(
+						userId, groupId, roleName, true)) {
+
+					return true;
+				}
 			}
 
 			if (RoleLocalServiceUtil.hasUserRole(
@@ -90,8 +112,10 @@ public class PluginSettingImpl extends PluginSettingBaseImpl {
 				return true;
 			}
 		}
-		catch (Exception e) {
-			_log.error(e);
+		catch (Exception exception) {
+			_log.error(
+				"Unable to check if user " + userId + " has permission",
+				exception);
 		}
 
 		return false;
@@ -107,8 +131,8 @@ public class PluginSettingImpl extends PluginSettingBaseImpl {
 	 */
 	@Override
 	public boolean hasRoleWithName(String roleName) {
-		for (int i = 0; i < _rolesArray.length; i++) {
-			if (StringUtil.equalsIgnoreCase(_rolesArray[i], roleName)) {
+		for (String curRoleName : _rolesArray) {
+			if (StringUtil.equalsIgnoreCase(curRoleName, roleName)) {
 				return true;
 			}
 		}

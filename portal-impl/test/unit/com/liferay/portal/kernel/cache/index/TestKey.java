@@ -14,7 +14,7 @@
 
 package com.liferay.portal.kernel.cache.index;
 
-import com.liferay.portal.kernel.util.HashUtil;
+import com.liferay.petra.lang.HashUtil;
 
 import java.io.Serializable;
 
@@ -29,8 +29,8 @@ public class TestKey implements Serializable {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		TestKey testKey = (TestKey)obj;
+	public boolean equals(Object object) {
+		TestKey testKey = (TestKey)object;
 
 		if ((testKey._indexedLong == _indexedLong) &&
 			(testKey._unindexedLong == _unindexedLong)) {

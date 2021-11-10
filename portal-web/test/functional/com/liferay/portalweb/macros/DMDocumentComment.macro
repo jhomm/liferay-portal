@@ -1,40 +1,36 @@
-<definition>
-	<command name="addPG">
-		<var name="key_dmDocumentTitle" value="${dmDocumentTitle}" />
+definition {
 
-		<execute function="AssertClick" locator1="DocumentsAndMedia#ICON_DOCUMENT_TITLE" value1="${dmDocumentTitle}" />
+	macro addPG {
+		AssertClick(
+			key_dmDocumentTitle = "${dmDocumentTitle}",
+			locator1 = "DocumentsAndMedia#DESCRIPTIVE_LIST_DOCUMENT_TITLE",
+			value1 = "${dmDocumentTitle}");
 
-		<if>
-			<condition function="IsElementPresent" locator1="PGDocumentsandmediaDocument#COMMENTS_BE_THE_FIRST" />
-			<then>
-				<execute function="AssertClick" locator1="PGDocumentsandmediaDocument#COMMENTS_BE_THE_FIRST" value1="Be the first." />
-			</then>
-		</if>
+		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
 
-		<execute function="Type" locator1="Comments#COMMENT_FIELD" value1="${commentBody}" />
-		<execute function="Pause" locator1="3000" />
+		Type(
+			locator1 = "CKEditor#BODY",
+			value1 = "${commentBody}");
 
-		<if>
-			<condition function="IsElementPresent" locator1="PGDocumentsandmediaDocument#COMMENTS_SUBMIT_BUTTON" value1="Submit" />
-			<then>
-				<execute function="AssertClick" locator1="PGDocumentsandmediaDocument#COMMENTS_SUBMIT_BUTTON" value1="Submit" />
-			</then>
-			<else>
-				<execute function="AssertClick" locator1="Button#REPLY" value1="Reply" />
-			</else>
-		</if>
+		SelectFrame(value1 = "relative=top");
 
-		<execute function="Pause" locator1="3000" />
-		<execute function="AssertTextEquals#assertPartialText" locator1="PGDocumentsandmediaDocument#SUCCESS_MESSAGE" value1="Your request processed successfully." />
-	</command>
+		AssertClick(
+			locator1 = "Button#REPLY",
+			value1 = "Reply");
 
-	<command name="viewPG">
-		<var name="key_dmDocumentTitle" value="${dmDocumentTitle}" />
+		Alert.viewSuccessMessage();
+	}
 
-		<execute function="AssertClick" locator1="DocumentsAndMedia#ICON_DOCUMENT_TITLE" value1="${dmDocumentTitle}" />
+	macro viewPG {
+		AssertClick(
+			key_dmDocumentTitle = "${dmDocumentTitle}",
+			locator1 = "DocumentsAndMedia#DESCRIPTIVE_LIST_DOCUMENT_TITLE",
+			value1 = "${dmDocumentTitle}");
 
-		<var name="key_commentBody" value="${commentBody}" />
+		AssertTextEquals.assertPartialText(
+			key_entryComment = "${commentBody}",
+			locator1 = "Comments#COMMENT_BODY_SPECIFIC",
+			value1 = "${commentBody}");
+	}
 
-		<execute function="AssertTextEquals#assertPartialText" locator1="Comments#COMMENT_BODY" value1="${commentBody}" />
-	</command>
-</definition>
+}

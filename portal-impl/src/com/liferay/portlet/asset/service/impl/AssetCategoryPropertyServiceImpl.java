@@ -14,18 +14,19 @@
 
 package com.liferay.portlet.asset.service.impl;
 
+import com.liferay.asset.kernel.model.AssetCategoryProperty;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.security.permission.ActionKeys;
-import com.liferay.portlet.asset.model.AssetCategoryProperty;
 import com.liferay.portlet.asset.service.base.AssetCategoryPropertyServiceBaseImpl;
-import com.liferay.portlet.asset.service.permission.AssetCategoryPermission;
 
 import java.util.List;
 
 /**
- * @author Brian Wing Shun Chan
- * @author Jorge Ferrer
+ * @author     Brian Wing Shun Chan
+ * @author     Jorge Ferrer
+ * @deprecated As of Judson (7.1.x), replaced by {@link
+ *             com.liferay.asset.category.property.service.impl.AssetCategoryPropertyServiceImpl}
  */
+@Deprecated
 public class AssetCategoryPropertyServiceImpl
 	extends AssetCategoryPropertyServiceBaseImpl {
 
@@ -34,40 +35,38 @@ public class AssetCategoryPropertyServiceImpl
 			long entryId, String key, String value)
 		throws PortalException {
 
-		AssetCategoryPermission.check(
-			getPermissionChecker(), entryId, ActionKeys.UPDATE);
-
-		return assetCategoryPropertyLocalService.addCategoryProperty(
-			getUserId(), entryId, key, value);
+		throw new UnsupportedOperationException(
+			"This class is deprecated and replaced by " +
+				"com.liferay.asset.category.property.service.impl." +
+					"AssetCategoryPropertyServiceImpl");
 	}
 
 	@Override
 	public void deleteCategoryProperty(long categoryPropertyId)
 		throws PortalException {
 
-		AssetCategoryProperty assetCategoryProperty =
-			assetCategoryPropertyLocalService.getAssetCategoryProperty(
-				categoryPropertyId);
-
-		AssetCategoryPermission.check(
-			getPermissionChecker(), assetCategoryProperty.getCategoryId(),
-			ActionKeys.UPDATE);
-
-		assetCategoryPropertyLocalService.deleteCategoryProperty(
-			categoryPropertyId);
+		throw new UnsupportedOperationException(
+			"This class is deprecated and replaced by " +
+				"com.liferay.asset.category.property.service.impl." +
+					"AssetCategoryPropertyServiceImpl");
 	}
 
 	@Override
 	public List<AssetCategoryProperty> getCategoryProperties(long entryId) {
-		return assetCategoryPropertyLocalService.getCategoryProperties(entryId);
+		throw new UnsupportedOperationException(
+			"This class is deprecated and replaced by " +
+				"com.liferay.asset.category.property.service.impl." +
+					"AssetCategoryPropertyServiceImpl");
 	}
 
 	@Override
 	public List<AssetCategoryProperty> getCategoryPropertyValues(
 		long companyId, String key) {
 
-		return assetCategoryPropertyLocalService.getCategoryPropertyValues(
-			companyId, key);
+		throw new UnsupportedOperationException(
+			"This class is deprecated and replaced by " +
+				"com.liferay.asset.category.property.service.impl." +
+					"AssetCategoryPropertyServiceImpl");
 	}
 
 	@Override
@@ -75,16 +74,10 @@ public class AssetCategoryPropertyServiceImpl
 			long userId, long categoryPropertyId, String key, String value)
 		throws PortalException {
 
-		AssetCategoryProperty assetCategoryProperty =
-			assetCategoryPropertyLocalService.getAssetCategoryProperty(
-				categoryPropertyId);
-
-		AssetCategoryPermission.check(
-			getPermissionChecker(), assetCategoryProperty.getCategoryId(),
-			ActionKeys.UPDATE);
-
-		return assetCategoryPropertyLocalService.updateCategoryProperty(
-			userId, categoryPropertyId, key, value);
+		throw new UnsupportedOperationException(
+			"This class is deprecated and replaced by " +
+				"com.liferay.asset.category.property.service.impl." +
+					"AssetCategoryPropertyServiceImpl");
 	}
 
 	@Override
@@ -92,7 +85,19 @@ public class AssetCategoryPropertyServiceImpl
 			long categoryPropertyId, String key, String value)
 		throws PortalException {
 
-		return updateCategoryProperty(0, categoryPropertyId, key, value);
+		throw new UnsupportedOperationException(
+			"This class is deprecated and replaced by " +
+				"com.liferay.asset.category.property.service.impl." +
+					"AssetCategoryPropertyServiceImpl");
+	}
+
+	protected List<AssetCategoryProperty> filterAssetCategoryProperties(
+		List<AssetCategoryProperty> assetCategoryProperties) {
+
+		throw new UnsupportedOperationException(
+			"This class is deprecated and replaced by " +
+				"com.liferay.asset.category.property.service.impl." +
+					"AssetCategoryPropertyServiceImpl");
 	}
 
 }

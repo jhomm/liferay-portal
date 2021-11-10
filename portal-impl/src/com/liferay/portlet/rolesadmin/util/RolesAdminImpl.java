@@ -14,46 +14,15 @@
 
 package com.liferay.portlet.rolesadmin.util;
 
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.Role;
-import com.liferay.portal.model.RoleConstants;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.roles.admin.kernel.util.RolesAdmin;
 
 /**
  * @author Brian Wing Shun Chan
  */
-@DoPrivileged
 public class RolesAdminImpl implements RolesAdmin {
-
-	/**
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public String getCssClassName(Role role) {
-		String cssClassName = StringPool.BLANK;
-
-		String roleName = role.getName();
-		int roleType = role.getType();
-
-		if (roleName.equals(RoleConstants.GUEST)) {
-			cssClassName = "lfr-role-guest";
-		}
-		else if (roleType == RoleConstants.TYPE_ORGANIZATION) {
-			cssClassName = "lfr-role-organization";
-		}
-		else if (roleType == RoleConstants.TYPE_REGULAR) {
-			cssClassName = "lfr-role-regular";
-		}
-		else if (roleType == RoleConstants.TYPE_SITE) {
-			cssClassName = "lfr-role-site";
-		}
-		else if (role.isTeam()) {
-			cssClassName = "lfr-role-team";
-		}
-
-		return "lfr-role " + cssClassName;
-	}
 
 	@Override
 	public String getIconCssClass(Role role) {
@@ -63,19 +32,19 @@ public class RolesAdminImpl implements RolesAdmin {
 		int roleType = role.getType();
 
 		if (roleName.equals(RoleConstants.GUEST)) {
-			iconCssClass = "icon-user guest";
+			iconCssClass = "user";
 		}
 		else if (roleType == RoleConstants.TYPE_ORGANIZATION) {
-			iconCssClass = "icon-globe";
+			iconCssClass = "globe";
 		}
 		else if (roleType == RoleConstants.TYPE_REGULAR) {
-			iconCssClass = "icon-user";
+			iconCssClass = "user";
 		}
 		else if (roleType == RoleConstants.TYPE_SITE) {
-			iconCssClass = "icon-globe";
+			iconCssClass = "globe";
 		}
 		else if (role.isTeam()) {
-			iconCssClass = "icon-group";
+			iconCssClass = "community";
 		}
 
 		return iconCssClass;

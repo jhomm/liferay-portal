@@ -1,11 +1,40 @@
-<definition default="assertNotChecked">
-	<command name="assertNotChecked">
-		<execute selenium="waitForVisible" />
+@default = "assertNotChecked"
+definition {
 
-		<execute selenium="assertNotChecked" />
+	function assertNotChecked {
+		WaitForSPARefresh();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.waitForVisible();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.assertNotChecked();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+	function assertNotCheckedHiddenToggleSwitch {
+		WaitForSPARefresh();
+
+		selenium.waitForElementPresent();
+
+		selenium.assertNotChecked("xpath=(${locator1})/../../input");
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+	function assertNotCheckedNotVisible {
+		WaitForSPARefresh();
+
+		selenium.waitForElementPresent();
+
+		selenium.assertNotChecked();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

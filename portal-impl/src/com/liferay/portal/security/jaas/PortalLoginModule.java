@@ -30,7 +30,9 @@ import javax.security.auth.spi.LoginModule;
 
 /**
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), with no replacement
  */
+@Deprecated
 public class PortalLoginModule implements LoginModule {
 
 	public PortalLoginModule() {
@@ -41,8 +43,8 @@ public class PortalLoginModule implements LoginModule {
 				loginModule = (LoginModule)InstanceFactory.newInstance(
 					PropsValues.PORTAL_JAAS_IMPL);
 			}
-			catch (Exception e) {
-				_log.error(e, e);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 			}
 		}
 
@@ -50,21 +52,6 @@ public class PortalLoginModule implements LoginModule {
 			if (ServerDetector.isJBoss()) {
 				loginModule =
 					new com.liferay.portal.security.jaas.ext.jboss.
-						PortalLoginModule();
-			}
-			else if (ServerDetector.isJetty()) {
-				loginModule =
-					new com.liferay.portal.security.jaas.ext.jetty.
-						PortalLoginModule();
-			}
-			else if (ServerDetector.isJOnAS()) {
-				loginModule =
-					new com.liferay.portal.security.jaas.ext.jonas.
-						PortalLoginModule();
-			}
-			else if (ServerDetector.isResin()) {
-				loginModule =
-					new com.liferay.portal.security.jaas.ext.resin.
 						PortalLoginModule();
 			}
 			else if (ServerDetector.isTomcat()) {
@@ -80,7 +67,9 @@ public class PortalLoginModule implements LoginModule {
 		}
 
 		if (_log.isDebugEnabled()) {
-			_log.debug(loginModule.getClass().getName());
+			Class<?> clazz = loginModule.getClass();
+
+			_log.debug(clazz.getName());
 		}
 
 		_loginModule = loginModule;

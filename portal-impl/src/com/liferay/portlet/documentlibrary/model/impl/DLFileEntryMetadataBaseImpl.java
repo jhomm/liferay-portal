@@ -14,10 +14,8 @@
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portlet.documentlibrary.model.DLFileEntryMetadata;
-import com.liferay.portlet.documentlibrary.service.DLFileEntryMetadataLocalServiceUtil;
+import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
+import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalServiceUtil;
 
 /**
  * The extended model base implementation for the DLFileEntryMetadata service. Represents a row in the &quot;DLFileEntryMetadata&quot; database table, with each column mapped to a property of this class.
@@ -31,13 +29,13 @@ import com.liferay.portlet.documentlibrary.service.DLFileEntryMetadataLocalServi
  * @see DLFileEntryMetadata
  * @generated
  */
-@ProviderType
 public abstract class DLFileEntryMetadataBaseImpl
 	extends DLFileEntryMetadataModelImpl implements DLFileEntryMetadata {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. All methods that expect a document library file entry metadata model instance should use the {@link DLFileEntryMetadata} interface instead.
+	 * Never modify or reference this class directly. All methods that expect a document library file entry metadata model instance should use the <code>DLFileEntryMetadata</code> interface instead.
 	 */
 	@Override
 	public void persist() {
@@ -48,4 +46,5 @@ public abstract class DLFileEntryMetadataBaseImpl
 			DLFileEntryMetadataLocalServiceUtil.updateDLFileEntryMetadata(this);
 		}
 	}
+
 }

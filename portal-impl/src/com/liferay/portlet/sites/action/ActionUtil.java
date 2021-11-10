@@ -14,24 +14,24 @@
 
 package com.liferay.portlet.sites.action;
 
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutTypePortlet;
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.model.PortletPreferencesIds;
 import com.liferay.portal.kernel.portlet.PortletLayoutListener;
+import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutServiceUtil;
+import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
+import com.liferay.portal.kernel.service.PortletPreferencesLocalServiceUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.model.LayoutTypePortlet;
-import com.liferay.portal.model.Portlet;
-import com.liferay.portal.model.PortletPreferencesIds;
-import com.liferay.portal.service.GroupLocalServiceUtil;
-import com.liferay.portal.service.LayoutServiceUtil;
-import com.liferay.portal.service.PortletLocalServiceUtil;
-import com.liferay.portal.service.PortletPreferencesLocalServiceUtil;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.PortletKeys;
-import com.liferay.portal.util.WebKeys;
-import com.liferay.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portlet.sites.util.SitesUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.sites.kernel.util.SitesUtil;
 
 import java.util.List;
 
@@ -46,12 +46,13 @@ import javax.servlet.http.HttpServletRequest;
 public class ActionUtil {
 
 	public static void copyPreferences(
-			HttpServletRequest request, Layout targetLayout,
+			HttpServletRequest httpServletRequest, Layout targetLayout,
 			Layout sourceLayout)
 		throws Exception {
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
 		LayoutTypePortlet sourceLayoutTypePortlet =
 			(LayoutTypePortlet)sourceLayout.getLayoutType();
@@ -64,14 +65,14 @@ public class ActionUtil {
 
 			PortletPreferencesIds portletPreferencesIds =
 				PortletPreferencesFactoryUtil.getPortletPreferencesIds(
-					request, targetLayout, sourcePortletId);
+					httpServletRequest, targetLayout, sourcePortletId);
 
 			PortletPreferencesLocalServiceUtil.getPreferences(
 				portletPreferencesIds);
 
 			PortletPreferencesIds sourcePortletPreferencesIds =
 				PortletPreferencesFactoryUtil.getPortletPreferencesIds(
-					request, sourceLayout, sourcePortletId);
+					httpServletRequest, sourceLayout, sourcePortletId);
 
 			PortletPreferences sourcePreferences =
 				PortletPreferencesLocalServiceUtil.getPreferences(
@@ -127,19 +128,17 @@ public class ActionUtil {
 			Layout sourceLayout)
 		throws Exception {
 
-		HttpServletRequest request = PortalUtil.getHttpServletRequest(
-			portletRequest);
-
-		copyPreferences(request, targetLayout, sourceLayout);
+		copyPreferences(
+			PortalUtil.getHttpServletRequest(portletRequest), targetLayout,
+			sourceLayout);
 	}
 
-	public static Group getGroup(HttpServletRequest request) throws Exception {
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+	public static Group getGroup(HttpServletRequest httpServletRequest)
+		throws Exception {
 
-		String cmd = ParamUtil.getString(request, Constants.CMD);
+		String cmd = ParamUtil.getString(httpServletRequest, Constants.CMD);
 
-		long groupId = ParamUtil.getLong(request, "groupId");
+		long groupId = ParamUtil.getLong(httpServletRequest, "groupId");
 
 		Group group = null;
 
@@ -147,10 +146,14 @@ public class ActionUtil {
 			group = GroupLocalServiceUtil.getGroup(groupId);
 		}
 		else if (!cmd.equals(Constants.ADD)) {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
 			group = themeDisplay.getSiteGroup();
 		}
 
-		request.setAttribute(WebKeys.GROUP, group);
+		httpServletRequest.setAttribute(WebKeys.GROUP, group);
 
 		return group;
 	}
@@ -158,18 +161,16 @@ public class ActionUtil {
 	public static Group getGroup(PortletRequest portletRequest)
 		throws Exception {
 
-		HttpServletRequest request = PortalUtil.getHttpServletRequest(
-			portletRequest);
-
-		return getGroup(request);
+		return getGroup(PortalUtil.getHttpServletRequest(portletRequest));
 	}
 
 	public static void removePortletIds(
-			HttpServletRequest request, Layout layout)
+			HttpServletRequest httpServletRequest, Layout layout)
 		throws Exception {
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
 		LayoutTypePortlet layoutTypePortlet =
 			(LayoutTypePortlet)layout.getLayoutType();
@@ -190,10 +191,8 @@ public class ActionUtil {
 			PortletRequest portletRequest, Layout layout)
 		throws Exception {
 
-		HttpServletRequest request = PortalUtil.getHttpServletRequest(
-			portletRequest);
-
-		removePortletIds(request, layout);
+		removePortletIds(
+			PortalUtil.getHttpServletRequest(portletRequest), layout);
 	}
 
 }

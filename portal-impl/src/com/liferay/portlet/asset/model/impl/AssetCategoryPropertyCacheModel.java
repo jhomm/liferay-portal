@@ -14,14 +14,11 @@
 
 package com.liferay.portlet.asset.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-
-import com.liferay.portlet.asset.model.AssetCategoryProperty;
+import com.liferay.asset.kernel.model.AssetCategoryProperty;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -34,25 +31,30 @@ import java.util.Date;
  * The cache model class for representing AssetCategoryProperty in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see AssetCategoryProperty
+ * @deprecated
  * @generated
  */
-@ProviderType
-public class AssetCategoryPropertyCacheModel implements CacheModel<AssetCategoryProperty>,
-	Externalizable {
+@Deprecated
+public class AssetCategoryPropertyCacheModel
+	implements CacheModel<AssetCategoryProperty>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof AssetCategoryPropertyCacheModel)) {
+		if (!(object instanceof AssetCategoryPropertyCacheModel)) {
 			return false;
 		}
 
-		AssetCategoryPropertyCacheModel assetCategoryPropertyCacheModel = (AssetCategoryPropertyCacheModel)obj;
+		AssetCategoryPropertyCacheModel assetCategoryPropertyCacheModel =
+			(AssetCategoryPropertyCacheModel)object;
 
-		if (categoryPropertyId == assetCategoryPropertyCacheModel.categoryPropertyId) {
+		if ((categoryPropertyId ==
+				assetCategoryPropertyCacheModel.categoryPropertyId) &&
+			(mvccVersion == assetCategoryPropertyCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -61,14 +63,30 @@ public class AssetCategoryPropertyCacheModel implements CacheModel<AssetCategory
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, categoryPropertyId);
+		int hashCode = HashUtil.hash(0, categoryPropertyId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(19);
+		StringBundler sb = new StringBundler(23);
 
-		sb.append("{categoryPropertyId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
+		sb.append(", categoryPropertyId=");
 		sb.append(categoryPropertyId);
 		sb.append(", companyId=");
 		sb.append(companyId);
@@ -93,14 +111,17 @@ public class AssetCategoryPropertyCacheModel implements CacheModel<AssetCategory
 
 	@Override
 	public AssetCategoryProperty toEntityModel() {
-		AssetCategoryPropertyImpl assetCategoryPropertyImpl = new AssetCategoryPropertyImpl();
+		AssetCategoryPropertyImpl assetCategoryPropertyImpl =
+			new AssetCategoryPropertyImpl();
 
+		assetCategoryPropertyImpl.setMvccVersion(mvccVersion);
+		assetCategoryPropertyImpl.setCtCollectionId(ctCollectionId);
 		assetCategoryPropertyImpl.setCategoryPropertyId(categoryPropertyId);
 		assetCategoryPropertyImpl.setCompanyId(companyId);
 		assetCategoryPropertyImpl.setUserId(userId);
 
 		if (userName == null) {
-			assetCategoryPropertyImpl.setUserName(StringPool.BLANK);
+			assetCategoryPropertyImpl.setUserName("");
 		}
 		else {
 			assetCategoryPropertyImpl.setUserName(userName);
@@ -123,14 +144,14 @@ public class AssetCategoryPropertyCacheModel implements CacheModel<AssetCategory
 		assetCategoryPropertyImpl.setCategoryId(categoryId);
 
 		if (key == null) {
-			assetCategoryPropertyImpl.setKey(StringPool.BLANK);
+			assetCategoryPropertyImpl.setKey("");
 		}
 		else {
 			assetCategoryPropertyImpl.setKey(key);
 		}
 
 		if (value == null) {
-			assetCategoryPropertyImpl.setValue(StringPool.BLANK);
+			assetCategoryPropertyImpl.setValue("");
 		}
 		else {
 			assetCategoryPropertyImpl.setValue(value);
@@ -143,26 +164,38 @@ public class AssetCategoryPropertyCacheModel implements CacheModel<AssetCategory
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
+
 		categoryPropertyId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
+
 		userId = objectInput.readLong();
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
+
 		categoryId = objectInput.readLong();
 		key = objectInput.readUTF();
 		value = objectInput.readUTF();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
+
 		objectOutput.writeLong(categoryPropertyId);
+
 		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(userId);
 
 		if (userName == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(userName);
@@ -170,23 +203,26 @@ public class AssetCategoryPropertyCacheModel implements CacheModel<AssetCategory
 
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
+
 		objectOutput.writeLong(categoryId);
 
 		if (key == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(key);
 		}
 
 		if (value == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(value);
 		}
 	}
 
+	public long mvccVersion;
+	public long ctCollectionId;
 	public long categoryPropertyId;
 	public long companyId;
 	public long userId;
@@ -196,4 +232,5 @@ public class AssetCategoryPropertyCacheModel implements CacheModel<AssetCategory
 	public long categoryId;
 	public String key;
 	public String value;
+
 }

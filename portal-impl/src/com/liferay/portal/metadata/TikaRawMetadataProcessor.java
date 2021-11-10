@@ -14,18 +14,21 @@
 
 package com.liferay.portal.metadata;
 
+import com.liferay.petra.process.ProcessCallable;
+import com.liferay.petra.process.ProcessChannel;
+import com.liferay.petra.process.ProcessException;
+import com.liferay.petra.process.ProcessExecutor;
 import com.liferay.portal.fabric.InputResource;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.io.DummyWriter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.process.ClassPathUtil;
-import com.liferay.portal.kernel.process.ProcessCallable;
-import com.liferay.portal.kernel.process.ProcessChannel;
-import com.liferay.portal.kernel.process.ProcessException;
-import com.liferay.portal.kernel.process.ProcessExecutorUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.ServiceProxyFactory;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.util.PortalClassPathUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
@@ -34,10 +37,11 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.compress.archivers.zip.UnsupportedZipFeatureException;
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.pdfbox.exceptions.CryptographyException;
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
@@ -59,56 +63,6 @@ public class TikaRawMetadataProcessor extends XugglerRawMetadataProcessor {
 		_parser = parser;
 	}
 
-	protected static Metadata extractMetadata(
-			File file, Metadata metadata, Parser parser)
-		throws IOException {
-
-		if (metadata == null) {
-			metadata = new Metadata();
-		}
-
-		ParseContext parserContext = new ParseContext();
-
-		parserContext.set(Parser.class, parser);
-
-		ContentHandler contentHandler = new WriteOutContentHandler(
-			new DummyWriter());
-
-		try (InputStream inputStream = new FileInputStream(file)) {
-			parser.parse(inputStream, contentHandler, metadata, parserContext);
-		}
-		catch (Exception e) {
-			Throwable throwable = ExceptionUtils.getRootCause(e);
-
-			if ((throwable instanceof CryptographyException) ||
-				(throwable instanceof EncryptedDocumentException) ||
-				(throwable instanceof UnsupportedZipFeatureException)) {
-
-				if (_log.isWarnEnabled()) {
-					_log.warn(
-						"Unable to extract metadata from an encrypted file");
-				}
-			}
-			else if (e instanceof TikaException) {
-				if (_log.isWarnEnabled()) {
-					_log.warn("Unable to extract metadata");
-				}
-			}
-			else {
-				_log.error(e, e);
-			}
-
-			throw new IOException(e);
-		}
-
-		// Remove potential security risks
-
-		metadata.remove(XMPDM.ABS_PEAK_AUDIO_FILE_PATH.getName());
-		metadata.remove(XMPDM.RELATIVE_PEAK_AUDIO_FILE_PATH.getName());
-
-		return metadata;
-	}
-
 	@Override
 	protected Metadata extractMetadata(
 		String extension, String mimeType, File file) {
@@ -117,13 +71,12 @@ public class TikaRawMetadataProcessor extends XugglerRawMetadataProcessor {
 
 		boolean forkProcess = false;
 
-		if (PropsValues.TEXT_EXTRACTION_FORK_PROCESS_ENABLED) {
-			if (ArrayUtil.contains(
-					PropsValues.TEXT_EXTRACTION_FORK_PROCESS_MIME_TYPES,
-					mimeType)) {
+		if (PropsValues.TEXT_EXTRACTION_FORK_PROCESS_ENABLED &&
+			ArrayUtil.contains(
+				PropsValues.TEXT_EXTRACTION_FORK_PROCESS_MIME_TYPES,
+				mimeType)) {
 
-				forkProcess = true;
-			}
+			forkProcess = true;
 		}
 
 		if (forkProcess) {
@@ -132,25 +85,28 @@ public class TikaRawMetadataProcessor extends XugglerRawMetadataProcessor {
 
 			try {
 				ProcessChannel<Metadata> processChannel =
-					ProcessExecutorUtil.execute(
-						ClassPathUtil.getPortalProcessConfig(),
+					_processExecutor.execute(
+						PortalClassPathUtil.getPortalProcessConfig(),
 						extractMetadataProcessCallable);
 
 				Future<Metadata> future =
 					processChannel.getProcessNoticeableFuture();
 
-				return future.get();
+				return _postProcessMetadata(mimeType, future.get());
 			}
-			catch (Exception e) {
-				throw new SystemException(e);
+			catch (Exception exception) {
+				throw new SystemException(exception);
 			}
 		}
 
 		try {
-			return extractMetadata(file, metadata, _parser);
+			return _postProcessMetadata(
+				mimeType,
+				ExtractMetadataProcessCallable.extractMetadata(
+					file, metadata, _parser));
 		}
-		catch (IOException ioe) {
-			throw new SystemException(ioe);
+		catch (IOException ioException) {
+			throw new SystemException(ioException);
 		}
 	}
 
@@ -165,16 +121,39 @@ public class TikaRawMetadataProcessor extends XugglerRawMetadataProcessor {
 
 			return extractMetadata(extension, mimeType, file);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			file.delete();
 		}
 	}
 
+	private Metadata _postProcessMetadata(String mimeType, Metadata metadata) {
+		if (!mimeType.equals(ContentTypes.IMAGE_SVG_XML)) {
+			return metadata;
+		}
+
+		String contentType = metadata.get("Content-Type");
+
+		if (contentType.startsWith(ContentTypes.TEXT_PLAIN)) {
+			metadata.set(
+				"Content-Type",
+				StringUtil.replace(
+					mimeType, ContentTypes.TEXT_PLAIN,
+					ContentTypes.IMAGE_SVG_XML));
+		}
+
+		return metadata;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		TikaRawMetadataProcessor.class);
+
+	private static volatile ProcessExecutor _processExecutor =
+		ServiceProxyFactory.newServiceTrackedInstance(
+			ProcessExecutor.class, TikaRawMetadataProcessor.class,
+			"_processExecutor", true);
 
 	private Parser _parser;
 
@@ -191,12 +170,76 @@ public class TikaRawMetadataProcessor extends XugglerRawMetadataProcessor {
 
 		@Override
 		public Metadata call() throws ProcessException {
+			Logger logger = Logger.getLogger(
+				"org.apache.tika.parser.SQLite3Parser");
+
+			logger.setLevel(Level.SEVERE);
+
+			logger = Logger.getLogger("org.apache.tika.parsers.PDFParser");
+
+			logger.setLevel(Level.SEVERE);
+
 			try {
 				return extractMetadata(_file, _metadata, _parser);
 			}
-			catch (IOException ioe) {
-				throw new ProcessException(ioe);
+			catch (IOException ioException) {
+				throw new ProcessException(ioException);
 			}
+		}
+
+		protected static Metadata extractMetadata(
+				File file, Metadata metadata, Parser parser)
+			throws IOException {
+
+			if (metadata == null) {
+				metadata = new Metadata();
+			}
+
+			if (file.length() == 0) {
+				return metadata;
+			}
+
+			ParseContext parseContext = new ParseContext();
+
+			parseContext.set(Parser.class, parser);
+
+			ContentHandler contentHandler = new WriteOutContentHandler(
+				new DummyWriter());
+
+			try (InputStream inputStream = new FileInputStream(file)) {
+				parser.parse(
+					inputStream, contentHandler, metadata, parseContext);
+			}
+			catch (Exception exception) {
+				Throwable throwable = ExceptionUtils.getRootCause(exception);
+
+				if (throwable instanceof EncryptedDocumentException ||
+					throwable instanceof UnsupportedZipFeatureException) {
+
+					if (_log.isWarnEnabled()) {
+						_log.warn(
+							"Unable to extract metadata from an encrypted " +
+								"file");
+					}
+				}
+				else if (exception instanceof TikaException) {
+					if (_log.isWarnEnabled()) {
+						_log.warn("Unable to extract metadata");
+					}
+				}
+				else {
+					_log.error(exception, exception);
+				}
+
+				throw new IOException(exception);
+			}
+
+			// Remove potential security risks
+
+			metadata.remove(XMPDM.ABS_PEAK_AUDIO_FILE_PATH.getName());
+			metadata.remove(XMPDM.RELATIVE_PEAK_AUDIO_FILE_PATH.getName());
+
+			return metadata;
 		}
 
 		private static final long serialVersionUID = 1L;

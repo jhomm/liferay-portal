@@ -199,14 +199,17 @@ public class UploadPortletRequestImpl
 		Map<String, FileItem[]> multipartParameterMap =
 			uploadServletRequestImpl.getMultipartParameterMap();
 
-		for (String name : multipartParameterMap.keySet()) {
+		for (Map.Entry<String, FileItem[]> entry :
+				multipartParameterMap.entrySet()) {
+
+			String name = entry.getKey();
+			FileItem[] fileItems = entry.getValue();
+
 			if (name.startsWith(_namespace)) {
-				map.put(
-					name.substring(_namespace.length(), name.length()),
-					multipartParameterMap.get(name));
+				map.put(name.substring(_namespace.length()), fileItems);
 			}
 			else {
-				map.put(name, multipartParameterMap.get(name));
+				map.put(name, fileItems);
 			}
 		}
 
@@ -229,10 +232,10 @@ public class UploadPortletRequestImpl
 	public Map<String, String[]> getParameterMap() {
 		Map<String, String[]> map = new HashMap<>();
 
-		Enumeration<String> enu = getParameterNames();
+		Enumeration<String> enumeration = getParameterNames();
 
-		while (enu.hasMoreElements()) {
-			String name = enu.nextElement();
+		while (enumeration.hasMoreElements()) {
+			String name = enumeration.nextElement();
 
 			map.put(name, getParameterValues(name));
 		}
@@ -244,10 +247,11 @@ public class UploadPortletRequestImpl
 	public Enumeration<String> getParameterNames() {
 		List<String> parameterNames = new ArrayList<>();
 
-		Enumeration<String> enu = _uploadServletRequest.getParameterNames();
+		Enumeration<String> enumeration =
+			_uploadServletRequest.getParameterNames();
 
-		while (enu.hasMoreElements()) {
-			String name = enu.nextElement();
+		while (enumeration.hasMoreElements()) {
+			String name = enumeration.nextElement();
 
 			if (name.startsWith(_namespace)) {
 				parameterNames.add(name.substring(_namespace.length()));
@@ -291,14 +295,17 @@ public class UploadPortletRequestImpl
 		Map<String, List<String>> regularParameterMap =
 			uploadServletRequestImpl.getRegularParameterMap();
 
-		for (String name : regularParameterMap.keySet()) {
+		for (Map.Entry<String, List<String>> entry :
+				regularParameterMap.entrySet()) {
+
+			String name = entry.getKey();
+			List<String> parameters = entry.getValue();
+
 			if (name.startsWith(_namespace)) {
-				map.put(
-					name.substring(_namespace.length(), name.length()),
-					regularParameterMap.get(name));
+				map.put(name.substring(_namespace.length()), parameters);
 			}
 			else {
-				map.put(name, regularParameterMap.get(name));
+				map.put(name, parameters);
 			}
 		}
 
@@ -332,9 +339,8 @@ public class UploadPortletRequestImpl
 		if (formField == null) {
 			return true;
 		}
-		else {
-			return formField.booleanValue();
-		}
+
+		return formField.booleanValue();
 	}
 
 	private final String _namespace;

@@ -14,29 +14,28 @@
 
 package com.liferay.portal.service.http;
 
-import aQute.bnd.annotation.ProviderType;
-
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.service.MembershipRequestServiceUtil;
+import com.liferay.portal.kernel.service.MembershipRequestServiceUtil;
 
 import java.rmi.RemoteException;
 
 /**
  * Provides the SOAP utility for the
- * {@link MembershipRequestServiceUtil} service utility. The
- * static methods of this class calls the same methods of the service utility.
- * However, the signatures are different because it is difficult for SOAP to
- * support certain types.
+ * <code>MembershipRequestServiceUtil</code> service
+ * utility. The static methods of this class call the same methods of the
+ * service utility. However, the signatures are different because it is
+ * difficult for SOAP to support certain types.
  *
  * <p>
  * ServiceBuilder follows certain rules in translating the methods. For example,
- * if the method in the service utility returns a {@link java.util.List}, that
- * is translated to an array of {@link com.liferay.portal.model.MembershipRequestSoap}.
- * If the method in the service utility returns a
- * {@link com.liferay.portal.model.MembershipRequest}, that is translated to a
- * {@link com.liferay.portal.model.MembershipRequestSoap}. Methods that SOAP cannot
- * safely wire are skipped.
+ * if the method in the service utility returns a <code>java.util.List</code>,
+ * that is translated to an array of
+ * <code>com.liferay.portal.kernel.model.MembershipRequestSoap</code>. If the method in the
+ * service utility returns a
+ * <code>com.liferay.portal.kernel.model.MembershipRequest</code>, that is translated to a
+ * <code>com.liferay.portal.kernel.model.MembershipRequestSoap</code>. Methods that SOAP
+ * cannot safely wire are skipped.
  * </p>
  *
  * <p>
@@ -58,70 +57,83 @@ import java.rmi.RemoteException;
  *
  * @author Brian Wing Shun Chan
  * @see MembershipRequestServiceHttp
- * @see com.liferay.portal.model.MembershipRequestSoap
- * @see MembershipRequestServiceUtil
+ * @deprecated As of Athanasius (7.3.x), with no direct replacement
  * @generated
  */
-@ProviderType
+@Deprecated
 public class MembershipRequestServiceSoap {
-	public static com.liferay.portal.model.MembershipRequestSoap addMembershipRequest(
-		long groupId, java.lang.String comments,
-		com.liferay.portal.service.ServiceContext serviceContext)
+
+	public static com.liferay.portal.kernel.model.MembershipRequestSoap
+			addMembershipRequest(
+				long groupId, String comments,
+				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws RemoteException {
+
 		try {
-			com.liferay.portal.model.MembershipRequest returnValue = MembershipRequestServiceUtil.addMembershipRequest(groupId,
-					comments, serviceContext);
+			com.liferay.portal.kernel.model.MembershipRequest returnValue =
+				MembershipRequestServiceUtil.addMembershipRequest(
+					groupId, comments, serviceContext);
 
-			return com.liferay.portal.model.MembershipRequestSoap.toSoapModel(returnValue);
+			return com.liferay.portal.kernel.model.MembershipRequestSoap.
+				toSoapModel(returnValue);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	public static void deleteMembershipRequests(long groupId, long statusId)
 		throws RemoteException {
-		try {
-			MembershipRequestServiceUtil.deleteMembershipRequests(groupId,
-				statusId);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
 
-			throw new RemoteException(e.getMessage());
+		try {
+			MembershipRequestServiceUtil.deleteMembershipRequests(
+				groupId, statusId);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	public static com.liferay.portal.model.MembershipRequestSoap getMembershipRequest(
-		long membershipRequestId) throws RemoteException {
-		try {
-			com.liferay.portal.model.MembershipRequest returnValue = MembershipRequestServiceUtil.getMembershipRequest(membershipRequestId);
-
-			return com.liferay.portal.model.MembershipRequestSoap.toSoapModel(returnValue);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-
-			throw new RemoteException(e.getMessage());
-		}
-	}
-
-	public static void updateStatus(long membershipRequestId,
-		java.lang.String reviewComments, long statusId,
-		com.liferay.portal.service.ServiceContext serviceContext)
+	public static com.liferay.portal.kernel.model.MembershipRequestSoap
+			getMembershipRequest(long membershipRequestId)
 		throws RemoteException {
-		try {
-			MembershipRequestServiceUtil.updateStatus(membershipRequestId,
-				reviewComments, statusId, serviceContext);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
 
-			throw new RemoteException(e.getMessage());
+		try {
+			com.liferay.portal.kernel.model.MembershipRequest returnValue =
+				MembershipRequestServiceUtil.getMembershipRequest(
+					membershipRequestId);
+
+			return com.liferay.portal.kernel.model.MembershipRequestSoap.
+				toSoapModel(returnValue);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(MembershipRequestServiceSoap.class);
+	public static void updateStatus(
+			long membershipRequestId, String reviewComments, long statusId,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws RemoteException {
+
+		try {
+			MembershipRequestServiceUtil.updateStatus(
+				membershipRequestId, reviewComments, statusId, serviceContext);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
+		}
+	}
+
+	private static Log _log = LogFactoryUtil.getLog(
+		MembershipRequestServiceSoap.class);
+
 }

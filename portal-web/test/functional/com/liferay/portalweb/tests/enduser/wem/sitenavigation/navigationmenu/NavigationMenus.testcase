@@ -1,0 +1,726 @@
+@component-name = "portal-wcm"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Navigation";
+
+	setUp {
+		task ("Set up instance and sign in") {
+			TestCase.setUpPortalInstance();
+
+			User.firstLoginPG();
+		}
+
+		task ("Add a site") {
+			JSONGroup.addGroup(groupName = "Test Site Name");
+		}
+
+		task ("Add a navigation menu in Global site") {
+			JSONSitenavigation.addSiteNavigationMenu(
+				auto = "false",
+				groupName = "Global",
+				siteNavigationMenuName = "Global Navigation Menu Name");
+		}
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
+
+			JSONSitenavigation.deleteSiteNavigationMenu(
+				groupName = "Global",
+				siteNavigationMenuName = "Global Navigation Menu Name");
+		}
+	}
+
+	@description = "This is a test case for LPS-77912. The user could add page, submenu, and URL items to a navigation menu."
+	@priority = "5"
+	@uitest
+	test AddNavigationMenuEntriesAllTypes {
+		property portal.acceptance = "true";
+
+		task ("Add a page to the site") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name");
+		}
+
+		task ("Add a navigation menu") {
+			JSONSitenavigation.addSiteNavigationMenu(
+				groupName = "Test Site Name",
+				siteNavigationMenuName = "Navigation Menu Name");
+		}
+
+		task ("Navigate to the navigation menu") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.gotoEntry(rowEntry = "Navigation Menu Name");
+		}
+
+		task ("Add a page item") {
+			NavigationMenusAdmin.addItem(
+				item = "Page",
+				pageNames = "Test Page Name");
+		}
+
+		task ("Assert the page item was added") {
+			NavigationMenusAdmin.viewItem(itemName = "Test Page Name");
+		}
+
+		task ("Add a submenu item") {
+			NavigationMenusAdmin.addItem(
+				item = "Submenu",
+				submenuName = "Submenu Name");
+		}
+
+		task ("Assert the submenu item was added") {
+			NavigationMenusAdmin.viewItem(itemName = "Submenu Name");
+		}
+
+		task ("Add a URL item") {
+			NavigationMenusAdmin.addItem(
+				item = "URL",
+				url = "https://www.liferay.com/",
+				urlName = "Liferay");
+		}
+
+		task ("Assert the URL item was added") {
+			NavigationMenusAdmin.viewItem(itemName = "Liferay");
+		}
+	}
+
+	@description = "This is a test for LPS-120277. When add an URL type item, the blank target is set up after checking Open in a new tab."
+	@priority = "5"
+	@uitest
+	test AddURLTypeNavigationMenuItemWithBlankTarget {
+		property portal.acceptance = "true";
+
+		task ("Add a page to the site") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name");
+		}
+
+		task ("Add a navigation menu") {
+			JSONSitenavigation.addSiteNavigationMenu(
+				groupName = "Test Site Name",
+				siteNavigationMenuName = "Navigation Menu Name");
+
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.gotoEntry(rowEntry = "Navigation Menu Name");
+		}
+
+		task ("Add a URL item to the navigation menu") {
+			NavigationMenusAdmin.addItem(
+				item = "URL",
+				target = "Blank",
+				url = "https://www.liferay.com",
+				urlName = "Liferay");
+		}
+
+		task ("Assert the URL item was added to the navigation menu") {
+			NavigationMenusAdmin.viewItem(itemName = "Liferay");
+		}
+
+		task ("Navigate to the Navigation Menu widget") {
+			Navigator.gotoSitePage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+		}
+
+		task ("Configure the Navigation Menu widget to use the navigation menu") {
+			NavigationMenusWidget.gotoNavigationMenuWidgetConfig();
+
+			NavigationMenusWidget.chooseMenu(menuName = "Navigation Menu Name");
+
+			Portlet.saveAndCloseConfig();
+		}
+
+		task ("Assert the Navigation Menu widget has the URL item and the link works properly") {
+			AssertClick(
+				key_pageName = "Liferay",
+				locator1 = "Home#PAGE",
+				value1 = "Liferay");
+
+			SelectWindow.selectPopUp(locator1 = "null");
+
+			AssertLocation.assertPartialLocation(value1 = "https://www.liferay.com");
+
+			var siteName = TestCase.getSiteName(siteName = "${siteName}");
+
+			SelectWindow(locator1 = "title=Test Page Name - Test Site Name - ${siteName}");
+		}
+	}
+
+	@description = "This is a test for LPS-75059 and LPS-120277. When add an URL type item, the self target is defined by default."
+	@priority = "5"
+	@uitest
+	test AddURLTypeNavigationMenuItemWithSelfTarget {
+		property portal.acceptance = "true";
+
+		task ("Add a page to the site") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name");
+		}
+
+		task ("Add a navigation menu") {
+			JSONSitenavigation.addSiteNavigationMenu(
+				groupName = "Test Site Name",
+				siteNavigationMenuName = "Navigation Menu Name");
+
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.gotoEntry(rowEntry = "Navigation Menu Name");
+		}
+
+		task ("Add a URL item to the navigation menu") {
+			NavigationMenusAdmin.addItem(
+				item = "URL",
+				url = "https://www.liferay.com",
+				urlName = "Liferay");
+		}
+
+		task ("Assert the URL item was added to the navigation menu") {
+			NavigationMenusAdmin.viewItem(itemName = "Liferay");
+		}
+
+		task ("Navigate to the Navigation Menu widget") {
+			Navigator.gotoSitePage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+		}
+
+		task ("Configure the Navigation Menu widget to use the navigation menu") {
+			NavigationMenusWidget.gotoNavigationMenuWidgetConfig();
+
+			NavigationMenusWidget.chooseMenu(menuName = "Navigation Menu Name");
+
+			Portlet.saveAndCloseConfig();
+		}
+
+		task ("Assert the Navigation Menu widget has the URL item and the link works properly") {
+			AssertClick(
+				key_pageName = "Liferay",
+				locator1 = "Home#PAGE",
+				value1 = "Liferay");
+
+			AssertLocation.assertPartialLocation(value1 = "https://www.liferay.com");
+		}
+	}
+
+	@description = "This is a test for LPS-107833. Don't support Add page to Global Navigation Menu when creating a new page."
+	@priority = "5"
+	test CannotAddPageToGlobalNavigationMenuWhenCreatingPageInNormalSite {
+		property portal.acceptance = "true";
+
+		task ("Assert no Add New Pages column in Global navigation menu") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "global");
+
+			AssertElementNotPresent(
+				key_addNewPages = "Yes",
+				key_rowEntry = "Global Navigation Menu Name",
+				locator1 = "SiteNavigationMenu#MENU_ADD_NEW_PAGES");
+		}
+
+		task ("Assert no checkbox for Add Page to Global navigation menu when creating a page in normal site") {
+			SitePages.openPagesAdmin(siteURLKey = "Test Site Name");
+
+			LexiconEntry.gotoAddMenuItem(menuItem = "Public Page");
+
+			LexiconCard.clickCard(card = "Widget Page");
+
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+			AssertElementNotPresent(
+				checkboxName = "Global Navigation Menu Name",
+				locator1 = "Checkbox#ANY_CHECKBOX");
+		}
+	}
+
+	@description = "This is a test for LPS-107833. Assert no option to add displayed page in Global Navigation Menu."
+	@priority = "5"
+	test CannotAddPageTypeItemInGlobalNavigationMenu {
+		property portal.acceptance = "true";
+
+		task ("Navigate to the Global navigation menu") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "global");
+
+			LexiconEntry.gotoEntryMenuItem(
+				menuItem = "Edit",
+				rowEntry = "Global Navigation Menu Name");
+		}
+
+		task ("Assert no Page option in drop down list") {
+			Click(locator1 = "Button#PLUS");
+
+			MenuItem.viewNotPresent(menuItem = "Page");
+
+			MenuItem.viewVisible(menuItem = "Submenu");
+
+			MenuItem.viewVisible(menuItem = "URL");
+
+			Button.click(button = "New");
+
+			MenuItem.viewNotPresent(menuItem = "Page");
+
+			MenuItem.viewVisible(menuItem = "Submenu");
+
+			MenuItem.viewVisible(menuItem = "URL");
+		}
+
+		task ("Navigate to Navigation Menus admin in Global site") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "global");
+		}
+	}
+
+	@description = "Navigation menus can be deleted."
+	@priority = "5"
+	@uitest
+	test DeleteNavigationMenu {
+		property portal.acceptance = "true";
+
+		task ("Add a navigation menu") {
+			JSONSitenavigation.addSiteNavigationMenu(
+				groupName = "Test Site Name",
+				siteNavigationMenuName = "Navigation Menu Name");
+		}
+
+		task ("Delete the navigation menu") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.delete(
+				menuItem = "Delete",
+				rowEntry = "Navigation Menu Name");
+		}
+
+		task ("Assert the navigation menu was deleted") {
+			LexiconEntry.viewNoEntry(rowEntry = "Navigation Menu Name");
+		}
+	}
+
+	@description = "Navigation menus can be marked as Primary Navigation. At any given time, only one navigation menu can be Primary Navigation."
+	@priority = "4"
+	test MarkNavigationMenuAsPrimary {
+		task ("Add two navigation menus") {
+			for (var n : list "1,2") {
+				JSONSitenavigation.addSiteNavigationMenu(
+					groupName = "Test Site Name",
+					siteNavigationMenuName = "Navigation Menu Name ${n}");
+			}
+		}
+
+		task ("Navigate to Navigation Menus admin") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+		}
+
+		task ("Mark the first navigation menu as Primary Navigation") {
+			NavigationMenusAdmin.configureMenuType(
+				menuType = "Primary Navigation",
+				navigationMenu = "Navigation Menu Name 1");
+		}
+
+		task ("Assert the first navigation menu is marked as Primary Navigation") {
+			NavigationMenusAdmin.viewMenuType(
+				menuType = "Primary Navigation",
+				rowEntry = "Navigation Menu Name 1");
+		}
+
+		task ("Mark the second navigation menu as Primary Navigation") {
+			NavigationMenusAdmin.configureMenuType(
+				menuType = "Primary Navigation",
+				navigationMenu = "Navigation Menu Name 2",
+				oldPrimaryNavigationMenu = "Navigation Menu Name 1");
+		}
+
+		task ("Assert the second navigation is now marked as Primary Navigation") {
+			NavigationMenusAdmin.viewMenuType(
+				menuType = "Primary Navigation",
+				rowEntry = "Navigation Menu Name 2");
+		}
+	}
+
+	@description = "Navigation menus can be marked as Secondary Navigation. At any given time, only one navigation menu can be Secondary Navigation."
+	@priority = "4"
+	test MarkNavigationMenuAsSecondary {
+		task ("Add two navigation menus") {
+			for (var n : list "1,2") {
+				JSONSitenavigation.addSiteNavigationMenu(
+					groupName = "Test Site Name",
+					siteNavigationMenuName = "Navigation Menu Name ${n}");
+			}
+		}
+
+		task ("Navigate to Navigation Menus admin") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+		}
+
+		task ("Mark the first navigation menu as Secondary Navigation") {
+			NavigationMenusAdmin.configureMenuType(
+				menuType = "Secondary Navigation",
+				navigationMenu = "Navigation Menu Name 2");
+		}
+
+		task ("Assert the second navigation menu is now marked as Secondary Navigation") {
+			NavigationMenusAdmin.viewMenuType(
+				menuType = "Secondary Navigation",
+				rowEntry = "Navigation Menu Name 2");
+		}
+	}
+
+	@description = "Navigation menus can be marked as Social Navigation. At any given time, only one navigation menu can be Social Navigation."
+	@priority = "4"
+	test MarkNavigationMenuAsSocial {
+		task ("Add two navigation menus") {
+			for (var n : list "1,2") {
+				JSONSitenavigation.addSiteNavigationMenu(
+					groupName = "Test Site Name",
+					siteNavigationMenuName = "Navigation Menu Name ${n}");
+			}
+		}
+
+		task ("Navigate to Navigation Menus admin") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+		}
+
+		task ("Mark the second navigation menu as Social Navigation") {
+			NavigationMenusAdmin.configureMenuType(
+				menuType = "Social Navigation",
+				navigationMenu = "Navigation Menu Name 2");
+		}
+
+		task ("Assert the second navigation menu is now marked as Social Navigation") {
+			NavigationMenusAdmin.viewMenuType(
+				menuType = "Social Navigation",
+				rowEntry = "Navigation Menu Name 2");
+		}
+	}
+
+	@description = "User can rename a navigation menu."
+	@priority = "5"
+	test RenameNavigationMenu {
+		property portal.acceptance = "true";
+
+		task ("Add a navigation menu") {
+			JSONSitenavigation.addSiteNavigationMenu(
+				groupName = "Test Site Name",
+				siteNavigationMenuName = "Navigation Menu Name");
+		}
+
+		task ("Rename the navigation menu") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.gotoEntryMenuItem(
+				menuItem = "Rename",
+				rowEntry = "Navigation Menu Name");
+
+			PortletEntry.inputName(name = "Navigation Menu Name Edit");
+
+			Modal.save();
+		}
+
+		task ("Assert the navigation menu was successfully renamed") {
+			LexiconEntry.viewEntryName(rowEntry = "Navigation Menu Name Edit");
+		}
+	}
+
+	@description = "This is a test for LPS-76658 and LPS-67191. A user can rename the page items in a navigation menu."
+	@priority = "5"
+	test RenamePageTypeNavigationMenuItem {
+		property portal.acceptance = "true";
+
+		task ("Add two pages") {
+			for (var n : list "1,2") {
+				JSONLayout.addPublicLayout(
+					groupName = "Test Site Name",
+					layoutName = "Test Page Name ${n}");
+			}
+		}
+
+		task ("Add a navigation menu") {
+			JSONSitenavigation.addSiteNavigationMenu(
+				groupName = "Test Site Name",
+				siteNavigationMenuName = "Navigation Menu Name");
+		}
+
+		task ("Add the first page and second page to the navigation menu") {
+			for (var layoutName : list "Test Page Name 1,Test Page Name 2") {
+				JSONSitenavigation.addSiteNavigationMenuItem(
+					groupName = "Test Site Name",
+					privateLayout = "false",
+					siteNavigationMenuItemName = "${layoutName}",
+					siteNavigationMenuName = "Navigation Menu Name",
+					type = "layout");
+			}
+		}
+
+		task ("Navigate to the Navigation Menus admin") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+		}
+
+		task ("Mark the navigation menu as Primary Navigation") {
+			NavigationMenusAdmin.configureMenuType(
+				menuType = "Primary Navigation",
+				navigationMenu = "Navigation Menu Name");
+		}
+
+		task ("Rename the second page item in navigation menu") {
+			LexiconEntry.gotoEntry(rowEntry = "Navigation Menu Name");
+
+			NavigationMenusAdmin.editItem(
+				item = "Page",
+				itemName = "Test Page Name 2",
+				name = "Test Page Name 3");
+		}
+
+		task ("View the name of the second page item was successfully changed") {
+			NavigationMenusAdmin.viewItem(itemName = "Test Page Name 3");
+		}
+
+		task ("Select the Primary Navigation in the Navigation Menu widget") {
+			Navigator.gotoSitePage(
+				pageName = "Test Page Name 1",
+				siteName = "Test Site Name");
+
+			NavigationMenusWidget.gotoNavigationMenuWidgetConfig();
+
+			NavigationMenusWidget.selectNavigation(menuType = "Primary Navigation");
+
+			AssertSelectedLabel(
+				locator1 = "NavigationMenusWidget#SELECT_NAVIGATION",
+				value1 = "Primary Navigation");
+
+			Portlet.saveAndCloseConfig();
+		}
+
+		task ("Navigate to the second page via Navigation Menu widget") {
+			Navigator.gotoSitePage(
+				pageName = "Test Page Name 3",
+				siteName = "Test Site Name");
+
+			var portalURL = PropsUtil.get("portal.url");
+
+			AssertLocation(value1 = "${portalURL}/web/test-site-name/test-page-name-2");
+		}
+	}
+
+	@description = "This is a test for LPS-87134. We assert that the option to automatically add new pages to a navigation menu works as expected."
+	@priority = "5"
+	test ToggleAutomaticallyAddNewPagesToNavigationMenu {
+		property portal.acceptance = "true";
+
+		task ("Add two navigation menus with option to offer new pages flagged") {
+			for (var n : list "1,2") {
+				JSONSitenavigation.addSiteNavigationMenu(
+					groupName = "Test Site Name",
+					siteNavigationMenuName = "Navigation Menu Name ${n}");
+			}
+		}
+
+		task ("Navigate to pages admin") {
+			SitePages.openPagesAdmin(siteURLKey = "test-site-name");
+		}
+
+		task ("Add a page and automatically add it to both navigation menus") {
+			SitePages.addPublicPage(
+				navigationMenus = "Navigation Menu Name 1,Navigation Menu Name 2",
+				pageName = "Page 1");
+		}
+
+		task ("Add a second page and automatically add it to the second navigation menu") {
+			SitePages.addPublicPage(
+				navigationMenus = "Navigation Menu Name 2",
+				pageName = "Page 2");
+		}
+
+		task ("Navigate to the first navigation menu") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.gotoEntry(rowEntry = "Navigation Menu Name 1");
+		}
+
+		task ("Assert the first navigation menu has only the first page already added as items") {
+			NavigationMenusAdmin.viewItem(itemName = "Page 1");
+
+			NavigationMenusAdmin.viewNoItem(itemName = "Page 2");
+		}
+
+		task ("Navigate to the second navigation menu") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.gotoEntry(rowEntry = "Navigation Menu Name 2");
+		}
+
+		task ("Assert the second navigation menu has both pages already added as items") {
+			NavigationMenusAdmin.viewItem(itemName = "Page 1");
+
+			NavigationMenusAdmin.viewItem(itemName = "Page 2");
+		}
+
+		task ("Disable the option to offer new pages for the first navigation menu") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.gotoEntry(rowEntry = "Navigation Menu Name 1");
+
+			NavigationMenusAdmin.toggleAutomaticallyAddNewPagesToMenu(toggleValue = "disable");
+		}
+
+		task ("Add a third page and assert that while adding the new page, the checkbox to add a new page to the first navigation menu is not present") {
+			SitePages.openPagesAdmin(siteURLKey = "test-site-name");
+
+			SitePages.addPublicPage(
+				assertCheckboxMissing = "true",
+				navigationMenus = "Navigation Menu Name 1",
+				pageName = "Page 3");
+		}
+
+		task ("Assert the third page was not added to the first navigation menu") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.gotoEntry(rowEntry = "Navigation Menu Name 1");
+
+			NavigationMenusAdmin.viewNoItem(itemName = "Page 3");
+		}
+	}
+
+	@description = "This is a test for LPS-125802. View the hierarchy of items when change the order."
+	@priority = "4"
+	test ViewHierarchyOfItemsWhenChangeOrder {
+		task ("Add three content pages") {
+			for (var n : list "1,2,3") {
+				JSONLayout.addPublicLayout(
+					groupName = "Test Site Name",
+					layoutName = "Test Page Name ${n}",
+					type = "content");
+
+				JSONLayout.publishLayout(
+					groupName = "Test Site Name",
+					layoutName = "Test Page Name ${n}");
+			}
+		}
+
+		task ("Add a child widget page for each content page") {
+			for (var n : list "1,2,3") {
+				JSONLayout.addPublicLayout(
+					groupName = "Test Site Name",
+					layoutName = "Child Page ${n}",
+					parentLayoutName = "Test Page Name ${n}");
+			}
+		}
+
+		task ("Add a navigation menu") {
+			JSONSitenavigation.addSiteNavigationMenu(
+				groupName = "Test Site Name",
+				siteNavigationMenuName = "Navigation Menu Name");
+		}
+
+		task ("Add three content pages as parent page items to the navigation menu") {
+			for (var n : list "1,2,3") {
+				JSONSitenavigation.addSiteNavigationMenuItem(
+					groupName = "Test Site Name",
+					privateLayout = "false",
+					siteNavigationMenuItemName = "Test Page Name ${n}",
+					siteNavigationMenuName = "Navigation Menu Name",
+					type = "layout");
+			}
+		}
+
+		task ("Add the child widget page as child page item under each parent page item") {
+			for (var n : list "1,2,3") {
+				JSONSitenavigation.addSiteNavigationMenuItem(
+					groupName = "Test Site Name",
+					parentSiteNavigationMenuItem = "Test Page Name ${n}",
+					privateLayout = "false",
+					siteNavigationMenuItemName = "Child Page ${n}",
+					siteNavigationMenuName = "Navigation Menu Name",
+					type = "layout");
+			}
+		}
+
+		task ("Navigate to the navigation menu") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.gotoEntry(rowEntry = "Navigation Menu Name");
+
+			WaitForPageLoad();
+		}
+
+		task ("Change the order of the second parent page item and third parent page item") {
+			DragAndDrop.javaScriptDragAndDropToObject(
+				key_itemName = "Test Page Name 2",
+				key_sourceItemName = "Test Page Name 3",
+				locator1 = "SiteNavigationMenu#ITEM_ENTRY_DRAG_ICON",
+				locator2 = "SiteNavigationMenu#ITEM_ENTRY");
+		}
+
+		task ("View the hierachy of page items") {
+			for (var n : list "1,2,3") {
+				NavigationMenusAdmin.viewItemNotNested(itemName = "Test Page Name ${n}");
+			}
+
+			for (var n : list "1,2,3") {
+				NavigationMenusAdmin.viewItemNested(
+					groupName = "Test Site Name",
+					itemName = "Child Page ${n}",
+					parentItemName = "Test Page Name ${n}",
+					site = "true",
+					siteNavigationMenuName = "Navigation Menu Name");
+			}
+		}
+
+		task ("Change back to the original order of the second parent page item and third parent page item") {
+			DragAndDrop.javaScriptDragAndDropToObject(
+				key_itemName = "Test Page Name 3",
+				key_sourceItemName = "Test Page Name 2",
+				locator1 = "SiteNavigationMenu#ITEM_ENTRY_DRAG_ICON",
+				locator2 = "SiteNavigationMenu#ITEM_ENTRY");
+		}
+
+		task ("View the hierachy of page items") {
+			for (var n : list "1,2,3") {
+				NavigationMenusAdmin.viewItemNotNested(itemName = "Test Page Name ${n}");
+			}
+
+			for (var n : list "1,2,3") {
+				NavigationMenusAdmin.viewItemNested(
+					groupName = "Test Site Name",
+					itemName = "Child Page ${n}",
+					parentItemName = "Test Page Name ${n}",
+					site = "true",
+					siteNavigationMenuName = "Navigation Menu Name");
+			}
+		}
+	}
+
+	@description = "This is a test for LPS-87134. View no navigation menus are automatically created after adding pages."
+	@priority = "3"
+	test ViewNoNavigationMenuAfterAddingPages {
+		task ("Add a public page to the site") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Public Page");
+		}
+
+		task ("Add a private page to the site") {
+			JSONLayout.addPrivateLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Private Page");
+		}
+
+		task ("View no navigation menus are automatically created after adding pages") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name");
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "Message#EMPTY_INFO",
+				value1 = "There are no navigation menus.");
+		}
+	}
+
+}

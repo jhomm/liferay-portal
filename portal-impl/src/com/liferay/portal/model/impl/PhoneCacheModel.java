@@ -14,14 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.Phone;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.Phone;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -34,26 +31,26 @@ import java.util.Date;
  * The cache model class for representing Phone in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see Phone
  * @generated
  */
-@ProviderType
-public class PhoneCacheModel implements CacheModel<Phone>, Externalizable,
-	MVCCModel {
+public class PhoneCacheModel
+	implements CacheModel<Phone>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof PhoneCacheModel)) {
+		if (!(object instanceof PhoneCacheModel)) {
 			return false;
 		}
 
-		PhoneCacheModel phoneCacheModel = (PhoneCacheModel)obj;
+		PhoneCacheModel phoneCacheModel = (PhoneCacheModel)object;
 
 		if ((phoneId == phoneCacheModel.phoneId) &&
-				(mvccVersion == phoneCacheModel.mvccVersion)) {
+			(mvccVersion == phoneCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -79,7 +76,7 @@ public class PhoneCacheModel implements CacheModel<Phone>, Externalizable,
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(31);
+		StringBundler sb = new StringBundler(29);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -109,8 +106,6 @@ public class PhoneCacheModel implements CacheModel<Phone>, Externalizable,
 		sb.append(typeId);
 		sb.append(", primary=");
 		sb.append(primary);
-		sb.append(", lastPublishDate=");
-		sb.append(lastPublishDate);
 		sb.append("}");
 
 		return sb.toString();
@@ -123,7 +118,7 @@ public class PhoneCacheModel implements CacheModel<Phone>, Externalizable,
 		phoneImpl.setMvccVersion(mvccVersion);
 
 		if (uuid == null) {
-			phoneImpl.setUuid(StringPool.BLANK);
+			phoneImpl.setUuid("");
 		}
 		else {
 			phoneImpl.setUuid(uuid);
@@ -134,7 +129,7 @@ public class PhoneCacheModel implements CacheModel<Phone>, Externalizable,
 		phoneImpl.setUserId(userId);
 
 		if (userName == null) {
-			phoneImpl.setUserName(StringPool.BLANK);
+			phoneImpl.setUserName("");
 		}
 		else {
 			phoneImpl.setUserName(userName);
@@ -158,14 +153,14 @@ public class PhoneCacheModel implements CacheModel<Phone>, Externalizable,
 		phoneImpl.setClassPK(classPK);
 
 		if (number == null) {
-			phoneImpl.setNumber(StringPool.BLANK);
+			phoneImpl.setNumber("");
 		}
 		else {
 			phoneImpl.setNumber(number);
 		}
 
 		if (extension == null) {
-			phoneImpl.setExtension(StringPool.BLANK);
+			phoneImpl.setExtension("");
 		}
 		else {
 			phoneImpl.setExtension(extension);
@@ -173,13 +168,6 @@ public class PhoneCacheModel implements CacheModel<Phone>, Externalizable,
 
 		phoneImpl.setTypeId(typeId);
 		phoneImpl.setPrimary(primary);
-
-		if (lastPublishDate == Long.MIN_VALUE) {
-			phoneImpl.setLastPublishDate(null);
-		}
-		else {
-			phoneImpl.setLastPublishDate(new Date(lastPublishDate));
-		}
 
 		phoneImpl.resetOriginalValues();
 
@@ -190,39 +178,46 @@ public class PhoneCacheModel implements CacheModel<Phone>, Externalizable,
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
+
 		phoneId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
+
 		userId = objectInput.readLong();
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
+
 		classNameId = objectInput.readLong();
+
 		classPK = objectInput.readLong();
 		number = objectInput.readUTF();
 		extension = objectInput.readUTF();
+
 		typeId = objectInput.readLong();
+
 		primary = objectInput.readBoolean();
-		lastPublishDate = objectInput.readLong();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
 
 		if (uuid == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(uuid);
 		}
 
 		objectOutput.writeLong(phoneId);
+
 		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(userId);
 
 		if (userName == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(userName);
@@ -230,26 +225,28 @@ public class PhoneCacheModel implements CacheModel<Phone>, Externalizable,
 
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
+
 		objectOutput.writeLong(classNameId);
+
 		objectOutput.writeLong(classPK);
 
 		if (number == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(number);
 		}
 
 		if (extension == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(extension);
 		}
 
 		objectOutput.writeLong(typeId);
+
 		objectOutput.writeBoolean(primary);
-		objectOutput.writeLong(lastPublishDate);
 	}
 
 	public long mvccVersion;
@@ -266,5 +263,5 @@ public class PhoneCacheModel implements CacheModel<Phone>, Externalizable,
 	public String extension;
 	public long typeId;
 	public boolean primary;
-	public long lastPublishDate;
+
 }

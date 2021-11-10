@@ -17,19 +17,19 @@ package com.liferay.portlet.usersadmin.search;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.portlet.PortalPreferences;
+import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Organization;
-import com.liferay.portal.model.User;
-import com.liferay.portlet.PortalPreferences;
-import com.liferay.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
+import com.liferay.users.admin.kernel.util.UsersAdminUtil;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,20 +44,21 @@ public class OrganizationSearch extends SearchContainer<Organization> {
 	public static final String EMPTY_RESULTS_MESSAGE =
 		"no-organizations-were-found";
 
-	public static List<String> headerNames = new ArrayList<>();
-	public static Map<String, String> orderableHeaders = new HashMap<>();
-
-	static {
-		headerNames.add("name");
-		headerNames.add("parent-organization");
-		headerNames.add("type");
-		headerNames.add("city");
-		headerNames.add("region");
-		headerNames.add("country");
-
-		orderableHeaders.put("name", "name");
-		orderableHeaders.put("type", "type");
-	}
+	public static List<String> headerNames = new ArrayList<String>() {
+		{
+			add("name");
+			add("parent-organization");
+			add("type");
+			add("city");
+			add("region");
+			add("country");
+		}
+	};
+	public static Map<String, String> orderableHeaders = HashMapBuilder.put(
+		"name", "name"
+	).put(
+		"type", "type"
+	).build();
 
 	public OrganizationSearch(
 		PortletRequest portletRequest, PortletURL iteratorURL) {
@@ -134,8 +135,8 @@ public class OrganizationSearch extends SearchContainer<Organization> {
 			setOrderByType(orderByType);
 			setOrderByComparator(orderByComparator);
 		}
-		catch (Exception e) {
-			_log.error(e);
+		catch (Exception exception) {
+			_log.error("Unable to initialize organization search", exception);
 		}
 	}
 

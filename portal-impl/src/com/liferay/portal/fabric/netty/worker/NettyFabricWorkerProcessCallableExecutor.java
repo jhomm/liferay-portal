@@ -14,10 +14,10 @@
 
 package com.liferay.portal.fabric.netty.worker;
 
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.process.ProcessCallable;
 import com.liferay.portal.fabric.netty.rpc.RPCUtil;
-import com.liferay.portal.fabric.status.JMXProxyUtil.ProcessCallableExecutor;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.process.ProcessCallable;
+import com.liferay.portal.fabric.status.JMXProxyUtil;
 
 import io.netty.channel.Channel;
 
@@ -27,14 +27,14 @@ import java.io.Serializable;
  * @author Shuyang Zhou
  */
 public class NettyFabricWorkerProcessCallableExecutor
-	implements ProcessCallableExecutor {
+	implements JMXProxyUtil.ProcessCallableExecutor {
 
 	public NettyFabricWorkerProcessCallableExecutor(
-		Channel channel, long fabricWorkerId, long rpcRelayTime) {
+		Channel channel, long fabricWorkerId, long rpcRelayTimeout) {
 
 		_channel = channel;
 		_fabricWorkerId = fabricWorkerId;
-		_rpcRelayTimeout = rpcRelayTime;
+		_rpcRelayTimeout = rpcRelayTimeout;
 	}
 
 	@Override

@@ -2,41 +2,48 @@
 <head>
 <title>SiteSettingsStaging</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">SiteSettingsStaging</td></tr>
 </thead>
+
 <tbody>
 <!--STAGING-->
 <tr>
 	<td>NONE_RADIO</td>
-	<td>//input[@id='_165_none']</td>
+	<td>//span[contains(.,'None')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>STAGING_LOCAL_LIVE</td>
-	<td>//input[@id='_165_local']</td>
+	<td>//span[contains(.,'Local Live')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>STAGING_REMOTE_LIVE</td>
-	<td>//input[@id='_165_remote']</td>
+	<td>//span[contains(.,'Remote Live')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ENABLED_ON_LOCAL_LIVE_CHECKBOX</td>
+	<td>//label[contains(.,'Local Live')]/input[@checked]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ENABLED_ON_PUBLIC_PAGES_CHECKBOX</td>
-	<td>//input[@id='_165_branchingPublic']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>ENABLED_ON_PRIVATE_PAGES_CHECKBOX</td>
-	<td>//input[@id='_165_branchingPrivate']</td>
+	<td>//span[contains(.,'Public Pages')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>CONTENT_CHECKBOX</td>
-	<td>//div[@id=&quot;_165_stagedPortlets&quot;]//label[contains(.,'${key_contentName}')]/input</td>
+	<td>//div[contains(@id,'stagingConfigurationControls')]//span[contains(.,'${key_contentName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CONTENT_SELECT_ALL_CHECKBOX</td>
+	<td>//span[contains(.,'Select All')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -47,22 +54,17 @@
 <!--REMOTE_STAGING-->
 <tr>
 	<td>REMOTE_STAGING_IP</td>
-	<td>//input[@id='_165_remoteAddress']</td>
+	<td>//input[contains(@id,'remoteAddress')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>REMOTE_STAGING_PORT</td>
-	<td>//input[@id='_165_remotePort']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>REMOTE_STAGING_PATH_CONTEXT</td>
-	<td>//input[@id='_165_remotePathContext']</td>
+	<td>//input[contains(@id,'remotePort')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>REMOTE_STAGING_SITE_ID</td>
-	<td>//input[@id='_165_remoteGroupId']</td>
+	<td>//input[contains(@id,'remoteGroupId')]</td>
 	<td></td>
 </tr>
 </tbody>

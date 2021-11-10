@@ -14,23 +14,24 @@
 
 package com.liferay.portal.fabric.netty.fileserver.handlers;
 
+import com.liferay.petra.concurrent.AsyncBroker;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.fabric.netty.NettyTestUtil;
 import com.liferay.portal.fabric.netty.fileserver.CompressionLevel;
 import com.liferay.portal.fabric.netty.fileserver.FileHelperUtil;
 import com.liferay.portal.fabric.netty.fileserver.FileResponse;
-import com.liferay.portal.kernel.concurrent.AsyncBroker;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.nio.FileChannelWrapper;
-import com.liferay.portal.kernel.test.CaptureHandler;
-import com.liferay.portal.kernel.test.JDKLoggerTestUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.kernel.test.rule.NewEnv;
-import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.AdviseWith;
-import com.liferay.portal.test.rule.AspectJNewEnvTestRule;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -56,8 +57,8 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -78,7 +79,7 @@ public class FileUploadChannelHandlerTest {
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new AggregateTestRule(
-			CodeCoverageAssertor.INSTANCE, AspectJNewEnvTestRule.INSTANCE);
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@After
 	public void tearDown() {
@@ -117,8 +118,9 @@ public class FileUploadChannelHandlerTest {
 
 			Assert.fail();
 		}
-		catch (NullPointerException npe) {
-			Assert.assertEquals("Async broker is null", npe.getMessage());
+		catch (NullPointerException nullPointerException) {
+			Assert.assertEquals(
+				"Async broker is null", nullPointerException.getMessage());
 		}
 
 		try {
@@ -126,8 +128,9 @@ public class FileUploadChannelHandlerTest {
 
 			Assert.fail();
 		}
-		catch (NullPointerException npe) {
-			Assert.assertEquals("File response is null", npe.getMessage());
+		catch (NullPointerException nullPointerException) {
+			Assert.assertEquals(
+				"File response is null", nullPointerException.getMessage());
 		}
 
 		FileResponse fileResponse = new FileResponse(
@@ -138,8 +141,9 @@ public class FileUploadChannelHandlerTest {
 
 			Assert.fail();
 		}
-		catch (NullPointerException npe) {
-			Assert.assertEquals("Event executor is null", npe.getMessage());
+		catch (NullPointerException nullPointerException) {
+			Assert.assertEquals(
+				"Event executor is null", nullPointerException.getMessage());
 		}
 
 		try {
@@ -148,9 +152,10 @@ public class FileUploadChannelHandlerTest {
 
 			Assert.fail();
 		}
-		catch (IllegalArgumentException iae) {
+		catch (IllegalArgumentException illegalArgumentException) {
 			Assert.assertEquals(
-				"File response has no content for uploading", iae.getMessage());
+				"File response has no content for uploading",
+				illegalArgumentException.getMessage());
 		}
 	}
 
@@ -201,15 +206,15 @@ public class FileUploadChannelHandlerTest {
 			new FileChannelWrapper(fileUploadChannelHandler.fileChannel) {
 
 				@Override
+				public long position() {
+					return unsyncByteArrayOutputStream.size();
+				}
+
+				@Override
 				public int write(ByteBuffer byteBuffer) {
 					unsyncByteArrayOutputStream.write(byteBuffer.get());
 
 					return 1;
-				}
-
-				@Override
-				public long position() {
-					return unsyncByteArrayOutputStream.size();
 				}
 
 			});
@@ -228,6 +233,7 @@ public class FileUploadChannelHandlerTest {
 		Assert.assertEquals(1, byteBuf.refCnt());
 		Assert.assertTrue(fileUploadChannelHandler.receive(byteBuf));
 		Assert.assertEquals(1, byteBuf.refCnt());
+
 		Assert.assertArrayEquals(
 			data, unsyncByteArrayOutputStream.toByteArray());
 		Assert.assertEquals(Unpooled.wrappedBuffer(data), byteBuf);
@@ -264,7 +270,7 @@ public class FileUploadChannelHandlerTest {
 		byte[] data = FileServerTestUtil.createRandomData(1024);
 
 		long lastModified = FileServerTestUtil.getFileSystemTime(
-			System.currentTimeMillis() - Time.DAY);
+			System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1));
 
 		Path file = doTestUpload(
 			data, lastModified, false, inEventLoop, fail, postAsyncBroker);
@@ -282,7 +288,7 @@ public class FileUploadChannelHandlerTest {
 			Paths.get("testFolder"));
 
 		long lastModified = FileServerTestUtil.getFileSystemTime(
-			System.currentTimeMillis() - Time.DAY);
+			System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1));
 
 		Files.setLastModifiedTime(
 			testFolder, FileTime.fromMillis(lastModified));
@@ -319,7 +325,7 @@ public class FileUploadChannelHandlerTest {
 			noticeableFuture = _asyncBroker.post(fileResponse.getPath());
 		}
 
-		final FileUploadChannelHandler fileUploadChannelHandler =
+		FileUploadChannelHandler fileUploadChannelHandler =
 			new FileUploadChannelHandler(
 				_asyncBroker, fileResponse, getEventLoop(inEventloop));
 
@@ -365,9 +371,8 @@ public class FileUploadChannelHandlerTest {
 				});
 		}
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					FileUploadChannelHandler.class.getName(), Level.SEVERE)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				FileUploadChannelHandler.class.getName(), Level.SEVERE)) {
 
 			try {
 				if (inEventloop) {
@@ -395,9 +400,9 @@ public class FileUploadChannelHandlerTest {
 						FileServerTestUtil.wrapSecondHalf(data));
 				}
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
 				fileUploadChannelHandler.exceptionCaught(
-					channelPipeline.firstContext(), e);
+					channelPipeline.firstContext(), exception);
 			}
 
 			if (postAsyncBroker) {
@@ -407,8 +412,8 @@ public class FileUploadChannelHandlerTest {
 
 						Assert.fail();
 					}
-					catch (ExecutionException ee) {
-						Throwable throwable = ee.getCause();
+					catch (ExecutionException executionException) {
+						Throwable throwable = executionException.getCause();
 
 						if (folder) {
 							Assert.assertEquals(
@@ -427,15 +432,15 @@ public class FileUploadChannelHandlerTest {
 
 			shutdown(inEventloop, fileUploadChannelHandler.eventExecutor);
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
 			if (fail) {
-				LogRecord logRecord = logRecords.remove(0);
+				LogEntry logEntry = logEntries.remove(0);
 
 				Assert.assertEquals(
-					"File upload failure", logRecord.getMessage());
+					"File upload failure", logEntry.getMessage());
 
-				Throwable throwable = logRecord.getThrown();
+				Throwable throwable = logEntry.getThrowable();
 
 				if (folder) {
 					Assert.assertEquals(
@@ -448,15 +453,15 @@ public class FileUploadChannelHandlerTest {
 			}
 
 			if (!postAsyncBroker) {
-				LogRecord logRecord = logRecords.remove(0);
+				LogEntry logEntry = logEntries.remove(0);
 
 				if (fail) {
 					Assert.assertEquals(
 						"Unable to place exception because no future exists " +
 							"with ID " + fileResponse.getPath(),
-						logRecord.getMessage());
+						logEntry.getMessage());
 
-					Throwable throwable = logRecord.getThrown();
+					Throwable throwable = logEntry.getThrowable();
 
 					if (folder) {
 						Assert.assertEquals(
@@ -469,14 +474,15 @@ public class FileUploadChannelHandlerTest {
 				}
 				else {
 					Assert.assertEquals(
-						"Unable to place result " + fileResponse +
-							" because no future exists with ID " +
-								fileResponse.getPath(),
-						logRecord.getMessage());
+						StringBundler.concat(
+							"Unable to place result ", fileResponse,
+							" because no future exists with ID ",
+							fileResponse.getPath()),
+						logEntry.getMessage());
 				}
 			}
 
-			Assert.assertTrue(logRecords.isEmpty());
+			Assert.assertTrue(logEntries.toString(), logEntries.isEmpty());
 			Assert.assertSame(channelPipeline.first(), channelPipeline.last());
 		}
 

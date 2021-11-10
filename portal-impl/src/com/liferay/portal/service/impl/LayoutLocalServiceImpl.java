@@ -14,60 +14,115 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.NoSuchLayoutException;
-import com.liferay.portal.RequiredLayoutException;
-import com.liferay.portal.SitemapChangeFrequencyException;
-import com.liferay.portal.SitemapIncludeException;
-import com.liferay.portal.SitemapPagePriorityException;
+import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.expando.kernel.service.ExpandoRowLocalService;
+import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
+import com.liferay.layout.admin.kernel.model.LayoutTypePortletConstants;
+import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.change.tracking.CTTransactionException;
+import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.Property;
+import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.RequiredLayoutException;
+import com.liferay.portal.kernel.exception.SitemapChangeFrequencyException;
+import com.liferay.portal.kernel.exception.SitemapIncludeException;
+import com.liferay.portal.kernel.exception.SitemapPagePriorityException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.CustomizedPages;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.model.LayoutFriendlyURL;
+import com.liferay.portal.kernel.model.LayoutPrototype;
+import com.liferay.portal.kernel.model.LayoutReference;
+import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.model.LayoutSetPrototype;
+import com.liferay.portal.kernel.model.LayoutType;
+import com.liferay.portal.kernel.model.LayoutTypePortlet;
+import com.liferay.portal.kernel.model.PortalPreferenceValueTable;
+import com.liferay.portal.kernel.model.PortalPreferences;
+import com.liferay.portal.kernel.model.PortalPreferencesTable;
+import com.liferay.portal.kernel.model.PortletConstants;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.ResourcePermission;
+import com.liferay.portal.kernel.model.SystemEventConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.model.impl.VirtualLayout;
+import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.Hits;
+import com.liferay.portal.kernel.search.Indexable;
+import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.search.QueryConfig;
+import com.liferay.portal.kernel.search.SearchContext;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.security.SecureRandomUtil;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ImageLocalService;
+import com.liferay.portal.kernel.service.LayoutFriendlyURLLocalService;
+import com.liferay.portal.kernel.service.LayoutPrototypeLocalService;
+import com.liferay.portal.kernel.service.LayoutSetLocalService;
+import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalService;
+import com.liferay.portal.kernel.service.PortalPreferenceValueLocalService;
+import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
+import com.liferay.portal.kernel.service.ResourceLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
+import com.liferay.portal.kernel.service.persistence.GroupPersistence;
+import com.liferay.portal.kernel.service.persistence.LayoutFriendlyURLPersistence;
+import com.liferay.portal.kernel.service.persistence.LayoutPrototypePersistence;
+import com.liferay.portal.kernel.service.persistence.LayoutSetPersistence;
+import com.liferay.portal.kernel.service.persistence.PortalPreferencesPersistence;
+import com.liferay.portal.kernel.service.persistence.ResourcePermissionPersistence;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.systemevent.SystemEventHierarchyEntry;
 import com.liferay.portal.kernel.systemevent.SystemEventHierarchyEntryThreadLocal;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.model.LayoutConstants;
-import com.liferay.portal.model.LayoutFriendlyURL;
-import com.liferay.portal.model.LayoutPrototype;
-import com.liferay.portal.model.LayoutReference;
-import com.liferay.portal.model.LayoutSet;
-import com.liferay.portal.model.LayoutSetPrototype;
-import com.liferay.portal.model.LayoutType;
-import com.liferay.portal.model.LayoutTypePortlet;
-import com.liferay.portal.model.PortletConstants;
-import com.liferay.portal.model.ResourceConstants;
-import com.liferay.portal.model.ResourcePermission;
-import com.liferay.portal.model.SystemEventConstants;
-import com.liferay.portal.model.User;
-import com.liferay.portal.model.UserGroup;
-import com.liferay.portal.model.impl.VirtualLayout;
-import com.liferay.portal.service.ServiceContext;
+import com.liferay.portal.kernel.util.comparator.LayoutComparator;
+import com.liferay.portal.kernel.util.comparator.LayoutPriorityComparator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.kernel.workflow.WorkflowThreadLocal;
 import com.liferay.portal.service.base.LayoutLocalServiceBaseImpl;
-import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portal.util.comparator.LayoutComparator;
-import com.liferay.portal.util.comparator.LayoutPriorityComparator;
-import com.liferay.portlet.exportimport.lar.MissingReferences;
-import com.liferay.portlet.exportimport.model.ExportImportConfiguration;
-import com.liferay.portlet.sites.util.Sites;
-import com.liferay.portlet.sites.util.SitesUtil;
+import com.liferay.ratings.kernel.service.RatingsStatsLocalService;
+import com.liferay.sites.kernel.util.Sites;
+import com.liferay.sites.kernel.util.SitesUtil;
 
-import java.io.File;
-import java.io.InputStream;
-
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -75,7 +130,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Queue;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * Provides the local service for accessing, adding, deleting, exporting,
@@ -102,92 +160,9 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 * @return the object counter's name
 	 */
 	public static String getCounterName(long groupId, boolean privateLayout) {
-		StringBundler sb = new StringBundler(5);
-
-		sb.append(Layout.class.getName());
-		sb.append(StringPool.POUND);
-		sb.append(groupId);
-		sb.append(StringPool.POUND);
-		sb.append(privateLayout);
-
-		return sb.toString();
-	}
-
-	/**
-	 * Adds a layout.
-	 *
-	 * <p>
-	 * This method handles the creation of the layout including its resources,
-	 * metadata, and internal data structures. It is not necessary to make
-	 * subsequent calls to any methods to setup default groups, resources, ...
-	 * etc.
-	 * </p>
-	 *
-	 * @param      userId the primary key of the user
-	 * @param      groupId the primary key of the group
-	 * @param      privateLayout whether the layout is private to the group
-	 * @param      parentLayoutId the primary key of the parent layout
-	 *             (optionally {@link LayoutConstants#DEFAULT_PARENT_LAYOUT_ID})
-	 * @param      nameMap the layout's locales and localized names
-	 * @param      titleMap the layout's locales and localized titles
-	 * @param      descriptionMap the layout's locales and localized
-	 *             descriptions
-	 * @param      keywordsMap the layout's locales and localized keywords
-	 * @param      robotsMap the layout's locales and localized robots
-	 * @param      type the layout's type (optionally {@link
-	 *             LayoutConstants#TYPE_PORTLET}). The possible types can be
-	 *             found in {@link LayoutConstants}.
-	 * @param      hidden whether the layout is hidden
-	 * @param      friendlyURL the layout's friendly URL (optionally {@link
-	 *             PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL} or
-	 *             {@link PropsValues#DEFAULT_USER_PUBLIC_LAYOUT_FRIENDLY_URL}).
-	 *             The default values can be overridden in
-	 *             <code>portal-ext.properties</code> by specifying new values
-	 *             for the corresponding properties defined in {@link
-	 *             PropsValues}. To see how the URL is normalized when accessed,
-	 *             see {@link
-	 *             com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
-	 *             String)}.
-	 * @param      serviceContext the service context to be applied. Must set
-	 *             the UUID for the layout. Can set the creation date,
-	 *             modification date and the expando bridge attributes for the
-	 *             layout. For layouts that belong to a layout set prototype, an
-	 *             attribute named <code>layoutUpdateable</code> can be set to
-	 *             specify whether site administrators can modify this page
-	 *             within their site. For layouts that are created from a layout
-	 *             prototype, attributes named <code>layoutPrototypeUuid</code>
-	 *             and <code>layoutPrototypeLinkedEnabled</code> can be
-	 *             specified to provide the unique identifier of the source
-	 *             prototype and a boolean to determine whether a link to it
-	 *             should be enabled to activate propagation of changes made to
-	 *             the linked page in the prototype.
-	 * @return     the layout
-	 * @throws     PortalException if a group or user with the primary key could
-	 *             not be found, if layout values were invalid, or if a portal
-	 *             exception occurred
-	 * @deprecated As of 6.2.0, replaced by {@link #addLayout(long, long,
-	 *             boolean, long, Map, Map, Map, Map, Map, String, String,
-	 *             boolean, Map, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public Layout addLayout(
-			long userId, long groupId, boolean privateLayout,
-			long parentLayoutId, Map<Locale, String> nameMap,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			Map<Locale, String> keywordsMap, Map<Locale, String> robotsMap,
-			String type, boolean hidden, String friendlyURL,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		Map<Locale, String> friendlyURLMap = new HashMap<>();
-
-		friendlyURLMap.put(LocaleUtil.getSiteDefault(), friendlyURL);
-
-		return addLayout(
-			userId, groupId, privateLayout, parentLayoutId, nameMap, titleMap,
-			descriptionMap, keywordsMap, robotsMap, type, StringPool.BLANK,
-			hidden, friendlyURLMap, serviceContext);
+		return StringBundler.concat(
+			Layout.class.getName(), StringPool.POUND, groupId, StringPool.POUND,
+			privateLayout);
 	}
 
 	/**
@@ -203,7 +178,345 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  parentLayoutId the primary key of the parent layout (optionally
+	 * @param  parentLayoutId the layout ID of the parent layout (optionally
+	 *         {@link LayoutConstants#DEFAULT_PARENT_LAYOUT_ID})
+	 * @param  classNameId the class name ID of the entity
+	 * @param  classPK the primary key of the entity
+	 * @param  nameMap the layout's locales and localized names
+	 * @param  titleMap the layout's locales and localized titles
+	 * @param  descriptionMap the layout's locales and localized descriptions
+	 * @param  keywordsMap the layout's locales and localized keywords
+	 * @param  robotsMap the layout's locales and localized robots
+	 * @param  type the layout's type (optionally {@link
+	 *         LayoutConstants#TYPE_PORTLET}). The possible types can be found
+	 *         in {@link LayoutConstants}.
+	 * @param  typeSettings the settings to load the unicode properties object.
+	 *         See {@link UnicodeProperties #fastLoad(String)}.
+	 * @param  hidden whether the layout is hidden
+	 * @param  system whether the layout is of system type
+	 * @param  friendlyURLMap the layout's locales and localized friendly URLs.
+	 *         To see how the URL is normalized when accessed, see {@link
+	 *         com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
+	 *         String)}.
+	 * @param  masterLayoutPlid the primary key of the master layout
+	 * @param  serviceContext the service context to be applied. Must set the
+	 *         UUID for the layout. Can set the creation date, modification
+	 *         date, and expando bridge attributes for the layout. For layouts
+	 *         that belong to a layout set prototype, an attribute named
+	 *         <code>layoutUpdateable</code> can be set to specify whether site
+	 *         administrators can modify this page within their site. For
+	 *         layouts that are created from a layout prototype, attributes
+	 *         named <code>layoutPrototypeUuid</code> and
+	 *         <code>layoutPrototypeLinkedEnabled</code> can be specified to
+	 *         provide the unique identifier of the source prototype and a
+	 *         boolean to determine whether a link to it should be enabled to
+	 *         activate propagation of changes made to the linked page in the
+	 *         prototype.
+	 * @return the layout
+	 * @throws PortalException if a portal exception occurred
+	 */
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
+	public Layout addLayout(
+			long userId, long groupId, boolean privateLayout,
+			long parentLayoutId, long classNameId, long classPK,
+			Map<Locale, String> nameMap, Map<Locale, String> titleMap,
+			Map<Locale, String> descriptionMap, Map<Locale, String> keywordsMap,
+			Map<Locale, String> robotsMap, String type, String typeSettings,
+			boolean hidden, boolean system, Map<Locale, String> friendlyURLMap,
+			long masterLayoutPlid, ServiceContext serviceContext)
+		throws PortalException {
+
+		// Layout
+
+		User user = _userPersistence.findByPrimaryKey(userId);
+		long layoutId = getNextLayoutId(groupId, privateLayout);
+		parentLayoutId = layoutLocalServiceHelper.getParentLayoutId(
+			groupId, privateLayout, parentLayoutId);
+
+		String name = nameMap.get(LocaleUtil.getSiteDefault());
+
+		if (system &&
+			(Objects.equals(type, LayoutConstants.TYPE_ASSET_DISPLAY) ||
+			 Objects.equals(type, LayoutConstants.TYPE_COLLECTION) ||
+			 Objects.equals(type, LayoutConstants.TYPE_CONTENT))) {
+
+			friendlyURLMap = _getDraftFriendlyURLMap(groupId, friendlyURLMap);
+		}
+		else {
+			friendlyURLMap = layoutLocalServiceHelper.getFriendlyURLMap(
+				groupId, privateLayout, layoutId, name, friendlyURLMap);
+		}
+
+		String friendlyURL = friendlyURLMap.get(LocaleUtil.getSiteDefault());
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			UnicodePropertiesBuilder.fastLoad(
+				typeSettings
+			).build();
+
+		int priority = Integer.MAX_VALUE;
+
+		if (!system) {
+			priority = layoutLocalServiceHelper.getNextPriority(
+				groupId, privateLayout, parentLayoutId, null, -1);
+		}
+
+		layoutLocalServiceHelper.validate(
+			groupId, privateLayout, layoutId, parentLayoutId, name, type,
+			hidden, friendlyURLMap, serviceContext);
+
+		Date date = new Date();
+
+		long plid = counterLocalService.increment(Layout.class.getName());
+
+		Layout layout = layoutPersistence.create(plid);
+
+		String uuid = serviceContext.getUuid();
+
+		if (Validator.isNotNull(uuid)) {
+			layout.setUuid(uuid);
+		}
+
+		layout.setGroupId(groupId);
+		layout.setCompanyId(user.getCompanyId());
+		layout.setUserId(user.getUserId());
+		layout.setUserName(user.getFullName());
+		layout.setCreateDate(serviceContext.getCreateDate(date));
+		layout.setModifiedDate(serviceContext.getModifiedDate(date));
+		layout.setParentPlid(
+			_getParentPlid(groupId, privateLayout, parentLayoutId));
+		layout.setPrivateLayout(privateLayout);
+		layout.setLayoutId(layoutId);
+		layout.setParentLayoutId(parentLayoutId);
+		layout.setClassNameId(classNameId);
+		layout.setClassPK(classPK);
+		layout.setNameMap(nameMap);
+		layout.setTitleMap(titleMap);
+		layout.setDescriptionMap(descriptionMap);
+		layout.setKeywordsMap(keywordsMap);
+		layout.setRobotsMap(robotsMap);
+		layout.setType(type);
+
+		boolean layoutUpdateable = ParamUtil.getBoolean(
+			serviceContext, Sites.LAYOUT_UPDATEABLE, true);
+
+		if (!layoutUpdateable) {
+			typeSettingsUnicodeProperties.put(
+				Sites.LAYOUT_UPDATEABLE, String.valueOf(layoutUpdateable));
+		}
+
+		if (privateLayout) {
+			typeSettingsUnicodeProperties.put(
+				"privateLayout", String.valueOf(privateLayout));
+		}
+
+		validateTypeSettingsProperties(layout, typeSettingsUnicodeProperties);
+
+		layout.setTypeSettingsProperties(typeSettingsUnicodeProperties);
+
+		if (type.equals(LayoutConstants.TYPE_PORTLET)) {
+
+			// LPS-106287 Calling layoutTypePortlet#setLayoutTemplateId modifies
+			// typeSettingsProperties
+
+			LayoutTypePortlet layoutTypePortlet =
+				(LayoutTypePortlet)layout.getLayoutType();
+
+			if (Validator.isNull(layoutTypePortlet.getLayoutTemplateId())) {
+				layoutTypePortlet.setLayoutTemplateId(
+					0, PropsValues.LAYOUT_DEFAULT_TEMPLATE_ID, false);
+			}
+		}
+
+		layout.setHidden(hidden);
+		layout.setSystem(system);
+		layout.setFriendlyURL(friendlyURL);
+		layout.setPriority(priority);
+		layout.setMasterLayoutPlid(masterLayoutPlid);
+
+		String layoutPrototypeUuid = ParamUtil.getString(
+			serviceContext, "layoutPrototypeUuid");
+		boolean layoutPrototypeLinkEnabled = ParamUtil.getBoolean(
+			serviceContext, "layoutPrototypeLinkEnabled",
+			PropsValues.LAYOUT_PROTOTYPE_LINK_ENABLED_DEFAULT);
+
+		if (Validator.isNotNull(layoutPrototypeUuid)) {
+			layout.setLayoutPrototypeUuid(layoutPrototypeUuid);
+			layout.setLayoutPrototypeLinkEnabled(layoutPrototypeLinkEnabled);
+		}
+
+		layout.setPublishDate(serviceContext.getModifiedDate(date));
+
+		if (_workflowDefinitionLinkLocalService.hasWorkflowDefinitionLink(
+				layout.getCompanyId(), layout.getGroupId(),
+				Layout.class.getName()) &&
+			(Objects.equals(type, LayoutConstants.TYPE_COLLECTION) ||
+			 Objects.equals(type, LayoutConstants.TYPE_CONTENT)) &&
+			!system) {
+
+			layout.setStatus(WorkflowConstants.STATUS_DRAFT);
+		}
+		else {
+			layout.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
+
+		layout.setStatusByUserId(userId);
+		layout.setStatusByUserName(user.getFullName());
+		layout.setStatusDate(serviceContext.getCreateDate(date));
+		layout.setExpandoBridgeAttributes(serviceContext);
+
+		layout = layoutLocalService.updateLayout(layout);
+
+		// Layout friendly URLs
+
+		_layoutFriendlyURLLocalService.updateLayoutFriendlyURLs(
+			user.getUserId(), user.getCompanyId(), groupId, layout.getPlid(),
+			privateLayout, friendlyURLMap, serviceContext);
+
+		// Layout prototype
+
+		if (Validator.isNotNull(layoutPrototypeUuid) &&
+			!layoutPrototypeLinkEnabled) {
+
+			_applyLayoutPrototype(
+				layoutPrototypeUuid, layout, layoutPrototypeLinkEnabled);
+		}
+
+		// Resources
+
+		boolean addGroupPermissions = true;
+
+		Group group = _groupLocalService.getGroup(groupId);
+
+		if (privateLayout && (group.isUser() || group.isUserGroup())) {
+			addGroupPermissions = false;
+		}
+
+		boolean addGuestPermissions = false;
+
+		if (!privateLayout || type.equals(LayoutConstants.TYPE_CONTROL_PANEL) ||
+			group.isLayoutSetPrototype()) {
+
+			addGuestPermissions = true;
+		}
+
+		_resourceLocalService.addResources(
+			user.getCompanyId(), groupId, user.getUserId(),
+			Layout.class.getName(), layout.getPlid(), false,
+			addGroupPermissions, addGuestPermissions);
+
+		// Group
+
+		_groupLocalService.updateSite(groupId, true);
+
+		layout.setLayoutSet(null);
+
+		// Asset
+
+		updateAsset(
+			userId, layout, serviceContext.getAssetCategoryIds(),
+			serviceContext.getAssetTagNames());
+
+		// Draft layout
+
+		if (!system &&
+			(Objects.equals(type, LayoutConstants.TYPE_COLLECTION) ||
+			 Objects.equals(type, LayoutConstants.TYPE_CONTENT) ||
+			 layout.isTypeAssetDisplay())) {
+
+			serviceContext.setModifiedDate(date);
+
+			addLayout(
+				userId, groupId, privateLayout, parentLayoutId,
+				_classNameLocalService.getClassNameId(Layout.class),
+				layout.getPlid(), nameMap, titleMap, descriptionMap,
+				keywordsMap, robotsMap, type, typeSettings, true, true,
+				Collections.emptyMap(), layout.getMasterLayoutPlid(),
+				serviceContext);
+		}
+
+		return layoutLocalService.getLayout(layout.getPlid());
+	}
+
+	/**
+	 * Adds a layout with additional parameters.
+	 *
+	 * <p>
+	 * This method handles the creation of the layout including its resources,
+	 * metadata, and internal data structures. It is not necessary to make
+	 * subsequent calls to any methods to setup default groups, resources, ...
+	 * etc.
+	 * </p>
+	 *
+	 * @param  userId the primary key of the user
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  parentLayoutId the layout ID of the parent layout (optionally
+	 *         {@link LayoutConstants#DEFAULT_PARENT_LAYOUT_ID})
+	 * @param  nameMap the layout's locales and localized names
+	 * @param  titleMap the layout's locales and localized titles
+	 * @param  descriptionMap the layout's locales and localized descriptions
+	 * @param  keywordsMap the layout's locales and localized keywords
+	 * @param  robotsMap the layout's locales and localized robots
+	 * @param  type the layout's type (optionally {@link
+	 *         LayoutConstants#TYPE_PORTLET}). The possible types can be found
+	 *         in {@link LayoutConstants}.
+	 * @param  typeSettings the settings to load the unicode properties object.
+	 *         See {@link UnicodeProperties #fastLoad(String)}.
+	 * @param  hidden whether the layout is hidden
+	 * @param  system whether the layout is of system type
+	 * @param  friendlyURLMap the layout's locales and localized friendly URLs.
+	 *         To see how the URL is normalized when accessed, see {@link
+	 *         com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
+	 *         String)}.
+	 * @param  serviceContext the service context to be applied. Must set the
+	 *         UUID for the layout. Can set the creation date, modification
+	 *         date, and expando bridge attributes for the layout. For layouts
+	 *         that belong to a layout set prototype, an attribute named
+	 *         <code>layoutUpdateable</code> can be set to specify whether site
+	 *         administrators can modify this page within their site. For
+	 *         layouts that are created from a layout prototype, attributes
+	 *         named <code>layoutPrototypeUuid</code> and
+	 *         <code>layoutPrototypeLinkedEnabled</code> can be specified to
+	 *         provide the unique identifier of the source prototype and a
+	 *         boolean to determine whether a link to it should be enabled to
+	 *         activate propagation of changes made to the linked page in the
+	 *         prototype.
+	 * @return the layout
+	 * @throws PortalException if a portal exception occurred
+	 */
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
+	public Layout addLayout(
+			long userId, long groupId, boolean privateLayout,
+			long parentLayoutId, Map<Locale, String> nameMap,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			Map<Locale, String> keywordsMap, Map<Locale, String> robotsMap,
+			String type, String typeSettings, boolean hidden, boolean system,
+			Map<Locale, String> friendlyURLMap, ServiceContext serviceContext)
+		throws PortalException {
+
+		return addLayout(
+			userId, groupId, privateLayout, parentLayoutId, 0, 0, nameMap,
+			titleMap, descriptionMap, keywordsMap, robotsMap, type,
+			typeSettings, hidden, system, friendlyURLMap, 0, serviceContext);
+	}
+
+	/**
+	 * Adds a layout with additional parameters.
+	 *
+	 * <p>
+	 * This method handles the creation of the layout including its resources,
+	 * metadata, and internal data structures. It is not necessary to make
+	 * subsequent calls to any methods to setup default groups, resources, ...
+	 * etc.
+	 * </p>
+	 *
+	 * @param  userId the primary key of the user
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  parentLayoutId the layout ID of the parent layout (optionally
 	 *         {@link LayoutConstants#DEFAULT_PARENT_LAYOUT_ID})
 	 * @param  nameMap the layout's locales and localized names
 	 * @param  titleMap the layout's locales and localized titles
@@ -234,10 +547,9 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *         activate propagation of changes made to the linked page in the
 	 *         prototype.
 	 * @return the layout
-	 * @throws PortalException if a group or user with the primary key could not
-	 *         be found, if layout values were invalid, or if a portal exception
-	 *         occurred
+	 * @throws PortalException if a portal exception occurred
 	 */
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public Layout addLayout(
 			long userId, long groupId, boolean privateLayout,
@@ -248,171 +560,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			Map<Locale, String> friendlyURLMap, ServiceContext serviceContext)
 		throws PortalException {
 
-		// Layout
-
-		User user = userPersistence.findByPrimaryKey(userId);
-		long layoutId = getNextLayoutId(groupId, privateLayout);
-		parentLayoutId = layoutLocalServiceHelper.getParentLayoutId(
-			groupId, privateLayout, parentLayoutId);
-		String name = nameMap.get(LocaleUtil.getSiteDefault());
-		friendlyURLMap = layoutLocalServiceHelper.getFriendlyURLMap(
-			groupId, privateLayout, layoutId, name, friendlyURLMap);
-
-		String friendlyURL = friendlyURLMap.get(LocaleUtil.getSiteDefault());
-
-		int priority = layoutLocalServiceHelper.getNextPriority(
-			groupId, privateLayout, parentLayoutId, null, -1);
-
-		layoutLocalServiceHelper.validate(
-			groupId, privateLayout, layoutId, parentLayoutId, name, type,
-			hidden, friendlyURLMap);
-
-		Date now = new Date();
-
-		long plid = counterLocalService.increment();
-
-		Layout layout = layoutPersistence.create(plid);
-
-		layout.setUuid(serviceContext.getUuid());
-		layout.setGroupId(groupId);
-		layout.setCompanyId(user.getCompanyId());
-		layout.setUserId(user.getUserId());
-		layout.setUserName(user.getFullName());
-		layout.setCreateDate(serviceContext.getCreateDate(now));
-		layout.setModifiedDate(serviceContext.getModifiedDate(now));
-		layout.setPrivateLayout(privateLayout);
-		layout.setLayoutId(layoutId);
-		layout.setParentLayoutId(parentLayoutId);
-		layout.setNameMap(nameMap);
-		layout.setTitleMap(titleMap);
-		layout.setDescriptionMap(descriptionMap);
-		layout.setKeywordsMap(keywordsMap);
-		layout.setRobotsMap(robotsMap);
-		layout.setType(type);
-		layout.setHidden(hidden);
-		layout.setFriendlyURL(friendlyURL);
-		layout.setPriority(priority);
-
-		boolean layoutUpdateable = ParamUtil.getBoolean(
-			serviceContext, Sites.LAYOUT_UPDATEABLE, true);
-
-		UnicodeProperties typeSettingsProperties = new UnicodeProperties();
-
-		typeSettingsProperties.fastLoad(typeSettings);
-
-		if (!layoutUpdateable) {
-			typeSettingsProperties.put(
-				Sites.LAYOUT_UPDATEABLE, String.valueOf(layoutUpdateable));
-		}
-
-		if (privateLayout) {
-			typeSettingsProperties.put(
-				"privateLayout", String.valueOf(privateLayout));
-		}
-
-		validateTypeSettingsProperties(typeSettingsProperties);
-
-		layout.setTypeSettingsProperties(typeSettingsProperties);
-
-		String layoutPrototypeUuid = ParamUtil.getString(
-			serviceContext, "layoutPrototypeUuid");
-		boolean layoutPrototypeLinkEnabled = ParamUtil.getBoolean(
-			serviceContext, "layoutPrototypeLinkEnabled",
-			PropsValues.LAYOUT_PROTOTYPE_LINK_ENABLED_DEFAULT);
-
-		if (Validator.isNotNull(layoutPrototypeUuid)) {
-			layout.setLayoutPrototypeUuid(layoutPrototypeUuid);
-			layout.setLayoutPrototypeLinkEnabled(layoutPrototypeLinkEnabled);
-		}
-
-		if (type.equals(LayoutConstants.TYPE_PORTLET)) {
-			LayoutTypePortlet layoutTypePortlet =
-				(LayoutTypePortlet)layout.getLayoutType();
-
-			if (Validator.isNull(layoutTypePortlet.getLayoutTemplateId())) {
-				layoutTypePortlet.setLayoutTemplateId(
-					0, PropsValues.LAYOUT_DEFAULT_TEMPLATE_ID, false);
-			}
-		}
-
-		layout.setExpandoBridgeAttributes(serviceContext);
-
-		layoutPersistence.update(layout);
-
-		// Layout friendly URLs
-
-		layoutFriendlyURLLocalService.updateLayoutFriendlyURLs(
-			user.getUserId(), user.getCompanyId(), groupId, plid, privateLayout,
-			friendlyURLMap, serviceContext);
-
-		// Layout prototype
-
-		if (Validator.isNotNull(layoutPrototypeUuid) &&
-			!layoutPrototypeLinkEnabled) {
-
-			LayoutPrototype layoutPrototype =
-				layoutPrototypeLocalService.
-					getLayoutPrototypeByUuidAndCompanyId(
-						layoutPrototypeUuid, layout.getCompanyId());
-
-			try {
-				SitesUtil.applyLayoutPrototype(
-					layoutPrototype, layout, layoutPrototypeLinkEnabled);
-			}
-			catch (PortalException pe) {
-				throw pe;
-			}
-			catch (SystemException se) {
-				throw se;
-			}
-			catch (Exception e) {
-				throw new SystemException(e);
-			}
-		}
-
-		// Resources
-
-		boolean addGroupPermissions = true;
-
-		Group group = groupLocalService.getGroup(groupId);
-
-		if (privateLayout && group.isUser()) {
-			addGroupPermissions = false;
-		}
-
-		boolean addGuestPermissions = false;
-
-		if (!privateLayout || type.equals(LayoutConstants.TYPE_CONTROL_PANEL) ||
-			group.isLayoutSetPrototype()) {
-
-			addGuestPermissions = true;
-		}
-
-		resourceLocalService.addResources(
-			user.getCompanyId(), groupId, user.getUserId(),
-			Layout.class.getName(), layout.getPlid(), false,
-			addGroupPermissions, addGuestPermissions);
-
-		// Group
-
-		groupLocalService.updateSite(groupId, true);
-
-		// Layout set
-
-		layoutSetLocalService.updatePageCount(groupId, privateLayout);
-
-		LayoutSet layoutSet = layoutSetPersistence.findByG_P(
-			groupId, privateLayout);
-
-		layout.setLayoutSet(layoutSet);
-
-		// Asset
-
-		updateAsset(
-			userId, layout, serviceContext.getAssetCategoryIds(),
-			serviceContext.getAssetTagNames());
-
-		return layout;
+		return addLayout(
+			userId, groupId, privateLayout, parentLayoutId, nameMap, titleMap,
+			descriptionMap, keywordsMap, robotsMap, type, typeSettings, hidden,
+			false, friendlyURLMap, serviceContext);
 	}
 
 	/**
@@ -429,7 +580,88 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  parentLayoutId the primary key of the parent layout (optionally
+	 * @param  parentLayoutId the layout ID of the parent layout (optionally
+	 *         {@link LayoutConstants#DEFAULT_PARENT_LAYOUT_ID}). The possible
+	 *         values can be found in {@link LayoutConstants}.
+	 * @param  name the layout's name (optionally {@link
+	 *         PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_NAME} or {@link
+	 *         PropsValues#DEFAULT_USER_PUBLIC_LAYOUT_NAME}). The default values
+	 *         can be overridden in <code>portal-ext.properties</code> by
+	 *         specifying new values for the corresponding properties defined in
+	 *         {@link PropsValues}
+	 * @param  title the layout's title
+	 * @param  description the layout's description
+	 * @param  type the layout's type (optionally {@link
+	 *         LayoutConstants#TYPE_PORTLET}). The possible types can be found
+	 *         in {@link LayoutConstants}.
+	 * @param  hidden whether the layout is hidden
+	 * @param  system whether the layout is of system type
+	 * @param  friendlyURL the friendly URL of the layout (optionally {@link
+	 *         PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL} or {@link
+	 *         PropsValues#DEFAULT_USER_PUBLIC_LAYOUT_FRIENDLY_URL}). The
+	 *         default values can be overridden in
+	 *         <code>portal-ext.properties</code> by specifying new values for
+	 *         the corresponding properties defined in {@link PropsValues}. To
+	 *         see how the URL is normalized when accessed, see {@link
+	 *         com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
+	 *         String)}.
+	 * @param  serviceContext the service context to be applied. Must set the
+	 *         UUID for the layout. Can set the creation date and modification
+	 *         date for the layout. For layouts that belong to a layout set
+	 *         prototype, an attribute named <code>layoutUpdateable</code> can
+	 *         be set to specify whether site administrators can modify this
+	 *         page within their site.
+	 * @return the layout
+	 * @throws PortalException if a portal exception occurred
+	 */
+	@Override
+	public Layout addLayout(
+			long userId, long groupId, boolean privateLayout,
+			long parentLayoutId, String name, String title, String description,
+			String type, boolean hidden, boolean system, String friendlyURL,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		Locale locale = LocaleUtil.getSiteDefault();
+
+		Map<Locale, String> nameMap = HashMapBuilder.put(
+			locale, name
+		).build();
+
+		Map<Locale, String> titleMap = new HashMap<>();
+
+		titleMap.put(locale, title);
+
+		Map<Locale, String> descriptionMap = new HashMap<>();
+
+		descriptionMap.put(locale, description);
+
+		Map<Locale, String> friendlyURLMap = new HashMap<>();
+
+		friendlyURLMap.put(LocaleUtil.getSiteDefault(), friendlyURL);
+
+		return addLayout(
+			userId, groupId, privateLayout, parentLayoutId, nameMap, titleMap,
+			descriptionMap, new HashMap<Locale, String>(),
+			new HashMap<Locale, String>(), type, StringPool.BLANK, hidden,
+			system, friendlyURLMap, serviceContext);
+	}
+
+	/**
+	 * Adds a layout with single entry maps for name, title, and description to
+	 * the default locale.
+	 *
+	 * <p>
+	 * This method handles the creation of the layout including its resources,
+	 * metadata, and internal data structures. It is not necessary to make
+	 * subsequent calls to any methods to setup default groups, resources, ...
+	 * etc.
+	 * </p>
+	 *
+	 * @param  userId the primary key of the user
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  parentLayoutId the layout ID of the parent layout (optionally
 	 *         {@link LayoutConstants#DEFAULT_PARENT_LAYOUT_ID}). The possible
 	 *         values can be found in {@link LayoutConstants}.
 	 * @param  name the layout's name (optionally {@link
@@ -460,8 +692,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *         be set to specify whether site administrators can modify this
 	 *         page within their site.
 	 * @return the layout
-	 * @throws PortalException if a group or user with the primary key could not
-	 *         be found, or if a portal exception occurred
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout addLayout(
@@ -471,37 +702,29 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		Locale locale = LocaleUtil.getSiteDefault();
-
-		Map<Locale, String> nameMap = new HashMap<>();
-
-		nameMap.put(locale, name);
-
-		Map<Locale, String> titleMap = new HashMap<>();
-
-		titleMap.put(locale, title);
-
-		Map<Locale, String> descriptionMap = new HashMap<>();
-
-		descriptionMap.put(locale, description);
-
-		Map<Locale, String> friendlyURLMap = new HashMap<>();
-
-		friendlyURLMap.put(LocaleUtil.getSiteDefault(), friendlyURL);
-
 		return addLayout(
-			userId, groupId, privateLayout, parentLayoutId, nameMap, titleMap,
-			descriptionMap, new HashMap<Locale, String>(),
-			new HashMap<Locale, String>(), type, StringPool.BLANK, hidden,
-			friendlyURLMap, serviceContext);
+			userId, groupId, privateLayout, parentLayoutId, name, title,
+			description, type, hidden, false, friendlyURL, serviceContext);
 	}
 
 	/**
 	 * Deletes the layout, its child layouts, and its associated resources.
 	 *
 	 * @param  layout the layout
-	 * @param  updateLayoutSet whether the layout set's page counter needs to be
-	 *         updated
+	 * @return the deleted layout
+	 * @throws PortalException if a portal exception occurred
+	 */
+	@Override
+	public Layout deleteLayout(Layout layout) throws PortalException {
+		layoutLocalService.deleteLayout(layout, new ServiceContext());
+
+		return layout;
+	}
+
+	/**
+	 * Deletes the layout, its child layouts, and its associated resources.
+	 *
+	 * @param  layout the layout
 	 * @param  serviceContext the service context to be applied
 	 * @throws PortalException if a portal exception occurred
 	 */
@@ -510,9 +733,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		action = SystemEventConstants.ACTION_SKIP,
 		type = SystemEventConstants.TYPE_DELETE
 	)
-	public void deleteLayout(
-			Layout layout, boolean updateLayoutSet,
-			ServiceContext serviceContext)
+	public void deleteLayout(Layout layout, ServiceContext serviceContext)
 		throws PortalException {
 
 		// First layout validation
@@ -542,49 +763,46 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			layout.getLayoutId());
 
 		for (Layout childLayout : childLayouts) {
-			layoutLocalService.deleteLayout(
-				childLayout, updateLayoutSet, serviceContext);
+			layoutLocalService.deleteLayout(childLayout, serviceContext);
 		}
 
 		// Layout friendly URLs
 
-		layoutFriendlyURLLocalService.deleteLayoutFriendlyURLs(
+		_layoutFriendlyURLLocalService.deleteLayoutFriendlyURLs(
 			layout.getPlid());
 
 		// Portlet preferences
 
-		portletPreferencesLocalService.deletePortletPreferencesByPlid(
+		_portletPreferencesLocalService.deletePortletPreferencesByPlid(
 			layout.getPlid());
-
-		// Subscriptions
-
-		subscriptionLocalService.deleteSubscriptions(
-			layout.getCompanyId(), Layout.class.getName(), layout.getPlid());
 
 		// Asset
 
-		assetEntryLocalService.deleteEntry(
+		_assetEntryLocalService.deleteEntry(
 			Layout.class.getName(), layout.getPlid());
 
 		// Ratings
 
-		ratingsStatsLocalService.deleteStats(
+		_ratingsStatsLocalService.deleteStats(
 			Layout.class.getName(), layout.getPlid());
 
 		// Expando
 
-		expandoRowLocalService.deleteRows(layout.getPlid());
+		_expandoRowLocalService.deleteRows(
+			layout.getCompanyId(),
+			_classNameLocalService.getClassNameId(Layout.class.getName()),
+			layout.getPlid());
 
 		// Icon
 
-		imageLocalService.deleteImage(layout.getIconImageId());
+		_imageLocalService.deleteImage(layout.getIconImageId());
 
 		// Scope group
 
 		Group scopeGroup = layout.getScopeGroup();
 
 		if (scopeGroup != null) {
-			groupLocalService.deleteGroup(scopeGroup.getGroupId());
+			_groupLocalService.deleteGroup(scopeGroup.getGroupId());
 		}
 
 		// Resources
@@ -593,28 +811,33 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			layout.getPlid() + PortletConstants.LAYOUT_SEPARATOR + "%";
 
 		List<ResourcePermission> resourcePermissions =
-			resourcePermissionPersistence.findByC_LikeP(
+			_resourcePermissionPersistence.findByC_LikeP(
 				layout.getCompanyId(), primKey);
 
 		for (ResourcePermission resourcePermission : resourcePermissions) {
-			resourcePermissionLocalService.deleteResourcePermission(
+			_resourcePermissionLocalService.deleteResourcePermission(
 				resourcePermission);
 		}
 
-		resourceLocalService.deleteResource(
+		_resourceLocalService.deleteResource(
 			layout.getCompanyId(), Layout.class.getName(),
 			ResourceConstants.SCOPE_INDIVIDUAL, layout.getPlid());
 
+		// Draft layout
+
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		if (draftLayout != null) {
+			layoutLocalService.deleteLayout(draftLayout);
+		}
+
 		// Layout
 
-		layoutPersistence.remove(layout);
+		layout = layoutPersistence.remove(layout);
 
-		// Layout set
+		// Portal preferences
 
-		if (updateLayoutSet) {
-			layoutSetLocalService.updatePageCount(
-				layout.getGroupId(), layout.isPrivateLayout());
-		}
+		_resetPortalPreferences(layout);
 
 		// System event
 
@@ -626,20 +849,43 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 				Layout.class.getName(), layout.getPlid())) {
 
 			systemEventHierarchyEntry.setExtraDataValue(
-				"privateLayout", StringUtil.valueOf(layout.isPrivateLayout()));
+				"privateLayout", String.valueOf(layout.isPrivateLayout()));
+		}
+
+		// Indexer
+
+		Indexer<Layout> indexer = IndexerRegistryUtil.getIndexer(Layout.class);
+
+		if (indexer != null) {
+			indexer.delete(layout);
 		}
 	}
 
 	/**
-	 * Deletes the layout with the primary key, also deleting the layout's child
+	 * Deletes the layout with the plid, also deleting the layout's child
+	 * layouts, and associated resources.
+	 *
+	 * @param  plid the primary key of the layout
+	 * @throws PortalException if a portal exception occurred
+	 */
+	@Override
+	public Layout deleteLayout(long plid) throws PortalException {
+		Layout layout = layoutPersistence.findByPrimaryKey(plid);
+
+		layoutLocalService.deleteLayout(layout, new ServiceContext());
+
+		return layout;
+	}
+
+	/**
+	 * Deletes the layout with the layout ID, also deleting the layout's child
 	 * layouts, and associated resources.
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  layoutId the primary key of the layout
+	 * @param  layoutId the layout ID of the layout
 	 * @param  serviceContext the service context to be applied
-	 * @throws PortalException if a matching layout could not be found , or if
-	 *         some other portal exception occurred
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public void deleteLayout(
@@ -650,7 +896,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		Layout layout = layoutPersistence.findByG_P_L(
 			groupId, privateLayout, layoutId);
 
-		layoutLocalService.deleteLayout(layout, true, serviceContext);
+		layoutLocalService.deleteLayout(layout, serviceContext);
 	}
 
 	/**
@@ -659,8 +905,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  plid the primary key of the layout
 	 * @param  serviceContext the service context to be applied
-	 * @throws PortalException if a layout with the primary key could not be
-	 *         found , or if some other portal exception occurred
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public void deleteLayout(long plid, ServiceContext serviceContext)
@@ -668,7 +913,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 		Layout layout = layoutPersistence.findByPrimaryKey(plid);
 
-		layoutLocalService.deleteLayout(layout, true, serviceContext);
+		layoutLocalService.deleteLayout(layout, serviceContext);
 	}
 
 	/**
@@ -681,9 +926,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *         layout set's page count will be updated by default, unless an
 	 *         attribute named <code>updatePageCount</code> is set to
 	 *         <code>false</code>.
-	 * @throws PortalException if a group with the primary key could not be
-	 *         found or if a layout set for the group and privacy could not be
-	 *         found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public void deleteLayouts(
@@ -692,349 +935,32 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 		// Layouts
 
-		List<Layout> layouts = layoutPersistence.findByG_P_P(
-			groupId, privateLayout, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
-			QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new LayoutPriorityComparator(false));
-
-		for (Layout layout : layouts) {
-			try {
-				layoutLocalService.deleteLayout(layout, false, serviceContext);
-			}
-			catch (NoSuchLayoutException nsle) {
-			}
-		}
-
-		// Layout set
-
-		if (GetterUtil.getBoolean(
-				serviceContext.getAttribute("updatePageCount"), true)) {
-
-			layoutSetLocalService.updatePageCount(groupId, privateLayout);
-		}
+		_deleteLayouts(groupId, privateLayout, false, serviceContext);
+		_deleteLayouts(groupId, privateLayout, true, serviceContext);
 
 		// Counter
 
 		counterLocalService.reset(getCounterName(groupId, privateLayout));
 	}
 
-	/**
-	 * Exports layouts with the primary keys and criteria as a byte array.
-	 *
-	 * @param      groupId the primary key of the group
-	 * @param      privateLayout whether the layout is private to the group
-	 * @param      layoutIds the primary keys of the layouts to be exported
-	 * @param      parameterMap the mapping of parameters indicating which
-	 *             information to export. For information on the keys used in
-	 *             the map see {@link
-	 *             com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
-	 * @param      startDate the export's start date
-	 * @param      endDate the export's end date
-	 * @return     the layouts as a byte array
-	 * @throws     PortalException if a group or any layout with the primary key
-	 *             could not be found, or if some other portal exception
-	 *             occurred
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
 	@Override
-	public byte[] exportLayouts(
-			long groupId, boolean privateLayout, long[] layoutIds,
-			Map<String, String[]> parameterMap, Date startDate, Date endDate)
-		throws PortalException {
+	public Layout fetchDefaultLayout(long groupId, boolean privateLayout) {
+		if (groupId > 0) {
+			List<Layout> layouts = layoutPersistence.findByG_P(
+				groupId, privateLayout, 0, 1);
 
-		throw new UnsupportedOperationException();
+			if (!layouts.isEmpty()) {
+				return layouts.get(0);
+			}
+		}
+
+		return null;
 	}
 
-	/**
-	 * Exports all layouts that match the criteria as a byte array.
-	 *
-	 * @param      groupId the primary key of the group
-	 * @param      privateLayout whether the layout is private to the group
-	 * @param      parameterMap the mapping of parameters indicating which
-	 *             information to export. For information on the keys used in
-	 *             the map see {@link
-	 *             com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
-	 * @param      startDate the export's start date
-	 * @param      endDate the export's end date
-	 * @return     the layout as a byte array
-	 * @throws     PortalException if a group with the primary key could not be
-	 *             found or if some other portal exception occurred
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
 	@Override
-	public byte[] exportLayouts(
-			long groupId, boolean privateLayout,
-			Map<String, String[]> parameterMap, Date startDate, Date endDate)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#exportLayoutsAsFile(
-	 *             ExportImportConfiguration)}
-	 */
-	@Deprecated
-	@Override
-	public File exportLayoutsAsFile(
-			ExportImportConfiguration exportImportConfiguration)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * Exports the layouts that match the primary keys and criteria as a file.
-	 *
-	 * @param      groupId the primary key of the group
-	 * @param      privateLayout whether the layout is private to the group
-	 * @param      layoutIds the primary keys of the layouts to be exported
-	 *             (optionally <code>null</code>)
-	 * @param      parameterMap the mapping of parameters indicating which
-	 *             information to export. For information on the keys used in
-	 *             the map see {@link
-	 *             com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
-	 * @param      startDate the export's start date
-	 * @param      endDate the export's end date
-	 * @return     the layouts as a File
-	 * @throws     PortalException if a group or any layout with the primary key
-	 *             could not be found, or if some other portal exception
-	 *             occurred
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public File exportLayoutsAsFile(
-			long groupId, boolean privateLayout, long[] layoutIds,
-			Map<String, String[]> parameterMap, Date startDate, Date endDate)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#exportLayoutsAsFileInBackground(
-	 *             long, ExportImportConfiguration)}
-	 */
-	@Deprecated
-	@Override
-	public long exportLayoutsAsFileInBackground(
-			long userId, ExportImportConfiguration exportImportConfiguration)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#exportLayoutsAsFileInBackground(
-	 *             long, long)}
-	 */
-	@Deprecated
-	@Override
-	public long exportLayoutsAsFileInBackground(
-			long userId, long exportImportConfigurationId)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public long exportLayoutsAsFileInBackground(
-			long userId, String taskName, long groupId, boolean privateLayout,
-			long[] layoutIds, Map<String, String[]> parameterMap,
-			Date startDate, Date endDate)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public long exportLayoutsAsFileInBackground(
-			long userId, String taskName, long groupId, boolean privateLayout,
-			long[] layoutIds, Map<String, String[]> parameterMap,
-			Date startDate, Date endDate, String fileName)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * Exports the portlet information (categories, permissions, ... etc.) as a
-	 * byte array.
-	 *
-	 * @param      plid the primary key of the layout
-	 * @param      groupId the primary key of the group
-	 * @param      portletId the primary key of the portlet
-	 * @param      parameterMap the mapping of parameters indicating which
-	 *             information to export. For information on the keys used in
-	 *             the map see {@link
-	 *             com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
-	 * @param      startDate the export's start date
-	 * @param      endDate the export's end date
-	 * @return     the portlet information as a byte array
-	 * @throws     PortalException if a group or portlet with the primary key
-	 *             could not be found, or if some other portal exception
-	 *             occurred
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public byte[] exportPortletInfo(
-			long plid, long groupId, String portletId,
-			Map<String, String[]> parameterMap, Date startDate, Date endDate)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public byte[] exportPortletInfo(
-			long companyId, String portletId,
-			Map<String, String[]> parameterMap, Date startDate, Date endDate)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#exportPortletInfoAsFile(
-	 *             ExportImportConfiguration)}}
-	 */
-	@Deprecated
-	@Override
-	public File exportPortletInfoAsFile(
-			ExportImportConfiguration exportImportConfiguration)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * Exports the portlet information (categories, permissions, ... etc.) as a
-	 * file.
-	 *
-	 * @param      plid the primary key of the layout
-	 * @param      groupId the primary key of the group
-	 * @param      portletId the primary key of the portlet
-	 * @param      parameterMap the mapping of parameters indicating which
-	 *             information to export. For information on the keys used in
-	 *             the map see {@link
-	 *             com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
-	 * @param      startDate the export's start date
-	 * @param      endDate the export's end date
-	 * @return     the portlet information as a file
-	 * @throws     PortalException if a group or portlet with the primary key
-	 *             could not be found, or if some other portal exception
-	 *             occurred
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public File exportPortletInfoAsFile(
-			long plid, long groupId, String portletId,
-			Map<String, String[]> parameterMap, Date startDate, Date endDate)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public File exportPortletInfoAsFile(
-			long companyId, String portletId,
-			Map<String, String[]> parameterMap, Date startDate, Date endDate)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#exportPortletInfoAsFileInBackground(
-	 *             long, ExportImportConfiguration)}}
-	 */
-	@Deprecated
-	@Override
-	public long exportPortletInfoAsFileInBackground(
-			long userId, ExportImportConfiguration exportImportConfiguration)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#exportPortletInfoAsFileInBackground(
-	 *             long, long)}}
-	 */
-	@Deprecated
-	@Override
-	public long exportPortletInfoAsFileInBackground(
-			long userId, long exportImportConfigurationId)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public long exportPortletInfoAsFileInBackground(
-			long userId, String taskName, long plid, long groupId,
-			String portletId, Map<String, String[]> parameterMap,
-			Date startDate, Date endDate, String fileName)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public long exportPortletInfoAsFileInBackground(
-			long userId, String taskName, String portletId,
-			Map<String, String[]> parameterMap, Date startDate, Date endDate,
-			String fileName)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
+	public Layout fetchDraftLayout(long plid) {
+		return fetchLayout(
+			_classNameLocalService.getClassNameId(Layout.class), plid);
 	}
 
 	@Override
@@ -1047,6 +973,16 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	}
 
 	@Override
+	public Layout fetchFirstLayout(
+		long groupId, boolean privateLayout, long parentLayoutId,
+		boolean hidden) {
+
+		return layoutPersistence.fetchByG_P_P_H_First(
+			groupId, privateLayout, parentLayoutId, hidden,
+			new LayoutPriorityComparator());
+	}
+
+	@Override
 	public Layout fetchLayout(
 		long groupId, boolean privateLayout, long layoutId) {
 
@@ -1054,15 +990,127 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	}
 
 	@Override
+	public Layout fetchLayout(long classNameId, long classPK) {
+		return layoutPersistence.fetchByC_C(classNameId, classPK);
+	}
+
+	@Override
+	public Layout fetchLayout(
+		String uuid, long groupId, boolean privateLayout) {
+
+		return layoutPersistence.fetchByUUID_G_P(uuid, groupId, privateLayout);
+	}
+
+	@Override
 	public Layout fetchLayoutByFriendlyURL(
 		long groupId, boolean privateLayout, String friendlyURL) {
+
+		friendlyURL = layoutLocalServiceHelper.getFriendlyURL(friendlyURL);
 
 		return layoutPersistence.fetchByG_P_F(
 			groupId, privateLayout, friendlyURL);
 	}
 
+	@Override
+	public Layout fetchLayoutByIconImageId(
+			boolean privateLayout, long iconImageId)
+		throws PortalException {
+
+		return layoutPersistence.fetchByP_I(privateLayout, iconImageId);
+	}
+
 	/**
-	 * Returns the primary key of the default layout for the group
+	 * Returns the layout matching the UUID, group, and privacy.
+	 *
+	 * @param  uuid the layout's UUID
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @return the matching layout, or <code>null</code> if a matching layout
+	 *         could not be found
+	 */
+	@Override
+	public Layout fetchLayoutByUuidAndGroupId(
+		String uuid, long groupId, boolean privateLayout) {
+
+		return layoutPersistence.fetchByUUID_G_P(uuid, groupId, privateLayout);
+	}
+
+	/**
+	 * Returns all the layouts that match the type and belong to the group,
+	 * including the ones marked as System.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  type the type of the layouts (optiona.lly {@link
+	 *         LayoutConstants#TYPE_PORTLET})
+	 * @return the matching layouts, or an empty list if no matches were found
+	 */
+	@Override
+	public List<Layout> getAllLayouts(
+			long groupId, boolean privateLayout, String type)
+		throws PortalException {
+
+		DynamicQuery dynamicQuery = layoutLocalService.dynamicQuery();
+
+		Property groupIdProperty = PropertyFactoryUtil.forName("groupId");
+
+		dynamicQuery.add(groupIdProperty.eq(groupId));
+
+		Property privateLayoutProperty = PropertyFactoryUtil.forName(
+			"privateLayout");
+
+		dynamicQuery.add(privateLayoutProperty.eq(privateLayout));
+
+		Property classNameIdProperty = PropertyFactoryUtil.forName(
+			"classNameId");
+
+		dynamicQuery.add(
+			classNameIdProperty.ne(
+				_classNameLocalService.getClassNameId(Layout.class.getName())));
+
+		Property typeProperty = PropertyFactoryUtil.forName("type");
+
+		dynamicQuery.add(typeProperty.eq(type));
+
+		List<Layout> layouts = layoutLocalService.dynamicQuery(dynamicQuery);
+
+		Group group = _groupPersistence.findByPrimaryKey(groupId);
+
+		if (!group.isUser()) {
+			return layouts;
+		}
+
+		Set<Long> checkedPlids = new HashSet<>();
+
+		Queue<Long> checkParentLayoutIds = new ArrayDeque<>();
+
+		checkParentLayoutIds.add(LayoutConstants.DEFAULT_PARENT_LAYOUT_ID);
+
+		LayoutSet layoutSet = _layoutSetPersistence.findByG_P(
+			groupId, privateLayout);
+
+		while (!checkParentLayoutIds.isEmpty()) {
+			long parentLayoutId = checkParentLayoutIds.poll();
+
+			List<Layout> userGroupLayouts = _addUserGroupLayouts(
+				group, layoutSet, Collections.emptyList(), parentLayoutId);
+
+			for (Layout userGroupLayout : userGroupLayouts) {
+				long userGroupPlid = userGroupLayout.getPlid();
+
+				if (checkedPlids.add(userGroupPlid)) {
+					layouts.add(userGroupLayout);
+
+					checkParentLayoutIds.add(userGroupLayout.getLayoutId());
+				}
+			}
+		}
+
+		return layouts;
+	}
+
+	/**
+	 * Returns the primary key of the default layout for the group.
 	 *
 	 * @param  groupId the primary key of the group
 	 * @return the primary key of the default layout for the group (optionally
@@ -1094,15 +1142,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 */
 	@Override
 	public long getDefaultPlid(long groupId, boolean privateLayout) {
-		if (groupId > 0) {
-			List<Layout> layouts = layoutPersistence.findByG_P(
-				groupId, privateLayout, 0, 1);
+		Layout layout = fetchDefaultLayout(groupId, privateLayout);
 
-			if (!layouts.isEmpty()) {
-				Layout layout = layouts.get(0);
-
-				return layout.getPlid();
-			}
+		if (layout != null) {
+			return layout.getPlid();
 		}
 
 		return LayoutConstants.DEFAULT_PLID;
@@ -1116,8 +1159,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 * @param  portletId the primary key of the portlet
 	 * @return the primary key of the default portlet layout for the group;
 	 *         {@link LayoutConstants#DEFAULT_PLID} otherwise
-	 * @throws PortalException if a portlet with the primary key could not be
-	 *         found
+	 * @throws PortalException
 	 */
 	@Override
 	public long getDefaultPlid(
@@ -1144,14 +1186,13 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	}
 
 	/**
-	 * Returns the layout for the friendly URL
+	 * Returns the layout for the friendly URL.
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
 	 * @param  friendlyURL the friendly URL of the layout
 	 * @return the layout for the friendly URL
-	 * @throws PortalException if the friendly URL is <code>null</code> or a
-	 *         matching layout could not be found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout getFriendlyURLLayout(
@@ -1159,15 +1200,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		throws PortalException {
 
 		if (Validator.isNull(friendlyURL)) {
-			StringBundler sb = new StringBundler(5);
-
-			sb.append("{groupId=");
-			sb.append(groupId);
-			sb.append(", privateLayout=");
-			sb.append(privateLayout);
-			sb.append("}");
-
-			throw new NoSuchLayoutException(sb.toString());
+			throw new NoSuchLayoutException(
+				StringBundler.concat(
+					"{groupId=", groupId, ", privateLayout=", privateLayout,
+					"}"));
 		}
 
 		friendlyURL = layoutLocalServiceHelper.getFriendlyURL(friendlyURL);
@@ -1175,7 +1211,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		Layout layout = null;
 
 		List<LayoutFriendlyURL> layoutFriendlyURLs =
-			layoutFriendlyURLPersistence.findByG_P_F(
+			_layoutFriendlyURLPersistence.findByG_P_F(
 				groupId, privateLayout, friendlyURL, 0, 1);
 
 		if (!layoutFriendlyURLs.isEmpty()) {
@@ -1195,37 +1231,60 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		}
 
 		if (layout == null) {
-			StringBundler sb = new StringBundler(7);
+			throw new NoSuchLayoutException(
+				StringBundler.concat(
+					"{groupId=", groupId, ", privateLayout=", privateLayout,
+					", friendlyURL=", friendlyURL, "}"));
+		}
 
-			sb.append("{groupId=");
-			sb.append(groupId);
-			sb.append(", privateLayout=");
-			sb.append(privateLayout);
-			sb.append(", friendlyURL=");
-			sb.append(friendlyURL);
-			sb.append("}");
+		return layout;
+	}
 
-			throw new NoSuchLayoutException(sb.toString());
+	@Override
+	public Layout getLayout(long plid) throws PortalException {
+		Layout layout = layoutPersistence.findByPrimaryKey(plid);
+
+		if (_mergeLayout(layout, plid)) {
+			return layoutPersistence.findByPrimaryKey(plid);
 		}
 
 		return layout;
 	}
 
 	/**
-	 * Returns the layout matching the primary key, group, and privacy; throws a
+	 * Returns the layout matching the layout ID, group, and privacy; throws a
 	 * {@link NoSuchLayoutException} otherwise.
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  layoutId the primary key of the layout
+	 * @param  layoutId the layout ID of the layout
 	 * @return the matching layout
-	 * @throws PortalException if a matching layout could not be found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout getLayout(long groupId, boolean privateLayout, long layoutId)
 		throws PortalException {
 
-		return layoutPersistence.findByG_P_L(groupId, privateLayout, layoutId);
+		Layout layout = layoutPersistence.findByG_P_L(
+			groupId, privateLayout, layoutId);
+
+		if (_mergeLayout(layout, groupId, privateLayout, layoutId)) {
+			return layoutPersistence.findByG_P_L(
+				groupId, privateLayout, layoutId);
+		}
+
+		return layout;
+	}
+
+	@Override
+	public Layout getLayoutByFriendlyURL(
+			long groupId, boolean privateLayout, String friendlyURL)
+		throws PortalException {
+
+		friendlyURL = layoutLocalServiceHelper.getFriendlyURL(friendlyURL);
+
+		return layoutPersistence.findByG_P_F(
+			groupId, privateLayout, friendlyURL);
 	}
 
 	/**
@@ -1234,14 +1293,90 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  iconImageId the primary key of the icon image
 	 * @return Returns the layout for the icon image
-	 * @throws PortalException if an icon image with the primary key could not
-	 *         be found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout getLayoutByIconImageId(long iconImageId)
 		throws PortalException {
 
 		return layoutPersistence.findByIconImageId(iconImageId);
+	}
+
+	/**
+	 * Returns the layout matching the UUID, group, and privacy.
+	 *
+	 * @param  uuid the layout's UUID
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @return the matching layout
+	 * @throws PortalException if a matching layout could not be found
+	 */
+	@Override
+	public Layout getLayoutByUuidAndGroupId(
+			String uuid, long groupId, boolean privateLayout)
+		throws PortalException {
+
+		return layoutPersistence.findByUUID_G_P(uuid, groupId, privateLayout);
+	}
+
+	@Override
+	public Map<Long, List<Layout>> getLayoutChildLayouts(
+		List<Layout> parentLayouts) {
+
+		Map<LayoutSet, List<Layout>> layoutsMap = new HashMap<>();
+
+		for (Layout parentLayout : parentLayouts) {
+			if (parentLayout instanceof VirtualLayout) {
+				VirtualLayout virtualLayout = (VirtualLayout)parentLayout;
+
+				Layout sourceLayout = virtualLayout.getSourceLayout();
+
+				LayoutSet sourceLayoutSet = sourceLayout.getLayoutSet();
+
+				List<Layout> layouts = layoutsMap.computeIfAbsent(
+					sourceLayoutSet, key -> new ArrayList<>());
+
+				layouts.add(sourceLayout);
+			}
+			else {
+				List<Layout> layouts = layoutsMap.computeIfAbsent(
+					parentLayout.getLayoutSet(), key -> new ArrayList<>());
+
+				layouts.add(parentLayout);
+			}
+		}
+
+		List<Layout> childLayouts = new ArrayList<>();
+
+		for (Map.Entry<LayoutSet, List<Layout>> entry : layoutsMap.entrySet()) {
+			List<Layout> newChildLayouts = _getChildLayouts(
+				entry.getKey(),
+				ListUtil.toLongArray(entry.getValue(), Layout::getLayoutId));
+
+			childLayouts.addAll(newChildLayouts);
+		}
+
+		Map<Long, List<Layout>> layoutChildLayoutsMap = new HashMap<>();
+
+		for (Layout childLayout : childLayouts) {
+			List<Layout> layoutChildLayouts =
+				layoutChildLayoutsMap.computeIfAbsent(
+					childLayout.getParentPlid(),
+					parentPlid -> new ArrayList<>());
+
+			layoutChildLayouts.add(childLayout);
+		}
+
+		for (List<Layout> layoutChildLayouts : layoutChildLayoutsMap.values()) {
+			layoutChildLayouts.sort(Comparator.comparing(Layout::getPriority));
+		}
+
+		return layoutChildLayoutsMap;
+	}
+
+	@Override
+	public List<Layout> getLayouts(long companyId) {
+		return layoutPersistence.findByCompanyId(companyId);
 	}
 
 	/**
@@ -1258,12 +1393,52 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	}
 
 	/**
+	 * Returns a range of all the layouts belonging to the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  start the lower bound of the range of layouts
+	 * @param  end the upper bound of the range of layouts (not inclusive)
+	 * @param  orderByComparator the comparator to order the layouts
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 *         found
+	 */
+	@Override
+	public List<Layout> getLayouts(
+		long groupId, boolean privateLayout, int start, int end,
+		OrderByComparator<Layout> orderByComparator) {
+
+		return layoutPersistence.findByG_P(
+			groupId, privateLayout, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns a range of all the layouts belonging to the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  start the lower bound of the range of layouts
+	 * @param  end the upper bound of the range of layouts (not inclusive)
+	 * @param  orderByComparator the comparator to order the layouts
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 *         found
+	 */
+	@Override
+	public List<Layout> getLayouts(
+		long groupId, boolean privateLayout, int[] statuses, int start, int end,
+		OrderByComparator<Layout> orderByComparator) {
+
+		return layoutPersistence.findByG_P_ST(
+			groupId, privateLayout, statuses, start, end, orderByComparator);
+	}
+
+	/**
 	 * Returns all the layouts belonging to the group that are children of the
 	 * parent layout.
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  parentLayoutId the primary key of the parent layout
+	 * @param  parentLayoutId the layout ID of the parent layout
 	 * @return the matching layouts, or <code>null</code> if no matches were
 	 *         found
 	 */
@@ -1271,8 +1446,9 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	public List<Layout> getLayouts(
 		long groupId, boolean privateLayout, long parentLayoutId) {
 
-		return layoutPersistence.findByG_P_P(
-			groupId, privateLayout, parentLayoutId);
+		return getLayouts(
+			groupId, privateLayout, parentLayoutId, false, QueryUtil.ALL_POS,
+			QueryUtil.ALL_POS, null);
 	}
 
 	/**
@@ -1290,7 +1466,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  parentLayoutId the primary key of the parent layout
+	 * @param  parentLayoutId the layout ID of the parent layout
 	 * @param  incomplete whether the layout is incomplete
 	 * @param  start the lower bound of the range of layouts
 	 * @param  end the upper bound of the range of layouts (not inclusive)
@@ -1302,8 +1478,71 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		long groupId, boolean privateLayout, long parentLayoutId,
 		boolean incomplete, int start, int end) {
 
-		return layoutPersistence.findByG_P_P(
-			groupId, privateLayout, parentLayoutId, start, end);
+		return getLayouts(
+			groupId, privateLayout, parentLayoutId, incomplete, start, end,
+			null);
+	}
+
+	/**
+	 * Returns a range of all the layouts belonging to the group that are
+	 * children of the parent layout.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end -
+	 * start</code> instances. <code>start</code> and <code>end</code> are not
+	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
+	 * refers to the first result in the set. Setting both <code>start</code>
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
+	 * result set.
+	 * </p>
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  parentLayoutId the layout ID of the parent layout
+	 * @param  start the lower bound of the range of layouts
+	 * @param  end the upper bound of the range of layouts (not inclusive)
+	 * @param  orderByComparator the comparator to order the layouts
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 *         found
+	 */
+	@Override
+	public List<Layout> getLayouts(
+		long groupId, boolean privateLayout, long parentLayoutId,
+		boolean incomplete, int start, int end,
+		OrderByComparator<Layout> orderByComparator) {
+
+		if (MergeLayoutPrototypesThreadLocal.isInProgress()) {
+			return layoutPersistence.findByG_P_P(
+				groupId, privateLayout, parentLayoutId, start, end,
+				orderByComparator);
+		}
+
+		try {
+			Group group = _groupLocalService.getGroup(groupId);
+
+			LayoutSet layoutSet = _layoutSetLocalService.getLayoutSet(
+				groupId, privateLayout);
+
+			if (layoutSet.isLayoutSetPrototypeLinkActive() &&
+				!_mergeLayouts(
+					group, layoutSet, groupId, privateLayout, parentLayoutId,
+					start, end, orderByComparator)) {
+
+				return layoutPersistence.findByG_P_P(
+					groupId, privateLayout, parentLayoutId, start, end,
+					orderByComparator);
+			}
+
+			List<Layout> layouts = layoutPersistence.findByG_P_P(
+				groupId, privateLayout, parentLayoutId, start, end,
+				orderByComparator);
+
+			return _injectVirtualLayouts(
+				group, layoutSet, layouts, parentLayoutId);
+		}
+		catch (PortalException portalException) {
+			throw new SystemException(portalException);
+		}
 	}
 
 	/**
@@ -1312,10 +1551,9 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  layoutIds the primary keys of the layouts
+	 * @param  layoutIds the layout IDs of the layouts
 	 * @return the matching layouts, or an empty list if no matches were found
-	 * @throws PortalException if a group or layout with the primary key could
-	 *         not be found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public List<Layout> getLayouts(
@@ -1325,9 +1563,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		List<Layout> layouts = new ArrayList<>();
 
 		for (long layoutId : layoutIds) {
-			Layout layout = getLayout(groupId, privateLayout, layoutId);
-
-			layouts.add(layout);
+			layouts.add(getLayout(groupId, privateLayout, layoutId));
 		}
 
 		return layouts;
@@ -1345,9 +1581,172 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 */
 	@Override
 	public List<Layout> getLayouts(
-		long groupId, boolean privateLayout, String type) {
+			long groupId, boolean privateLayout, String type)
+		throws PortalException {
 
-		return layoutPersistence.findByG_P_T(groupId, privateLayout, type);
+		Group group = _groupPersistence.findByPrimaryKey(groupId);
+
+		List<Layout> layouts = layoutPersistence.findByG_P_T(
+			groupId, privateLayout, type);
+
+		if (!group.isUser()) {
+			return layouts;
+		}
+
+		layouts = new ArrayList<>(layouts);
+
+		Set<Long> checkedPlids = new HashSet<>();
+
+		Queue<Long> checkParentLayoutIds = new ArrayDeque<>();
+
+		checkParentLayoutIds.add(LayoutConstants.DEFAULT_PARENT_LAYOUT_ID);
+
+		LayoutSet layoutSet = _layoutSetPersistence.findByG_P(
+			groupId, privateLayout);
+
+		while (!checkParentLayoutIds.isEmpty()) {
+			long parentLayoutId = checkParentLayoutIds.poll();
+
+			List<Layout> userGroupLayouts = _addUserGroupLayouts(
+				group, layoutSet, Collections.emptyList(), parentLayoutId);
+
+			for (Layout userGroupLayout : userGroupLayouts) {
+				long userGroupPlid = userGroupLayout.getPlid();
+
+				if (checkedPlids.add(userGroupPlid)) {
+					layouts.add(userGroupLayout);
+
+					checkParentLayoutIds.add(userGroupLayout.getLayoutId());
+				}
+			}
+		}
+
+		return layouts;
+	}
+
+	/**
+	 * Returns a range of all the layouts belonging to the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  keywords keywords
+	 * @param  types layout types
+	 * @param  start the lower bound of the range of layouts
+	 * @param  end the upper bound of the range of layouts (not inclusive)
+	 * @param  orderByComparator the comparator to order the layouts
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 *         found
+	 */
+	@Override
+	public List<Layout> getLayouts(
+			long groupId, boolean privateLayout, String keywords,
+			String[] types, int start, int end,
+			OrderByComparator<Layout> orderByComparator)
+		throws PortalException {
+
+		return getLayouts(
+			groupId, 0, privateLayout, keywords, types, start, end,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns a range of all the layouts belonging to the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  start the lower bound of the range of layouts
+	 * @param  end the upper bound of the range of layouts (not inclusive)
+	 * @param  orderByComparator the comparator to order the layouts
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 *         found
+	 */
+	@Override
+	public List<Layout> getLayouts(
+		long groupId, int start, int end,
+		OrderByComparator<Layout> orderByComparator) {
+
+		return layoutPersistence.findByGroupId(
+			groupId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns a range of all the layouts belonging to the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  userId the primary key of the user
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  keywords keywords
+	 * @param  types layout types
+	 * @param  start the lower bound of the range of layouts
+	 * @param  end the upper bound of the range of layouts (not inclusive)
+	 * @param  orderByComparator the comparator to order the layouts
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 *         found
+	 */
+	@Override
+	public List<Layout> getLayouts(
+			long groupId, long userId, boolean privateLayout, String keywords,
+			String[] types, int start, int end,
+			OrderByComparator<Layout> orderByComparator)
+		throws PortalException {
+
+		return getLayouts(
+			groupId, userId, privateLayout, keywords, types, new int[0], start,
+			end, orderByComparator);
+	}
+
+	/**
+	 * Returns a range of all the layouts belonging to the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  userId the primary key of the user
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  keywords keywords
+	 * @param  types layout types
+	 * @param  start the lower bound of the range of layouts
+	 * @param  end the upper bound of the range of layouts (not inclusive)
+	 * @param  orderByComparator the comparator to order the layouts
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 *         found
+	 */
+	@Override
+	public List<Layout> getLayouts(
+			long groupId, long userId, boolean privateLayout, String keywords,
+			String[] types, int[] statuses, int start, int end,
+			OrderByComparator<Layout> orderByComparator)
+		throws PortalException {
+
+		if (Validator.isNull(keywords)) {
+			return getLayouts(
+				groupId, privateLayout, statuses, start, end,
+				orderByComparator);
+		}
+
+		Indexer<Layout> indexer = IndexerRegistryUtil.getIndexer(
+			Layout.class.getName());
+
+		Hits hits = indexer.search(
+			_buildSearchContext(
+				groupId, userId, privateLayout, keywords, types, statuses,
+				start, end, orderByComparator));
+
+		List<Document> documents = hits.toList();
+
+		List<Layout> layouts = new ArrayList<>(documents.size());
+
+		for (Document document : documents) {
+			Layout layout = fetchLayout(
+				GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK)));
+
+			if (layout == null) {
+				indexer.delete(layout);
+
+				continue;
+			}
+
+			layouts.add(layout);
+		}
+
+		return layouts;
 	}
 
 	/**
@@ -1368,8 +1767,80 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		List<LayoutReference> layoutReferences = layoutFinder.findByC_P_P(
 			companyId, portletId, preferencesKey, preferencesValue);
 
-		return layoutReferences.toArray(
-			new LayoutReference[layoutReferences.size()]);
+		return layoutReferences.toArray(new LayoutReference[0]);
+	}
+
+	/**
+	 * Returns a range of all the layouts belonging to the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  keywords keywords
+	 * @param  types layout types
+	 * @param  start the lower bound of the range of layouts
+	 * @param  end the upper bound of the range of layouts (not inclusive)
+	 * @param  orderByComparator the comparator to order the layouts
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 *         found
+	 */
+	@Override
+	public List<Layout> getLayouts(
+			long groupId, String keywords, String[] types, int start, int end,
+			OrderByComparator<Layout> orderByComparator)
+		throws PortalException {
+
+		return getLayouts(
+			groupId, keywords, types, new int[0], start, end,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns a range of all the layouts belonging to the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  keywords keywords
+	 * @param  types layout types
+	 * @param  start the lower bound of the range of layouts
+	 * @param  end the upper bound of the range of layouts (not inclusive)
+	 * @param  orderByComparator the comparator to order the layouts
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 *         found
+	 */
+	@Override
+	public List<Layout> getLayouts(
+			long groupId, String keywords, String[] types, int[] statuses,
+			int start, int end, OrderByComparator<Layout> orderByComparator)
+		throws PortalException {
+
+		if (Validator.isNull(keywords)) {
+			return getLayouts(groupId, start, end, orderByComparator);
+		}
+
+		Indexer<Layout> indexer = IndexerRegistryUtil.getIndexer(
+			Layout.class.getName());
+
+		Hits hits = indexer.search(
+			_buildSearchContext(
+				groupId, null, keywords, types, statuses, start, end,
+				orderByComparator));
+
+		List<Document> documents = hits.toList();
+
+		List<Layout> layouts = new ArrayList<>(documents.size());
+
+		for (Document document : documents) {
+			Layout layout = fetchLayout(
+				GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK)));
+
+			if (layout == null) {
+				indexer.delete(layout);
+
+				continue;
+			}
+
+			layouts.add(layout);
+		}
+
+		return layouts;
 	}
 
 	@Override
@@ -1399,30 +1870,26 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			Group group, boolean privateLayout, boolean includeUserGroups)
 		throws PortalException {
 
-		LayoutSet layoutSet = layoutSetPersistence.findByG_P(
+		int count = layoutPersistence.countByG_P(
 			group.getGroupId(), privateLayout);
-
-		int count = layoutSet.getPageCount();
 
 		if (!group.isUser() || !includeUserGroups) {
 			return count;
 		}
 
-		long[] userGroupIds = userPersistence.getUserGroupPrimaryKeys(
+		long[] userGroupIds = _userPersistence.getUserGroupPrimaryKeys(
 			group.getClassPK());
 
 		if (userGroupIds.length != 0) {
-			long userGroupClassNameId = classNameLocalService.getClassNameId(
+			long userGroupClassNameId = _classNameLocalService.getClassNameId(
 				UserGroup.class);
 
 			for (long userGroupId : userGroupIds) {
-				Group userGroupGroup = groupPersistence.findByC_C_C(
+				Group userGroupGroup = _groupPersistence.findByC_C_C(
 					group.getCompanyId(), userGroupClassNameId, userGroupId);
 
-				layoutSet = layoutSetPersistence.findByG_P(
+				count += layoutPersistence.countByG_P(
 					userGroupGroup.getGroupId(), privateLayout);
-
-				count += layoutSet.getPageCount();
 			}
 		}
 
@@ -1438,6 +1905,132 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	}
 
 	@Override
+	public int getLayoutsCount(
+		Group group, boolean privateLayout, long[] layoutIds) {
+
+		if (ArrayUtil.isEmpty(layoutIds)) {
+			return 0;
+		}
+
+		DynamicQuery dynamicQuery = dynamicQuery();
+
+		Property groupIdProperty = PropertyFactoryUtil.forName("groupId");
+
+		dynamicQuery.add(groupIdProperty.eq(group.getGroupId()));
+
+		Property privateLayoutProperty = PropertyFactoryUtil.forName(
+			"privateLayout");
+
+		dynamicQuery.add(privateLayoutProperty.eq(privateLayout));
+
+		Property layoutIdProperty = PropertyFactoryUtil.forName("layoutId");
+
+		dynamicQuery.add(layoutIdProperty.in(layoutIds));
+
+		return GetterUtil.getInteger(dynamicQueryCount(dynamicQuery));
+	}
+
+	@Override
+	public int getLayoutsCount(
+			Group group, boolean privateLayout, String keywords, String[] types)
+		throws PortalException {
+
+		return getLayoutsCount(
+			group.getGroupId(), 0, privateLayout, keywords, types);
+	}
+
+	@Override
+	public int getLayoutsCount(long groupId) {
+		return layoutPersistence.countByGroupId(groupId);
+	}
+
+	@Override
+	public int getLayoutsCount(long groupId, boolean privateLayout) {
+		return layoutPersistence.countByG_P(groupId, privateLayout);
+	}
+
+	@Override
+	public int getLayoutsCount(
+			long groupId, long userId, boolean privateLayout, String keywords,
+			String[] types)
+		throws PortalException {
+
+		if (Validator.isNull(keywords)) {
+			return getLayoutsCount(groupId, privateLayout);
+		}
+
+		Indexer<Layout> indexer = IndexerRegistryUtil.getIndexer(
+			Layout.class.getName());
+
+		Hits hits = indexer.search(
+			_buildSearchContext(
+				groupId, userId, privateLayout, keywords, types, new int[0],
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null));
+
+		return hits.getLength();
+	}
+
+	@Override
+	public int getLayoutsCount(
+			long groupId, long userId, boolean privateLayout, String keywords,
+			String[] types, int[] statuses)
+		throws PortalException {
+
+		if (Validator.isNull(keywords)) {
+			return getLayoutsCount(groupId, privateLayout);
+		}
+
+		Indexer<Layout> indexer = IndexerRegistryUtil.getIndexer(
+			Layout.class.getName());
+
+		Hits hits = indexer.search(
+			_buildSearchContext(
+				groupId, userId, privateLayout, keywords, types, statuses,
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null));
+
+		return hits.getLength();
+	}
+
+	@Override
+	public int getLayoutsCount(long groupId, String keywords, String[] types)
+		throws PortalException {
+
+		if (Validator.isNull(keywords)) {
+			return getLayoutsCount(groupId);
+		}
+
+		Indexer<Layout> indexer = IndexerRegistryUtil.getIndexer(
+			Layout.class.getName());
+
+		Hits hits = indexer.search(
+			_buildSearchContext(
+				groupId, null, keywords, types, new int[0], QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS, null));
+
+		return hits.getLength();
+	}
+
+	@Override
+	public int getLayoutsCount(
+			long groupId, String keywords, String[] types, int[] statuses)
+		throws PortalException {
+
+		if (Validator.isNull(keywords)) {
+			return getLayoutsCount(groupId);
+		}
+
+		Indexer<Layout> indexer = IndexerRegistryUtil.getIndexer(
+			Layout.class.getName());
+
+		Hits hits = indexer.search(
+			_buildSearchContext(
+				groupId, null, keywords, types, statuses, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS, null));
+
+		return hits.getLength();
+	}
+
+	@Override
 	public int getLayoutsCount(User user, boolean privateLayout)
 		throws PortalException {
 
@@ -1449,20 +2042,30 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			User user, boolean privateLayout, boolean includeUserGroups)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(User.class);
-
-		Group group = groupPersistence.findByC_C_C(
-			user.getCompanyId(), classNameId, user.getUserId());
+		Group group = _groupPersistence.findByC_C_C(
+			user.getCompanyId(),
+			_classNameLocalService.getClassNameId(User.class),
+			user.getUserId());
 
 		return getLayoutsCount(group, privateLayout, includeUserGroups);
 	}
 
+	@Override
+	public List<Layout> getMasterLayouts(long groupId, long masterLayoutPlid) {
+		return layoutPersistence.findByG_MLP(groupId, masterLayoutPlid);
+	}
+
+	@Override
+	public int getMasterLayoutsCount(long groupId, long masterLayoutPlid) {
+		return layoutPersistence.countByG_MLP(groupId, masterLayoutPlid);
+	}
+
 	/**
-	 * Returns the primary key to use for the next layout.
+	 * Returns the layout ID to use for the next layout.
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @return the primary key to use for the next layout
+	 * @return the layout ID to use for the next layout
 	 */
 	@Override
 	public long getNextLayoutId(long groupId, boolean privateLayout) {
@@ -1484,27 +2087,6 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		}
 
 		return nextLayoutId;
-	}
-
-	/**
-	 * Returns all the layouts without resource permissions
-	 *
-	 * @param  roleId the primary key of the role
-	 * @return all the layouts without resource permissions
-	 */
-	@Override
-	public List<Layout> getNoPermissionLayouts(long roleId) {
-		return layoutFinder.findByNoPermissions(roleId);
-	}
-
-	/**
-	 * Returns all the layouts whose friendly URLs are <code>null</code>
-	 *
-	 * @return all the layouts whose friendly URLs are <code>null</code>
-	 */
-	@Override
-	public List<Layout> getNullFriendlyURLLayouts() {
-		return layoutFinder.findByNullFriendlyURL();
 	}
 
 	@Override
@@ -1531,18 +2113,156 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		return parentLayout;
 	}
 
+	@Override
+	public List<Layout> getScopeGroupLayouts(long parentGroupId)
+		throws PortalException {
+
+		if (PropsValues.LAYOUT_SCOPE_GROUP_FINDER_ENABLED) {
+			return layoutFinder.findByScopeGroup(parentGroupId);
+		}
+
+		Group parentGroup = _groupPersistence.findByPrimaryKey(parentGroupId);
+
+		if (PropsValues.LAYOUT_SCOPE_GROUP_FINDER_THRESHOLD >= 0) {
+			int count = _groupLocalService.getGroupsCount(
+				parentGroup.getCompanyId(), Layout.class.getName(),
+				parentGroupId);
+
+			if (count >= PropsValues.LAYOUT_SCOPE_GROUP_FINDER_THRESHOLD) {
+				return layoutFinder.findByScopeGroup(parentGroupId);
+			}
+		}
+
+		List<Group> groups = _groupLocalService.getGroups(
+			parentGroup.getCompanyId(), Layout.class.getName(), parentGroupId);
+
+		List<Layout> layouts = new ArrayList<>(groups.size());
+
+		for (Group group : groups) {
+			layouts.add(layoutPersistence.findByPrimaryKey(group.getClassPK()));
+		}
+
+		return layouts;
+	}
+
 	/**
-	 * Returns all the layouts within scope of the group
+	 * Returns all the layouts within scope of the group.
 	 *
-	 * @param  groupId the primary key of the group
+	 * @param  parentGroupId the primary key of the group's parent group
 	 * @param  privateLayout whether the layout is private to the group
 	 * @return the layouts within scope of the group
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public List<Layout> getScopeGroupLayouts(
-		long groupId, boolean privateLayout) {
+			long parentGroupId, boolean privateLayout)
+		throws PortalException {
 
-		return layoutFinder.findByScopeGroup(groupId, privateLayout);
+		if (PropsValues.LAYOUT_SCOPE_GROUP_FINDER_ENABLED) {
+			return layoutFinder.findByScopeGroup(parentGroupId, privateLayout);
+		}
+
+		Group parentGroup = _groupPersistence.findByPrimaryKey(parentGroupId);
+
+		if (PropsValues.LAYOUT_SCOPE_GROUP_FINDER_THRESHOLD >= 0) {
+			int count = _groupLocalService.getGroupsCount(
+				parentGroup.getCompanyId(), Layout.class.getName(),
+				parentGroupId);
+
+			if (count >= PropsValues.LAYOUT_SCOPE_GROUP_FINDER_THRESHOLD) {
+				return layoutFinder.findByScopeGroup(
+					parentGroupId, privateLayout);
+			}
+		}
+
+		List<Group> groups = _groupLocalService.getGroups(
+			parentGroup.getCompanyId(), Layout.class.getName(), parentGroupId);
+
+		List<Layout> layouts = new ArrayList<>(groups.size());
+
+		for (Group group : groups) {
+			Layout layout = layoutPersistence.findByPrimaryKey(
+				group.getClassPK());
+
+			if (layout.isPrivateLayout() == privateLayout) {
+				layouts.add(layout);
+			}
+		}
+
+		return layouts;
+	}
+
+	/**
+	 * Returns <code>true</code> if there is a matching layout with the UUID,
+	 * group, and privacy.
+	 *
+	 * @param  uuid the layout's UUID
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @return <code>true</code> if the layout is found; <code>false</code>
+	 *         otherwise
+	 * @throws PortalException if a portal exception occurred
+	 */
+	@Override
+	public boolean hasLayout(String uuid, long groupId, boolean privateLayout)
+		throws PortalException {
+
+		try {
+			getLayoutByUuidAndGroupId(uuid, groupId, privateLayout);
+
+			return true;
+		}
+		catch (NoSuchLayoutException noSuchLayoutException) {
+
+			// LPS-52675
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchLayoutException, noSuchLayoutException);
+			}
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean hasLayouts(Group group) throws PortalException {
+		List<LayoutSet> groupLayoutSets = _layoutSetPersistence.findByGroupId(
+			group.getGroupId());
+
+		for (LayoutSet layoutSet : groupLayoutSets) {
+			if (layoutSet.getPageCount() > 0) {
+				return true;
+			}
+		}
+
+		if (!group.isUser()) {
+			return false;
+		}
+
+		long[] userGroupIds = _userPersistence.getUserGroupPrimaryKeys(
+			group.getClassPK());
+
+		if (userGroupIds.length != 0) {
+			long userGroupClassNameId = _classNameLocalService.getClassNameId(
+				UserGroup.class);
+
+			for (long userGroupId : userGroupIds) {
+				Group userGroupGroup = _groupPersistence.findByC_C_C(
+					group.getCompanyId(), userGroupClassNameId, userGroupId);
+
+				List<LayoutSet> userGroupGroupLayoutSets =
+					_layoutSetPersistence.findByGroupId(
+						userGroupGroup.getGroupId());
+
+				for (LayoutSet layoutSet : userGroupGroupLayoutSets) {
+					if (layoutSet.getPageCount() > 0) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
 	}
 
 	@Override
@@ -1557,7 +2277,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			Group group, boolean privateLayout, boolean includeUserGroups)
 		throws PortalException {
 
-		LayoutSet layoutSet = layoutSetPersistence.findByG_P(
+		LayoutSet layoutSet = _layoutSetPersistence.findByG_P(
 			group.getGroupId(), privateLayout);
 
 		if (layoutSet.getPageCount() > 0) {
@@ -1568,18 +2288,18 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			return false;
 		}
 
-		long[] userGroupIds = userPersistence.getUserGroupPrimaryKeys(
+		long[] userGroupIds = _userPersistence.getUserGroupPrimaryKeys(
 			group.getClassPK());
 
 		if (userGroupIds.length != 0) {
-			long userGroupClassNameId = classNameLocalService.getClassNameId(
+			long userGroupClassNameId = _classNameLocalService.getClassNameId(
 				UserGroup.class);
 
 			for (long userGroupId : userGroupIds) {
-				Group userGroupGroup = groupPersistence.findByC_C_C(
+				Group userGroupGroup = _groupPersistence.findByC_C_C(
 					group.getCompanyId(), userGroupClassNameId, userGroupId);
 
-				layoutSet = layoutSetPersistence.findByG_P(
+				layoutSet = _layoutSetPersistence.findByG_P(
 					userGroupGroup.getGroupId(), privateLayout);
 
 				if (layoutSet.getPageCount() > 0) {
@@ -1597,7 +2317,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  parentLayoutId the primary key of the parent layout
+	 * @param  parentLayoutId the layout ID of the parent layout
 	 * @return <code>true</code> if the group has any layouts;
 	 *         <code>false</code> otherwise
 	 */
@@ -1605,8 +2325,14 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	public boolean hasLayouts(
 		long groupId, boolean privateLayout, long parentLayoutId) {
 
-		return layoutPersistence.countByG_P_P(
-			groupId, privateLayout, parentLayoutId) > 0;
+		int count = layoutPersistence.countByG_P_P(
+			groupId, privateLayout, parentLayoutId);
+
+		if (count > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override
@@ -1621,10 +2347,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			User user, boolean privateLayout, boolean includeUserGroups)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(User.class);
-
-		Group group = groupPersistence.findByC_C_C(
-			user.getCompanyId(), classNameId, user.getUserId());
+		Group group = _groupPersistence.findByC_C_C(
+			user.getCompanyId(),
+			_classNameLocalService.getClassNameId(User.class),
+			user.getUserId());
 
 		return hasLayouts(group, privateLayout, includeUserGroups);
 	}
@@ -1634,12 +2360,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			long layoutSetPrototypeId, String layoutUuid)
 		throws PortalException {
 
-		LayoutSetPrototype layoutSetPrototype =
-			layoutSetPrototypeLocalService.getLayoutSetPrototype(
-				layoutSetPrototypeId);
-
 		return layoutLocalServiceHelper.hasLayoutSetPrototypeLayout(
-			layoutSetPrototype, layoutUuid);
+			_layoutSetPrototypeLocalService.getLayoutSetPrototype(
+				layoutSetPrototypeId),
+			layoutUuid);
 	}
 
 	@Override
@@ -1648,7 +2372,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		throws PortalException {
 
 		LayoutSetPrototype layoutSetPrototype =
-			layoutSetPrototypeLocalService.
+			_layoutSetPrototypeLocalService.
 				getLayoutSetPrototypeByUuidAndCompanyId(
 					layoutSetPrototypeUuid, companyId);
 
@@ -1657,415 +2381,15 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	}
 
 	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#importLayouts(
-	 *             ExportImportConfiguration, File)}}
-	 */
-	@Deprecated
-	@Override
-	public void importLayouts(
-			ExportImportConfiguration exportImportConfiguration, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#importLayouts(
-	 *             ExportImportConfiguration, InputStream)}}
-	 */
-	@Deprecated
-	@Override
-	public void importLayouts(
-			ExportImportConfiguration exportImportConfiguration, InputStream is)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * Imports the layouts from the byte array.
-	 *
-	 * @param      userId the primary key of the user
-	 * @param      groupId the primary key of the group
-	 * @param      privateLayout whether the layout is private to the group
-	 * @param      parameterMap the mapping of parameters indicating which
-	 *             information will be imported. For information on the keys
-	 *             used in the map see {@link
-	 *             com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
-	 * @param      bytes the byte array with the data
-	 * @throws     PortalException if a group or user with the primary key could
-	 *             not be found, or if some other portal exception occurred
-	 * @see        com.liferay.portlet.exportimport.lar.LayoutImporter
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public void importLayouts(
-			long userId, long groupId, boolean privateLayout,
-			Map<String, String[]> parameterMap, byte[] bytes)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * Imports the layouts from the file.
-	 *
-	 * @param      userId the primary key of the user
-	 * @param      groupId the primary key of the group
-	 * @param      privateLayout whether the layout is private to the group
-	 * @param      parameterMap the mapping of parameters indicating which
-	 *             information will be imported. For information on the keys
-	 *             used in the map see {@link
-	 *             com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
-	 * @param      file the LAR file with the data
-	 * @throws     PortalException if a group or user with the primary key could
-	 *             not be found, or if some other portal exception occurred
-	 * @see        com.liferay.portlet.exportimport.lar.LayoutImporter
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public void importLayouts(
-			long userId, long groupId, boolean privateLayout,
-			Map<String, String[]> parameterMap, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * Imports the layouts from the input stream.
-	 *
-	 * @param      userId the primary key of the user
-	 * @param      groupId the primary key of the group
-	 * @param      privateLayout whether the layout is private to the group
-	 * @param      parameterMap the mapping of parameters indicating which
-	 *             information will be imported. For information on the keys
-	 *             used in the map see {@link
-	 *             com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
-	 * @param      is the input stream
-	 * @throws     PortalException if a group or user with the primary key could
-	 *             not be found, or if some other portal exception occurred
-	 * @see        com.liferay.portlet.exportimport.lar.LayoutImporter
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public void importLayouts(
-			long userId, long groupId, boolean privateLayout,
-			Map<String, String[]> parameterMap, InputStream is)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#importLayoutsDataDeletions(
-	 *             ExportImportConfiguration, File)}
-	 */
-	@Deprecated
-	@Override
-	public void importLayoutsDataDeletions(
-			ExportImportConfiguration exportImportConfiguration, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#importLayoutsInBackground(
-	 *             long, ExportImportConfiguration, File)}
-	 */
-	@Deprecated
-	@Override
-	public long importLayoutsInBackground(
-			long userId, ExportImportConfiguration exportImportConfiguration,
-			File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#importLayoutsInBackground(
-	 *             long, long, File)}
-	 */
-	@Deprecated
-	@Override
-	public long importLayoutsInBackground(
-			long userId, long exportImportConfigurationId, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public long importLayoutsInBackground(
-			long userId, String taskName, long groupId, boolean privateLayout,
-			Map<String, String[]> parameterMap, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public long importLayoutsInBackground(
-			long userId, String taskName, long groupId, boolean privateLayout,
-			Map<String, String[]> parameterMap, InputStream is)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#importPortletDataDeletions(
-	 *             ExportImportConfiguration, File)}
-	 */
-	@Deprecated
-	@Override
-	public void importPortletDataDeletions(
-			ExportImportConfiguration exportImportConfiguration, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#importPortletInfo(
-	 *             ExportImportConfiguration, File)}
-	 */
-	@Deprecated
-	@Override
-	public void importPortletInfo(
-			ExportImportConfiguration exportImportConfiguration, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#importPortletInfo(
-	 *             ExportImportConfiguration, InputStream)}
-	 */
-	@Deprecated
-	@Override
-	public void importPortletInfo(
-			ExportImportConfiguration exportImportConfiguration, InputStream is)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * Imports the portlet information (categories, permissions, ... etc.) from
-	 * the file.
-	 *
-	 * @param      userId the primary key of the user
-	 * @param      plid the primary key of the target layout
-	 * @param      groupId the primary key of the target group
-	 * @param      portletId the primary key of the portlet
-	 * @param      parameterMap the mapping of parameters indicating which
-	 *             information will be imported. For information on the keys
-	 *             used in the map see {@link
-	 *             com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
-	 * @param      file the LAR file with the data
-	 * @throws     PortalException if a group, layout, portlet or user with the
-	 *             primary key could not be found
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public void importPortletInfo(
-			long userId, long plid, long groupId, String portletId,
-			Map<String, String[]> parameterMap, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * Imports the portlet information (categories, permissions, ... etc.) from
-	 * the input stream.
-	 *
-	 * @param      userId the primary key of the user
-	 * @param      plid the primary key of the layout
-	 * @param      groupId the primary key of the group
-	 * @param      portletId the primary key of the portlet
-	 * @param      parameterMap the mapping of parameters indicating which
-	 *             information will be imported. For information on the keys
-	 *             used in the map see {@link
-	 *             com.liferay.portlet.exportimport.lar.PortletDataHandlerKeys}.
-	 * @param      is the input stream
-	 * @throws     PortalException if a group, portlet, layout or user with the
-	 *             primary key could not be found
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public void importPortletInfo(
-			long userId, long plid, long groupId, String portletId,
-			Map<String, String[]> parameterMap, InputStream is)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public void importPortletInfo(
-			long userId, String portletId, Map<String, String[]> parameterMap,
-			File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public void importPortletInfo(
-			long userId, String portletId, Map<String, String[]> parameterMap,
-			InputStream is)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#importPortletInfoInBackground(
-	 *             long, ExportImportConfiguration, File)}
-	 */
-	@Deprecated
-	@Override
-	public long importPortletInfoInBackground(
-			long userId, ExportImportConfiguration exportImportConfiguration,
-			File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#importPortletInfoInBackground(
-	 *             long, long, File)}
-	 */
-	@Deprecated
-	@Override
-	public long importPortletInfoInBackground(
-			long userId, long exportImportConfigurationId, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public long importPortletInfoInBackground(
-			long userId, String taskName, long plid, long groupId,
-			String portletId, Map<String, String[]> parameterMap, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public long importPortletInfoInBackground(
-			long userId, String taskName, long plid, long groupId,
-			String portletId, Map<String, String[]> parameterMap,
-			InputStream is)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public long importPortletInfoInBackground(
-			long userId, String taskName, String portletId,
-			Map<String, String[]> parameterMap, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public long importPortletInfoInBackground(
-			long userId, String taskName, String portletId,
-			Map<String, String[]> parameterMap, InputStream is)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
 	 * Sets the layouts for the group, replacing and prioritizing all layouts of
 	 * the parent layout.
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  parentLayoutId the primary key of the parent layout
-	 * @param  layoutIds the primary keys of the layouts
+	 * @param  parentLayoutId the layout ID of the parent layout
+	 * @param  layoutIds the layout IDs of the layouts
 	 * @param  serviceContext the service context to be applied
-	 * @throws PortalException if a group or layout with the primary key could
-	 *         not be found, if no layouts were specified, if the first layout
-	 *         was not page-able, if the first layout was hidden, or if some
-	 *         other portal exception occurred
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public void setLayouts(
@@ -2107,7 +2431,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 		for (Layout layout : layouts) {
 			if (!layoutIdsSet.contains(layout.getLayoutId())) {
-				deleteLayout(layout, true, serviceContext);
+				deleteLayout(layout, serviceContext);
 			}
 			else {
 				newLayoutIdsSet.add(layout.getLayoutId());
@@ -2122,10 +2446,8 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 			layout.setPriority(priority++);
 
-			layoutPersistence.update(layout);
+			layoutLocalService.updateLayout(layout);
 		}
-
-		layoutSetLocalService.updatePageCount(groupId, privateLayout);
 	}
 
 	@Override
@@ -2134,11 +2456,11 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			String[] assetTagNames)
 		throws PortalException {
 
-		assetEntryLocalService.updateEntry(
+		_assetEntryLocalService.updateEntry(
 			userId, layout.getGroupId(), layout.getCreateDate(),
 			layout.getModifiedDate(), Layout.class.getName(), layout.getPlid(),
-			layout.getUuid(), 0, assetCategoryIds, assetTagNames, false, null,
-			null, null, ContentTypes.TEXT_HTML,
+			layout.getUuid(), 0, assetCategoryIds, assetTagNames, true, false,
+			null, null, null, null, ContentTypes.TEXT_HTML,
 			layout.getName(LocaleUtil.getDefault()), null, null, null, null, 0,
 			0, null);
 	}
@@ -2151,15 +2473,12 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 * @param  friendlyURL the friendly URL to be assigned
 	 * @param  languageId the primary key of the language
 	 * @return the updated layout
-	 * @throws PortalException if a group or layout with the primary key could
-	 *         not be found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updateFriendlyURL(
 			long userId, long plid, String friendlyURL, String languageId)
 		throws PortalException {
-
-		Date now = new Date();
 
 		Layout layout = layoutPersistence.findByPrimaryKey(plid);
 
@@ -2171,12 +2490,12 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			layout.getGroupId(), layout.isPrivateLayout(), layout.getLayoutId(),
 			friendlyURL);
 
-		layoutFriendlyURLLocalService.updateLayoutFriendlyURL(
+		_layoutFriendlyURLLocalService.updateLayoutFriendlyURL(
 			userId, layout.getCompanyId(), layout.getGroupId(),
 			layout.getPlid(), layout.isPrivateLayout(), friendlyURL, languageId,
 			new ServiceContext());
 
-		layout.setModifiedDate(now);
+		layout.setModifiedDate(new Date());
 
 		String defaultLanguageId = LocaleUtil.toLanguageId(
 			LocaleUtil.getSiteDefault());
@@ -2185,33 +2504,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			layout.setFriendlyURL(friendlyURL);
 		}
 
-		layoutPersistence.update(layout);
-
-		return layout;
-	}
-
-	/**
-	 * Updates the friendly URL of the layout.
-	 *
-	 * @param      plid the primary key of the layout
-	 * @param      friendlyURL the friendly URL to be assigned
-	 * @param      languageId the primary key of the language
-	 * @return     the updated layout
-	 * @throws     PortalException if a group or layout with the primary key
-	 *             could not be found
-	 * @deprecated As of 7.0.0, replaced by {@link #updateFriendlyURL(long,
-	 *             long, String, String)}
-	 */
-	@Deprecated
-	@Override
-	public Layout updateFriendlyURL(
-			long plid, String friendlyURL, String languageId)
-		throws PortalException {
-
-		Layout layout = layoutPersistence.findByPrimaryKey(plid);
-
-		return updateFriendlyURL(
-			layout.getUserId(), plid, friendlyURL, languageId);
+		return layoutLocalService.updateLayout(layout);
 	}
 
 	@Override
@@ -2224,11 +2517,60 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			return null;
 		}
 
-		PortalUtil.updateImageId(layout, true, bytes, "iconImageId", 0, 0, 0);
+		PortalUtil.updateImageId(
+			layout, bytes != null, bytes, "iconImageId", 0, 0, 0);
 
-		layoutPersistence.update(layout);
+		return layoutLocalService.updateLayout(layout);
+	}
 
-		return layout;
+	/**
+	 * Updates the layout replacing its draft publish date.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  layoutId the layout ID of the layout
+	 * @param  publishDate the date when draft was last published
+	 * @return the updated layout
+	 * @throws PortalException if a portal exception occurred
+	 */
+	@Override
+	public Layout updateLayout(
+			long groupId, boolean privateLayout, long layoutId,
+			Date publishDate)
+		throws PortalException {
+
+		Layout layout = layoutPersistence.findByG_P_L(
+			groupId, privateLayout, layoutId);
+
+		layout.setPublishDate(publishDate);
+
+		return layoutPersistence.update(layout);
+	}
+
+	/**
+	 * Updates the layout replacing its entity class name ID and primary key.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  layoutId the layout ID of the layout
+	 * @param  classNameId the class name ID of the entity
+	 * @param  classPK the primary key of the entity
+	 * @return the updated layout
+	 * @throws PortalException if a portal exception occurred
+	 */
+	@Override
+	public Layout updateLayout(
+			long groupId, boolean privateLayout, long layoutId,
+			long classNameId, long classPK)
+		throws PortalException {
+
+		Layout layout = layoutPersistence.findByG_P_L(
+			groupId, privateLayout, layoutId);
+
+		layout.setClassNameId(classNameId);
+		layout.setClassPK(classPK);
+
+		return layoutPersistence.update(layout);
 	}
 
 	/**
@@ -2236,8 +2578,8 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  layoutId the primary key of the layout
-	 * @param  parentLayoutId the primary key of the layout's new parent layout
+	 * @param  layoutId the layout ID of the layout
+	 * @param  parentLayoutId the layout ID of the layout's new parent layout
 	 * @param  nameMap the locales and localized names to merge (optionally
 	 *         <code>null</code>)
 	 * @param  titleMap the locales and localized titles to merge (optionally
@@ -2255,8 +2597,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *         To see how the URL is normalized when accessed, see {@link
 	 *         com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
 	 *         String)}.
-	 * @param  iconImage whether the icon image will be updated
+	 * @param  hasIconImage whether the icon image will be updated
 	 * @param  iconBytes the byte array of the layout's new icon image
+	 * @param  masterLayoutPlid the primary key of the master layout
+	 * @param  styleBookEntryId the primary key of the style book entrys
 	 * @param  serviceContext the service context to be applied. Can set the
 	 *         modification date and expando bridge attributes for the layout.
 	 *         For layouts that are linked to a layout prototype, attributes
@@ -2267,10 +2611,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *         activate propagation of changes made to the linked page in the
 	 *         prototype.
 	 * @return the updated layout
-	 * @throws PortalException if a group or layout with the primary key could
-	 *         not be found, if a unique friendly URL could not be generated, if
-	 *         a valid parent layout ID to use could not be found, if the layout
-	 *         parameters were invalid, or if a portal exception occurred
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updateLayout(
@@ -2279,14 +2620,17 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
 			Map<Locale, String> keywordsMap, Map<Locale, String> robotsMap,
 			String type, boolean hidden, Map<Locale, String> friendlyURLMap,
-			boolean iconImage, byte[] iconBytes, ServiceContext serviceContext)
+			boolean hasIconImage, byte[] iconBytes, long masterLayoutPlid,
+			long styleBookEntryId, ServiceContext serviceContext)
 		throws PortalException {
 
 		// Layout
 
 		parentLayoutId = layoutLocalServiceHelper.getParentLayoutId(
 			groupId, privateLayout, parentLayoutId);
+
 		String name = nameMap.get(LocaleUtil.getSiteDefault());
+
 		friendlyURLMap = layoutLocalServiceHelper.getFriendlyURLMap(
 			groupId, privateLayout, layoutId, name, friendlyURLMap);
 
@@ -2294,17 +2638,18 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 		layoutLocalServiceHelper.validate(
 			groupId, privateLayout, layoutId, parentLayoutId, name, type,
-			hidden, friendlyURLMap);
+			hidden, friendlyURLMap, serviceContext);
 
 		layoutLocalServiceHelper.validateParentLayoutId(
 			groupId, privateLayout, layoutId, parentLayoutId);
-
-		Date now = new Date();
 
 		Layout layout = layoutPersistence.findByG_P_L(
 			groupId, privateLayout, layoutId);
 
 		if (parentLayoutId != layout.getParentLayoutId()) {
+			layout.setParentPlid(
+				_getParentPlid(groupId, privateLayout, parentLayoutId));
+
 			int priority = layoutLocalServiceHelper.getNextPriority(
 				groupId, privateLayout, parentLayoutId,
 				layout.getSourcePrototypeLayoutUuid(), -1);
@@ -2312,7 +2657,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			layout.setPriority(priority);
 		}
 
-		layout.setModifiedDate(serviceContext.getModifiedDate(now));
+		layout.setModifiedDate(serviceContext.getModifiedDate(new Date()));
 		layout.setParentLayoutId(parentLayoutId);
 		layout.setNameMap(nameMap);
 		layout.setTitleMap(titleMap);
@@ -2324,41 +2669,61 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		layout.setFriendlyURL(friendlyURL);
 
 		PortalUtil.updateImageId(
-			layout, iconImage, iconBytes, "iconImageId", 0, 0, 0);
+			layout, hasIconImage, iconBytes, "iconImageId", 0, 0, 0);
+
+		layout.setStyleBookEntryId(styleBookEntryId);
+		layout.setMasterLayoutPlid(masterLayoutPlid);
 
 		boolean layoutUpdateable = ParamUtil.getBoolean(
 			serviceContext, Sites.LAYOUT_UPDATEABLE, true);
 
-		UnicodeProperties typeSettingsProperties =
+		UnicodeProperties typeSettingsUnicodeProperties =
 			layout.getTypeSettingsProperties();
 
-		typeSettingsProperties.put(
-			Sites.LAYOUT_UPDATEABLE, String.valueOf(layoutUpdateable));
+		Group group = layout.getGroup();
+
+		if (!group.isLayoutPrototype()) {
+			typeSettingsUnicodeProperties.put(
+				Sites.LAYOUT_UPDATEABLE, String.valueOf(layoutUpdateable));
+		}
 
 		if (privateLayout) {
-			typeSettingsProperties.put(
+			typeSettingsUnicodeProperties.put(
 				"privateLayout", String.valueOf(privateLayout));
 		}
 
-		layout.setTypeSettingsProperties(typeSettingsProperties);
+		layout.setTypeSettingsProperties(typeSettingsUnicodeProperties);
 
 		String layoutPrototypeUuid = ParamUtil.getString(
 			serviceContext, "layoutPrototypeUuid");
-		boolean layoutPrototypeLinkEnabled = ParamUtil.getBoolean(
-			serviceContext, "layoutPrototypeLinkEnabled");
 
 		if (Validator.isNotNull(layoutPrototypeUuid)) {
 			layout.setLayoutPrototypeUuid(layoutPrototypeUuid);
+
+			boolean applyLayoutPrototype = ParamUtil.getBoolean(
+				serviceContext, "applyLayoutPrototype");
+
+			boolean layoutPrototypeLinkEnabled = ParamUtil.getBoolean(
+				serviceContext, "layoutPrototypeLinkEnabled");
+
 			layout.setLayoutPrototypeLinkEnabled(layoutPrototypeLinkEnabled);
+
+			if (applyLayoutPrototype) {
+				serviceContext.setAttribute(
+					"applyLayoutPrototype", Boolean.FALSE);
+
+				_applyLayoutPrototype(
+					layoutPrototypeUuid, layout, layoutPrototypeLinkEnabled);
+			}
 		}
 
 		layout.setExpandoBridgeAttributes(serviceContext);
 
-		layoutPersistence.update(layout);
+		layout = layoutLocalService.updateLayout(layout);
 
 		// Layout friendly URLs
 
-		layoutFriendlyURLLocalService.updateLayoutFriendlyURLs(
+		_layoutFriendlyURLLocalService.updateLayoutFriendlyURLs(
 			serviceContext.getUserId(), layout.getCompanyId(),
 			layout.getGroupId(), layout.getPlid(), layout.isPrivateLayout(),
 			friendlyURLMap, serviceContext);
@@ -2374,90 +2739,15 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	}
 
 	/**
-	 * Updates the layout.
-	 *
-	 * @param      groupId the primary key of the group
-	 * @param      privateLayout whether the layout is private to the group
-	 * @param      layoutId the primary key of the layout
-	 * @param      parentLayoutId the primary key of the layout's new parent
-	 *             layout
-	 * @param      nameMap the locales and localized names to merge (optionally
-	 *             <code>null</code>)
-	 * @param      titleMap the locales and localized titles to merge
-	 *             (optionally <code>null</code>)
-	 * @param      descriptionMap the locales and localized descriptions to
-	 *             merge (optionally <code>null</code>)
-	 * @param      keywordsMap the locales and localized keywords to merge
-	 *             (optionally <code>null</code>)
-	 * @param      robotsMap the locales and localized robots to merge
-	 *             (optionally <code>null</code>)
-	 * @param      type the layout's new type (optionally {@link
-	 *             LayoutConstants#TYPE_PORTLET})
-	 * @param      hidden whether the layout is hidden
-	 * @param      friendlyURL the layout's new friendly URL (optionally {@link
-	 *             PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL} or
-	 *             {@link
-	 *             PropsValues#DEFAULT_USER_PRIVATE_LAYOUT_FRIENDLY_URL}). The
-	 *             default values can be overridden in
-	 *             <code>portal-ext.properties</code> by specifying new values
-	 *             for the corresponding properties defined in {@link
-	 *             PropsValues}. To see how the URL is normalized when accessed,
-	 *             see {@link
-	 *             com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil#normalize(
-	 *             String)}.
-	 * @param      iconImage whether the icon image will be updated
-	 * @param      iconBytes the byte array of the layout's new icon image
-	 * @param      serviceContext the service context to be applied. Can set the
-	 *             modification date and expando bridge attributes for the
-	 *             layout. For layouts that are linked to a layout prototype,
-	 *             attributes named <code>layoutPrototypeUuid</code> and
-	 *             <code>layoutPrototypeLinkedEnabled</code> can be specified to
-	 *             provide the unique identifier of the source prototype and a
-	 *             boolean to determine whether a link to it should be enabled
-	 *             to activate propagation of changes made to the linked page in
-	 *             the prototype.
-	 * @return     the updated layout
-	 * @throws     PortalException if a group or layout with the primary key
-	 *             could not be found, if a unique friendly URL could not be
-	 *             generated, if a valid parent layout ID to use could not be
-	 *             found, if the layout parameters were invalid, or if a portal
-	 *             exception occurred
-	 * @deprecated As of 6.2.0, replaced by {@link #updateLayout(long, boolean,
-	 *             long, long, Map, Map, Map, Map, Map, String, boolean, Map,
-	 *             boolean, byte[], ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public Layout updateLayout(
-			long groupId, boolean privateLayout, long layoutId,
-			long parentLayoutId, Map<Locale, String> nameMap,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			Map<Locale, String> keywordsMap, Map<Locale, String> robotsMap,
-			String type, boolean hidden, String friendlyURL, Boolean iconImage,
-			byte[] iconBytes, ServiceContext serviceContext)
-		throws PortalException {
-
-		Map<Locale, String> friendlyURLMap = new HashMap<>();
-
-		friendlyURLMap.put(LocaleUtil.getSiteDefault(), friendlyURL);
-
-		return updateLayout(
-			groupId, privateLayout, layoutId, parentLayoutId, nameMap, titleMap,
-			descriptionMap, keywordsMap, robotsMap, type, hidden,
-			friendlyURLMap, iconImage, iconBytes, serviceContext);
-	}
-
-	/**
 	 * Updates the layout replacing its type settings.
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  layoutId the primary key of the layout
+	 * @param  layoutId the layout ID of the layout
 	 * @param  typeSettings the settings to load the unicode properties object.
 	 *         See {@link UnicodeProperties #fastLoad(String)}.
 	 * @return the updated layout
-	 * @throws PortalException if a matching layout could not be found or if a
-	 *         portal exception occurred
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updateLayout(
@@ -2465,23 +2755,26 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			String typeSettings)
 		throws PortalException {
 
-		Date now = new Date();
+		Date date = new Date();
 
-		UnicodeProperties typeSettingsProperties = new UnicodeProperties();
-
-		typeSettingsProperties.fastLoad(typeSettings);
-
-		validateTypeSettingsProperties(typeSettingsProperties);
+		UnicodeProperties typeSettingsUnicodeProperties =
+			UnicodePropertiesBuilder.fastLoad(
+				typeSettings
+			).build();
 
 		Layout layout = layoutPersistence.findByG_P_L(
 			groupId, privateLayout, layoutId);
 
-		layout.setModifiedDate(now);
-		layout.setTypeSettings(typeSettingsProperties.toString());
+		validateTypeSettingsProperties(layout, typeSettingsUnicodeProperties);
 
-		layoutPersistence.update(layout);
+		layout.setModifiedDate(date);
+		layout.setTypeSettings(typeSettingsUnicodeProperties.toString());
 
-		return layout;
+		if (layout.isSystem() && (layout.getClassPK() > 0)) {
+			layout.setPublishDate(date);
+		}
+
+		return layoutPersistence.update(layout);
 	}
 
 	/**
@@ -2489,40 +2782,53 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  layoutId the primary key of the layout
+	 * @param  layoutId the layout ID of the layout
 	 * @param  themeId the primary key of the layout's new theme
 	 * @param  colorSchemeId the primary key of the layout's new color scheme
 	 * @param  css the layout's new CSS
-	 * @param  wapTheme whether the theme is for WAP browsers
 	 * @return the updated layout
-	 * @throws PortalException if a matching layout could not be found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updateLookAndFeel(
 			long groupId, boolean privateLayout, long layoutId, String themeId,
-			String colorSchemeId, String css, boolean wapTheme)
+			String colorSchemeId, String css)
 		throws PortalException {
-
-		Date now = new Date();
 
 		Layout layout = layoutPersistence.findByG_P_L(
 			groupId, privateLayout, layoutId);
 
-		layout.setModifiedDate(now);
+		layout.setModifiedDate(new Date());
 
-		if (wapTheme) {
-			layout.setWapThemeId(themeId);
-			layout.setWapColorSchemeId(colorSchemeId);
-		}
-		else {
-			layout.setThemeId(themeId);
-			layout.setColorSchemeId(colorSchemeId);
-			layout.setCss(css);
-		}
+		layout.setThemeId(themeId);
+		layout.setColorSchemeId(colorSchemeId);
+		layout.setCss(css);
 
-		layoutPersistence.update(layout);
+		return layoutPersistence.update(layout);
+	}
 
-		return layout;
+	/**
+	 * Updates the layout replacing its master layout plid.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  layoutId the layout ID of the layout
+	 * @param  masterLayoutPlid the primary key of the master layout
+	 * @return the updated layout
+	 * @throws PortalException if a portal exception occurred
+	 */
+	@Override
+	public Layout updateMasterLayoutPlid(
+			long groupId, boolean privateLayout, long layoutId,
+			long masterLayoutPlid)
+		throws PortalException {
+
+		Layout layout = layoutPersistence.findByG_P_L(
+			groupId, privateLayout, layoutId);
+
+		layout.setMasterLayoutPlid(masterLayoutPlid);
+
+		return layoutPersistence.update(layout);
 	}
 
 	/**
@@ -2533,33 +2839,33 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 * @param  languageId the primary key of the language. For more information
 	 *         see {@link Locale}.
 	 * @return the updated layout
-	 * @throws PortalException if the new name was <code>null</code>
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updateName(Layout layout, String name, String languageId)
 		throws PortalException {
 
-		Date now = new Date();
+		Date date = new Date();
 
 		layoutLocalServiceHelper.validateName(name, languageId);
 
-		layout.setModifiedDate(now);
+		layout.setModifiedDate(date);
 		layout.setName(name, LocaleUtil.fromLanguageId(languageId));
 
-		layoutPersistence.update(layout);
+		layout = layoutPersistence.update(layout);
 
 		Group group = layout.getGroup();
 
 		if (group.isLayoutPrototype()) {
 			LayoutPrototype layoutPrototype =
-				layoutPrototypeLocalService.getLayoutPrototype(
+				_layoutPrototypeLocalService.getLayoutPrototype(
 					group.getClassPK());
 
-			layoutPrototype.setModifiedDate(now);
+			layoutPrototype.setModifiedDate(date);
 			layoutPrototype.setName(
 				name, LocaleUtil.fromLanguageId(languageId));
 
-			layoutPrototypePersistence.update(layoutPrototype);
+			_layoutPrototypePersistence.update(layoutPrototype);
 		}
 
 		return layout;
@@ -2571,13 +2877,12 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  layoutId the primary key of the layout
+	 * @param  layoutId the layout ID of the layout
 	 * @param  name the layout's new name
 	 * @param  languageId the primary key of the language. For more information
 	 *         see {@link Locale}.
 	 * @return the updated layout
-	 * @throws PortalException if a matching layout could not be found or if the
-	 *         new name was <code>null</code>
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updateName(
@@ -2599,8 +2904,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 * @param  languageId the primary key of the language. For more information
 	 *         see {@link Locale}.
 	 * @return the updated layout
-	 * @throws PortalException if a layout with the primary key could not be
-	 *         found or if the name was <code>null</code>
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updateName(long plid, String name, String languageId)
@@ -2617,12 +2921,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  layoutId the primary key of the layout
-	 * @param  parentLayoutId the primary key to be assigned to the parent
-	 *         layout
+	 * @param  layoutId the layout ID of the layout
+	 * @param  parentLayoutId the layout ID to be assigned to the parent layout
 	 * @return the matching layout
-	 * @throws PortalException if a valid parent layout ID to use could not be
-	 *         found or if a matching layout could not be found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updateParentLayoutId(
@@ -2636,12 +2938,13 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		layoutLocalServiceHelper.validateParentLayoutId(
 			groupId, privateLayout, layoutId, parentLayoutId);
 
-		Date now = new Date();
-
 		Layout layout = layoutPersistence.findByG_P_L(
 			groupId, privateLayout, layoutId);
 
 		if (parentLayoutId != layout.getParentLayoutId()) {
+			layout.setParentPlid(
+				_getParentPlid(groupId, privateLayout, parentLayoutId));
+
 			int priority = layoutLocalServiceHelper.getNextPriority(
 				groupId, privateLayout, parentLayoutId,
 				layout.getSourcePrototypeLayoutUuid(), -1);
@@ -2649,12 +2952,18 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			layout.setPriority(priority);
 		}
 
-		layout.setModifiedDate(now);
+		layout.setModifiedDate(new Date());
 		layout.setParentLayoutId(parentLayoutId);
 
-		layoutPersistence.update(layout);
+		Layout draftLayout = layout.fetchDraftLayout();
 
-		return layout;
+		if (draftLayout != null) {
+			updateParentLayoutId(
+				groupId, privateLayout, draftLayout.getLayoutId(),
+				parentLayoutId);
+		}
+
+		return layoutLocalService.updateLayout(layout);
 	}
 
 	/**
@@ -2666,16 +2975,17 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 * @param  plid the primary key of the layout
 	 * @param  parentPlid the primary key of the parent layout
 	 * @return the layout matching the primary key
-	 * @throws PortalException if a layout with the primary key could not be
-	 *         found or if a valid parent layout ID to use could not be found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updateParentLayoutId(long plid, long parentPlid)
 		throws PortalException {
 
-		Date now = new Date();
-
 		Layout layout = layoutPersistence.findByPrimaryKey(plid);
+
+		if (layout.getParentPlid() == parentPlid) {
+			return layout;
+		}
 
 		long parentLayoutId = LayoutConstants.DEFAULT_PARENT_LAYOUT_ID;
 
@@ -2703,12 +3013,17 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			layout.setPriority(priority);
 		}
 
-		layout.setModifiedDate(now);
+		layout.setModifiedDate(new Date());
+		layout.setParentPlid(parentPlid);
 		layout.setParentLayoutId(parentLayoutId);
 
-		layoutPersistence.update(layout);
+		Layout draftLayout = layout.fetchDraftLayout();
 
-		return layout;
+		if (draftLayout != null) {
+			updateParentLayoutId(draftLayout.getPlid(), parentPlid);
+		}
+
+		return layoutPersistence.update(layout);
 	}
 
 	/**
@@ -2718,8 +3033,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 * @param  parentPlid the primary key of the parent layout
 	 * @param  priority the layout's new priority
 	 * @return the layout matching the primary key
-	 * @throws PortalException if a layout with the primary key could not be
-	 *         found or if a valid parent layout ID could not be found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updateParentLayoutIdAndPriority(
@@ -2728,7 +3042,13 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 		Layout layout = updateParentLayoutId(plid, parentPlid);
 
-		return updatePriority(layout, priority);
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		if (draftLayout != null) {
+			layoutLocalService.updatePriority(draftLayout.getPlid(), priority);
+		}
+
+		return layoutLocalService.updatePriority(layout, priority);
 	}
 
 	/**
@@ -2736,7 +3056,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @throws PortalException if a matching layout could not be found
+	 * @throws PortalException
 	 */
 	@Override
 	public void updatePriorities(long groupId, boolean privateLayout)
@@ -2753,7 +3073,15 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 			layout.setPriority(nextPriority);
 
-			layoutPersistence.update(layout);
+			layout = layoutPersistence.update(layout);
+
+			Layout draftLayout = layout.fetchDraftLayout();
+
+			if (draftLayout != null) {
+				draftLayout.setPriority(nextPriority);
+
+				layoutPersistence.update(draftLayout);
+			}
 		}
 	}
 
@@ -2787,7 +3115,15 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		layout.setModifiedDate(new Date());
 		layout.setPriority(nextPriority);
 
-		layoutPersistence.update(layout);
+		layout = layoutPersistence.update(layout);
+
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		if (draftLayout != null) {
+			draftLayout.setPriority(nextPriority);
+
+			draftLayout = layoutPersistence.update(draftLayout);
+		}
 
 		List<Layout> layouts = layoutPersistence.findByG_P_P(
 			layout.getGroupId(), layout.isPrivateLayout(),
@@ -2825,7 +3161,15 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			curLayout.setModifiedDate(layout.getModifiedDate());
 			curLayout.setPriority(curNextPriority);
 
-			layoutPersistence.update(curLayout);
+			curLayout = layoutPersistence.update(curLayout);
+
+			draftLayout = curLayout.fetchDraftLayout();
+
+			if (draftLayout != null) {
+				draftLayout.setPriority(nextPriority);
+
+				layoutPersistence.update(draftLayout);
+			}
 
 			if (curLayout.equals(layout)) {
 				layout = curLayout;
@@ -2841,10 +3185,10 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  layoutId the primary key of the layout
+	 * @param  layoutId the layout ID of the layout
 	 * @param  priority the layout's new priority
 	 * @return the updated layout
-	 * @throws PortalException if a matching layout could not be found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updatePriority(
@@ -2864,11 +3208,11 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @param  privateLayout whether the layout is private to the group
-	 * @param  layoutId the primary key of the layout
-	 * @param  nextLayoutId the primary key of the next layout
-	 * @param  previousLayoutId the primary key of the previous layout
+	 * @param  layoutId the layout ID of the layout
+	 * @param  nextLayoutId the layout ID of the next layout
+	 * @param  previousLayoutId the layout ID of the previous layout
 	 * @return the updated layout
-	 * @throws PortalException if a matching layout could not be found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updatePriority(
@@ -2882,13 +3226,13 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 
 		Layout nextLayout = null;
 
-		if (nextLayoutId > -1) {
+		if (nextLayoutId > 0) {
 			nextLayout = getLayout(groupId, privateLayout, nextLayoutId);
 		}
 
 		Layout previousLayout = null;
 
-		if (previousLayoutId > -1) {
+		if (previousLayoutId > 0) {
 			previousLayout = getLayout(
 				groupId, privateLayout, previousLayoutId);
 		}
@@ -2911,8 +3255,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 	 * @param  plid the primary key of the layout
 	 * @param  priority the layout's new priority
 	 * @return the updated layout
-	 * @throws PortalException if a layout with the primary key could not be
-	 *         found
+	 * @throws PortalException if a portal exception occurred
 	 */
 	@Override
 	public Layout updatePriority(long plid, int priority)
@@ -2923,163 +3266,84 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 		return updatePriority(layout, priority);
 	}
 
-	/**
-	 * @deprecated As of 6.2.0, with no direct replacement
-	 */
-	@Deprecated
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
-	@SuppressWarnings("unused")
-	public void updateScopedPortletNames(
-			long groupId, boolean privateLayout, long layoutId,
-			Map<Locale, String> nameMap, List<Locale> nameMapModifiedLocales)
+	public Layout updateStatus(
+			long userId, long plid, int status, ServiceContext serviceContext)
 		throws PortalException {
+
+		// Layout
+
+		Layout layout = layoutLocalService.getLayout(plid);
+
+		layout.setStatus(status);
+
+		User user = _userLocalService.getUser(userId);
+
+		layout.setStatusByUserId(user.getUserId());
+		layout.setStatusByUserName(user.getFullName());
+
+		layout.setStatusDate(serviceContext.getModifiedDate(new Date()));
+
+		layout = layoutPersistence.update(layout);
+
+		// Asset
+
+		if (status == WorkflowConstants.STATUS_APPROVED) {
+			_assetEntryLocalService.updateEntry(
+				Layout.class.getName(), layout.getPlid(),
+				layout.getStatusDate(), null, true, false);
+		}
+
+		return layout;
 	}
 
 	/**
-	 * Updates the names of the portlets within scope of the group, the scope of
-	 * the layout's UUID, and the privacy.
+	 * Updates the layout replacing its style book entry ID.
 	 *
-	 * @param      groupId the primary key of the group
-	 * @param      privateLayout whether the layout is private to the group
-	 * @param      layoutId the primary key of the layout whose UUID to match
-	 * @param      name the new name for the portlets
-	 * @param      languageId the primary key of the language
-	 * @throws     PortalException if a matching layout could not be found
-	 * @see        com.liferay.portlet.portletconfiguration.action.EditScopeAction
-	 * @deprecated As of 6.2.0, with no direct replacement
+	 * @param  groupId the primary key of the group
+	 * @param  privateLayout whether the layout is private to the group
+	 * @param  layoutId the layout ID of the layout
+	 * @param  styleBookEntryId the primary key of the style book entry
+	 * @return the updated layout
+	 * @throws PortalException if a portal exception occurred
 	 */
-	@Deprecated
 	@Override
-	public void updateScopedPortletNames(
-			long groupId, boolean privateLayout, long layoutId, String name,
-			String languageId)
+	public Layout updateStyleBookEntryId(
+			long groupId, boolean privateLayout, long layoutId,
+			long styleBookEntryId)
 		throws PortalException {
+
+		Layout layout = layoutPersistence.findByG_P_L(
+			groupId, privateLayout, layoutId);
+
+		layout.setStyleBookEntryId(styleBookEntryId);
+
+		return layoutPersistence.update(layout);
 	}
 
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#validateImportLayoutsFile(
-	 *             ExportImportConfiguration, File)}
-	 */
-	@Deprecated
 	@Override
-	public MissingReferences validateImportLayoutsFile(
-			ExportImportConfiguration exportImportConfiguration, File file)
-		throws PortalException {
+	public Layout updateType(long plid, String type) throws PortalException {
+		Layout layout = layoutPersistence.findByPrimaryKey(plid);
 
-		throw new UnsupportedOperationException();
-	}
+		layout.setType(type);
 
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#validateImportLayoutsFile(
-	 *             ExportImportConfiguration, InputStream)}
-	 */
-	@Deprecated
-	@Override
-	public MissingReferences validateImportLayoutsFile(
-			ExportImportConfiguration exportImportConfiguration,
-			InputStream inputStream)
-		throws PortalException {
+		if (Objects.equals(type, LayoutConstants.TYPE_COLLECTION) ||
+			Objects.equals(type, LayoutConstants.TYPE_CONTENT)) {
 
-		throw new UnsupportedOperationException();
-	}
+			layout.setLayoutPrototypeUuid(StringPool.BLANK);
+			layout.setLayoutPrototypeLinkEnabled(false);
+		}
 
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public MissingReferences validateImportLayoutsFile(
-			long userId, long groupId, boolean privateLayout,
-			Map<String, String[]> parameterMap, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public MissingReferences validateImportLayoutsFile(
-			long userId, long groupId, boolean privateLayout,
-			Map<String, String[]> parameterMap, InputStream inputStream)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#validateImportPortletInfo(
-	 *             ExportImportConfiguration, File)}
-	 */
-	@Deprecated
-	@Override
-	public MissingReferences validateImportPortletInfo(
-			ExportImportConfiguration exportImportConfiguration, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link
-	 *             com.liferay.portlet.exportimport.service.ExportImportLocalService#validateImportPortletInfo(
-	 *             ExportImportConfiguration, InputStream)}
-	 */
-	@Deprecated
-	@Override
-	public MissingReferences validateImportPortletInfo(
-			ExportImportConfiguration exportImportConfiguration,
-			InputStream inputStream)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public MissingReferences validateImportPortletInfo(
-			long userId, long plid, long groupId, String portletId,
-			Map<String, String[]> parameterMap, File file)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public MissingReferences validateImportPortletInfo(
-			long userId, long plid, long groupId, String portletId,
-			Map<String, String[]> parameterMap, InputStream inputStream)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
+		return layoutLocalService.updateLayout(layout);
 	}
 
 	protected void validateTypeSettingsProperties(
-			UnicodeProperties typeSettingsProperties)
+			Layout layout, UnicodeProperties typeSettingsUnicodeProperties)
 		throws PortalException {
 
-		String sitemapChangeFrequency = typeSettingsProperties.getProperty(
-			"sitemap-changefreq");
+		String sitemapChangeFrequency =
+			typeSettingsUnicodeProperties.getProperty("sitemap-changefreq");
 
 		if (Validator.isNotNull(sitemapChangeFrequency) &&
 			!sitemapChangeFrequency.equals("always") &&
@@ -3093,8 +3357,8 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			throw new SitemapChangeFrequencyException();
 		}
 
-		String sitemapInclude = typeSettingsProperties.getProperty(
-			"sitemap-include");
+		String sitemapInclude = typeSettingsUnicodeProperties.getProperty(
+			LayoutTypePortletConstants.SITEMAP_INCLUDE);
 
 		if (Validator.isNotNull(sitemapInclude) &&
 			!sitemapInclude.equals("0") && !sitemapInclude.equals("1")) {
@@ -3102,7 +3366,7 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 			throw new SitemapIncludeException();
 		}
 
-		String sitemapPriority = typeSettingsProperties.getProperty(
+		String sitemapPriority = typeSettingsUnicodeProperties.getProperty(
 			"sitemap-priority");
 
 		if (Validator.isNotNull(sitemapPriority)) {
@@ -3113,13 +3377,582 @@ public class LayoutLocalServiceImpl extends LayoutLocalServiceBaseImpl {
 					throw new SitemapPagePriorityException();
 				}
 			}
-			catch (NumberFormatException nfe) {
-				throw new SitemapPagePriorityException();
+			catch (NumberFormatException numberFormatException) {
+				throw new SitemapPagePriorityException(numberFormatException);
 			}
+		}
+
+		boolean enableJavaScript =
+			PropsValues.
+				FIELD_ENABLE_COM_LIFERAY_PORTAL_KERNEL_MODEL_LAYOUT_JAVASCRIPT;
+
+		if (!enableJavaScript) {
+			UnicodeProperties layoutTypeSettingsUnicodeProperties =
+				layout.getTypeSettingsProperties();
+
+			String javaScript = layoutTypeSettingsUnicodeProperties.getProperty(
+				"javascript");
+
+			typeSettingsUnicodeProperties.setProperty("javascript", javaScript);
 		}
 	}
 
 	@BeanReference(type = LayoutLocalServiceHelper.class)
 	protected LayoutLocalServiceHelper layoutLocalServiceHelper;
+
+	private List<Layout> _addChildUserGroupLayouts(
+			Group group, List<Layout> layouts)
+		throws PortalException {
+
+		List<Layout> childLayouts = new ArrayList<>(layouts.size());
+
+		for (Layout layout : layouts) {
+			Group layoutGroup = layout.getGroup();
+
+			if (layoutGroup.isUserGroup()) {
+				childLayouts.add(new VirtualLayout(layout, group));
+			}
+			else {
+				childLayouts.add(layout);
+			}
+		}
+
+		return childLayouts;
+	}
+
+	private List<Layout> _addUserGroupLayouts(
+			Group group, LayoutSet layoutSet, List<Layout> layouts,
+			long parentLayoutId)
+		throws PortalException {
+
+		layouts = new ArrayList<>(layouts);
+
+		List<UserGroup> userUserGroups =
+			_userGroupLocalService.getUserUserGroups(group.getClassPK());
+
+		for (UserGroup userGroup : userUserGroups) {
+			Group userGroupGroup = userGroup.getGroup();
+
+			List<Layout> userGroupLayouts = getLayouts(
+				userGroupGroup.getGroupId(), layoutSet.isPrivateLayout(),
+				parentLayoutId);
+
+			for (Layout userGroupLayout : userGroupLayouts) {
+				layouts.add(new VirtualLayout(userGroupLayout, group));
+			}
+		}
+
+		return layouts;
+	}
+
+	private List<Layout> _addUserGroupLayouts(
+			Group group, LayoutSet layoutSet, List<Layout> layouts,
+			long[] parentLayoutIds)
+		throws PortalException {
+
+		boolean copied = false;
+
+		List<UserGroup> userUserGroups =
+			_userGroupLocalService.getUserUserGroups(group.getClassPK());
+
+		for (UserGroup userGroup : userUserGroups) {
+			Group userGroupGroup = userGroup.getGroup();
+
+			List<Layout> userGroupLayouts = getLayouts(
+				userGroupGroup.getGroupId(), layoutSet.isPrivateLayout(),
+				parentLayoutIds);
+
+			for (Layout userGroupLayout : userGroupLayouts) {
+				if (!copied) {
+					layouts = new ArrayList<>(layouts);
+
+					copied = true;
+				}
+
+				layouts.add(new VirtualLayout(userGroupLayout, group));
+			}
+		}
+
+		return layouts;
+	}
+
+	private void _applyLayoutPrototype(
+			String layoutPrototypeUuid, Layout layout,
+			boolean layoutPrototypeLinkEnabled)
+		throws PortalException {
+
+		LayoutPrototype layoutPrototype =
+			_layoutPrototypeLocalService.getLayoutPrototypeByUuidAndCompanyId(
+				layoutPrototypeUuid, layout.getCompanyId());
+
+		try {
+			SitesUtil.applyLayoutPrototype(
+				layoutPrototype, layout, layoutPrototypeLinkEnabled);
+		}
+		catch (PortalException portalException) {
+			throw portalException;
+		}
+		catch (SystemException systemException) {
+			throw systemException;
+		}
+		catch (Exception exception) {
+			throw new SystemException(exception);
+		}
+	}
+
+	private SearchContext _buildSearchContext(
+			long groupId, Boolean privateLayout, String keywords,
+			String[] types, int[] statuses, int start, int end,
+			OrderByComparator<Layout> orderByComparator)
+		throws PortalException {
+
+		return _buildSearchContext(
+			groupId, 0, privateLayout, keywords, types, statuses, start, end,
+			orderByComparator);
+	}
+
+	private SearchContext _buildSearchContext(
+			long groupId, long userId, Boolean privateLayout, String keywords,
+			String[] types, int[] statuses, int start, int end,
+			OrderByComparator<Layout> orderByComparator)
+		throws PortalException {
+
+		SearchContext searchContext = new SearchContext();
+
+		if (ArrayUtil.isNotEmpty(statuses)) {
+			searchContext.setAttribute(Field.STATUS, statuses);
+		}
+
+		searchContext.setAttribute(Field.TITLE, keywords);
+		searchContext.setAttribute(Field.TYPE, types);
+		searchContext.setAttribute("paginationType", "more");
+
+		if (privateLayout != null) {
+			searchContext.setAttribute(
+				"privateLayout", String.valueOf(privateLayout));
+		}
+
+		Group group = _groupLocalService.getGroup(groupId);
+
+		searchContext.setCompanyId(group.getCompanyId());
+
+		searchContext.setEnd(end);
+		searchContext.setGroupIds(new long[] {groupId});
+		searchContext.setIncludeInternalAssetCategories(true);
+		searchContext.setKeywords(keywords);
+		searchContext.setStart(start);
+
+		if (orderByComparator != null) {
+			searchContext.setSorts(_getSortFromComparator(orderByComparator));
+		}
+
+		if (userId > 0) {
+			searchContext.setUserId(userId);
+		}
+
+		QueryConfig queryConfig = searchContext.getQueryConfig();
+
+		queryConfig.setHighlightEnabled(false);
+		queryConfig.setScoreEnabled(false);
+
+		return searchContext;
+	}
+
+	private void _deleteLayouts(
+			long groupId, boolean privateLayout, boolean system,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		List<Layout> layouts = layoutPersistence.findByG_P_P_S(
+			groupId, privateLayout, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
+			system, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+			new LayoutPriorityComparator(false));
+
+		for (Layout layout : layouts) {
+			try {
+				layoutLocalService.deleteLayout(layout, serviceContext);
+			}
+			catch (NoSuchLayoutException noSuchLayoutException) {
+
+				// LPS-52675
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(noSuchLayoutException, noSuchLayoutException);
+				}
+			}
+		}
+	}
+
+	private String _generateFriendlyURLUUID() {
+		UUID uuid = new UUID(
+			SecureRandomUtil.nextLong(), SecureRandomUtil.nextLong());
+
+		return StringPool.SLASH + uuid.toString();
+	}
+
+	private List<Layout> _getChildLayouts(
+		LayoutSet layoutSet, long[] parentLayoutIds) {
+
+		if (MergeLayoutPrototypesThreadLocal.isInProgress()) {
+			return layoutPersistence.findByG_P_P(
+				layoutSet.getGroupId(), layoutSet.isPrivateLayout(),
+				parentLayoutIds);
+		}
+
+		try {
+			Group group = _groupPersistence.findByPrimaryKey(
+				layoutSet.getGroupId());
+
+			if (layoutSet.isLayoutSetPrototypeLinkActive() &&
+				!_mergeLayouts(
+					group, layoutSet, layoutSet.getGroupId(),
+					layoutSet.isPrivateLayout(), parentLayoutIds)) {
+
+				return layoutPersistence.findByG_P_P(
+					layoutSet.getGroupId(), layoutSet.isPrivateLayout(),
+					parentLayoutIds);
+			}
+
+			List<Layout> layouts = layoutPersistence.findByG_P_P(
+				layoutSet.getGroupId(), layoutSet.isPrivateLayout(),
+				parentLayoutIds);
+
+			return _injectVirtualLayouts(
+				group, layoutSet, layouts, parentLayoutIds);
+		}
+		catch (PortalException portalException) {
+			throw new SystemException(portalException);
+		}
+	}
+
+	private Map<Locale, String> _getDraftFriendlyURLMap(
+		long groupId, Map<Locale, String> friendlyURLMap) {
+
+		Map<Locale, String> newFriendlyURLMap = new HashMap<>();
+
+		for (Locale locale : LanguageUtil.getAvailableLocales(groupId)) {
+			String friendlyURL = friendlyURLMap.get(locale);
+
+			if (Validator.isNotNull(friendlyURL)) {
+				newFriendlyURLMap.put(locale, _generateFriendlyURLUUID());
+			}
+		}
+
+		Locale siteDefaultLocale = LocaleUtil.getSiteDefault();
+
+		if (newFriendlyURLMap.isEmpty() ||
+			Validator.isNull(newFriendlyURLMap.get(siteDefaultLocale))) {
+
+			newFriendlyURLMap.put(
+				siteDefaultLocale, _generateFriendlyURLUUID());
+		}
+
+		return newFriendlyURLMap;
+	}
+
+	private long _getParentPlid(
+		long groupId, boolean privateLayout, long parentLayoutId) {
+
+		if (parentLayoutId == LayoutConstants.DEFAULT_PARENT_LAYOUT_ID) {
+			return 0;
+		}
+
+		Layout parentLayout = layoutPersistence.fetchByG_P_L(
+			groupId, privateLayout, parentLayoutId);
+
+		if (parentLayout == null) {
+			return 0;
+		}
+
+		return parentLayout.getPlid();
+	}
+
+	private Sort _getSortFromComparator(
+		OrderByComparator<Layout> orderByComparator) {
+
+		String[] fields = orderByComparator.getOrderByFields();
+
+		if (ArrayUtil.contains(fields, "score")) {
+			return new Sort(null, Sort.SCORE_TYPE, false);
+		}
+
+		boolean reverse = !orderByComparator.isAscending();
+		String field = fields[0];
+
+		return new Sort(field, Sort.LONG_TYPE, reverse);
+	}
+
+	private List<Layout> _injectVirtualLayouts(
+			Group group, LayoutSet layoutSet, List<Layout> layouts,
+			long parentLayoutId)
+		throws PortalException {
+
+		if (MergeLayoutPrototypesThreadLocal.isInProgress()) {
+			return layouts;
+		}
+
+		if (group.isUser()) {
+			_virtualLayoutTargetGroupId.set(group.getGroupId());
+
+			if (parentLayoutId == LayoutConstants.DEFAULT_PARENT_LAYOUT_ID) {
+				return _addUserGroupLayouts(
+					group, layoutSet, layouts, parentLayoutId);
+			}
+
+			return _addChildUserGroupLayouts(group, layouts);
+		}
+
+		if (group.isUserGroup() &&
+			(parentLayoutId != LayoutConstants.DEFAULT_PARENT_LAYOUT_ID)) {
+
+			long targetGroupId = _virtualLayoutTargetGroupId.get();
+
+			if (targetGroupId != GroupConstants.DEFAULT_LIVE_GROUP_ID) {
+				Group targetGroup = _groupLocalService.getGroup(targetGroupId);
+
+				return _addChildUserGroupLayouts(targetGroup, layouts);
+			}
+		}
+
+		return layouts;
+	}
+
+	private List<Layout> _injectVirtualLayouts(
+			Group group, LayoutSet layoutSet, List<Layout> layouts,
+			long[] parentLayoutIds)
+		throws PortalException {
+
+		if (MergeLayoutPrototypesThreadLocal.isInProgress()) {
+			return layouts;
+		}
+
+		if (group.isUser()) {
+			_virtualLayoutTargetGroupId.set(group.getGroupId());
+
+			if (ArrayUtil.contains(
+					parentLayoutIds,
+					LayoutConstants.DEFAULT_PARENT_LAYOUT_ID)) {
+
+				_addUserGroupLayouts(
+					group, layoutSet, layouts, parentLayoutIds);
+
+				if (parentLayoutIds.length == 1) {
+					return layouts;
+				}
+			}
+
+			return _addChildUserGroupLayouts(group, layouts);
+		}
+
+		if (group.isUserGroup()) {
+			long targetGroupId = _virtualLayoutTargetGroupId.get();
+
+			if (targetGroupId != GroupConstants.DEFAULT_LIVE_GROUP_ID) {
+				Group targetGroup = _groupLocalService.getGroup(targetGroupId);
+
+				return _addChildUserGroupLayouts(targetGroup, layouts);
+			}
+		}
+
+		return layouts;
+	}
+
+	private boolean _mergeLayout(Layout layout, Object... arguments)
+		throws PortalException {
+
+		if (MergeLayoutPrototypesThreadLocal.isInProgress()) {
+			return false;
+		}
+
+		Group group = layout.getGroup();
+
+		if (MergeLayoutPrototypesThreadLocal.isMergeComplete(
+				"getLayout", arguments) &&
+			!group.isUser()) {
+
+			return false;
+		}
+
+		if (Validator.isNull(layout.getLayoutPrototypeUuid()) &&
+			Validator.isNull(layout.getSourcePrototypeLayoutUuid())) {
+
+			return false;
+		}
+
+		boolean workflowEnabled = WorkflowThreadLocal.isEnabled();
+
+		LayoutSet layoutSet = layout.getLayoutSet();
+
+		try {
+			WorkflowThreadLocal.setEnabled(false);
+
+			SitesUtil.mergeLayoutPrototypeLayout(group, layout);
+
+			if (Validator.isNotNull(layout.getSourcePrototypeLayoutUuid())) {
+				SitesUtil.mergeLayoutSetPrototypeLayouts(group, layoutSet);
+			}
+		}
+		catch (CTTransactionException | PortalException exception) {
+			throw exception;
+		}
+		catch (Exception exception) {
+			throw new SystemException(exception);
+		}
+		finally {
+			MergeLayoutPrototypesThreadLocal.setMergeComplete(
+				"getLayout", arguments);
+			WorkflowThreadLocal.setEnabled(workflowEnabled);
+		}
+
+		return true;
+	}
+
+	private boolean _mergeLayouts(
+		Group group, LayoutSet layoutSet, Object... arguments) {
+
+		if (MergeLayoutPrototypesThreadLocal.isMergeComplete(
+				"getLayouts", arguments) &&
+			!group.isUser()) {
+
+			return false;
+		}
+
+		boolean workflowEnabled = WorkflowThreadLocal.isEnabled();
+
+		try {
+			if (SitesUtil.isLayoutSetMergeable(group, layoutSet)) {
+				WorkflowThreadLocal.setEnabled(false);
+
+				SitesUtil.mergeLayoutSetPrototypeLayouts(group, layoutSet);
+			}
+		}
+		catch (Exception exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to merge layouts for site template", exception);
+			}
+		}
+		finally {
+			MergeLayoutPrototypesThreadLocal.setMergeComplete(
+				"getLayouts", arguments);
+			WorkflowThreadLocal.setEnabled(workflowEnabled);
+		}
+
+		return true;
+	}
+
+	private void _resetPortalPreferences(Layout layout) {
+		String namespace = CustomizedPages.namespacePlid(layout.getPlid());
+
+		DSLQuery dslQuery = DSLQueryFactoryUtil.select(
+			PortalPreferencesTable.INSTANCE
+		).from(
+			PortalPreferencesTable.INSTANCE
+		).innerJoinON(
+			PortalPreferenceValueTable.INSTANCE,
+			PortalPreferenceValueTable.INSTANCE.portalPreferencesId.eq(
+				PortalPreferencesTable.INSTANCE.portalPreferencesId)
+		).where(
+			PortalPreferencesTable.INSTANCE.ownerType.eq(
+				ResourceConstants.SCOPE_INDIVIDUAL
+			).and(
+				PortalPreferenceValueTable.INSTANCE.namespace.eq(namespace)
+			)
+		);
+
+		for (PortalPreferences portalPreferencesModel :
+				_portalPreferencesPersistence.<List<PortalPreferences>>dslQuery(
+					dslQuery)) {
+
+			com.liferay.portal.kernel.portlet.PortalPreferences
+				portalPreferences =
+					_portalPreferenceValueLocalService.getPortalPreferences(
+						portalPreferencesModel, false);
+
+			portalPreferences.resetValues(namespace);
+		}
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		LayoutLocalServiceImpl.class);
+
+	private static final ThreadLocal<Long> _virtualLayoutTargetGroupId =
+		new CentralizedThreadLocal<>(
+			LayoutLocalServiceImpl.class + "._virtualLayoutTargetGroupId",
+			() -> GroupConstants.DEFAULT_LIVE_GROUP_ID);
+
+	@BeanReference(type = AssetEntryLocalService.class)
+	private AssetEntryLocalService _assetEntryLocalService;
+
+	@BeanReference(type = ClassNameLocalService.class)
+	private ClassNameLocalService _classNameLocalService;
+
+	@BeanReference(type = ExpandoRowLocalService.class)
+	private ExpandoRowLocalService _expandoRowLocalService;
+
+	@BeanReference(type = GroupLocalService.class)
+	private GroupLocalService _groupLocalService;
+
+	@BeanReference(type = GroupPersistence.class)
+	private GroupPersistence _groupPersistence;
+
+	@BeanReference(type = ImageLocalService.class)
+	private ImageLocalService _imageLocalService;
+
+	@BeanReference(type = LayoutFriendlyURLLocalService.class)
+	private LayoutFriendlyURLLocalService _layoutFriendlyURLLocalService;
+
+	@BeanReference(type = LayoutFriendlyURLPersistence.class)
+	private LayoutFriendlyURLPersistence _layoutFriendlyURLPersistence;
+
+	@BeanReference(type = LayoutPrototypeLocalService.class)
+	private LayoutPrototypeLocalService _layoutPrototypeLocalService;
+
+	@BeanReference(type = LayoutPrototypePersistence.class)
+	private LayoutPrototypePersistence _layoutPrototypePersistence;
+
+	@BeanReference(type = LayoutSetLocalService.class)
+	private LayoutSetLocalService _layoutSetLocalService;
+
+	@BeanReference(type = LayoutSetPersistence.class)
+	private LayoutSetPersistence _layoutSetPersistence;
+
+	@BeanReference(type = LayoutSetPrototypeLocalService.class)
+	private LayoutSetPrototypeLocalService _layoutSetPrototypeLocalService;
+
+	@BeanReference(type = PortalPreferencesPersistence.class)
+	private PortalPreferencesPersistence _portalPreferencesPersistence;
+
+	@BeanReference(type = PortalPreferenceValueLocalService.class)
+	private PortalPreferenceValueLocalService
+		_portalPreferenceValueLocalService;
+
+	@BeanReference(type = PortletPreferencesLocalService.class)
+	private PortletPreferencesLocalService _portletPreferencesLocalService;
+
+	@BeanReference(type = RatingsStatsLocalService.class)
+	private RatingsStatsLocalService _ratingsStatsLocalService;
+
+	@BeanReference(type = ResourceLocalService.class)
+	private ResourceLocalService _resourceLocalService;
+
+	@BeanReference(type = ResourcePermissionLocalService.class)
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@BeanReference(type = ResourcePermissionPersistence.class)
+	private ResourcePermissionPersistence _resourcePermissionPersistence;
+
+	@BeanReference(type = UserGroupLocalService.class)
+	private UserGroupLocalService _userGroupLocalService;
+
+	@BeanReference(type = UserLocalService.class)
+	private UserLocalService _userLocalService;
+
+	@BeanReference(type = UserPersistence.class)
+	private UserPersistence _userPersistence;
+
+	@BeanReference(type = WorkflowDefinitionLinkLocalService.class)
+	private WorkflowDefinitionLinkLocalService
+		_workflowDefinitionLinkLocalService;
 
 }

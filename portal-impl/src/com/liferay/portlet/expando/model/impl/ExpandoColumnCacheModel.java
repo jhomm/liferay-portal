@@ -14,14 +14,11 @@
 
 package com.liferay.portlet.expando.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-
-import com.liferay.portlet.expando.model.ExpandoColumn;
+import com.liferay.expando.kernel.model.ExpandoColumn;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -32,25 +29,27 @@ import java.io.ObjectOutput;
  * The cache model class for representing ExpandoColumn in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see ExpandoColumn
  * @generated
  */
-@ProviderType
-public class ExpandoColumnCacheModel implements CacheModel<ExpandoColumn>,
-	Externalizable {
+public class ExpandoColumnCacheModel
+	implements CacheModel<ExpandoColumn>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof ExpandoColumnCacheModel)) {
+		if (!(object instanceof ExpandoColumnCacheModel)) {
 			return false;
 		}
 
-		ExpandoColumnCacheModel expandoColumnCacheModel = (ExpandoColumnCacheModel)obj;
+		ExpandoColumnCacheModel expandoColumnCacheModel =
+			(ExpandoColumnCacheModel)object;
 
-		if (columnId == expandoColumnCacheModel.columnId) {
+		if ((columnId == expandoColumnCacheModel.columnId) &&
+			(mvccVersion == expandoColumnCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -59,14 +58,30 @@ public class ExpandoColumnCacheModel implements CacheModel<ExpandoColumn>,
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, columnId);
+		int hashCode = HashUtil.hash(0, columnId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(15);
+		StringBundler sb = new StringBundler(19);
 
-		sb.append("{columnId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
+		sb.append(", columnId=");
 		sb.append(columnId);
 		sb.append(", companyId=");
 		sb.append(companyId);
@@ -89,12 +104,14 @@ public class ExpandoColumnCacheModel implements CacheModel<ExpandoColumn>,
 	public ExpandoColumn toEntityModel() {
 		ExpandoColumnImpl expandoColumnImpl = new ExpandoColumnImpl();
 
+		expandoColumnImpl.setMvccVersion(mvccVersion);
+		expandoColumnImpl.setCtCollectionId(ctCollectionId);
 		expandoColumnImpl.setColumnId(columnId);
 		expandoColumnImpl.setCompanyId(companyId);
 		expandoColumnImpl.setTableId(tableId);
 
 		if (name == null) {
-			expandoColumnImpl.setName(StringPool.BLANK);
+			expandoColumnImpl.setName("");
 		}
 		else {
 			expandoColumnImpl.setName(name);
@@ -103,14 +120,14 @@ public class ExpandoColumnCacheModel implements CacheModel<ExpandoColumn>,
 		expandoColumnImpl.setType(type);
 
 		if (defaultData == null) {
-			expandoColumnImpl.setDefaultData(StringPool.BLANK);
+			expandoColumnImpl.setDefaultData("");
 		}
 		else {
 			expandoColumnImpl.setDefaultData(defaultData);
 		}
 
 		if (typeSettings == null) {
-			expandoColumnImpl.setTypeSettings(StringPool.BLANK);
+			expandoColumnImpl.setTypeSettings("");
 		}
 		else {
 			expandoColumnImpl.setTypeSettings(typeSettings);
@@ -122,25 +139,39 @@ public class ExpandoColumnCacheModel implements CacheModel<ExpandoColumn>,
 	}
 
 	@Override
-	public void readExternal(ObjectInput objectInput) throws IOException {
+	public void readExternal(ObjectInput objectInput)
+		throws ClassNotFoundException, IOException {
+
+		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
+
 		columnId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
+
 		tableId = objectInput.readLong();
 		name = objectInput.readUTF();
+
 		type = objectInput.readInt();
-		defaultData = objectInput.readUTF();
-		typeSettings = objectInput.readUTF();
+		defaultData = (String)objectInput.readObject();
+		typeSettings = (String)objectInput.readObject();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
+
 		objectOutput.writeLong(columnId);
+
 		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(tableId);
 
 		if (name == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(name);
@@ -149,20 +180,22 @@ public class ExpandoColumnCacheModel implements CacheModel<ExpandoColumn>,
 		objectOutput.writeInt(type);
 
 		if (defaultData == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeObject("");
 		}
 		else {
-			objectOutput.writeUTF(defaultData);
+			objectOutput.writeObject(defaultData);
 		}
 
 		if (typeSettings == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeObject("");
 		}
 		else {
-			objectOutput.writeUTF(typeSettings);
+			objectOutput.writeObject(typeSettings);
 		}
 	}
 
+	public long mvccVersion;
+	public long ctCollectionId;
 	public long columnId;
 	public long companyId;
 	public long tableId;
@@ -170,4 +203,5 @@ public class ExpandoColumnCacheModel implements CacheModel<ExpandoColumn>,
 	public int type;
 	public String defaultData;
 	public String typeSettings;
+
 }

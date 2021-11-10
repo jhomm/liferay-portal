@@ -14,10 +14,14 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.NoSuchUserNotificationDeliveryException;
+import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.exception.NoSuchUserNotificationDeliveryException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.User;
-import com.liferay.portal.model.UserNotificationDelivery;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserNotificationDelivery;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.service.base.UserNotificationDeliveryLocalServiceBaseImpl;
 
 /**
@@ -32,7 +36,7 @@ public class UserNotificationDeliveryLocalServiceImpl
 			int notificationType, int deliveryType, boolean deliver)
 		throws PortalException {
 
-		User user = userPersistence.findByPrimaryKey(userId);
+		User user = _userPersistence.findByPrimaryKey(userId);
 
 		long userNotificationDeliveryId = counterLocalService.increment();
 
@@ -66,7 +70,16 @@ public class UserNotificationDeliveryLocalServiceImpl
 			userNotificationDeliveryPersistence.removeByU_P_C_N_D(
 				userId, portletId, classNameId, notificationType, deliveryType);
 		}
-		catch (NoSuchUserNotificationDeliveryException nsnde) {
+		catch (NoSuchUserNotificationDeliveryException
+					noSuchUserNotificationDeliveryException) {
+
+			// LPS-52675
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					noSuchUserNotificationDeliveryException,
+					noSuchUserNotificationDeliveryException);
+			}
 		}
 	}
 
@@ -110,5 +123,11 @@ public class UserNotificationDeliveryLocalServiceImpl
 		return userNotificationDeliveryPersistence.update(
 			userNotificationDelivery);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		UserNotificationDeliveryLocalServiceImpl.class);
+
+	@BeanReference(type = UserPersistence.class)
+	private UserPersistence _userPersistence;
 
 }

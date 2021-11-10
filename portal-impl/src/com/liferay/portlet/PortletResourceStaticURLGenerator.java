@@ -14,12 +14,12 @@
 
 package com.liferay.portlet;
 
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.model.Portlet;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortalUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 public class PortletResourceStaticURLGenerator {
 
 	public List<String> generate(
-		Portlet portlet, PortletResourceAccessor ... portletResourceAccessors) {
+		Portlet portlet, PortletResourceAccessor... portletResourceAccessors) {
 
 		List<String> urls = new ArrayList<>();
 
@@ -46,7 +46,8 @@ public class PortletResourceStaticURLGenerator {
 				contextPath = PortalUtil.getPathContext();
 			}
 			else {
-				contextPath = portlet.getContextPath();
+				contextPath =
+					PortalUtil.getPathProxy() + portlet.getContextPath();
 			}
 
 			List<String> portletResources = portletResourceAccessor.get(
@@ -57,7 +58,7 @@ public class PortletResourceStaticURLGenerator {
 					Portlet rootPortlet = portlet.getRootPortlet();
 
 					portletResource = PortalUtil.getStaticResourceURL(
-						_request, contextPath + portletResource,
+						_httpServletRequest, contextPath + portletResource,
 						rootPortlet.getTimestamp());
 				}
 
@@ -78,9 +79,9 @@ public class PortletResourceStaticURLGenerator {
 		return urls;
 	}
 
-	public void setRequest(HttpServletRequest request) {
-		_request = request;
-		_themeDisplay = (ThemeDisplay)request.getAttribute(
+	public void setRequest(HttpServletRequest httpServletRequest) {
+		_httpServletRequest = httpServletRequest;
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
@@ -88,7 +89,7 @@ public class PortletResourceStaticURLGenerator {
 		_visitedURLs = visitedURLs;
 	}
 
-	private HttpServletRequest _request;
+	private HttpServletRequest _httpServletRequest;
 	private ThemeDisplay _themeDisplay;
 	private Set<String> _visitedURLs;
 

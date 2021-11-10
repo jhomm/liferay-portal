@@ -14,13 +14,23 @@
 
 package com.liferay.portal.service;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.service.PersistedModelLocalService;
+import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
 import com.liferay.portal.kernel.util.ListUtil;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * @author Brian Wing Shun Chan
@@ -28,6 +38,22 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PersistedModelLocalServiceRegistryImpl
 	implements PersistedModelLocalServiceRegistry {
+
+	public PersistedModelLocalServiceRegistryImpl() {
+		_serviceTracker = new ServiceTracker<>(
+			_bundleContext,
+			SystemBundleUtil.createFilter(
+				StringBundler.concat(
+					"(&(model.class.name=*)(objectClass=",
+					PersistedModelLocalService.class.getName(), "))")),
+			new PersistenceModelLocalServiceServiceTrackerCustomizer());
+
+		_serviceTracker.open();
+	}
+
+	public void destroy() {
+		_serviceTracker.close();
+	}
 
 	@Override
 	public PersistedModelLocalService getPersistedModelLocalService(
@@ -39,24 +65,6 @@ public class PersistedModelLocalServiceRegistryImpl
 	@Override
 	public List<PersistedModelLocalService> getPersistedModelLocalServices() {
 		return ListUtil.fromMapValues(_persistedModelLocalServices);
-	}
-
-	@Override
-	public boolean isPermissionedModelLocalService(String className) {
-		PersistedModelLocalService persistedModelLocalService =
-			getPersistedModelLocalService(className);
-
-		if (persistedModelLocalService == null) {
-			return false;
-		}
-
-		if (persistedModelLocalService instanceof
-				PermissionedModelLocalService) {
-
-			return true;
-		}
-
-		return false;
 	}
 
 	@Override
@@ -81,7 +89,57 @@ public class PersistedModelLocalServiceRegistryImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		PersistedModelLocalServiceRegistryImpl.class);
 
+	private final BundleContext _bundleContext =
+		SystemBundleUtil.getBundleContext();
 	private final Map<String, PersistedModelLocalService>
 		_persistedModelLocalServices = new ConcurrentHashMap<>();
+	private final ServiceTracker<?, ?> _serviceTracker;
+
+	private class PersistenceModelLocalServiceServiceTrackerCustomizer
+		implements ServiceTrackerCustomizer
+			<PersistedModelLocalService, String> {
+
+		@Override
+		public String addingService(
+			ServiceReference<PersistedModelLocalService> serviceReference) {
+
+			String className = (String)serviceReference.getProperty(
+				"model.class.name");
+
+			PersistedModelLocalService persistedModelLocalService =
+				_bundleContext.getService(serviceReference);
+
+			PersistedModelLocalServiceRegistryImpl.this.register(
+				className, persistedModelLocalService);
+
+			return className;
+		}
+
+		@Override
+		public void modifiedService(
+			ServiceReference<PersistedModelLocalService> serviceReference,
+			String className) {
+
+			if (!Objects.equals(
+					serviceReference.getProperty("model.class.name"),
+					className)) {
+
+				removedService(serviceReference, className);
+
+				addingService(serviceReference);
+			}
+		}
+
+		@Override
+		public void removedService(
+			ServiceReference<PersistedModelLocalService> serviceReference,
+			String className) {
+
+			PersistedModelLocalServiceRegistryImpl.this.unregister(className);
+
+			_bundleContext.ungetService(serviceReference);
+		}
+
+	}
 
 }

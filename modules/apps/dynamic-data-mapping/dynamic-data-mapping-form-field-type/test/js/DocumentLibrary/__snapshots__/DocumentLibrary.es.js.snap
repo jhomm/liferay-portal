@@ -1,0 +1,672 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Field DocumentLibrary has a helptext 1`] = `
+<div>
+  <div
+    aria-labelledby="uploadField_fieldDetails"
+    class="form-group has-error hide"
+    data-field-name="uploadField"
+    tabindex="0"
+  >
+    <div
+      class="liferay-ddm-form-field-document-library"
+    >
+      <div
+        class="input-group"
+      >
+        <div
+          class="input-group-item input-group-prepend"
+        >
+          <input
+            aria-label="file"
+            class="form-control bg-light field"
+            disabled=""
+            id="uploadFieldinputFile"
+            type="text"
+            value=""
+          />
+        </div>
+        <div
+          class="input-group-item input-group-append input-group-item-shrink"
+        >
+          <button
+            class="select-button btn btn-secondary"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="lfr-btn-label"
+            >
+              select
+            </span>
+          </button>
+        </div>
+      </div>
+      <input
+        class="form-control"
+        name="uploadField"
+        type="hidden"
+        value="{}"
+      />
+    </div>
+    <input
+      name="uploadField_edited"
+      type="hidden"
+      value="false"
+    />
+    <span
+      aria-hidden="true"
+      class="form-text"
+    >
+      Type something
+    </span>
+    <span
+      class="form-feedback-group"
+    >
+      <div
+        aria-hidden="true"
+        class="form-feedback-item"
+      >
+         you-need-to-be-signed-in-to-edit-this-field
+      </div>
+    </span>
+    <span
+      class="sr-only"
+      id="uploadField_fieldDetails"
+    >
+      Type something
+      <br />
+       you-need-to-be-signed-in-to-edit-this-field
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Field DocumentLibrary has a label 1`] = `
+<div>
+  <div
+    class="form-group has-error hide"
+    data-field-name="uploadField"
+  >
+    <label
+      aria-labelledby="uploadField_fieldDetails"
+      class="ddm-label"
+      for="uploadField"
+      tabindex="0"
+    >
+      label
+    </label>
+    <div
+      class="liferay-ddm-form-field-document-library"
+    >
+      <div
+        class="input-group"
+      >
+        <div
+          class="input-group-item input-group-prepend"
+        >
+          <input
+            aria-label="file"
+            class="form-control bg-light field"
+            disabled=""
+            id="uploadFieldinputFile"
+            type="text"
+            value=""
+          />
+        </div>
+        <div
+          class="input-group-item input-group-append input-group-item-shrink"
+        >
+          <button
+            class="select-button btn btn-secondary"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="lfr-btn-label"
+            >
+              select
+            </span>
+          </button>
+        </div>
+      </div>
+      <input
+        class="form-control"
+        name="uploadField"
+        type="hidden"
+        value="{}"
+      />
+    </div>
+    <input
+      name="uploadField_edited"
+      type="hidden"
+      value="false"
+    />
+    <span
+      class="form-feedback-group"
+    >
+      <div
+        aria-hidden="true"
+        class="form-feedback-item"
+      >
+         you-need-to-be-signed-in-to-edit-this-field
+      </div>
+    </span>
+    <span
+      class="sr-only"
+      id="uploadField_fieldDetails"
+    >
+       you-need-to-be-signed-in-to-edit-this-field
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Field DocumentLibrary has a placeholder 1`] = `
+<div>
+  <div
+    aria-labelledby="uploadField_fieldDetails"
+    class="form-group has-error hide"
+    data-field-name="uploadField"
+    tabindex="0"
+  >
+    <div
+      class="liferay-ddm-form-field-document-library"
+    >
+      <div
+        class="input-group"
+      >
+        <div
+          class="input-group-item input-group-prepend"
+        >
+          <input
+            aria-label="file"
+            class="form-control bg-light field"
+            disabled=""
+            id="uploadFieldinputFile"
+            type="text"
+            value=""
+          />
+        </div>
+        <div
+          class="input-group-item input-group-append input-group-item-shrink"
+        >
+          <button
+            class="select-button btn btn-secondary"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="lfr-btn-label"
+            >
+              select
+            </span>
+          </button>
+        </div>
+      </div>
+      <input
+        class="form-control"
+        name="uploadField"
+        placeholder="Placeholder"
+        type="hidden"
+        value="{}"
+      />
+    </div>
+    <input
+      name="uploadField_edited"
+      type="hidden"
+      value="false"
+    />
+    <span
+      class="form-feedback-group"
+    >
+      <div
+        aria-hidden="true"
+        class="form-feedback-item"
+      >
+         you-need-to-be-signed-in-to-edit-this-field
+      </div>
+    </span>
+    <span
+      class="sr-only"
+      id="uploadField_fieldDetails"
+    >
+       you-need-to-be-signed-in-to-edit-this-field
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Field DocumentLibrary has a spritemap 1`] = `
+<div>
+  <div
+    aria-labelledby="uploadField_fieldDetails"
+    class="form-group has-error hide"
+    data-field-name="uploadField"
+    tabindex="0"
+  >
+    <div
+      class="liferay-ddm-form-field-document-library"
+    >
+      <div
+        class="input-group"
+      >
+        <div
+          class="input-group-item input-group-prepend"
+        >
+          <input
+            aria-label="file"
+            class="form-control bg-light field"
+            disabled=""
+            id="uploadFieldinputFile"
+            type="text"
+            value=""
+          />
+        </div>
+        <div
+          class="input-group-item input-group-append input-group-item-shrink"
+        >
+          <button
+            class="select-button btn btn-secondary"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="lfr-btn-label"
+            >
+              select
+            </span>
+          </button>
+        </div>
+      </div>
+      <input
+        class="form-control"
+        name="uploadField"
+        type="hidden"
+        value="{}"
+      />
+    </div>
+    <input
+      name="uploadField_edited"
+      type="hidden"
+      value="false"
+    />
+    <span
+      class="form-feedback-group"
+    >
+      <div
+        aria-hidden="true"
+        class="form-feedback-item"
+      >
+         you-need-to-be-signed-in-to-edit-this-field
+      </div>
+    </span>
+    <span
+      class="sr-only"
+      id="uploadField_fieldDetails"
+    >
+       you-need-to-be-signed-in-to-edit-this-field
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Field DocumentLibrary has a value 1`] = `
+<div>
+  <div
+    aria-labelledby="uploadField_fieldDetails"
+    class="form-group has-error hide"
+    data-field-name="uploadField"
+    tabindex="0"
+  >
+    <div
+      class="liferay-ddm-form-field-document-library"
+    >
+      <div
+        class="input-group"
+      >
+        <div
+          class="input-group-item input-group-prepend"
+        >
+          <input
+            aria-label="file"
+            class="form-control bg-light field"
+            disabled=""
+            id="uploadFieldinputFile"
+            type="text"
+            value=""
+          />
+        </div>
+        <div
+          class="input-group-item input-group-append input-group-item-shrink"
+        >
+          <button
+            class="select-button btn btn-secondary"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="lfr-btn-label"
+            >
+              select
+            </span>
+          </button>
+        </div>
+      </div>
+      <input
+        class="form-control"
+        name="uploadField"
+        type="hidden"
+        value="{\\"id\\":\\"123\\"}"
+      />
+    </div>
+    <input
+      name="uploadField_edited"
+      type="hidden"
+      value="false"
+    />
+    <span
+      class="form-feedback-group"
+    >
+      <div
+        aria-hidden="true"
+        class="form-feedback-item"
+      >
+         you-need-to-be-signed-in-to-edit-this-field
+      </div>
+    </span>
+    <span
+      class="sr-only"
+      id="uploadField_fieldDetails"
+    >
+       you-need-to-be-signed-in-to-edit-this-field
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Field DocumentLibrary has an id 1`] = `
+<div>
+  <div
+    aria-labelledby="ID_fieldDetails"
+    class="form-group has-error hide"
+    data-field-name="uploadField"
+    tabindex="0"
+  >
+    <div
+      class="liferay-ddm-form-field-document-library"
+    >
+      <div
+        class="input-group"
+      >
+        <div
+          class="input-group-item input-group-prepend"
+        >
+          <input
+            aria-label="file"
+            class="form-control bg-light field"
+            disabled=""
+            id="uploadFieldinputFile"
+            type="text"
+            value=""
+          />
+        </div>
+        <div
+          class="input-group-item input-group-append input-group-item-shrink"
+        >
+          <button
+            class="select-button btn btn-secondary"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="lfr-btn-label"
+            >
+              select
+            </span>
+          </button>
+        </div>
+      </div>
+      <input
+        class="form-control"
+        id="ID"
+        name="uploadField"
+        type="hidden"
+        value="{}"
+      />
+    </div>
+    <input
+      name="uploadField_edited"
+      type="hidden"
+      value="false"
+    />
+    <span
+      class="form-feedback-group"
+    >
+      <div
+        aria-hidden="true"
+        class="form-feedback-item"
+      >
+         you-need-to-be-signed-in-to-edit-this-field
+      </div>
+    </span>
+    <span
+      class="sr-only"
+      id="ID_fieldDetails"
+    >
+       you-need-to-be-signed-in-to-edit-this-field
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Field DocumentLibrary is not readOnly 1`] = `
+<div>
+  <div
+    aria-labelledby="uploadField_fieldDetails"
+    class="form-group hide"
+    data-field-name="uploadField"
+    tabindex="0"
+  >
+    <div
+      class="liferay-ddm-form-field-document-library"
+    >
+      <div
+        class="input-group"
+      >
+        <div
+          class="input-group-item input-group-prepend"
+        >
+          <input
+            aria-label="file"
+            class="form-control bg-light field"
+            id="uploadFieldinputFile"
+            type="text"
+            value=""
+          />
+        </div>
+        <div
+          class="input-group-item input-group-append input-group-item-shrink"
+        >
+          <button
+            class="select-button btn btn-secondary"
+            type="button"
+          >
+            <span
+              class="lfr-btn-label"
+            >
+              select
+            </span>
+          </button>
+        </div>
+      </div>
+      <input
+        class="form-control"
+        name="uploadField"
+        type="hidden"
+        value="{}"
+      />
+    </div>
+    <input
+      name="uploadField_edited"
+      type="hidden"
+      value="false"
+    />
+    
+  </div>
+</div>
+`;
+
+exports[`Field DocumentLibrary is not required 1`] = `
+<div>
+  <div
+    aria-labelledby="uploadField_fieldDetails"
+    class="form-group has-error hide"
+    data-field-name="uploadField"
+    tabindex="0"
+  >
+    <div
+      class="liferay-ddm-form-field-document-library"
+    >
+      <div
+        class="input-group"
+      >
+        <div
+          class="input-group-item input-group-prepend"
+        >
+          <input
+            aria-label="file"
+            class="form-control bg-light field"
+            disabled=""
+            id="uploadFieldinputFile"
+            type="text"
+            value=""
+          />
+        </div>
+        <div
+          class="input-group-item input-group-append input-group-item-shrink"
+        >
+          <button
+            class="select-button btn btn-secondary"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="lfr-btn-label"
+            >
+              select
+            </span>
+          </button>
+        </div>
+      </div>
+      <input
+        class="form-control"
+        name="uploadField"
+        type="hidden"
+        value="{}"
+      />
+    </div>
+    <input
+      name="uploadField_edited"
+      type="hidden"
+      value="false"
+    />
+    <span
+      class="form-feedback-group"
+    >
+      <div
+        aria-hidden="true"
+        class="form-feedback-item"
+      >
+         you-need-to-be-signed-in-to-edit-this-field
+      </div>
+    </span>
+    <span
+      class="sr-only"
+      id="uploadField_fieldDetails"
+    >
+       you-need-to-be-signed-in-to-edit-this-field
+    </span>
+  </div>
+</div>
+`;
+
+exports[`Field DocumentLibrary renders Label if showLabel is true 1`] = `
+<div>
+  <div
+    class="form-group has-error hide"
+    data-field-name="uploadField"
+  >
+    <label
+      aria-labelledby="uploadField_fieldDetails"
+      class="ddm-label"
+      for="uploadField"
+      tabindex="0"
+    >
+      text
+    </label>
+    <div
+      class="liferay-ddm-form-field-document-library"
+    >
+      <div
+        class="input-group"
+      >
+        <div
+          class="input-group-item input-group-prepend"
+        >
+          <input
+            aria-label="file"
+            class="form-control bg-light field"
+            disabled=""
+            id="uploadFieldinputFile"
+            type="text"
+            value=""
+          />
+        </div>
+        <div
+          class="input-group-item input-group-append input-group-item-shrink"
+        >
+          <button
+            class="select-button btn btn-secondary"
+            disabled=""
+            type="button"
+          >
+            <span
+              class="lfr-btn-label"
+            >
+              select
+            </span>
+          </button>
+        </div>
+      </div>
+      <input
+        class="form-control"
+        name="uploadField"
+        type="hidden"
+        value="{}"
+      />
+    </div>
+    <input
+      name="uploadField_edited"
+      type="hidden"
+      value="false"
+    />
+    <span
+      class="form-feedback-group"
+    >
+      <div
+        aria-hidden="true"
+        class="form-feedback-item"
+      >
+         you-need-to-be-signed-in-to-edit-this-field
+      </div>
+    </span>
+    <span
+      class="sr-only"
+      id="uploadField_fieldDetails"
+    >
+       you-need-to-be-signed-in-to-edit-this-field
+    </span>
+  </div>
+</div>
+`;

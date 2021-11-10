@@ -14,18 +14,18 @@
 
 package com.liferay.portal.util;
 
-import com.liferay.portal.kernel.cache.Lifecycle;
-import com.liferay.portal.kernel.cache.ThreadLocalCache;
-import com.liferay.portal.kernel.cache.ThreadLocalCacheManager;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.cache.thread.local.Lifecycle;
+import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCache;
+import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCacheManager;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.model.LayoutConstants;
 import com.liferay.portal.model.impl.LayoutImpl;
-import com.liferay.portal.service.LayoutLocalServiceUtil;
 
 import java.util.ArrayList;
 import java.util.Deque;
@@ -68,17 +68,10 @@ public class LayoutListUtil {
 		long groupId, boolean privateLayout, String rootNodeName,
 		Locale locale) {
 
-		StringBundler sb = new StringBundler(7);
-
-		sb.append(StringUtil.toHexString(groupId));
-		sb.append(StringPool.POUND);
-		sb.append(privateLayout);
-		sb.append(StringPool.POUND);
-		sb.append(rootNodeName);
-		sb.append(StringPool.POUND);
-		sb.append(LocaleUtil.toLanguageId(locale));
-
-		return sb.toString();
+		return StringBundler.concat(
+			StringUtil.toHexString(groupId), StringPool.POUND, privateLayout,
+			StringPool.POUND, rootNodeName, StringPool.POUND,
+			LocaleUtil.toLanguageId(locale));
 	}
 
 	protected static List<LayoutDescription> doGetLayoutDescriptions(

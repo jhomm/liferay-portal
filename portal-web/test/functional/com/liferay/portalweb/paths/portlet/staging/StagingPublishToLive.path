@@ -2,35 +2,62 @@
 <head>
 <title>StagingPublishToLive</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">StagingPublishToLive</td></tr>
 </thead>
+
 <tbody>
 <tr>
+	<td>ACTIVE_TAB_NAME</td>
+	<td>//*[contains(@class,'nav-link active') and contains(.,'${key_tabName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TAB_NAME</td>
+	<td>//ul[contains(@class,'navbar-nav')]//a[contains(@class,'nav-link') and contains(.,'${key_tabName}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>SWITCH_TO_ADVANCED_PUBLICATION</td>
-	<td>//a[contains(.,'Switch to Advanced Publication')]/span</td>
+	<td>//a[contains(.,'Switch to Advanced Publish Process')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SWITCH_TO_SIMPLE_PUBLICATION</td>
-	<td>//a[contains(.,'Switch to Simple Publication')]/span</td>
+	<td>//a[contains(.,'Switch to Simple Publish Process')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHANGES_SINCE_LAST_PUBLISH_PROCESS</td>
+	<td>//span[contains(.,'Changes Since Last Publish Process')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ADD_EVENT_BUTTON</td>
-	<td>//button[contains(@id,'_addButton')]</td>
+	<td>//button[contains(@id,'addButton')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>CUSTOM_BUTTON</td>
-	<td>//a[@title='Custom']</td>
+	<td>MODAL_TITLE</td>
+	<td>//div[contains(@class,'modal-header')]//h3[contains(@class,'modal-title')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PUBLISH_SIMPLE_HELP_TEXT</td>
+	<td>//span[contains(@class,'publish-simple-help-text')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PUBLISH_TEMPLATES_BUTTON</td>
-	<td>//a[contains(@title,'Publish Templates')]</td>
+	<td>//a[contains(.,'Publish Templates')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>STAGING_CONFIGURATION_CHECKBOX</td>
+	<td>//label[contains(.,'${key_checkboxName}')]/input[@type='checkbox']</td>
 	<td></td>
 </tr>
 <tr>
@@ -40,18 +67,18 @@
 </tr>
 <!--DATE-->
 <tr>
-	<td>DATE_NOW_RADIO</td>
-	<td>//input[contains(@id,'_publishingEventNow')]</td>
+	<td>DATE_SCHEDULE_RADIO</td>
+	<td>//span[contains(@class,'custom-control-label-text') and contains(.,'Schedule')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>DATE_SCHEDULE_RADIO</td>
-	<td>//input[contains(@id,'_publishingEventSchedule')]</td>
+	<td>DATE_SCHEDULE_START_DATE</td>
+	<td>//input[contains(@name,'_schedulerStartDate') and @placeholder='mm/dd/yyyy']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>DATE_SCHEDULE_TITLE_FIELD</td>
-	<td>//input[@id='_200_description']</td>
+	<td>//input[contains(@id,'ExportImportPortlet_name')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -61,12 +88,22 @@
 </tr>
 <tr>
 	<td>DATE_SCHEDULE_END_DATE_NO_END_DATE_RADIO</td>
-	<td>//input[contains(@id,'_schedulerNoEndDate')]</td>
+	<td>//input[contains(@id,'schedulerNoEndDate')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>DATE_SCHEDULE_REPEAT_DAILY_RADIO</td>
-	<td>//input[contains(@id,'_recurrenceTypeDaily')]</td>
+	<td>DATE_SCHEDULE_END_DATE_END_BY_RADIO</td>
+	<td>//input[contains(@id,'schedulerEndBy')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DATE_SCHEDULE_END_DATE_INPUT</td>
+	<td>//input[contains(@id,'schedulerEndDate')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DATE_SCHEDULE_REPEAT_DROPDOWN</td>
+	<td>//select[contains(@id,'_recurrence')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -76,29 +113,28 @@
 </tr>
 <!--PAGES-->
 <tr>
-	<td>PAGES_CHANGE_LINK</td>
-	<td>//div/a[@id='_200_pagesLink']</td>
+	<td>PAGES_CHOOSE_PAGE_DELETION_CHECKBOX</td>
+	<td>//span[contains(.,'Publish Page Deletions')]//span[contains(@class,'deletions')]/../../input</td>
 	<td></td>
 </tr>
 <tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--APPLICATION_CONFIGURATION-->
-<tr>
-	<td>APPLICATION_CONFIGURATION_ALL_APPLICATIONS_RADIO</td>
-	<td>//input[contains(@id,'_allApplications')]</td>
+	<td>PAGES_TO_PUBLISH_CHECKBOX_CHECKED</td>
+	<td>//div[@class='pages-selector']//div[normalize-space()='${key_entryName}' and contains(@class,'checked')]//span[contains(@class,'icon-check')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>APPLICATION_CONFIGURATION_CHOOSE_APPLICATIONS_RADIO</td>
-	<td>//input[contains(@id,'_chooseApplications')]</td>
+	<td>PAGES_TO_PUBLISH_CHECKBOX_UNCHECKED</td>
+	<td>//div[@class='pages-selector']//div[normalize-space()='${key_entryName}' and not(contains(@class,'checked'))]//span[contains(@class,'icon-check')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>APPLICATION_CONFIGURATION_CHOOSE_APPLICATIONS_APPLICATION_CHECKBOX</td>
-	<td>//ul[contains(@id,'_selectApplications')]//label[contains(.,'${key_applicationName}')]/input[2]</td>
+	<td>PAGES_TO_PUBLISH_PAGE_NAME</td>
+	<td>//span[contains(@class,'tree-label') and contains(.,'${key_pageName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PAGES_TO_PUBLISH_PAGE_NAME_SPAN_TITLE</td>
+	<td>//span[contains(@class,'tree-label') and contains(.,'${key_pageName}')]//span[contains(@title,'${key_title}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -108,33 +144,18 @@
 </tr>
 <!--CONTENT-->
 <tr>
-	<td>CONTENT_ALL_CONTENT_RADIO</td>
-	<td>//input[contains(@id,'_allContent')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CONTENT_CHOOSE_CONTENT_RADIO</td>
-	<td>//input[contains(@id,'_chooseContent')]</td>
-	<td></td>
-</tr>
-<tr>
 	<td>CONTENT_CHOOSE_CONTENT_DELETION_CHECKBOX</td>
-	<td>//label[contains(.,'Deletions')]/input</td>
+	<td>//input[contains(@name,'DELETIONS')]//following-sibling::span</td>
 	<td></td>
 </tr>
 <tr>
-	<td>CONTENT_CHOOSE_CONTENT_CONTENT_CHANGE_LINK</td>
-	<td>//a[@data-portlettitle='${key_contentName}']</td>
+	<td>SIMPLE_PUBLICATION_DELETION</td>
+	<td>//li[contains(.,'${key_itemName}')]//span[contains(@class,'deletions')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>CONTENT_CHOOSE_CONTENT_SUBCONTENT_CHECKBOX</td>
-	<td>//div[contains(@class,'widget-content-expanded') and contains(.,'${key_contentName}')]//div[contains(@class,'modal-body')]//input[contains(@data-name,'${key_subContent}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CONTENT_CHOOSE_CONTENT_SUB_SUBCONTENT_CHECKBOX</td>
-	<td>//div[contains(@class,'widget-content-expanded') and contains(.,'${key_contentName}')]//div[contains(@class,'modal-body')]//ul/li[@class='handler-control' and contains(.,'${key_subContent}')]//input[contains(@data-name,'${key_subSubContent}')]</td>
+	<td>SIMPLE_PUBLICATION_CONTENT_TYPE</td>
+	<td>//li[contains(@class,'portlet-list-simple') and contains(.,'${key_itemName}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -142,89 +163,10 @@
 	<td></td>
 	<td></td>
 </tr>
-<!--CHOOSE_CONTENT_DATE_RANGE-->
+<!--DELETIONS-->
 <tr>
-	<td>CHOOSE_CONTENT_DATE_RANGE_STATUS</td>
-	<td>//span[contains(@id,'_selectedRange')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CHOOSE_CONTENT_DATE_RANGE_CHANGE_LINK</td>
-	<td>//a[contains(@id,'_rangeLink')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--DATE_RANGE_POPUP-->
-<tr>
-	<td>DATE_RANGE_POPUP_RANGE_RADIO</td>
-	<td>//input[contains(@id,'_range${key_contentDateRange}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>DATE_RANGE_POPUP_OK_BUTTON</td>
-	<td>//div[contains(@class,'modal-content') and contains (.,'Date Range')]//button[contains(.,'OK')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--DATE_RANGE-->
-<tr>
-	<td>DATE_RANGE_START_DATE</td>
-	<td>//input[@name='_200_startDate']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>DATE_RANGE_END_DATE</td>
-	<td>//input[@name='_200_endDate']</td>
-	<td></td>
-</tr>
-<tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--PERMISSIONS-->
-<tr>
-	<td>PERMISSIONS_CHECKBOX</td>
-	<td>//input[@id='_200_PERMISSIONS']</td>
-	<td></td>
-</tr>
-<tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--CURRENT_AND_PREVIOUS_TABLE-->
-<tr>
-	<td>CURRENT_AND_PREVIOUS_LINK</td>
-	<td>//div[@class='portlet-body']/ul[contains(@class,'nav-tabs')]/li/a[contains(.,'Current and Previous')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CURRENT_AND_PREVIOUS_TABLE_USER_NAME</td>
-	<td>//tbody/tr/td[1]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CURRENT_AND_PREVIOUS_TABLE_STATUS</td>
-	<td>//tr/td[contains(@class,'status-column')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CURRENT_AND_PREVIOUS_DETAILS</td>
-	<td>//a[contains(@class,'details-link') and contains(@class,'toggler-header')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CURRENT_AND_PREVIOUS_DETAILS_STATUS</td>
-	<td>//div[contains(@class,'alert') and contains(@class,'publish-error')]</td>
+	<td>DELETIONS_REPLICATE_INDIVIDUAL_DELETIONS_CHECKBOX</td>
+	<td>//input[contains(@id,'StagingProcessesPortlet_DELETIONS')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -235,28 +177,12 @@
 <!--SCHEDULED_TABLE-->
 <tr>
 	<td>SCHEDULED_TABLE_TITLE</td>
-	<td>//tr[contains(.,'${key_scheduleTitleName}')]/td[1]</td>
+	<td>//tr[contains(.,'${key_scheduleTitleName}')]/td[2]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SCHEDULED_TABLE_END_DATE</td>
-	<td>//tr[contains(.,'${key_scheduleTitleName}')]/td[3]</td>
-	<td></td>
-</tr>
-<tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--PUBLISH_TEMPLATES-->
-<tr>
-	<td>PUBLISH_TEMPLATES_NAME_FIELD</td>
-	<td>//input[@id='_200_name']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PUBLISH_TEMPLATES_DESCRIPTION_FIELD</td>
-	<td>//textarea[@id='_200_description']</td>
+	<td>//tr[contains(.,'${key_scheduleTitleName}')]/td[4]</td>
 	<td></td>
 </tr>
 <tr>
@@ -267,27 +193,32 @@
 <!--PUBLISH_TEMPLATES_TABLE-->
 <tr>
 	<td>PUBLISH_TEMPLATES_TABLE_NAME</td>
-	<td>//div[contains(@id,'_savedConfigurations')]//tr[contains(.,'${key_publishTemplateName}')]/td[2]/a</td>
+	<td>//div[contains(@id,'Configurations')]//tr[contains(.,'${key_publishTemplateName}')]/td[2]//a</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PUBLISH_TEMPLATES_TABLE_DESCRIPTION</td>
-	<td>//div[contains(@id,'_savedConfigurations')]//tr[contains(.,'${key_publishTemplateName}')]/td[3]</td>
+	<td>//div[contains(@id,'Configurations')]//tr[contains(.,'${key_publishTemplateName}')]/td[3]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PUBLISH_TEMPLATES_TABLE_PUBLISH_TO_LIVE_ARROW_BUTTON</td>
-	<td>//div[contains(@id,'_savedConfigurations')]//tr[contains(.,'${key_publishTemplateName}')]/td/span/a[contains(.,'Publish to Live')]</td>
+	<td>//ul[contains(@aria-labelledby,'ConfigurationsSearchContainer')]/li/a[contains(.,'Publish')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>PUBLISH_TEMPLATES_TABLE_MOVE_TO_THE_RECYCLE_BIN_BUTTON</td>
-	<td>//div[contains(@id,'_savedConfigurations')]//tr[contains(.,'${key_publishTemplateName}')]//a/span[contains(.,'Recycle Bin')]</td>
+	<td>CONTENT_LAST</td>
+	<td>//span[contains(.,'Last...')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>PUBLISH_TEMPLATES_TABLE_MOVE_TO_THE_RECYCLE_BIN_UNDO_BUTTON</td>
-	<td>//a[@id='_200_undo']</td>
+	<td>CONTENT_ALL</td>
+	<td>//span[contains(.,'All')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PUBLICATION_TITLE</td>
+	<td>//input[contains(@id,'StagingProcessesPortlet_name')]</td>
 	<td></td>
 </tr>
 </tbody>

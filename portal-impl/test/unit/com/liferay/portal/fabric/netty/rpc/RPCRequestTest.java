@@ -14,12 +14,16 @@
 
 package com.liferay.portal.fabric.netty.rpc;
 
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.fabric.netty.NettyTestUtil;
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.test.CaptureHandler;
-import com.liferay.portal.kernel.test.JDKLoggerTestUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -32,10 +36,10 @@ import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.Queue;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -44,8 +48,10 @@ import org.junit.Test;
 public class RPCRequestTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Test
 	public void testExecuteWithAsyncException() {
@@ -114,19 +120,18 @@ public class RPCRequestTest {
 		RPCResponse<String> rpcResponse = new RPCResponse<>(
 			_ID, true, null, null);
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					RPCRequest.class.getName(), Level.SEVERE)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				RPCRequest.class.getName(), Level.SEVERE)) {
 
 			rpcRequest.sendRPCResponse(_embeddedChannel, rpcResponse);
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			LogRecord logRecord = logRecords.get(0);
+			LogEntry logEntry = logEntries.get(0);
 
 			Assert.assertEquals(
 				"Cancelled on sending RPC response: " + rpcResponse,
-				logRecord.getMessage());
+				logEntry.getMessage());
 		}
 	}
 
@@ -140,21 +145,20 @@ public class RPCRequestTest {
 		RPCResponse<String> rpcResponse = new RPCResponse<>(
 			_ID, true, null, null);
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					RPCRequest.class.getName(), Level.SEVERE)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				RPCRequest.class.getName(), Level.SEVERE)) {
 
 			rpcRequest.sendRPCResponse(_embeddedChannel, rpcResponse);
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			LogRecord logRecord = logRecords.get(0);
+			LogEntry logEntry = logEntries.get(0);
 
 			Assert.assertEquals(
 				"Unable to send RPC response: " + rpcResponse,
-				logRecord.getMessage());
+				logEntry.getMessage());
 
-			Throwable throwable = logRecord.getThrown();
+			Throwable throwable = logEntry.getThrowable();
 
 			Assert.assertTrue(throwable instanceof ClosedChannelException);
 		}
@@ -168,7 +172,8 @@ public class RPCRequestTest {
 		RPCRequest<String> rpcRequest = new RPCRequest<>(_ID, rpcCallable);
 
 		Assert.assertEquals(
-			"{id=" + _ID + ", rpcCallable=" + rpcCallable.toString() + "}",
+			StringBundler.concat(
+				"{id=", _ID, ", rpcCallable=", rpcCallable.toString(), "}"),
 			rpcRequest.toString());
 	}
 
@@ -199,13 +204,14 @@ public class RPCRequestTest {
 	private static class TestRPCCallable implements RPCCallable<String> {
 
 		public TestRPCCallable(
-			Throwable syncThrowable, boolean cancel, Throwable asyncThrowable,
+			Throwable throwable, boolean cancel, Throwable asyncThrowable,
 			String result) {
 
-			_syncThrowable = syncThrowable;
 			_cancel = cancel;
 			_asyncThrowable = asyncThrowable;
-			_RESULT = result;
+			_result = result;
+
+			_syncThrowable = throwable;
 		}
 
 		@Override
@@ -224,7 +230,7 @@ public class RPCRequestTest {
 				defaultNoticeableFuture.setException(_asyncThrowable);
 			}
 			else {
-				defaultNoticeableFuture.set(_RESULT);
+				defaultNoticeableFuture.set(_result);
 			}
 
 			return defaultNoticeableFuture;
@@ -232,10 +238,9 @@ public class RPCRequestTest {
 
 		private static final long serialVersionUID = 1L;
 
-		private final String _RESULT;
-
 		private final Throwable _asyncThrowable;
 		private final boolean _cancel;
+		private final String _result;
 		private final Throwable _syncThrowable;
 
 	}

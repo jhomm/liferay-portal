@@ -14,14 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.UserTracker;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.UserTracker;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -34,26 +31,27 @@ import java.util.Date;
  * The cache model class for representing UserTracker in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see UserTracker
  * @generated
  */
-@ProviderType
-public class UserTrackerCacheModel implements CacheModel<UserTracker>,
-	Externalizable, MVCCModel {
+public class UserTrackerCacheModel
+	implements CacheModel<UserTracker>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof UserTrackerCacheModel)) {
+		if (!(object instanceof UserTrackerCacheModel)) {
 			return false;
 		}
 
-		UserTrackerCacheModel userTrackerCacheModel = (UserTrackerCacheModel)obj;
+		UserTrackerCacheModel userTrackerCacheModel =
+			(UserTrackerCacheModel)object;
 
 		if ((userTrackerId == userTrackerCacheModel.userTrackerId) &&
-				(mvccVersion == userTrackerCacheModel.mvccVersion)) {
+			(mvccVersion == userTrackerCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -121,28 +119,28 @@ public class UserTrackerCacheModel implements CacheModel<UserTracker>,
 		}
 
 		if (sessionId == null) {
-			userTrackerImpl.setSessionId(StringPool.BLANK);
+			userTrackerImpl.setSessionId("");
 		}
 		else {
 			userTrackerImpl.setSessionId(sessionId);
 		}
 
 		if (remoteAddr == null) {
-			userTrackerImpl.setRemoteAddr(StringPool.BLANK);
+			userTrackerImpl.setRemoteAddr("");
 		}
 		else {
 			userTrackerImpl.setRemoteAddr(remoteAddr);
 		}
 
 		if (remoteHost == null) {
-			userTrackerImpl.setRemoteHost(StringPool.BLANK);
+			userTrackerImpl.setRemoteHost("");
 		}
 		else {
 			userTrackerImpl.setRemoteHost(remoteHost);
 		}
 
 		if (userAgent == null) {
-			userTrackerImpl.setUserAgent(StringPool.BLANK);
+			userTrackerImpl.setUserAgent("");
 		}
 		else {
 			userTrackerImpl.setUserAgent(userAgent);
@@ -156,8 +154,11 @@ public class UserTrackerCacheModel implements CacheModel<UserTracker>,
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
 		userTrackerId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
+
 		userId = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
 		sessionId = objectInput.readUTF();
@@ -167,37 +168,39 @@ public class UserTrackerCacheModel implements CacheModel<UserTracker>,
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
 		objectOutput.writeLong(userTrackerId);
+
 		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(userId);
 		objectOutput.writeLong(modifiedDate);
 
 		if (sessionId == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(sessionId);
 		}
 
 		if (remoteAddr == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(remoteAddr);
 		}
 
 		if (remoteHost == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(remoteHost);
 		}
 
 		if (userAgent == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(userAgent);
@@ -213,4 +216,5 @@ public class UserTrackerCacheModel implements CacheModel<UserTracker>,
 	public String remoteAddr;
 	public String remoteHost;
 	public String userAgent;
+
 }

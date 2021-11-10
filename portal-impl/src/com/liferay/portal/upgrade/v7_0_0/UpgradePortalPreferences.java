@@ -14,26 +14,24 @@
 
 package com.liferay.portal.upgrade.v7_0_0;
 
-import com.liferay.portal.kernel.dao.jdbc.DataAccess;
-import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.xml.XMLUtil;
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.PortletConstants;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.xml.Document;
+import com.liferay.portal.kernel.xml.DocumentException;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
-import com.liferay.portlet.exportimport.staging.Staging;
-import com.liferay.portlet.exportimport.staging.StagingConstants;
-import com.liferay.util.xml.XMLUtil;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Joshua Gok
@@ -56,57 +54,16 @@ public class UpgradePortalPreferences extends UpgradeProcess {
 
 		Iterator<Element> iterator = rootElement.elementIterator();
 
-		Map<String, String> stagingPreferencesMap = new HashMap<>();
-
 		while (iterator.hasNext()) {
 			Element preferenceElement = iterator.next();
 
 			String preferenceName = preferenceElement.elementText("name");
 
-			if (preferenceName.contains(Staging.class.getName())) {
-				String preferenceValue = preferenceElement.elementText("value");
+			if (!preferenceName.contains(
+					"com.liferay.portal.kernel.staging.Staging")) {
 
-				int index = preferenceName.indexOf(StringPool.POUND);
-
-				stagingPreferencesMap.put(
-					preferenceName.substring(index + 1), preferenceValue);
-			}
-			else {
 				newRootElement.add(preferenceElement.createCopy());
 			}
-		}
-
-		JSONArray stagingPreferencesJsonArray =
-			JSONFactoryUtil.createJSONArray();
-
-		for (String key : stagingPreferencesMap.keySet()) {
-			JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
-
-			jsonObject.put(key, stagingPreferencesMap.get(key));
-
-			stagingPreferencesJsonArray.put(jsonObject);
-		}
-
-		if (stagingPreferencesJsonArray.length() > 0) {
-			Element preferenceElement = SAXReaderUtil.createElement(
-				"preference");
-
-			Element nameElement = SAXReaderUtil.createElement("name");
-
-			String stagingPreferencesName =
-				Staging.class.getName() + StringPool.POUND +
-				StagingConstants.STAGING_RECENT_LAYOUT_IDS_MAP;
-
-			nameElement.setText(stagingPreferencesName);
-
-			Element valueElement = SAXReaderUtil.createElement("value");
-
-			valueElement.setText(stagingPreferencesJsonArray.toString());
-
-			preferenceElement.add(nameElement);
-			preferenceElement.add(valueElement);
-
-			newRootElement.add(preferenceElement);
 		}
 
 		return XMLUtil.formatXML(newDocument);
@@ -114,57 +71,61 @@ public class UpgradePortalPreferences extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		upgradePortalPreferences();
+		upgradeStagingPortalPreferences();
 	}
 
-	protected void upgradePortalPreferences() throws Exception {
-		Connection con = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-
-		try {
-			con = DataAccess.getUpgradeOptimizedConnection();
-
-			ps = con.prepareStatement(
+	protected void upgradeStagingPortalPreferences() throws Exception {
+		try (LoggingTimer loggingTimer = new LoggingTimer();
+			PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select portalPreferencesId, preferences from " +
 					"PortalPreferences");
+			ResultSet resultSet = preparedStatement1.executeQuery();
+			PreparedStatement preparedStatement2 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					"update PortalPreferences set preferences = ? where " +
+						"portalPreferencesId = ?")) {
 
-			rs = ps.executeQuery();
+			while (resultSet.next()) {
+				long portalPreferencesId = resultSet.getLong(
+					"portalPreferencesId");
 
-			while (rs.next()) {
-				long portalPreferencesId = rs.getLong("portalPreferencesId");
+				String oldPreferences = resultSet.getString("preferences");
 
-				String preferences = rs.getString("preferences");
+				String newPreferences = null;
 
-				upgradeUserStagingPreferences(portalPreferencesId, preferences);
+				try {
+					newPreferences = convertStagingPreferencesToJSON(
+						oldPreferences);
+				}
+				catch (DocumentException documentException) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(
+							StringBundler.concat(
+								"Portal preferences ", portalPreferencesId,
+								" contains invalid XML, resetting to default"),
+							documentException);
+					}
+
+					newPreferences = PortletConstants.DEFAULT_PREFERENCES;
+				}
+
+				if (Objects.equals(oldPreferences, newPreferences)) {
+					continue;
+				}
+
+				preparedStatement2.setString(1, newPreferences);
+
+				preparedStatement2.setLong(2, portalPreferencesId);
+
+				preparedStatement2.addBatch();
 			}
-		}
-		finally {
-			DataAccess.cleanUp(con, ps, rs);
-		}
-	}
 
-	protected void upgradeUserStagingPreferences(
-			long portalPreferencesId, String preferences)
-		throws Exception {
-
-		Connection con = null;
-		PreparedStatement ps = null;
-
-		try {
-			con = DataAccess.getUpgradeOptimizedConnection();
-
-			ps = con.prepareStatement(
-				"update PortalPreferences set preferences = ? where " +
-					"portalPreferencesId = ?");
-
-			ps.setString(1, convertStagingPreferencesToJSON(preferences));
-			ps.setLong(2, portalPreferencesId);
-			ps.executeUpdate();
-		}
-		finally {
-			DataAccess.cleanUp(con, ps);
+			preparedStatement2.executeBatch();
 		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		UpgradePortalPreferences.class);
 
 }

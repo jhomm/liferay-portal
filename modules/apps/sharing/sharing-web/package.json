@@ -1,0 +1,26 @@
+{
+	"dependencies": {
+		"@clayui/alert": "3.39.0",
+		"@clayui/autocomplete": "3.39.0",
+		"@clayui/button": "3.39.0",
+		"@clayui/data-provider": "3.39.0",
+		"@clayui/drop-down": "3.39.0",
+		"@clayui/form": "3.39.0",
+		"@clayui/icon": "3.39.0",
+		"@clayui/layout": "3.39.0",
+		"@clayui/modal": "3.39.0",
+		"@clayui/multi-select": "3.39.0",
+		"@clayui/sticker": "3.39.0",
+		"@liferay/frontend-js-react-web": "*",
+		"frontend-js-web": "*",
+		"prop-types": "15.7.2",
+		"react": "16.12.0"
+	},
+	"name": "sharing-web",
+	"scripts": {
+		"build": "liferay-npm-scripts build",
+		"checkFormat": "liferay-npm-scripts check",
+		"format": "liferay-npm-scripts fix"
+	},
+	"version": "3.0.18"
+}

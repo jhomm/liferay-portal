@@ -15,51 +15,23 @@
 package com.liferay.portal.webcache;
 
 import com.liferay.portal.kernel.cache.PortalCache;
-import com.liferay.portal.kernel.cache.SingleVMPool;
+import com.liferay.portal.kernel.cache.PortalCacheHelperUtil;
+import com.liferay.portal.kernel.cache.PortalCacheManagerNames;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.webcache.WebCacheException;
 import com.liferay.portal.kernel.webcache.WebCacheItem;
 import com.liferay.portal.kernel.webcache.WebCachePool;
-import com.liferay.registry.Registry;
-import com.liferay.registry.RegistryUtil;
-import com.liferay.registry.dependency.ServiceDependencyListener;
-import com.liferay.registry.dependency.ServiceDependencyManager;
 
 /**
  * @author Brian Wing Shun Chan
  */
-@DoPrivileged
 public class WebCachePoolImpl implements WebCachePool {
 
 	public void afterPropertiesSet() {
-		ServiceDependencyManager serviceDependencyManager =
-			new ServiceDependencyManager();
-
-		serviceDependencyManager.addServiceDependencyListener(
-			new ServiceDependencyListener() {
-
-				@Override
-				public void dependenciesFulfilled() {
-					Registry registry = RegistryUtil.getRegistry();
-
-					SingleVMPool singleVMPool = registry.getService(
-						SingleVMPool.class);
-
-					_portalCache =
-						(PortalCache<String, Object>)
-							singleVMPool.getPortalCache(_CACHE_NAME);
-				}
-
-				@Override
-				public void destroy() {
-				}
-
-			});
-
-		serviceDependencyManager.registerDependencies(SingleVMPool.class);
+		_portalCache = PortalCacheHelperUtil.getPortalCache(
+			PortalCacheManagerNames.SINGLE_VM, _CACHE_NAME);
 	}
 
 	@Override
@@ -68,34 +40,40 @@ public class WebCachePoolImpl implements WebCachePool {
 	}
 
 	@Override
-	public Object get(String key, WebCacheItem wci) {
-		Object obj = _portalCache.get(key);
+	public Object get(String key, WebCacheItem webCacheItem) {
+		Object object = _portalCache.get(key);
 
-		if (obj != null) {
-			return obj;
+		if (object != null) {
+			return object;
 		}
 
 		try {
-			obj = wci.convert(key);
+			object = webCacheItem.convert(key);
 
-			int timeToLive = (int)(wci.getRefreshTime() / Time.SECOND);
+			if (object == null) {
+				return null;
+			}
 
-			_portalCache.put(key, obj, timeToLive);
+			int timeToLive = (int)(webCacheItem.getRefreshTime() / Time.SECOND);
+
+			if (timeToLive > 0) {
+				_portalCache.put(key, object, timeToLive);
+			}
 		}
-		catch (WebCacheException wce) {
+		catch (WebCacheException webCacheException) {
 			if (_log.isWarnEnabled()) {
-				Throwable cause = wce.getCause();
+				Throwable throwable = webCacheException.getCause();
 
-				if (cause != null) {
-					_log.warn(cause, cause);
+				if (throwable != null) {
+					_log.warn(throwable, throwable);
 				}
 				else {
-					_log.warn(wce, wce);
+					_log.warn(webCacheException, webCacheException);
 				}
 			}
 		}
 
-		return obj;
+		return object;
 	}
 
 	@Override

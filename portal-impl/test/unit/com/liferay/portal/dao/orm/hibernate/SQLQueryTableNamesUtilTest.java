@@ -14,12 +14,12 @@
 
 package com.liferay.portal.dao.orm.hibernate;
 
-import com.liferay.portal.cache.test.TestPortalCache;
+import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
-import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.tools.ToolDependencies;
 
 import java.io.InputStreamReader;
@@ -29,6 +29,7 @@ import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -37,21 +38,14 @@ import org.junit.Test;
 public class SQLQueryTableNamesUtilTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
 		ToolDependencies.wireCaches();
-
-		Class<SQLQueryTableNamesUtil> clazz = SQLQueryTableNamesUtil.class;
-
-		String className = clazz.getName();
-
-		Class.forName(className);
-
-		ReflectionTestUtil.setFieldValue(
-			clazz, "_portalCache", new TestPortalCache<>(className));
 	}
 
 	@Test

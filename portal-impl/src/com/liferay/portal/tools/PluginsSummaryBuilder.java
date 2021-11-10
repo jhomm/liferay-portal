@@ -14,13 +14,14 @@
 
 package com.liferay.portal.tools;
 
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.NaturalOrderStringComparator;
 import com.liferay.portal.kernel.util.OSDetector;
 import com.liferay.portal.kernel.util.PropertiesUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.FileImpl;
@@ -41,7 +42,7 @@ import org.apache.tools.ant.DirectoryScanner;
  */
 public class PluginsSummaryBuilder {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		ToolDependencies.wireBasic();
 
 		File pluginsDir = new File(System.getProperty("plugins.dir"));
@@ -49,21 +50,14 @@ public class PluginsSummaryBuilder {
 		new PluginsSummaryBuilder(pluginsDir);
 	}
 
-	public PluginsSummaryBuilder(File pluginsDir) {
+	public PluginsSummaryBuilder(File pluginsDir) throws Exception {
 		_pluginsDir = pluginsDir;
 
-		String latestHASH = null;
-
-		try {
-			latestHASH = _getLatestHASH(pluginsDir);
-
-			_createPluginsSummary();
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
+		String latestHASH = _getLatestHASH(pluginsDir);
 
 		_latestHASH = latestHASH;
+
+		_createPluginsSummary();
 	}
 
 	private void _createPluginsSummary() throws Exception {
@@ -91,7 +85,7 @@ public class PluginsSummaryBuilder {
 
 		for (String fileName : fileNames) {
 			fileName = StringUtil.replace(
-				fileName, StringPool.BACK_SLASH, StringPool.SLASH);
+				fileName, CharPool.BACK_SLASH, CharPool.SLASH);
 
 			_createPluginSummary(sb, fileName);
 		}
@@ -171,9 +165,8 @@ public class PluginsSummaryBuilder {
 	private Set<String> _extractTicketIds(File pluginDir, String range)
 		throws Exception {
 
-		Set<String> ticketIds = new TreeSet<String>(
-			new NaturalOrderStringComparator()
-		);
+		Set<String> ticketIds = new TreeSet<>(
+			new NaturalOrderStringComparator());
 
 		Runtime runtime = Runtime.getRuntime();
 
@@ -187,7 +180,7 @@ public class PluginsSummaryBuilder {
 
 		String content = StringUtil.read(process.getInputStream());
 
-		content = StringUtil.replace(content, "\n", " ");
+		content = StringUtil.replace(content, '\n', ' ');
 
 		for (String ticketIdPrefix : _TICKET_ID_PREFIXES) {
 			int x = 0;
@@ -223,9 +216,10 @@ public class PluginsSummaryBuilder {
 		}
 
 		File buildXmlFile = new File(pluginDir, "build.xml");
+
 		System.out.println("## read a " + buildXmlFile);
 
-		String buildXmlContent = _fileUtil.read(buildXmlFile);
+		String buildXmlContent = _fileImpl.read(buildXmlFile);
 
 		int x = buildXmlContent.indexOf("import.shared");
 
@@ -351,14 +345,15 @@ public class PluginsSummaryBuilder {
 
 		String fullScreenshotsDirName =
 			fullWebInfDirName + "releng/screenshots/";
-		String relativeScreenshotsDirName =
-			relativeWebInfDirName + "releng/screenshots/";
 
 		if (FileUtil.exists(fullScreenshotsDirName)) {
 			String[] screenshotsFileNames = FileUtil.listFiles(
 				fullScreenshotsDirName);
 
 			Arrays.sort(screenshotsFileNames);
+
+			String relativeScreenshotsDirName =
+				relativeWebInfDirName + "releng/screenshots/";
 
 			for (String screenshotsFileName : screenshotsFileNames) {
 				if (screenshotsFileName.equals("Thumbs.db") ||
@@ -406,9 +401,6 @@ public class PluginsSummaryBuilder {
 
 		int changeLogVersion = 0;
 
-		int moduleIncrementalVersion = GetterUtil.getInteger(
-			pluginPackageProperties.getProperty("module-incremental-version"));
-
 		if (!relengChangeLogFile.exists()) {
 			FileUtil.write(relengChangeLogFile, "TEMP=");
 		}
@@ -438,6 +430,7 @@ public class PluginsSummaryBuilder {
 				!relengChangeLogEntries.isEmpty()) {
 
 				int x = relengChangeLogEntry.indexOf("..");
+
 				int y = relengChangeLogEntry.indexOf("=", x);
 
 				String range =
@@ -445,8 +438,6 @@ public class PluginsSummaryBuilder {
 						_latestHASH;
 
 				relengChangeLogEntries.add(range);
-
-				continue;
 			}
 		}
 
@@ -456,9 +447,7 @@ public class PluginsSummaryBuilder {
 
 		File pluginDir = docrootDir.getParentFile();
 
-		for (int i = 0; i < relengChangeLogEntries.size(); i++) {
-			String relengChangeLogEntry = relengChangeLogEntries.get(i);
-
+		for (String relengChangeLogEntry : relengChangeLogEntries) {
 			String[] relengChangeLogEntryParts = StringUtil.split(
 				relengChangeLogEntry, "=");
 
@@ -527,7 +516,7 @@ public class PluginsSummaryBuilder {
 			}
 
 			String ticketIdsString = StringUtil.merge(
-				ticketIds.toArray(new String[ticketIds.size()]), " ");
+				ticketIds.toArray(new String[0]), " ");
 
 			changeLogVersion++;
 
@@ -550,6 +539,9 @@ public class PluginsSummaryBuilder {
 						pluginPackagePropertiesContent.substring(x);
 		}
 
+		int moduleIncrementalVersion = GetterUtil.getInteger(
+			pluginPackageProperties.getProperty("module-incremental-version"));
+
 		if (moduleIncrementalVersion != changeLogVersion) {
 			pluginPackagePropertiesContent = StringUtil.replace(
 				pluginPackagePropertiesContent,
@@ -565,9 +557,9 @@ public class PluginsSummaryBuilder {
 		File relengChangeLogMD5File = new File(
 			webInfDir, "liferay-releng.changelog.md5");
 
-		String md5Checksum = FileUtil.getMD5Checksum(relengChangeLogFile);
-
-		FileUtil.write(relengChangeLogMD5File, md5Checksum);
+		FileUtil.write(
+			relengChangeLogMD5File,
+			FileUtil.getMD5Checksum(relengChangeLogFile));
 	}
 
 	private String _updateRelengPropertiesFile(
@@ -631,9 +623,11 @@ public class PluginsSummaryBuilder {
 		sb.append(value);
 	}
 
-	private static final String[] _TICKET_ID_PREFIXES = {"LPS", "SOS", "SYNC"};
+	private static final String[] _TICKET_ID_PREFIXES = {
+		"CLDSVCS", "LPS", "SOS", "SYNC"
+	};
 
-	private static final FileImpl _fileUtil = FileImpl.getInstance();
+	private static final FileImpl _fileImpl = FileImpl.getInstance();
 
 	private final Set<String> _distinctAuthors = new TreeSet<>();
 	private final Set<String> _distinctLicenses = new TreeSet<>();

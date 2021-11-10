@@ -17,9 +17,8 @@ package com.liferay.taglib.ui;
 import com.liferay.portal.kernel.dao.search.ResultRow;
 import com.liferay.portal.kernel.dao.search.SearchEntry;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
-import com.liferay.portal.kernel.util.ServerDetector;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PortalUtil;
 import com.liferay.taglib.search.ImageSearchEntry;
 
 import java.util.List;
@@ -83,15 +82,13 @@ public class SearchContainerColumnImageTag<R> extends SearchContainerColumnTag {
 			index = -1;
 			_src = null;
 
-			if (!ServerDetector.isResin()) {
-				align = SearchEntry.DEFAULT_ALIGN;
-				colspan = SearchEntry.DEFAULT_COLSPAN;
-				cssClass = SearchEntry.DEFAULT_CSS_CLASS;
-				_href = null;
-				name = null;
-				_toggleRowChecker = false;
-				valign = SearchEntry.DEFAULT_VALIGN;
-			}
+			align = SearchEntry.DEFAULT_ALIGN;
+			colspan = SearchEntry.DEFAULT_COLSPAN;
+			cssClass = SearchEntry.DEFAULT_CSS_CLASS;
+			_href = null;
+			name = null;
+			_toggleRowChecker = false;
+			valign = SearchEntry.DEFAULT_VALIGN;
 		}
 	}
 
@@ -107,11 +104,12 @@ public class SearchContainerColumnImageTag<R> extends SearchContainerColumnTag {
 		}
 
 		if (!searchContainerRowTag.isHeaderNamesAssigned()) {
-			List<String> headerNames = searchContainerRowTag.getHeaderNames();
-
 			String name = getName();
 
 			if (Validator.isNotNull(name)) {
+				List<String> headerNames =
+					searchContainerRowTag.getHeaderNames();
+
 				headerNames.add(name);
 			}
 		}
@@ -149,6 +147,6 @@ public class SearchContainerColumnImageTag<R> extends SearchContainerColumnTag {
 
 	private Object _href;
 	private String _src;
-	private boolean _toggleRowChecker = false;
+	private boolean _toggleRowChecker;
 
 }

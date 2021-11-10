@@ -14,12 +14,19 @@
 
 package com.liferay.portal.template;
 
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateException;
 import com.liferay.portal.kernel.template.TemplateResource;
 import com.liferay.portal.kernel.template.URLTemplateResource;
-import com.liferay.portal.kernel.util.CharPool;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.io.IOException;
 
@@ -48,12 +55,58 @@ public abstract class URLResourceParser implements TemplateResourceParser {
 
 			return new URLTemplateResource(templateId, url);
 		}
-		catch (IOException ioe) {
-			throw new TemplateException(ioe);
+		catch (IOException ioException) {
+			throw new TemplateException(ioException);
 		}
 	}
 
 	public abstract URL getURL(String templateId) throws IOException;
+
+	@Override
+	public boolean isTemplateResourceValid(String templateId, String langType) {
+		if (Validator.isBlank(templateId)) {
+			return true;
+		}
+
+		char[] chars = templateId.toCharArray();
+
+		for (char c : chars) {
+			if ((c == CharPool.PERCENT) || (c == CharPool.POUND) ||
+				(c == CharPool.QUESTION) || (c == CharPool.SEMICOLON)) {
+
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						StringBundler.concat(
+							"Unable to load template ", templateId,
+							" because the template name contains one or more ",
+							"special characters: %, #, ?, or ;"));
+				}
+
+				return false;
+			}
+
+			if (c == CharPool.BACK_SLASH) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						"Unable to load template " + templateId +
+							" because the template name contains a backslash");
+				}
+
+				return false;
+			}
+		}
+
+		String extension = FileUtil.getExtension(templateId);
+
+		if (!extension.equals(langType) &&
+			!ArrayUtil.contains(
+				TemplateConstants.ALLOWED_LANG_TYPES, extension)) {
+
+			return false;
+		}
+
+		return true;
+	}
 
 	protected static String normalizePath(String path) {
 		List<String> elements = new ArrayList<>();
@@ -123,5 +176,8 @@ public abstract class URLResourceParser implements TemplateResourceParser {
 
 		return normalizedPath;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		URLResourceParser.class);
 
 }

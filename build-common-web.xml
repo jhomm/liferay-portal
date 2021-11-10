@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<project name="build-common-web" xmlns:antelope="antlib:ise.antelope.tasks">
+<project name="build-common-web" xmlns:antelope="antlib:ise.antelope.tasks" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
 	<import file="build-common.xml" />
 
 	<macrodef name="manifest-macro">
@@ -16,12 +16,21 @@
 
 	<target name="clean">
 		<delete dir="docroot/WEB-INF/classes" />
-		<delete file="${war.file}.war" failonerror="false" />
+		<delete failonerror="false" file="${war.file}.war" />
 
 		<delete>
-			<fileset dir="docroot" includes="**/.sprite.png" />
-			<fileset dir="docroot" includes="**/.sprite.properties" />
-			<fileset dir="docroot" includes="**/Thumbs.db" />
+			<fileset
+				dir="docroot"
+				includes="**/.sprite.png"
+			/>
+			<fileset
+				dir="docroot"
+				includes="**/.sprite.properties"
+			/>
+			<fileset
+				dir="docroot"
+				includes="**/Thumbs.db"
+			/>
 		</delete>
 	</target>
 
@@ -36,9 +45,8 @@
 			<else>
 				<if>
 					<or>
-						<equals arg1="${app.server.type}" arg2="glassfish" />
 						<equals arg1="${app.server.type}" arg2="jboss" />
-						<equals arg1="${app.server.type}" arg2="jonas" />
+						<equals arg1="${app.server.type}" arg2="wildfly" />
 					</or>
 					<then>
 						<property name="war.file.dest" value="${app.server.deploy.dir}/${war.file}.war" />
@@ -69,15 +77,25 @@
 				<if>
 					<available file="tmp" type="dir" />
 					<then>
-						<copy todir="${war.file.dest}" preservelastmodified="true">
-							<fileset dir="tmp" />
+						<copy
+							preservelastmodified="true"
+							todir="${war.file.dest}"
+						>
+							<fileset
+								dir="tmp"
+							/>
 						</copy>
 					</then>
 					<elseif>
 						<available file="docroot" type="dir" />
 						<then>
-							<copy todir="${war.file.dest}" preservelastmodified="true">
-								<fileset dir="docroot">
+							<copy
+								preservelastmodified="true"
+								todir="${war.file.dest}"
+							>
+								<fileset
+									dir="docroot"
+								>
 									<exclude name="**/css/*.scss" />
 								</fileset>
 								<filtermapper>
@@ -87,65 +105,37 @@
 						</then>
 					</elseif>
 					<else>
-						<unwar src="${war.file}.war" dest="${war.file.dest}" />
+						<unwar dest="${war.file.dest}" src="${war.file}.war" />
 					</else>
 				</if>
 			</else>
 		</if>
 
 		<if>
-			<and>
+			<or>
 				<equals arg1="${app.server.type}" arg2="jboss" />
-				<or>
-					<equals arg1="${app.server.major.version}" arg2="6" />
-					<equals arg1="${app.server.major.version}" arg2="8" />
-				</or>
-			</and>
+				<equals arg1="${app.server.type}" arg2="wildfly" />
+			</or>
 			<then>
 				<echo file="${war.file.dest}.dodeploy" />
 			</then>
 		</if>
+	</target>
 
-		<if>
-			<and>
-				<equals arg1="${app.server.type}" arg2="glassfish" />
-				<available file="${war.file.dest}" type="dir" />
-				<not>
-					<equals arg1="${war.file}" arg2="portal-web" />
-				</not>
-			</and>
-			<then>
-				<tstamp>
-					<format property="tstamp.value" pattern="yyyyMMddkkmmssSSS" />
-				</tstamp>
+	<target depends="war" name="install-portal-release">
+		<install-portal-artifact packaging="war" />
+	</target>
 
-				<jar
-					basedir="${war.file.dest}"
-					jarfile="${tstamp.value}"
-				/>
+	<target depends="war" name="install-portal-snapshot">
+		<install-portal-artifact packaging="war" snapshot="true" />
+	</target>
 
-				<delete dir="${war.file.dest}" />
+	<target name="publish-portal-release">
+		<publish-portal-artifact packaging="war" targets="war" />
+	</target>
 
-				<move file="${tstamp.value}" tofile="${war.file.dest}" />
-			</then>
-		</if>
-
-		<if>
-			<equals arg1="${app.server.type}" arg2="jonas" />
-			<then>
-				<delete file="${war.file.dest}/META-INF/context.xml" />
-			</then>
-		</if>
-
-		<if>
-			<equals arg1="${app.server.type}" arg2="resin" />
-			<then>
-				<replace file="${war.file.dest}/WEB-INF/web.xml">
-					<replacetoken><![CDATA[<web-app metadata-complete="true" version="2.5" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">]]></replacetoken>
-					<replacevalue><![CDATA[<web-app xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd" version="2.4">]]></replacevalue>
-				</replace>
-			</then>
-		</if>
+	<target name="publish-portal-snapshot">
+		<publish-portal-artifact packaging="war" snapshot="true" targets="war" />
 	</target>
 
 	<target name="war">

@@ -20,25 +20,21 @@
 boolean advancedSearch = displayTerms.isAdvancedSearch();
 %>
 
-<div class="basic-search input-group">
-	<div class="input-group-input">
-		<div class="basic-search-slider" id="<%= id %>simple">
-			<button class="basic-search-close btn btn-default" type="button">
-				<span class="icon-remove"></span>
-			</button>
-
-			<input class="form-control" <%= advancedSearch ? "disabled" : StringPool.BLANK %> id="<%= id + DisplayTerms.KEYWORDS %>" name="<portlet:namespace /><%= DisplayTerms.KEYWORDS %>" placeholder="<liferay-ui:message key="search" />..." title="search" type="text" value="<%= HtmlUtil.escapeAttribute(displayTerms.getKeywords()) %>" />
-		</div>
+<div class="input-group lfr-search-toggle">
+	<div class="input-group-item input-group-prepend" id="<%= id %>simple">
+		<input class="form-control search-query" <%= advancedSearch ? "disabled" : StringPool.BLANK %> id="<%= id + DisplayTerms.KEYWORDS %>" name="<portlet:namespace /><%= DisplayTerms.KEYWORDS %>" placeholder="<liferay-ui:message key="search" />..." title="search" type="text" value="<%= HtmlUtil.escapeAttribute(displayTerms.getKeywords()) %>" />
 	</div>
 
-	<div class="input-group-btn">
-		<button class="btn btn-default" type="submit">
-			<span class="icon-search"></span>
+	<div class="input-group-append input-group-item input-group-item-shrink">
+		<button class="btn btn-monospaced btn-secondary" type="submit">
+			<aui:icon image="search" markupView="lexicon" />
 		</button>
+	</div>
 
-		<a class="toggle-advanced" href="javascript:;" id="<%= id %>toggleAdvanced">
-			<i class="caret"></i>
-		</a>
+	<div class="input-group-append input-group-item input-group-item-shrink">
+		<button class="btn btn-monospaced btn-secondary toggle-advanced" id="<%= id %>toggleAdvanced" type="button">
+			<aui:icon image="caret-bottom" markupView="lexicon" />
+		</button>
 	</div>
 </div>
 
@@ -51,8 +47,8 @@ boolean advancedSearch = displayTerms.isAdvancedSearch();
 		<div class="taglib-search-toggle-advanced-content" id="<%= id %>advancedContent">
 			<div class="form-group form-group-inline">
 				<aui:select label="match" name="<%= DisplayTerms.AND_OPERATOR %>" wrapperCssClass="match-fields">
-					<aui:option label="all" selected="<%= displayTerms.isAndOperator() %>" value="true" />
-					<aui:option label="any" selected="<%= !displayTerms.isAndOperator() %>" value="false" />
+					<aui:option label="all" selected="<%= displayTerms.isAndOperator() %>" value="<%= true %>" />
+					<aui:option label="any" selected="<%= !displayTerms.isAndOperator() %>" value="<%= false %>" />
 				</aui:select>
 
 				<span class="match-fields-legend">

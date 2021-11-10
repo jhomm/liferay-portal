@@ -14,14 +14,16 @@
 
 package com.liferay.portal.model.impl;
 
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
+import com.liferay.document.library.kernel.store.DLStoreUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Image;
+import com.liferay.portal.kernel.service.ImageLocalServiceUtil;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portlet.documentlibrary.model.DLFileEntry;
-import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.store.DLStoreUtil;
 
 import java.io.InputStream;
 
@@ -47,26 +49,28 @@ public class ImageImpl extends ImageBaseImpl {
 						imageId);
 			}
 
-			InputStream is = null;
+			InputStream inputStream = null;
 
 			if ((dlFileEntry != null) &&
 				(dlFileEntry.getLargeImageId() == imageId)) {
 
-				is = DLStoreUtil.getFileAsStream(
+				inputStream = DLStoreUtil.getFileAsStream(
 					dlFileEntry.getCompanyId(),
 					dlFileEntry.getDataRepositoryId(), dlFileEntry.getName());
 			}
 			else {
-				is = DLStoreUtil.getFileAsStream(
-					_DEFAULT_COMPANY_ID, _DEFAULT_REPOSITORY_ID, getFileName());
+				Image image = ImageLocalServiceUtil.getImage(imageId);
+
+				inputStream = DLStoreUtil.getFileAsStream(
+					image.getCompanyId(), _REPOSITORY_ID, getFileName());
 			}
 
-			byte[] bytes = FileUtil.getBytes(is);
+			byte[] bytes = FileUtil.getBytes(inputStream);
 
 			_textObj = bytes;
 		}
-		catch (Exception e) {
-			_log.error("Error reading image " + imageId, e);
+		catch (Exception exception) {
+			_log.error("Error reading image " + imageId, exception);
 		}
 
 		return _textObj;
@@ -81,9 +85,7 @@ public class ImageImpl extends ImageBaseImpl {
 		return getImageId() + StringPool.PERIOD + getType();
 	}
 
-	private static final long _DEFAULT_COMPANY_ID = 0;
-
-	private static final long _DEFAULT_REPOSITORY_ID = 0;
+	private static final long _REPOSITORY_ID = 0;
 
 	private static final Log _log = LogFactoryUtil.getLog(ImageImpl.class);
 

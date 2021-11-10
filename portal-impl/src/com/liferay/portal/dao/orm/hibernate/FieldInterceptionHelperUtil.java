@@ -14,11 +14,11 @@
 
 package com.liferay.portal.dao.orm.hibernate;
 
-import com.liferay.portal.kernel.concurrent.ConcurrentReferenceKeyHashMap;
+import com.liferay.petra.concurrent.ConcurrentReferenceKeyHashMap;
+import com.liferay.petra.memory.FinalizeManager;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.memory.FinalizeManager;
-import com.liferay.portal.kernel.util.ReflectionUtil;
 
 import java.lang.reflect.Field;
 
@@ -43,13 +43,14 @@ public class FieldInterceptionHelperUtil {
 				new ConcurrentReferenceKeyHashMap<Class<?>, Boolean>(
 					FinalizeManager.WEAK_REFERENCE_FACTORY));
 		}
-		catch (NoSuchFieldException nsfe) {
+		catch (NoSuchFieldException noSuchFieldException) {
 			_log.error(
 				"Missing Hibernate FieldInterceptionHelper patch from " +
-					"LPS-52218");
+					"LPS-52218",
+				noSuchFieldException);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 	}
 

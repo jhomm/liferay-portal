@@ -1,0 +1,61 @@
+= Liferay Connector Release Notes
+
+The Anypoint Liferay Connector connects Liferay to platforms and services in
+the Mulesoft ecosystem.
+
+== Version 1.1.0
+
+*June 7, 2021*
+
+=== Compatibility
+
+[%header%autowidth.spread]
+|===
+|Software |Version
+|Anypoint Studio |7.4 and later
+|Mule |4.1.1 and later
+|JDK |1.8
+|Liferay Portal |7.3 GA1
+|===
+
+=== Features
+* Added support for Liferay Batch endpoints (Create, Update, Delete and Export
+batch operations)
+* Updated demo project with Batch components usage examples
+
+=== Fixed Issues
+* Upgraded the vulnerable version of _jackson-databind_
+
+== Version 1.0.0
+
+*March 23, 2020*
+
+=== Compatibility
+
+[%header%autowidth.spread]
+|===
+|Software |Version
+|Anypoint Studio |7.4 and later
+|Mule |4.1.1 and later
+|JDK |1.8
+|Liferay Portal |7.1 (FixPack 12) and later
+|===
+
+=== Features
+Initial release of Anypoint Liferay Connector
+
+* Provides *Create Records*, *Delete Records*, *Get Records*, and *Update
+Records* operations
+* Supports basic authentication and OAuth 2.0 authorization
+* Includes documentation and demo flows which explains the basic use of the
+Liferay Connector operations
+
+=== Fixed Issues
+<none>
+
+== See Also
+* https://app.swaggerhub.com/organizations/liferayinc[Liferay Headless API Documentation]
+* link:liferay-connector-tech-ref.adoc[Liferay Connector Technical Reference]
+* link:user-manual.adoc[Liferay Connector User Manual]
+* https://forums.mulesoft.com[MuleSoft Forum]
+* https://support.mulesoft.com[Contact MuleSoft Support]

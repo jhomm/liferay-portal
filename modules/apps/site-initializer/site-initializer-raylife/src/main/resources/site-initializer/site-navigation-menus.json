@@ -1,0 +1,27 @@
+[
+	{
+		"name": "Public Menu",
+		"pages": [
+			{
+				"friendlyURL": "/business-insurance",
+				"privateLayout": false
+			},
+			{
+				"friendlyURL": "/claims",
+				"privateLayout": false
+			},
+			{
+				"friendlyURL": "/risk-control",
+				"privateLayout": false
+			},
+			{
+				"friendlyURL": "/about-us",
+				"privateLayout": false
+			},
+			{
+				"friendlyURL": "/contact",
+				"privateLayout": false
+			}
+		]
+	}
+]

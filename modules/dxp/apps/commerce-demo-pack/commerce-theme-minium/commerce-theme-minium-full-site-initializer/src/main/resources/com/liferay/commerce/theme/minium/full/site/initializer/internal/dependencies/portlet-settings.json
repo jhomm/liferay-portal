@@ -1,0 +1,137 @@
+[
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/catalog",
+		"portletName": "com_liferay_commerce_product_content_search_web_internal_portlet_CPSearchResultsPortlet",
+		"portletPreferences": {
+			"cpContentListRendererKey": "list-default",
+			"grouped--cpTypeListEntryRendererKey": "list-entry-default",
+			"simple--cpTypeListEntryRendererKey": "list-entry-default",
+			"virtual--cpTypeListEntryRendererKey": "list-entry-default"
+		}
+	},
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/catalog",
+		"portletName": "com_liferay_portal_search_web_search_bar_portlet_SearchBarPortlet",
+		"portletPreferences": {
+			"searchScope": "everything"
+		}
+	},
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/catalog",
+		"portletName": "com_liferay_portal_search_web_search_options_portlet_SearchOptionsPortlet",
+		"portletPreferences": {
+			"allowEmptySearches": "true"
+		}
+	},
+	{
+		"instanceId": "catalog",
+		"layoutFriendlyURL": "/catalog",
+		"portletName": "com_liferay_commerce_product_content_web_internal_portlet_CPCompareContentMiniPortlet",
+		"portletPreferences": {
+		}
+	},
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/compare",
+		"portletName": "com_liferay_commerce_product_content_web_internal_portlet_CPCompareContentPortlet",
+		"portletPreferences": {
+			"grouped--cpTypeListEntryRendererKey": "list-entry-default",
+			"simple--cpTypeListEntryRendererKey": "list-entry-default",
+			"virtual--cpTypeListEntryRendererKey": "list-entry-default"
+		}
+	},
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/product-detail",
+		"portletName": "com_liferay_commerce_product_content_web_internal_portlet_CPContentPortlet",
+		"portletPreferences": {
+			"cpType": "simple",
+			"grouped--cpTypeRendererKey": "default",
+			"simple--cpTypeRendererKey": "default",
+			"virtual--cpTypeRendererKey": "default"
+		}
+	},
+	{
+		"instanceId": "product_detail",
+		"layoutFriendlyURL": "/product-detail",
+		"portletName": "com_liferay_commerce_product_content_web_internal_portlet_CPCompareContentMiniPortlet",
+		"portletPreferences": {
+		}
+	},
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/dashboard",
+		"portletName": "com_liferay_blogs_web_portlet_BlogsPortlet",
+		"portletPreferences": {
+			"pageDelta": "4",
+			"portletSetupTitle": "LATEST NEWS"
+		}
+	},
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/dashboard",
+		"portletName": "com_liferay_commerce_product_content_web_internal_portlet_CPPublisherPortlet",
+		"portletPreferences": {
+			"cpContentListRendererKey": "list-default",
+			"dataSource": "assetCategoriesAndTagsDataSource",
+			"grouped--cpTypeListEntryRendererKey": "list-entry-default",
+			"paginationDelta": "5",
+			"paginationType": "more",
+			"queryAndOperator0": "true",
+			"queryContains0": "true",
+			"queryName0": "assetTags",
+			"queryValues0": "featured",
+			"renderSelection": "custom",
+			"selectionStyle": "dynamic",
+			"simple--cpTypeListEntryRendererKey": "list-entry-default",
+			"virtual--cpTypeListEntryRendererKey": "list-entry-default"
+		}
+	},
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/dashboard",
+		"portletName": "com_liferay_journal_content_web_portlet_JournalContentPortlet",
+		"portletPreferences": {
+			"articleId": "SUMMER_SALES",
+			"assetEntryId": "0",
+			"groupId": "0"
+		}
+	},
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/report-product-defect",
+		"portletName": "com_liferay_dynamic_data_mapping_form_web_portlet_DDMFormPortlet",
+		"portletPreferences": {
+			"formInstanceId": "0",
+			"groupId": "0",
+			"portletSetupPortletDecoratorId": "decorate"
+		}
+	},
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/knowledge-base",
+		"portletName": "com_liferay_knowledge_base_web_portlet_DisplayPortlet",
+		"portletPreferences": {
+			"portletSetupPortletDecoratorId": "decorate"
+		}
+	},
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/sales-library",
+		"portletName": "com_liferay_document_library_web_portlet_DLPortlet",
+		"portletPreferences": {
+			"portletSetupPortletDecoratorId": "decorate"
+		}
+	},
+	{
+		"instanceId": "minium",
+		"layoutFriendlyURL": "/search",
+		"portletName": "com_liferay_portal_search_web_search_bar_portlet_SearchBarPortlet",
+		"portletPreferences": {
+			"searchScope": "everything"
+		}
+	}
+]

@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<Configuration strict="true">
+	<Loggers>
+		<Logger level="INFO" name="com.liferay.oauth2.provider.web.internal" />
+	</Loggers>
+</Configuration>

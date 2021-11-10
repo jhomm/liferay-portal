@@ -14,23 +14,23 @@
 
 package com.liferay.portal.model.impl;
 
+import com.liferay.exportimport.kernel.staging.LayoutStagingUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.ColorScheme;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.model.LayoutSetStagingHandler;
+import com.liferay.portal.kernel.model.Theme;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
+import com.liferay.portal.kernel.service.ThemeLocalServiceUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.ColorScheme;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.LayoutSet;
-import com.liferay.portal.model.LayoutSetStagingHandler;
-import com.liferay.portal.model.Theme;
-import com.liferay.portal.service.GroupLocalServiceUtil;
-import com.liferay.portal.service.LayoutSetLocalServiceUtil;
-import com.liferay.portal.service.ThemeLocalServiceUtil;
 import com.liferay.portal.util.PrefsPropsUtil;
-import com.liferay.portlet.exportimport.staging.LayoutStagingUtil;
 
 import java.io.IOException;
 
@@ -43,7 +43,7 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 	@Override
 	public ColorScheme getColorScheme() {
 		return ThemeLocalServiceUtil.getColorScheme(
-			getCompanyId(), getTheme().getThemeId(), getColorSchemeId(), false);
+			getCompanyId(), getTheme().getThemeId(), getColorSchemeId());
 	}
 
 	@Override
@@ -72,9 +72,13 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 
 			return _layoutSet;
 		}
-		catch (SystemException se) {
-		}
-		catch (PortalException pe) {
+		catch (PortalException | SystemException exception) {
+
+			// LPS-52675
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
 		}
 
 		return _layoutSet;
@@ -102,48 +106,46 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 
 	@Override
 	public String getSettings() {
-		if (_settingsProperties == null) {
+		if (_settingsUnicodeProperties == null) {
 			return super.getSettings();
 		}
-		else {
-			return _settingsProperties.toString();
-		}
+
+		return _settingsUnicodeProperties.toString();
 	}
 
 	@Override
 	public UnicodeProperties getSettingsProperties() {
-		if (_settingsProperties == null) {
-			_settingsProperties = new UnicodeProperties(true);
+		if (_settingsUnicodeProperties == null) {
+			_settingsUnicodeProperties = new UnicodeProperties(true);
 
 			try {
-				_settingsProperties.load(super.getSettings());
+				_settingsUnicodeProperties.load(super.getSettings());
 			}
-			catch (IOException ioe) {
-				_log.error(ioe, ioe);
+			catch (IOException ioException) {
+				_log.error(ioException, ioException);
 			}
 		}
 
-		return _settingsProperties;
+		return _settingsUnicodeProperties;
 	}
 
 	@Override
 	public String getSettingsProperty(String key) {
-		UnicodeProperties settingsProperties = getSettingsProperties();
+		UnicodeProperties settingsUnicodeProperties = getSettingsProperties();
 
-		return settingsProperties.getProperty(key);
+		return settingsUnicodeProperties.getProperty(key);
 	}
 
 	@Override
 	public Theme getTheme() {
-		return ThemeLocalServiceUtil.getTheme(
-			getCompanyId(), getThemeId(), false);
+		return ThemeLocalServiceUtil.getTheme(getCompanyId(), getThemeId());
 	}
 
 	@Override
 	public String getThemeSetting(String key, String device) {
-		UnicodeProperties settingsProperties = getSettingsProperties();
+		UnicodeProperties settingsUnicodeProperties = getSettingsProperties();
 
-		String value = settingsProperties.getProperty(
+		String value = settingsUnicodeProperties.getProperty(
 			ThemeSettingImpl.namespaceProperty(device, key));
 
 		if (value != null) {
@@ -159,7 +161,10 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 
 			controlPanel = group.isControlPanel();
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
 		}
 
 		if (controlPanel) {
@@ -167,32 +172,13 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 				getCompanyId(),
 				PropsKeys.CONTROL_PANEL_LAYOUT_REGULAR_THEME_ID);
 
-			theme = ThemeLocalServiceUtil.getTheme(
-				getCompanyId(), themeId, !device.equals("regular"));
-		}
-		else if (device.equals("regular")) {
-			theme = getTheme();
+			theme = ThemeLocalServiceUtil.getTheme(getCompanyId(), themeId);
 		}
 		else {
-			theme = getWapTheme();
+			theme = getTheme();
 		}
 
-		value = theme.getSetting(key);
-
-		return value;
-	}
-
-	@Override
-	public ColorScheme getWapColorScheme() {
-		return ThemeLocalServiceUtil.getColorScheme(
-			getCompanyId(), getWapTheme().getThemeId(), getWapColorSchemeId(),
-			true);
-	}
-
-	@Override
-	public Theme getWapTheme() {
-		return ThemeLocalServiceUtil.getTheme(
-			getCompanyId(), getWapThemeId(), true);
+		return theme.getSetting(key);
 	}
 
 	@Override
@@ -213,22 +199,24 @@ public class LayoutSetBranchImpl extends LayoutSetBranchBaseImpl {
 
 	@Override
 	public void setSettings(String settings) {
-		_settingsProperties = null;
+		_settingsUnicodeProperties = null;
 
 		super.setSettings(settings);
 	}
 
 	@Override
-	public void setSettingsProperties(UnicodeProperties settingsProperties) {
-		_settingsProperties = settingsProperties;
+	public void setSettingsProperties(
+		UnicodeProperties settingsUnicodeProperties) {
 
-		super.setSettings(_settingsProperties.toString());
+		_settingsUnicodeProperties = settingsUnicodeProperties;
+
+		super.setSettings(_settingsUnicodeProperties.toString());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		LayoutSetBranchImpl.class);
 
 	private LayoutSet _layoutSet;
-	private UnicodeProperties _settingsProperties;
+	private UnicodeProperties _settingsUnicodeProperties;
 
 }

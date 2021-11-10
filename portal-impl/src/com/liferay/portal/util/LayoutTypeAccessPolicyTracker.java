@@ -14,13 +14,15 @@
 
 package com.liferay.portal.util;
 
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.model.LayoutTypeAccessPolicy;
-import com.liferay.portal.model.impl.DefaultLayoutTypeAccessPolicyImpl;
-import com.liferay.registry.ServiceReference;
-import com.liferay.registry.collections.ServiceReferenceMapper;
-import com.liferay.registry.collections.ServiceTrackerCollections;
-import com.liferay.registry.collections.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapper;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutTypeAccessPolicy;
+import com.liferay.portal.kernel.model.impl.DefaultLayoutTypeAccessPolicyImpl;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+
+import org.osgi.framework.ServiceReference;
 
 /**
  * @author Adolfo Pérez
@@ -36,14 +38,6 @@ public class LayoutTypeAccessPolicyTracker {
 	public static LayoutTypeAccessPolicy getLayoutTypeAccessPolicy(
 		String type) {
 
-		return _instance._getLayoutTypeAccessPolicy(type);
-	}
-
-	private LayoutTypeAccessPolicyTracker() {
-		_serviceTrackerMap.open();
-	}
-
-	private LayoutTypeAccessPolicy _getLayoutTypeAccessPolicy(String type) {
 		LayoutTypeAccessPolicy layoutTypeAccessPolicy =
 			_serviceTrackerMap.getService(type);
 
@@ -54,12 +48,9 @@ public class LayoutTypeAccessPolicyTracker {
 		return layoutTypeAccessPolicy;
 	}
 
-	private static final LayoutTypeAccessPolicyTracker _instance =
-		new LayoutTypeAccessPolicyTracker();
-
-	private final ServiceTrackerMap<String, LayoutTypeAccessPolicy>
-		_serviceTrackerMap = ServiceTrackerCollections.singleValueMap(
-			LayoutTypeAccessPolicy.class,
+	private static final ServiceTrackerMap<String, LayoutTypeAccessPolicy>
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			SystemBundleUtil.getBundleContext(), LayoutTypeAccessPolicy.class,
 			"(&(layout.type=*)(objectClass=" +
 				LayoutTypeAccessPolicy.class.getName() + "))",
 			new ServiceReferenceMapper<String, LayoutTypeAccessPolicy>() {
@@ -67,7 +58,7 @@ public class LayoutTypeAccessPolicyTracker {
 				@Override
 				public void map(
 					ServiceReference<LayoutTypeAccessPolicy> serviceReference,
-					Emitter<String> emitter) {
+					ServiceReferenceMapper.Emitter<String> emitter) {
 
 					String layoutType = (String)serviceReference.getProperty(
 						"layout.type");

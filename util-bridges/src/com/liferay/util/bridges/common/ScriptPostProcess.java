@@ -14,11 +14,11 @@
 
 package com.liferay.util.bridges.common;
 
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.CharPool;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 
 import javax.portlet.PortletURL;
 
@@ -68,13 +68,24 @@ public class ScriptPostProcess {
 			doProcessPage(
 				startTag, endTag, ref, actionURL, actionParameterName);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 	}
 
-	public void setInitalPage(StringBundler initialPage) {
-		_sb = initialPage;
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+	 *             #setInitalPage(StringBundler)}
+	 */
+	@Deprecated
+	public void setInitalPage(com.liferay.portal.kernel.util.StringBundler sb) {
+		for (int i = 0; i < sb.index(); i++) {
+			_sb.append(sb.stringAt(0));
+		}
+	}
+
+	public void setInitalPage(StringBundler sb) {
+		_sb = sb;
 	}
 
 	protected void doProcessPage(
@@ -86,6 +97,7 @@ public class ScriptPostProcess {
 		String content = _sb.toString();
 
 		int startTagPos = content.indexOf(startTag);
+
 		int endTagPos = 0;
 
 		int startRefPos = 0;
@@ -136,7 +148,7 @@ public class ScriptPostProcess {
 
 					endRefPos = 0;
 
-					StringBundler unquotedURL = new StringBundler();
+					StringBundler unquotedURLSB = new StringBundler();
 
 					while (true) {
 						char c = content.charAt(endRefPos);
@@ -146,7 +158,7 @@ public class ScriptPostProcess {
 
 							endRefPos++;
 
-							unquotedURL.append(c);
+							unquotedURLSB.append(c);
 						}
 						else {
 							endRefPos--;
@@ -155,7 +167,7 @@ public class ScriptPostProcess {
 						}
 					}
 
-					url = unquotedURL.toString();
+					url = unquotedURLSB.toString();
 				}
 
 				if ((url.charAt(0) == CharPool.POUND) ||

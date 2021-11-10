@@ -17,11 +17,11 @@ package com.liferay.portal.events;
 import com.liferay.portal.kernel.events.SessionAction;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.notifications.ChannelException;
 import com.liferay.portal.kernel.notifications.ChannelHubManagerUtil;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.model.User;
-import com.liferay.portal.service.UserLocalServiceUtil;
 
 import javax.servlet.http.HttpSession;
 
@@ -33,19 +33,23 @@ import javax.servlet.http.HttpSession;
 public class ChannelSessionDestroyAction extends SessionAction {
 
 	@Override
-	public void run(HttpSession session) {
+	public void run(HttpSession httpSession) {
 		User user = null;
 
 		try {
-			user = (User)session.getAttribute(WebKeys.USER);
+			user = (User)httpSession.getAttribute(WebKeys.USER);
 		}
-		catch (IllegalStateException ise) {
+		catch (IllegalStateException illegalStateException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(illegalStateException, illegalStateException);
+			}
+
 			return;
 		}
 
 		try {
 			if (user == null) {
-				Long userId = (Long)session.getAttribute(WebKeys.USER_ID);
+				Long userId = (Long)httpSession.getAttribute(WebKeys.USER_ID);
 
 				if (userId != null) {
 					user = UserLocalServiceUtil.getUser(userId);
@@ -64,17 +68,17 @@ public class ChannelSessionDestroyAction extends SessionAction {
 				ChannelHubManagerUtil.destroyChannel(
 					user.getCompanyId(), user.getUserId());
 			}
-			catch (ChannelException ce) {
+			catch (ChannelException channelException) {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
 						"User channel " + user.getUserId() +
 							" is already unregistered",
-						ce);
+						channelException);
 				}
 			}
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 	}
 

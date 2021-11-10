@@ -37,30 +37,32 @@ public abstract class BaseNavBarTag extends com.liferay.taglib.util.IncludeTag {
 		return _cssClass;
 	}
 
+	public java.lang.Object getData() {
+		return _data;
+	}
+
 	public java.lang.String getId() {
 		return _id;
 	}
 
-	public java.lang.String getView() {
-		return _view;
+	public java.lang.String getMarkupView() {
+		return _markupView;
 	}
 
 	public void setCssClass(java.lang.String cssClass) {
 		_cssClass = cssClass;
+	}
 
-		setScopedAttribute("cssClass", cssClass);
+	public void setData(java.lang.Object data) {
+		_data = data;
 	}
 
 	public void setId(java.lang.String id) {
 		_id = id;
-
-		setScopedAttribute("id", id);
 	}
 
-	public void setView(java.lang.String view) {
-		_view = view;
-
-		setScopedAttribute("view", view);
+	public void setMarkupView(java.lang.String markupView) {
+		_markupView = markupView;
 	}
 
 	@Override
@@ -68,8 +70,9 @@ public abstract class BaseNavBarTag extends com.liferay.taglib.util.IncludeTag {
 		super.cleanUp();
 
 		_cssClass = null;
+		_data = null;
 		_id = null;
-		_view = null;
+		_markupView = null;
 	}
 
 	@Override
@@ -80,8 +83,9 @@ public abstract class BaseNavBarTag extends com.liferay.taglib.util.IncludeTag {
 	@Override
 	protected void setAttributes(HttpServletRequest request) {
 		setNamespacedAttribute(request, "cssClass", _cssClass);
+		setNamespacedAttribute(request, "data", _data);
 		setNamespacedAttribute(request, "id", _id);
-		setNamespacedAttribute(request, "view", _view);
+		setNamespacedAttribute(request, "markupView", _markupView);
 	}
 
 	protected static final String _ATTRIBUTE_NAMESPACE = "aui:nav-bar:";
@@ -90,7 +94,8 @@ public abstract class BaseNavBarTag extends com.liferay.taglib.util.IncludeTag {
 		"/html/taglib/aui/nav_bar/page.jsp";
 
 	private java.lang.String _cssClass = null;
+	private java.lang.Object _data = null;
 	private java.lang.String _id = null;
-	private java.lang.String _view = null;
+	private java.lang.String _markupView = null;
 
 }

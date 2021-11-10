@@ -14,14 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.Organization;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.Organization;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -34,26 +31,27 @@ import java.util.Date;
  * The cache model class for representing Organization in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see Organization
  * @generated
  */
-@ProviderType
-public class OrganizationCacheModel implements CacheModel<Organization>,
-	Externalizable, MVCCModel {
+public class OrganizationCacheModel
+	implements CacheModel<Organization>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof OrganizationCacheModel)) {
+		if (!(object instanceof OrganizationCacheModel)) {
 			return false;
 		}
 
-		OrganizationCacheModel organizationCacheModel = (OrganizationCacheModel)obj;
+		OrganizationCacheModel organizationCacheModel =
+			(OrganizationCacheModel)object;
 
 		if ((organizationId == organizationCacheModel.organizationId) &&
-				(mvccVersion == organizationCacheModel.mvccVersion)) {
+			(mvccVersion == organizationCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -79,12 +77,16 @@ public class OrganizationCacheModel implements CacheModel<Organization>,
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(39);
+		StringBundler sb = new StringBundler(41);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", organizationId=");
 		sb.append(organizationId);
 		sb.append(", companyId=");
@@ -117,8 +119,6 @@ public class OrganizationCacheModel implements CacheModel<Organization>,
 		sb.append(comments);
 		sb.append(", logoId=");
 		sb.append(logoId);
-		sb.append(", lastPublishDate=");
-		sb.append(lastPublishDate);
 		sb.append("}");
 
 		return sb.toString();
@@ -129,12 +129,20 @@ public class OrganizationCacheModel implements CacheModel<Organization>,
 		OrganizationImpl organizationImpl = new OrganizationImpl();
 
 		organizationImpl.setMvccVersion(mvccVersion);
+		organizationImpl.setCtCollectionId(ctCollectionId);
 
 		if (uuid == null) {
-			organizationImpl.setUuid(StringPool.BLANK);
+			organizationImpl.setUuid("");
 		}
 		else {
 			organizationImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			organizationImpl.setExternalReferenceCode("");
+		}
+		else {
+			organizationImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		organizationImpl.setOrganizationId(organizationId);
@@ -142,7 +150,7 @@ public class OrganizationCacheModel implements CacheModel<Organization>,
 		organizationImpl.setUserId(userId);
 
 		if (userName == null) {
-			organizationImpl.setUserName(StringPool.BLANK);
+			organizationImpl.setUserName("");
 		}
 		else {
 			organizationImpl.setUserName(userName);
@@ -165,21 +173,21 @@ public class OrganizationCacheModel implements CacheModel<Organization>,
 		organizationImpl.setParentOrganizationId(parentOrganizationId);
 
 		if (treePath == null) {
-			organizationImpl.setTreePath(StringPool.BLANK);
+			organizationImpl.setTreePath("");
 		}
 		else {
 			organizationImpl.setTreePath(treePath);
 		}
 
 		if (name == null) {
-			organizationImpl.setName(StringPool.BLANK);
+			organizationImpl.setName("");
 		}
 		else {
 			organizationImpl.setName(name);
 		}
 
 		if (type == null) {
-			organizationImpl.setType(StringPool.BLANK);
+			organizationImpl.setType("");
 		}
 		else {
 			organizationImpl.setType(type);
@@ -191,20 +199,13 @@ public class OrganizationCacheModel implements CacheModel<Organization>,
 		organizationImpl.setStatusId(statusId);
 
 		if (comments == null) {
-			organizationImpl.setComments(StringPool.BLANK);
+			organizationImpl.setComments("");
 		}
 		else {
 			organizationImpl.setComments(comments);
 		}
 
 		organizationImpl.setLogoId(logoId);
-
-		if (lastPublishDate == Long.MIN_VALUE) {
-			organizationImpl.setLastPublishDate(null);
-		}
-		else {
-			organizationImpl.setLastPublishDate(new Date(lastPublishDate));
-		}
 
 		organizationImpl.resetOriginalValues();
 
@@ -214,44 +215,65 @@ public class OrganizationCacheModel implements CacheModel<Organization>,
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
+
 		organizationId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
+
 		userId = objectInput.readLong();
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
+
 		parentOrganizationId = objectInput.readLong();
 		treePath = objectInput.readUTF();
 		name = objectInput.readUTF();
 		type = objectInput.readUTF();
+
 		recursable = objectInput.readBoolean();
+
 		regionId = objectInput.readLong();
+
 		countryId = objectInput.readLong();
+
 		statusId = objectInput.readLong();
 		comments = objectInput.readUTF();
+
 		logoId = objectInput.readLong();
-		lastPublishDate = objectInput.readLong();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
 
+		objectOutput.writeLong(ctCollectionId);
+
 		if (uuid == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(uuid);
 		}
 
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
+		}
+
 		objectOutput.writeLong(organizationId);
+
 		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(userId);
 
 		if (userName == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(userName);
@@ -259,47 +281,52 @@ public class OrganizationCacheModel implements CacheModel<Organization>,
 
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
+
 		objectOutput.writeLong(parentOrganizationId);
 
 		if (treePath == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(treePath);
 		}
 
 		if (name == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(name);
 		}
 
 		if (type == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(type);
 		}
 
 		objectOutput.writeBoolean(recursable);
+
 		objectOutput.writeLong(regionId);
+
 		objectOutput.writeLong(countryId);
+
 		objectOutput.writeLong(statusId);
 
 		if (comments == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(comments);
 		}
 
 		objectOutput.writeLong(logoId);
-		objectOutput.writeLong(lastPublishDate);
 	}
 
 	public long mvccVersion;
+	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long organizationId;
 	public long companyId;
 	public long userId;
@@ -316,5 +343,5 @@ public class OrganizationCacheModel implements CacheModel<Organization>,
 	public long statusId;
 	public String comments;
 	public long logoId;
-	public long lastPublishDate;
+
 }

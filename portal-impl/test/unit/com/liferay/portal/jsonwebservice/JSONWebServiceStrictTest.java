@@ -16,40 +16,34 @@ package com.liferay.portal.jsonwebservice;
 
 import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceAction;
 import com.liferay.portal.kernel.jsonwebservice.NoSuchJSONWebServiceException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.util.PropsUtil;
 
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import org.springframework.mock.web.MockHttpServletRequest;
 
 /**
  * @author Igor Spasic
  */
-@PrepareForTest(PropsUtil.class)
-@RunWith(PowerMockRunner.class)
 public class JSONWebServiceStrictTest extends BaseJSONWebServiceTestCase {
 
-	@Before
-	public void setUp() throws Exception {
-		spy(PropsUtil.class);
-
-		when(
-			PropsUtil.get(PropsKeys.JSONWS_WEB_SERVICE_STRICT_HTTP_METHOD)
-		).thenReturn(
-			"true"
-		);
-	}
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Test
 	public void testStrictHttpMethod() throws Exception {
+		PropsUtil.set(PropsKeys.JSONWS_WEB_SERVICE_STRICT_HTTP_METHOD, "true");
+
 		initPortalServices();
 
 		registerActionClass(CamelFooService.class);
@@ -62,7 +56,12 @@ public class JSONWebServiceStrictTest extends BaseJSONWebServiceTestCase {
 
 			Assert.fail();
 		}
-		catch (NoSuchJSONWebServiceException nsjsonwse) {
+		catch (NoSuchJSONWebServiceException noSuchJSONWebServiceException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					noSuchJSONWebServiceException,
+					noSuchJSONWebServiceException);
+			}
 		}
 
 		mockHttpServletRequest = createHttpRequest(
@@ -75,5 +74,8 @@ public class JSONWebServiceStrictTest extends BaseJSONWebServiceTestCase {
 
 		Assert.assertEquals("post 123", jsonWebServiceAction.invoke());
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		JSONWebServiceStrictTest.class);
 
 }

@@ -14,29 +14,28 @@
 
 package com.liferay.portal.service.http;
 
-import aQute.bnd.annotation.ProviderType;
-
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.service.UserGroupServiceUtil;
+import com.liferay.portal.kernel.service.UserGroupServiceUtil;
 
 import java.rmi.RemoteException;
 
 /**
  * Provides the SOAP utility for the
- * {@link UserGroupServiceUtil} service utility. The
- * static methods of this class calls the same methods of the service utility.
- * However, the signatures are different because it is difficult for SOAP to
- * support certain types.
+ * <code>UserGroupServiceUtil</code> service
+ * utility. The static methods of this class call the same methods of the
+ * service utility. However, the signatures are different because it is
+ * difficult for SOAP to support certain types.
  *
  * <p>
  * ServiceBuilder follows certain rules in translating the methods. For example,
- * if the method in the service utility returns a {@link java.util.List}, that
- * is translated to an array of {@link com.liferay.portal.model.UserGroupSoap}.
- * If the method in the service utility returns a
- * {@link com.liferay.portal.model.UserGroup}, that is translated to a
- * {@link com.liferay.portal.model.UserGroupSoap}. Methods that SOAP cannot
- * safely wire are skipped.
+ * if the method in the service utility returns a <code>java.util.List</code>,
+ * that is translated to an array of
+ * <code>com.liferay.portal.kernel.model.UserGroupSoap</code>. If the method in the
+ * service utility returns a
+ * <code>com.liferay.portal.kernel.model.UserGroup</code>, that is translated to a
+ * <code>com.liferay.portal.kernel.model.UserGroupSoap</code>. Methods that SOAP
+ * cannot safely wire are skipped.
  * </p>
  *
  * <p>
@@ -58,342 +57,342 @@ import java.rmi.RemoteException;
  *
  * @author Brian Wing Shun Chan
  * @see UserGroupServiceHttp
- * @see com.liferay.portal.model.UserGroupSoap
- * @see UserGroupServiceUtil
+ * @deprecated As of Athanasius (7.3.x), with no direct replacement
  * @generated
  */
-@ProviderType
+@Deprecated
 public class UserGroupServiceSoap {
+
 	/**
-	* Adds the user groups to the group.
-	*
-	* @param groupId the primary key of the group
-	* @param userGroupIds the primary keys of the user groups
-	* @throws PortalException if the user did not have permission to assign
-	group members
-	*/
+	 * Adds the user groups to the group.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param userGroupIds the primary keys of the user groups
+	 */
 	public static void addGroupUserGroups(long groupId, long[] userGroupIds)
 		throws RemoteException {
+
 		try {
 			UserGroupServiceUtil.addGroupUserGroups(groupId, userGroupIds);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	/**
-	* Adds the user groups to the team
-	*
-	* @param teamId the primary key of the team
-	* @param userGroupIds the primary keys of the user groups
-	* @throws PortalException if the user did not have permission to assign
-	team members
-	*/
+	 * Adds the user groups to the team
+	 *
+	 * @param teamId the primary key of the team
+	 * @param userGroupIds the primary keys of the user groups
+	 */
 	public static void addTeamUserGroups(long teamId, long[] userGroupIds)
 		throws RemoteException {
+
 		try {
 			UserGroupServiceUtil.addTeamUserGroups(teamId, userGroupIds);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	/**
-	* Adds a user group.
-	*
-	* <p>
-	* This method handles the creation and bookkeeping of the user group,
-	* including its resources, metadata, and internal data structures.
-	* </p>
-	*
-	* @param name the user group's name
-	* @param description the user group's description
-	* @return the user group
-	* @throws PortalException if the user group's information was invalid
-	or if the user did not have permission to add the user group
-	* @deprecated As of 6.2.0, replaced by {@link #addUserGroup(String, String,
-	ServiceContext)}
-	*/
-	@Deprecated
-	public static com.liferay.portal.model.UserGroupSoap addUserGroup(
-		java.lang.String name, java.lang.String description)
+	 * Adds a user group.
+	 *
+	 * <p>
+	 * This method handles the creation and bookkeeping of the user group,
+	 * including its resources, metadata, and internal data structures.
+	 * </p>
+	 *
+	 * @param name the user group's name
+	 * @param description the user group's description
+	 * @param serviceContext the service context to be applied (optionally
+	 <code>null</code>). Can set expando bridge attributes for the
+	 user group.
+	 * @return the user group
+	 */
+	public static com.liferay.portal.kernel.model.UserGroupSoap addUserGroup(
+			String name, String description,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws RemoteException {
+
 		try {
-			com.liferay.portal.model.UserGroup returnValue = UserGroupServiceUtil.addUserGroup(name,
-					description);
+			com.liferay.portal.kernel.model.UserGroup returnValue =
+				UserGroupServiceUtil.addUserGroup(
+					name, description, serviceContext);
 
-			return com.liferay.portal.model.UserGroupSoap.toSoapModel(returnValue);
+			return com.liferay.portal.kernel.model.UserGroupSoap.toSoapModel(
+				returnValue);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	/**
-	* Adds a user group.
-	*
-	* <p>
-	* This method handles the creation and bookkeeping of the user group,
-	* including its resources, metadata, and internal data structures.
-	* </p>
-	*
-	* @param name the user group's name
-	* @param description the user group's description
-	* @param serviceContext the service context to be applied (optionally
-	<code>null</code>). Can set expando bridge attributes for the
-	user group.
-	* @return the user group
-	* @throws PortalException if the user group's information was invalid or if
-	the user did not have permission to add the user group
-	*/
-	public static com.liferay.portal.model.UserGroupSoap addUserGroup(
-		java.lang.String name, java.lang.String description,
-		com.liferay.portal.service.ServiceContext serviceContext)
-		throws RemoteException {
-		try {
-			com.liferay.portal.model.UserGroup returnValue = UserGroupServiceUtil.addUserGroup(name,
-					description, serviceContext);
-
-			return com.liferay.portal.model.UserGroupSoap.toSoapModel(returnValue);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-
-			throw new RemoteException(e.getMessage());
-		}
-	}
-
-	/**
-	* Deletes the user group.
-	*
-	* @param userGroupId the primary key of the user group
-	* @throws PortalException if a user group with the primary key could not be
-	found, if the user did not have permission to delete the user
-	group, or if the user group had a workflow in approved status
-	*/
+	 * Deletes the user group.
+	 *
+	 * @param userGroupId the primary key of the user group
+	 */
 	public static void deleteUserGroup(long userGroupId)
 		throws RemoteException {
+
 		try {
 			UserGroupServiceUtil.deleteUserGroup(userGroupId);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	/**
-	* Fetches the user group with the primary key.
-	*
-	* @param userGroupId the primary key of the user group
-	* @return the user group with the primary key
-	* @throws PortalException if the user did not have permission to view the
-	user group
-	*/
-	public static com.liferay.portal.model.UserGroupSoap fetchUserGroup(
-		long userGroupId) throws RemoteException {
+	 * Fetches the user group with the primary key.
+	 *
+	 * @param userGroupId the primary key of the user group
+	 * @return the user group with the primary key
+	 */
+	public static com.liferay.portal.kernel.model.UserGroupSoap fetchUserGroup(
+			long userGroupId)
+		throws RemoteException {
+
 		try {
-			com.liferay.portal.model.UserGroup returnValue = UserGroupServiceUtil.fetchUserGroup(userGroupId);
+			com.liferay.portal.kernel.model.UserGroup returnValue =
+				UserGroupServiceUtil.fetchUserGroup(userGroupId);
 
-			return com.liferay.portal.model.UserGroupSoap.toSoapModel(returnValue);
+			return com.liferay.portal.kernel.model.UserGroupSoap.toSoapModel(
+				returnValue);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
+		}
+	}
+
+	public static com.liferay.portal.kernel.model.UserGroupSoap[]
+			getGtUserGroups(
+				long gtUserGroupId, long companyId, long parentUserGroupId,
+				int size)
+		throws RemoteException {
+
+		try {
+			java.util.List<com.liferay.portal.kernel.model.UserGroup>
+				returnValue = UserGroupServiceUtil.getGtUserGroups(
+					gtUserGroupId, companyId, parentUserGroupId, size);
+
+			return com.liferay.portal.kernel.model.UserGroupSoap.toSoapModels(
+				returnValue);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	/**
-	* Returns the user group with the primary key.
-	*
-	* @param userGroupId the primary key of the user group
-	* @return the user group with the primary key
-	* @throws PortalException if a user group with the primary key could not be
-	found or if the user did not have permission to view the user
-	group
-	*/
-	public static com.liferay.portal.model.UserGroupSoap getUserGroup(
-		long userGroupId) throws RemoteException {
+	 * Returns the user group with the primary key.
+	 *
+	 * @param userGroupId the primary key of the user group
+	 * @return the user group with the primary key
+	 */
+	public static com.liferay.portal.kernel.model.UserGroupSoap getUserGroup(
+			long userGroupId)
+		throws RemoteException {
+
 		try {
-			com.liferay.portal.model.UserGroup returnValue = UserGroupServiceUtil.getUserGroup(userGroupId);
+			com.liferay.portal.kernel.model.UserGroup returnValue =
+				UserGroupServiceUtil.getUserGroup(userGroupId);
 
-			return com.liferay.portal.model.UserGroupSoap.toSoapModel(returnValue);
+			return com.liferay.portal.kernel.model.UserGroupSoap.toSoapModel(
+				returnValue);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	/**
-	* Returns the user group with the name.
-	*
-	* @param name the user group's name
-	* @return the user group with the name
-	* @throws PortalException if a user group with the name could not be found
-	or if the user did not have permission to view the user group
-	*/
-	public static com.liferay.portal.model.UserGroupSoap getUserGroup(
-		java.lang.String name) throws RemoteException {
+	 * Returns the user group with the name.
+	 *
+	 * @param name the user group's name
+	 * @return the user group with the name
+	 */
+	public static com.liferay.portal.kernel.model.UserGroupSoap getUserGroup(
+			String name)
+		throws RemoteException {
+
 		try {
-			com.liferay.portal.model.UserGroup returnValue = UserGroupServiceUtil.getUserGroup(name);
+			com.liferay.portal.kernel.model.UserGroup returnValue =
+				UserGroupServiceUtil.getUserGroup(name);
 
-			return com.liferay.portal.model.UserGroupSoap.toSoapModel(returnValue);
+			return com.liferay.portal.kernel.model.UserGroupSoap.toSoapModel(
+				returnValue);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	public static com.liferay.portal.model.UserGroupSoap[] getUserGroups(
-		long companyId) throws RemoteException {
+	public static com.liferay.portal.kernel.model.UserGroupSoap[] getUserGroups(
+			long companyId)
+		throws RemoteException {
+
 		try {
-			java.util.List<com.liferay.portal.model.UserGroup> returnValue = UserGroupServiceUtil.getUserGroups(companyId);
+			java.util.List<com.liferay.portal.kernel.model.UserGroup>
+				returnValue = UserGroupServiceUtil.getUserGroups(companyId);
 
-			return com.liferay.portal.model.UserGroupSoap.toSoapModels(returnValue);
+			return com.liferay.portal.kernel.model.UserGroupSoap.toSoapModels(
+				returnValue);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
+		}
+	}
+
+	public static com.liferay.portal.kernel.model.UserGroupSoap[] getUserGroups(
+			long companyId, String name, int start, int end)
+		throws RemoteException {
+
+		try {
+			java.util.List<com.liferay.portal.kernel.model.UserGroup>
+				returnValue = UserGroupServiceUtil.getUserGroups(
+					companyId, name, start, end);
+
+			return com.liferay.portal.kernel.model.UserGroupSoap.toSoapModels(
+				returnValue);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
+		}
+	}
+
+	public static int getUserGroupsCount(long companyId, String name)
+		throws RemoteException {
+
+		try {
+			int returnValue = UserGroupServiceUtil.getUserGroupsCount(
+				companyId, name);
+
+			return returnValue;
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	/**
-	* Returns all the user groups to which the user belongs.
-	*
-	* @param userId the primary key of the user
-	* @return the user groups to which the user belongs
-	* @throws PortalException if the current user did not have permission to
-	view the user or any one of the user group members
-	*/
-	public static com.liferay.portal.model.UserGroupSoap[] getUserUserGroups(
-		long userId) throws RemoteException {
+	 * Returns all the user groups to which the user belongs.
+	 *
+	 * @param userId the primary key of the user
+	 * @return the user groups to which the user belongs
+	 */
+	public static com.liferay.portal.kernel.model.UserGroupSoap[]
+			getUserUserGroups(long userId)
+		throws RemoteException {
+
 		try {
-			java.util.List<com.liferay.portal.model.UserGroup> returnValue = UserGroupServiceUtil.getUserUserGroups(userId);
+			java.util.List<com.liferay.portal.kernel.model.UserGroup>
+				returnValue = UserGroupServiceUtil.getUserUserGroups(userId);
 
-			return com.liferay.portal.model.UserGroupSoap.toSoapModels(returnValue);
+			return com.liferay.portal.kernel.model.UserGroupSoap.toSoapModels(
+				returnValue);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	/**
-	* Removes the user groups from the group.
-	*
-	* @param groupId the primary key of the group
-	* @param userGroupIds the primary keys of the user groups
-	* @throws PortalException if the user did not have permission to assign
-	group members
-	*/
+	 * Removes the user groups from the group.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param userGroupIds the primary keys of the user groups
+	 */
 	public static void unsetGroupUserGroups(long groupId, long[] userGroupIds)
 		throws RemoteException {
+
 		try {
 			UserGroupServiceUtil.unsetGroupUserGroups(groupId, userGroupIds);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	/**
-	* Removes the user groups from the team.
-	*
-	* @param teamId the primary key of the team
-	* @param userGroupIds the primary keys of the user groups
-	* @throws PortalException if the user did not have permission to assign
-	team members
-	*/
+	 * Removes the user groups from the team.
+	 *
+	 * @param teamId the primary key of the team
+	 * @param userGroupIds the primary keys of the user groups
+	 */
 	public static void unsetTeamUserGroups(long teamId, long[] userGroupIds)
 		throws RemoteException {
+
 		try {
 			UserGroupServiceUtil.unsetTeamUserGroups(teamId, userGroupIds);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	/**
-	* Updates the user group.
-	*
-	* @param userGroupId the primary key of the user group
-	* @param name the user group's name
-	* @param description the the user group's description
-	* @return the user group
-	* @throws PortalException if a user group with the primary key was not
-	found, if the new information was invalid, or if the user did
-	not have permission to update the user group information
-	* @deprecated As of 6.2.0, replaced by {@link #updateUserGroup(long,
-	String, String, ServiceContext)}
-	*/
-	@Deprecated
-	public static com.liferay.portal.model.UserGroupSoap updateUserGroup(
-		long userGroupId, java.lang.String name, java.lang.String description)
+	 * Updates the user group.
+	 *
+	 * @param userGroupId the primary key of the user group
+	 * @param name the user group's name
+	 * @param description the the user group's description
+	 * @param serviceContext the service context to be applied (optionally
+	 <code>null</code>). Can set expando bridge attributes for the
+	 user group.
+	 * @return the user group
+	 */
+	public static com.liferay.portal.kernel.model.UserGroupSoap updateUserGroup(
+			long userGroupId, String name, String description,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws RemoteException {
+
 		try {
-			com.liferay.portal.model.UserGroup returnValue = UserGroupServiceUtil.updateUserGroup(userGroupId,
-					name, description);
+			com.liferay.portal.kernel.model.UserGroup returnValue =
+				UserGroupServiceUtil.updateUserGroup(
+					userGroupId, name, description, serviceContext);
 
-			return com.liferay.portal.model.UserGroupSoap.toSoapModel(returnValue);
+			return com.liferay.portal.kernel.model.UserGroupSoap.toSoapModel(
+				returnValue);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
-		}
-	}
-
-	/**
-	* Updates the user group.
-	*
-	* @param userGroupId the primary key of the user group
-	* @param name the user group's name
-	* @param description the the user group's description
-	* @param serviceContext the service context to be applied (optionally
-	<code>null</code>). Can set expando bridge attributes for the
-	user group.
-	* @return the user group
-	* @throws PortalException if a user group with the primary key was not
-	found, if the new information was invalid, or if the user did not
-	have permission to update the user group information
-	*/
-	public static com.liferay.portal.model.UserGroupSoap updateUserGroup(
-		long userGroupId, java.lang.String name, java.lang.String description,
-		com.liferay.portal.service.ServiceContext serviceContext)
-		throws RemoteException {
-		try {
-			com.liferay.portal.model.UserGroup returnValue = UserGroupServiceUtil.updateUserGroup(userGroupId,
-					name, description, serviceContext);
-
-			return com.liferay.portal.model.UserGroupSoap.toSoapModel(returnValue);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	private static Log _log = LogFactoryUtil.getLog(UserGroupServiceSoap.class);
+
 }

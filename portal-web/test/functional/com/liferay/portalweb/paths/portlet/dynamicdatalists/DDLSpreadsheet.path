@@ -2,25 +2,17 @@
 <head>
 <title>DDLSpreadsheet</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">DDLSpreadsheet</td></tr>
 </thead>
+
 <tbody>
 <tr>
 	<td>SPREADSHEET_CONTAINER</td>
-	<td>//div[@class='lfr-spreadsheet-container']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CELL_EDITOR_FIELD</td>
-	<td>//input[@name='${key_fieldName}']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CELL_EDITOR_SELECT</td>
-	<td>//select[@name='${key_fieldName}']</td>
+	<td>//div[contains(@class,'lfr-spreadsheet-container')]</td>
 	<td></td>
 </tr>
 <tr>

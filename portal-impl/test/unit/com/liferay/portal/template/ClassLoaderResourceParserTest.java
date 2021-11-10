@@ -14,17 +14,25 @@
 
 package com.liferay.portal.template;
 
+import com.liferay.petra.lang.ClassLoaderPool;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.template.TemplateConstants;
-import com.liferay.portal.kernel.test.CaptureHandler;
-import com.liferay.portal.kernel.test.JDKLoggerTestUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -33,18 +41,16 @@ import org.junit.Test;
 public class ClassLoaderResourceParserTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
-	@SuppressWarnings("deprecation")
 	@Test
-	public void testGetURL() {
+	public void testGetURL() throws MalformedURLException {
 		ClassLoaderResourceParser classLoaderResourceParser =
 			new ClassLoaderResourceParser();
 
-		Assert.assertNull(
-			classLoaderResourceParser.getURL(
-				TemplateConstants.JOURNAL_SEPARATOR));
 		Assert.assertNull(
 			classLoaderResourceParser.getURL(
 				TemplateConstants.SERVLET_SEPARATOR));
@@ -55,30 +61,49 @@ public class ClassLoaderResourceParserTest {
 			classLoaderResourceParser.getURL(
 				TemplateConstants.THEME_LOADER_SEPARATOR));
 
-		Class<?> clazz = getClass();
-
-		classLoaderResourceParser = new ClassLoaderResourceParser(
-			clazz.getClassLoader());
-
 		String templateId = "DummyFile";
 
 		Assert.assertNull(classLoaderResourceParser.getURL(templateId));
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					ClassLoaderResourceParser.class.getName(), Level.FINEST)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				ClassLoaderResourceParser.class.getName(), Level.FINEST)) {
 
 			Assert.assertNull(classLoaderResourceParser.getURL(templateId));
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			LogRecord logRecord = logRecords.get(0);
+			LogEntry logEntry = logEntries.get(0);
 
-			Assert.assertEquals(
-				"Loading " + templateId, logRecord.getMessage());
+			Assert.assertEquals("Loading " + templateId, logEntry.getMessage());
 		}
+
+		String contextName = "test-context";
+
+		URL dummyURL = new URL("file://");
+
+		ClassLoaderPool.register(
+			contextName,
+			new ClassLoader() {
+
+				@Override
+				public URL getResource(String name) {
+					if (name.equals(templateId)) {
+						return dummyURL;
+					}
+
+					return null;
+				}
+
+			});
+
+		Assert.assertSame(
+			dummyURL,
+			classLoaderResourceParser.getURL(
+				StringBundler.concat(
+					contextName, TemplateConstants.CLASS_LOADER_SEPARATOR,
+					templateId)));
 	}
 
 }

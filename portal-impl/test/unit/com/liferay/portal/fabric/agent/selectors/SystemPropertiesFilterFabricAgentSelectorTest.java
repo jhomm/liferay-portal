@@ -14,16 +14,18 @@
 
 package com.liferay.portal.fabric.agent.selectors;
 
+import com.liferay.petra.process.ProcessCallable;
 import com.liferay.portal.fabric.agent.FabricAgent;
 import com.liferay.portal.fabric.status.AdvancedOperatingSystemMXBean;
 import com.liferay.portal.fabric.status.FabricStatus;
-import com.liferay.portal.kernel.process.ProcessCallable;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
-import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +36,7 @@ import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -42,8 +45,10 @@ import org.junit.Test;
 public class SystemPropertiesFilterFabricAgentSelectorTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Test
 	public void testSelect() {
@@ -60,7 +65,7 @@ public class SystemPropertiesFilterFabricAgentSelectorTest {
 				Arrays.asList(fabricAgent1, fabricAgent2)),
 			null);
 
-		Assert.assertEquals(1, fabricAgents.size());
+		Assert.assertEquals(fabricAgents.toString(), 1, fabricAgents.size());
 
 		Iterator<FabricAgent> iterator = fabricAgents.iterator();
 
@@ -70,7 +75,7 @@ public class SystemPropertiesFilterFabricAgentSelectorTest {
 	protected FabricAgent createFabricAgent(
 		Map<String, String> systemProperties) {
 
-		return (FabricAgent)ProxyUtil.newProxyInstance(
+		return (FabricAgent)Proxy.newProxyInstance(
 			FabricAgent.class.getClassLoader(),
 			new Class<?>[] {FabricAgent.class},
 			new FabricAgentInvocationHandler(systemProperties));
@@ -89,14 +94,18 @@ public class SystemPropertiesFilterFabricAgentSelectorTest {
 		public Object invoke(Object proxy, Method method, Object[] args) {
 			String methodName = method.getName();
 
-			if (!methodName.equals("getFabricStatus")) {
-				throw new UnsupportedOperationException();
+			if (methodName.equals("getFabricStatus")) {
+				return Proxy.newProxyInstance(
+					FabricStatus.class.getClassLoader(),
+					new Class<?>[] {FabricStatus.class},
+					new FabricStatusInvocationHandler(_systemProperties));
 			}
 
-			return ProxyUtil.newProxyInstance(
-				FabricStatus.class.getClassLoader(),
-				new Class<?>[] {FabricStatus.class},
-				new FabricStatusInvocationHandler(_systemProperties));
+			if (methodName.equals("toString")) {
+				return String.valueOf(_systemProperties);
+			}
+
+			throw new UnsupportedOperationException();
 		}
 
 		private final Map<String, String> _systemProperties;
@@ -116,14 +125,18 @@ public class SystemPropertiesFilterFabricAgentSelectorTest {
 		public Object invoke(Object proxy, Method method, Object[] args) {
 			String methodName = method.getName();
 
-			if (!methodName.equals("getRuntimeMXBean")) {
-				throw new UnsupportedOperationException();
+			if (methodName.equals("getRuntimeMXBean")) {
+				return Proxy.newProxyInstance(
+					AdvancedOperatingSystemMXBean.class.getClassLoader(),
+					new Class<?>[] {RuntimeMXBean.class},
+					new RuntimeMXBeanInvocationHandler(_systemProperties));
 			}
 
-			return ProxyUtil.newProxyInstance(
-				AdvancedOperatingSystemMXBean.class.getClassLoader(),
-				new Class<?>[] {RuntimeMXBean.class},
-				new RuntimeMXBeanInvocationHandler(_systemProperties));
+			if (methodName.equals("toString")) {
+				return String.valueOf(_systemProperties);
+			}
+
+			throw new UnsupportedOperationException();
 		}
 
 		private final Map<String, String> _systemProperties;
@@ -143,11 +156,15 @@ public class SystemPropertiesFilterFabricAgentSelectorTest {
 		public Object invoke(Object proxy, Method method, Object[] args) {
 			String methodName = method.getName();
 
-			if (!methodName.equals("getSystemProperties")) {
-				throw new UnsupportedOperationException();
+			if (methodName.equals("getSystemProperties")) {
+				return _systemProperties;
 			}
 
-			return _systemProperties;
+			if (methodName.equals("toString")) {
+				return String.valueOf(_systemProperties);
+			}
+
+			throw new UnsupportedOperationException();
 		}
 
 		private final Map<String, String> _systemProperties;

@@ -15,7 +15,6 @@
 package com.liferay.taglib.ui;
 
 import com.liferay.portal.kernel.util.IntegerWrapper;
-import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.BaseBodyTagSupport;
@@ -32,32 +31,33 @@ public class PanelContainerTag extends BaseBodyTagSupport implements BodyTag {
 
 	@Override
 	public int doAfterBody() {
-		HttpServletRequest request =
+		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)pageContext.getRequest();
 
-		IntegerWrapper panelCount = (IntegerWrapper)request.getAttribute(
-			"liferay-ui:panel-container:panelCount" + _id);
+		IntegerWrapper panelCount =
+			(IntegerWrapper)httpServletRequest.getAttribute(
+				"liferay-ui:panel-container:panelCount" + _id);
 
 		if ((panelCount != null) && (panelCount.getValue() == 1)) {
 			bodyContent.clearBody();
 
 			return EVAL_BODY_AGAIN;
 		}
-		else {
-			return SKIP_BODY;
-		}
+
+		return SKIP_BODY;
 	}
 
 	@Override
 	public int doEndTag() throws JspException {
 		try {
-			HttpServletRequest request =
+			HttpServletRequest httpServletRequest =
 				(HttpServletRequest)pageContext.getRequest();
 
-			IntegerWrapper panelCount = (IntegerWrapper)request.getAttribute(
-				"liferay-ui:panel-container:panelCount" + _id);
+			IntegerWrapper panelCount =
+				(IntegerWrapper)httpServletRequest.getAttribute(
+					"liferay-ui:panel-container:panelCount" + _id);
 
-			request.removeAttribute(
+			httpServletRequest.removeAttribute(
 				"liferay-ui:panel-container:panelCount" + _id);
 
 			if ((panelCount != null) && (panelCount.getValue() >= 1)) {
@@ -70,50 +70,58 @@ public class PanelContainerTag extends BaseBodyTagSupport implements BodyTag {
 				PortalIncludeUtil.include(pageContext, getEndPage());
 			}
 
-			request.removeAttribute("liferay-ui:panel-container:id");
-			request.removeAttribute("liferay-ui:panel-container:accordion");
-			request.removeAttribute("liferay-ui:panel-container:persistState");
-			request.removeAttribute("liferay-ui:panel-container:extended");
-			request.removeAttribute("liferay-ui:panel-container:cssClass");
+			httpServletRequest.removeAttribute("liferay-ui:panel-container:id");
+			httpServletRequest.removeAttribute(
+				"liferay-ui:panel-container:accordion");
+			httpServletRequest.removeAttribute(
+				"liferay-ui:panel-container:persistState");
+			httpServletRequest.removeAttribute(
+				"liferay-ui:panel-container:extended");
+			httpServletRequest.removeAttribute(
+				"liferay-ui:panel-container:cssClass");
 
 			return EVAL_PAGE;
 		}
-		catch (Exception e) {
-			throw new JspException(e);
+		catch (Exception exception) {
+			throw new JspException(exception);
 		}
 		finally {
-			if (!ServerDetector.isResin()) {
-				cleanUp();
-			}
+			cleanUp();
 		}
 	}
 
 	@Override
 	public int doStartTag() {
-		HttpServletRequest request =
+		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)pageContext.getRequest();
 
 		if (Validator.isNull(_id)) {
 			_id = StringUtil.randomId();
 		}
 
-		request.setAttribute("liferay-ui:panel-container:id", _id);
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			"liferay-ui:panel-container:accordion", String.valueOf(_accordion));
-		request.setAttribute(
-			"liferay-ui:panel-container:persistState",
-			String.valueOf(_persistState));
-		request.setAttribute("liferay-ui:panel-container:extended", _extended);
-		request.setAttribute("liferay-ui:panel-container:cssClass", _cssClass);
-		request.setAttribute(
+		httpServletRequest.setAttribute(
+			"liferay-ui:panel-container:cssClass", _cssClass);
+		httpServletRequest.setAttribute(
+			"liferay-ui:panel-container:extended", _extended);
+		httpServletRequest.setAttribute("liferay-ui:panel-container:id", _id);
+		httpServletRequest.setAttribute(
 			"liferay-ui:panel-container:panelCount" + _id,
 			new IntegerWrapper());
+		httpServletRequest.setAttribute(
+			"liferay-ui:panel-container:persistState",
+			String.valueOf(_persistState));
 
 		return EVAL_BODY_BUFFERED;
 	}
 
 	public String getId() {
 		return _id;
+	}
+
+	public boolean isAccordion() {
+		return _accordion;
 	}
 
 	public void setAccordion(boolean accordion) {
@@ -136,6 +144,10 @@ public class PanelContainerTag extends BaseBodyTagSupport implements BodyTag {
 		_id = id;
 	}
 
+	public void setMarkupView(String markupView) {
+		_markupView = markupView;
+	}
+
 	public void setPersistState(boolean persistState) {
 		_persistState = persistState;
 	}
@@ -148,41 +160,45 @@ public class PanelContainerTag extends BaseBodyTagSupport implements BodyTag {
 		_accordion = false;
 		_cssClass = null;
 		_endPage = null;
-		_extended = false;
+		_extended = null;
 		_id = null;
+		_markupView = null;
 		_persistState = false;
 		_startPage = null;
 	}
 
 	protected String getEndPage() {
 		if (Validator.isNull(_endPage)) {
-			return _END_PAGE;
+			if (Validator.isNotNull(_markupView)) {
+				return "/html/taglib/ui/panel_container/" + _markupView +
+					"/end.jsp";
+			}
+
+			return "/html/taglib/ui/panel_container/end.jsp";
 		}
-		else {
-			return _endPage;
-		}
+
+		return _endPage;
 	}
 
 	protected String getStartPage() {
 		if (Validator.isNull(_startPage)) {
-			return _START_PAGE;
+			if (Validator.isNotNull(_markupView)) {
+				return "/html/taglib/ui/panel_container/" + _markupView +
+					"/start.jsp";
+			}
+
+			return "/html/taglib/ui/panel_container/start.jsp";
 		}
-		else {
-			return _startPage;
-		}
+
+		return _startPage;
 	}
-
-	private static final String _END_PAGE =
-		"/html/taglib/ui/panel_container/end.jsp";
-
-	private static final String _START_PAGE =
-		"/html/taglib/ui/panel_container/start.jsp";
 
 	private boolean _accordion;
 	private String _cssClass;
 	private String _endPage;
 	private Boolean _extended;
 	private String _id;
+	private String _markupView;
 	private boolean _persistState;
 	private String _startPage;
 

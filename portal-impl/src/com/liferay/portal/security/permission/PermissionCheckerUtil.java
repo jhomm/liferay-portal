@@ -14,11 +14,20 @@
 
 package com.liferay.portal.security.permission;
 
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.model.User;
-import com.liferay.portal.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.contributor.RoleContributor;
 import com.liferay.portal.util.PropsValues;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Brian Wing Shun Chan
@@ -33,11 +42,7 @@ public class PermissionCheckerUtil {
 			return;
 		}
 
-		long userId = user.getUserId();
-
-		String name = String.valueOf(userId);
-
-		PrincipalThreadLocal.setName(name);
+		PrincipalThreadLocal.setName(String.valueOf(user.getUserId()));
 
 		try {
 			PermissionChecker permissionChecker =
@@ -49,16 +54,25 @@ public class PermissionCheckerUtil {
 				permissionChecker = (PermissionChecker)clazz.newInstance();
 			}
 
-			permissionChecker.init(user);
+			List<RoleContributor> roleContributors = new ArrayList<>();
+
+			_roleContributors.forEach(roleContributors::add);
+
+			permissionChecker.init(
+				user, roleContributors.toArray(new RoleContributor[0]));
 
 			PermissionThreadLocal.setPermissionChecker(permissionChecker);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		PermissionCheckerUtil.class);
+
+	private static final ServiceTrackerList<RoleContributor> _roleContributors =
+		ServiceTrackerListFactory.open(
+			SystemBundleUtil.getBundleContext(), RoleContributor.class);
 
 }

@@ -14,14 +14,15 @@
 
 package com.liferay.portal.dao.orm.hibernate;
 
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.Validator;
+import com.liferay.petra.string.StringPool;
 
 import java.io.Serializable;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
+import java.util.Objects;
 
 import org.hibernate.engine.SessionImplementor;
 import org.hibernate.type.StandardBasicTypes;
@@ -41,8 +42,8 @@ public class StringType implements CompositeUserType, Serializable {
 	}
 
 	@Override
-	public Object deepCopy(Object obj) {
-		return obj;
+	public Object deepCopy(Object object) {
+		return object;
 	}
 
 	@Override
@@ -52,7 +53,7 @@ public class StringType implements CompositeUserType, Serializable {
 
 	@Override
 	public boolean equals(Object x, Object y) {
-		if (Validator.equals(x, y)) {
+		if (Objects.equals(x, y)) {
 			return true;
 		}
 		else if (((x == null) || x.equals(StringPool.BLANK)) &&
@@ -60,9 +61,8 @@ public class StringType implements CompositeUserType, Serializable {
 
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	@Override
@@ -92,20 +92,30 @@ public class StringType implements CompositeUserType, Serializable {
 
 	@Override
 	public Object nullSafeGet(
-			ResultSet rs, String[] names, SessionImplementor session,
+			ResultSet resultSet, String[] names, SessionImplementor session,
 			Object owner)
 		throws SQLException {
 
-		return StandardBasicTypes.STRING.nullSafeGet(rs, names, session, owner);
+		return StandardBasicTypes.STRING.nullSafeGet(
+			resultSet, names, session, owner);
 	}
 
 	@Override
 	public void nullSafeSet(
-			PreparedStatement ps, Object target, int index,
+			PreparedStatement preparedStatement, Object target, int index,
 			SessionImplementor session)
 		throws SQLException {
 
-		StandardBasicTypes.STRING.nullSafeSet(ps, target, index, session);
+		if (target instanceof String) {
+			String targetString = (String)target;
+
+			if (targetString.isEmpty()) {
+				target = null;
+			}
+		}
+
+		StandardBasicTypes.STRING.nullSafeSet(
+			preparedStatement, target, index, session);
 	}
 
 	@Override

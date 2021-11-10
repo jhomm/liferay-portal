@@ -14,14 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.ClassName;
-import com.liferay.portal.model.MVCCModel;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.ClassName;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -32,26 +29,26 @@ import java.io.ObjectOutput;
  * The cache model class for representing ClassName in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see ClassName
  * @generated
  */
-@ProviderType
-public class ClassNameCacheModel implements CacheModel<ClassName>,
-	Externalizable, MVCCModel {
+public class ClassNameCacheModel
+	implements CacheModel<ClassName>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof ClassNameCacheModel)) {
+		if (!(object instanceof ClassNameCacheModel)) {
 			return false;
 		}
 
-		ClassNameCacheModel classNameCacheModel = (ClassNameCacheModel)obj;
+		ClassNameCacheModel classNameCacheModel = (ClassNameCacheModel)object;
 
 		if ((classNameId == classNameCacheModel.classNameId) &&
-				(mvccVersion == classNameCacheModel.mvccVersion)) {
+			(mvccVersion == classNameCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -98,7 +95,7 @@ public class ClassNameCacheModel implements CacheModel<ClassName>,
 		classNameImpl.setClassNameId(classNameId);
 
 		if (value == null) {
-			classNameImpl.setValue(StringPool.BLANK);
+			classNameImpl.setValue("");
 		}
 		else {
 			classNameImpl.setValue(value);
@@ -112,18 +109,19 @@ public class ClassNameCacheModel implements CacheModel<ClassName>,
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
 		classNameId = objectInput.readLong();
 		value = objectInput.readUTF();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
 		objectOutput.writeLong(classNameId);
 
 		if (value == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(value);
@@ -133,4 +131,5 @@ public class ClassNameCacheModel implements CacheModel<ClassName>,
 	public long mvccVersion;
 	public long classNameId;
 	public String value;
+
 }

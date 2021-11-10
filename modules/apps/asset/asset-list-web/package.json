@@ -1,0 +1,15 @@
+{
+	"dependencies": {
+		"@clayui/button": "3.39.0",
+		"@clayui/icon": "3.39.0",
+		"asset-taglib": "*",
+		"frontend-js-web": "*"
+	},
+	"name": "asset-list-web",
+	"scripts": {
+		"build": "liferay-npm-scripts build",
+		"checkFormat": "liferay-npm-scripts check",
+		"format": "liferay-npm-scripts fix"
+	},
+	"version": "3.0.20"
+}

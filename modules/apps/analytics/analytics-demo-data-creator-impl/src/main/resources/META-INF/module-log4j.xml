@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<Configuration strict="true">
+	<Loggers>
+		<Logger level="ALL" name="com.liferay.analytics.demo.data.creator" />
+	</Loggers>
+</Configuration>

@@ -1,0 +1,4 @@
+dependencies {
+	testIntegrationCompile project(":apps:push-notifications:push-notifications-api")
+	testIntegrationCompile project(":test:arquillian-extension-junit-bridge")
+}

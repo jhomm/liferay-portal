@@ -17,11 +17,11 @@ package com.liferay.portal.model.impl;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.LayoutSet;
-import com.liferay.portal.service.GroupLocalServiceUtil;
-import com.liferay.portal.service.LayoutSetLocalServiceUtil;
 
 import java.io.IOException;
 
@@ -52,25 +52,25 @@ public class LayoutSetPrototypeImpl extends LayoutSetPrototypeBaseImpl {
 
 	@Override
 	public UnicodeProperties getSettingsProperties() {
-		if (_settingsProperties == null) {
-			_settingsProperties = new UnicodeProperties(true);
+		if (_settingsUnicodeProperties == null) {
+			_settingsUnicodeProperties = new UnicodeProperties(true);
 
 			try {
-				_settingsProperties.load(super.getSettings());
+				_settingsUnicodeProperties.load(super.getSettings());
 			}
-			catch (IOException ioe) {
-				_log.error(ioe, ioe);
+			catch (IOException ioException) {
+				_log.error(ioException, ioException);
 			}
 		}
 
-		return _settingsProperties;
+		return _settingsUnicodeProperties;
 	}
 
 	@Override
 	public String getSettingsProperty(String key) {
-		UnicodeProperties settingsProperties = getSettingsProperties();
+		UnicodeProperties settingsUnicodeProperties = getSettingsProperties();
 
-		return settingsProperties.getProperty(key);
+		return settingsUnicodeProperties.getProperty(key);
 	}
 
 	@Override
@@ -80,21 +80,23 @@ public class LayoutSetPrototypeImpl extends LayoutSetPrototypeBaseImpl {
 
 	@Override
 	public void setSettings(String settings) {
-		_settingsProperties = null;
+		_settingsUnicodeProperties = null;
 
 		super.setSettings(settings);
 	}
 
 	@Override
-	public void setSettingsProperties(UnicodeProperties settingsProperties) {
-		_settingsProperties = settingsProperties;
+	public void setSettingsProperties(
+		UnicodeProperties settingsUnicodeProperties) {
 
-		super.setSettings(settingsProperties.toString());
+		_settingsUnicodeProperties = settingsUnicodeProperties;
+
+		super.setSettings(settingsUnicodeProperties.toString());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		LayoutSetPrototypeImpl.class);
 
-	private UnicodeProperties _settingsProperties;
+	private UnicodeProperties _settingsUnicodeProperties;
 
 }

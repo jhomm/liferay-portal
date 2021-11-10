@@ -14,15 +14,15 @@
 
 package com.liferay.portal.servlet;
 
-import com.liferay.portal.NoSuchLayoutException;
+import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.Portal;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.WebKeys;
+import com.liferay.portal.kernel.util.WebKeys;
 
 import java.io.IOException;
 
@@ -40,45 +40,48 @@ public class WidgetServlet extends HttpServlet {
 
 	@Override
 	public void service(
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws IOException, ServletException {
 
 		try {
-			String redirect = getRedirect(request);
+			String redirect = getRedirect(httpServletRequest);
 
 			if ((redirect == null) || !PortalUtil.isValidResourceId(redirect)) {
 				PortalUtil.sendError(
 					HttpServletResponse.SC_NOT_FOUND,
-					new NoSuchLayoutException(), request, response);
+					new NoSuchLayoutException(), httpServletRequest,
+					httpServletResponse);
 			}
 			else {
-				request.setAttribute(WebKeys.WIDGET, Boolean.TRUE);
+				httpServletRequest.setAttribute(WebKeys.WIDGET, Boolean.TRUE);
 
 				ServletContext servletContext = getServletContext();
 
 				RequestDispatcher requestDispatcher =
 					servletContext.getRequestDispatcher(redirect);
 
-				requestDispatcher.forward(request, response);
+				requestDispatcher.forward(
+					httpServletRequest, httpServletResponse);
 			}
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
 			PortalUtil.sendError(
-				HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e, request,
-				response);
+				HttpServletResponse.SC_INTERNAL_SERVER_ERROR, exception,
+				httpServletRequest, httpServletResponse);
 		}
 	}
 
-	protected String getRedirect(HttpServletRequest request) {
-		String path = GetterUtil.getString(request.getPathInfo());
+	protected String getRedirect(HttpServletRequest httpServletRequest) {
+		String path = GetterUtil.getString(httpServletRequest.getPathInfo());
 
 		if (Validator.isNull(path)) {
 			return null;
 		}
 
-		String ppid = ParamUtil.getString(request, "p_p_id");
+		String ppid = ParamUtil.getString(httpServletRequest, "p_p_id");
 
 		int pos = path.indexOf(Portal.FRIENDLY_URL_SEPARATOR);
 

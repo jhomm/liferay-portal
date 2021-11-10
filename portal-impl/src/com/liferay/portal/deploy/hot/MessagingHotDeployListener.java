@@ -35,9 +35,9 @@ public class MessagingHotDeployListener extends BaseHotDeployListener {
 		try {
 			doInvokeDeploy(hotDeployEvent);
 		}
-		catch (Throwable t) {
+		catch (Throwable throwable) {
 			throwHotDeployException(
-				hotDeployEvent, "Error sending deploy message for ", t);
+				hotDeployEvent, "Error sending deploy message for ", throwable);
 		}
 	}
 
@@ -48,9 +48,10 @@ public class MessagingHotDeployListener extends BaseHotDeployListener {
 		try {
 			doInvokeUndeploy(hotDeployEvent);
 		}
-		catch (Throwable t) {
+		catch (Throwable throwable) {
 			throwHotDeployException(
-				hotDeployEvent, "Error sending undeploy message for ", t);
+				hotDeployEvent, "Error sending undeploy message for ",
+				throwable);
 		}
 	}
 
@@ -59,12 +60,11 @@ public class MessagingHotDeployListener extends BaseHotDeployListener {
 
 		ServletContext servletContext = hotDeployEvent.getServletContext();
 
-		String servletContextName = servletContext.getServletContextName();
-
 		Message message = new Message();
 
 		message.put("command", "deploy");
-		message.put("servletContextName", servletContextName);
+		message.put(
+			"servletContextName", servletContext.getServletContextName());
 
 		MessageBusUtil.sendMessage(DestinationNames.HOT_DEPLOY, message);
 	}
@@ -74,12 +74,11 @@ public class MessagingHotDeployListener extends BaseHotDeployListener {
 
 		ServletContext servletContext = hotDeployEvent.getServletContext();
 
-		String servletContextName = servletContext.getServletContextName();
-
 		Message message = new Message();
 
 		message.put("command", "undeploy");
-		message.put("servletContextName", servletContextName);
+		message.put(
+			"servletContextName", servletContext.getServletContextName());
 
 		MessageBusUtil.sendMessage(DestinationNames.HOT_DEPLOY, message);
 	}

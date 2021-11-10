@@ -14,7 +14,7 @@
 
 package com.liferay.portal.repository.registry;
 
-import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
+import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
 import com.liferay.portal.repository.util.ExternalRepositoryFactory;
 
 import java.util.Collection;
@@ -27,50 +27,46 @@ public class RepositoryClassDefinitionCatalogUtil {
 	public static Iterable<RepositoryClassDefinition>
 		getExternalRepositoryClassDefinitions() {
 
-		return getRepositoryClassDefinitionCatalog().
+		return _repositoryClassDefinitionCatalog.
 			getExternalRepositoryClassDefinitions();
 	}
 
 	public static Collection<String> getExternalRepositoryClassNames() {
-		return getRepositoryClassDefinitionCatalog().
+		return _repositoryClassDefinitionCatalog.
 			getExternalRepositoryClassNames();
 	}
 
 	public static RepositoryClassDefinition getRepositoryClassDefinition(
 		String repositoryTypeKey) {
 
-		return getRepositoryClassDefinitionCatalog().
-			getRepositoryClassDefinition(repositoryTypeKey);
+		return _repositoryClassDefinitionCatalog.getRepositoryClassDefinition(
+			repositoryTypeKey);
 	}
 
 	public static RepositoryClassDefinitionCatalog
 		getRepositoryClassDefinitionCatalog() {
 
-		PortalRuntimePermission.checkGetBeanProperty(
-			RepositoryClassDefinitionCatalogUtil.class);
-
 		return _repositoryClassDefinitionCatalog;
 	}
 
 	public static void registerLegacyExternalRepositoryFactory(
-		String className, ExternalRepositoryFactory externalRepositoryFactory) {
+		String className, ExternalRepositoryFactory externalRepositoryFactory,
+		ResourceBundleLoader resourceBundleLoader) {
 
-		getRepositoryClassDefinitionCatalog().
+		_repositoryClassDefinitionCatalog.
 			registerLegacyExternalRepositoryFactory(
-				className, externalRepositoryFactory);
+				className, externalRepositoryFactory, resourceBundleLoader);
 	}
 
 	public static void unregisterLegacyExternalRepositoryFactory(
 		String className) {
 
-		getRepositoryClassDefinitionCatalog().
+		_repositoryClassDefinitionCatalog.
 			unregisterLegacyExternalRepositoryFactory(className);
 	}
 
 	public void setRepositoryClassDefinitionCatalog(
 		RepositoryClassDefinitionCatalog repositoryClassDefinitionCatalog) {
-
-		PortalRuntimePermission.checkSetBeanProperty(getClass());
 
 		_repositoryClassDefinitionCatalog = repositoryClassDefinitionCatalog;
 	}

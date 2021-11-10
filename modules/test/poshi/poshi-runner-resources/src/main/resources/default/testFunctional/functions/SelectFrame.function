@@ -1,0 +1,21 @@
+@default = "selectFrame"
+definition {
+
+	function selectFrame {
+		if (contains("${locator1}", "/iframe")) {
+			selenium.waitForVisible();
+
+			selenium.mouseOver();
+
+			selenium.selectFrame();
+		}
+		else {
+			SelectFrame.selectFrameTop();
+		}
+	}
+
+	function selectFrameTop {
+		selenium.selectFrame("relative=top");
+	}
+
+}

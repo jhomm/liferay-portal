@@ -1,0 +1,247 @@
+@component-name = "portal-frontend-infrastructure"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.component.names = "Theme";
+	property testray.main.component.name = "Theme";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			Page.tearDownCP();
+
+			FileInstall.deleteWarOffline(liferayDependencyWars = "test-theme.war");
+		}
+	}
+
+	@description = "Verify page theme can be applied to page"
+	@priority = "5"
+	@refactordone
+	test CanBeAppliedToPage {
+		property test.name.skip.portal.instance = "Theme#CanBeAppliedToPage";
+
+		User.firstLoginPG();
+
+		ApplicationsMenu.gotoPortlet(
+			category = "System",
+			panel = "Control Panel",
+			portlet = "App Manager");
+
+		AppManager.uploadApp(
+			appName = "test-theme",
+			warFileName = "test-theme.war");
+
+		Navigator.openURL();
+
+		Page.changeSinglePageTheme(themeName = "test-theme-7-4");
+
+		Navigator.gotoBack();
+
+		Button.clickPublish();
+
+		ProductMenuHelper.closeProductMenu();
+
+		Theme.viewTestThemeBackgroundColor();
+	}
+
+	@description = "Verify portal will apply different available page theme if classic theme not available"
+	@priority = "5"
+	@refactordone
+	test CanBeAppliedToPageWhenClassicThemeNotAvailable {
+		property portal.upstream = "true";
+		property test.name.skip.portal.instance = "Theme#CanBeAppliedToPageWhenClassicThemeNotAvailable";
+
+		AntCommand(
+			locator1 = "build-test.xml",
+			value1 = "delete-portal-theme -Dtheme-name=classic-theme");
+
+		FileInstall.deployFileOnServer(liferayDependencyJars = "test-theme.war");
+
+		Portlet.startServer(deleteLiferayHome = "false");
+
+		Navigator.openURL();
+
+		AssertConsoleTextPresent(value1 = "No theme found for specified theme id classic_WAR_classictheme. Returning the default theme.");
+
+		AssertConsoleTextNotPresent(value1 = "java.lang.NullPointerException");
+
+		AssertHTMLSourceTextPresent(value1 = "-theme/images/favicon.ico");
+
+		AssertHTMLSourceTextNotPresent(value1 = "classic-theme/images/favicon.ico");
+
+		takeScreenshot();
+	}
+
+	@description = "Verify page theme can be deactivated and reactivated"
+	@priority = "5"
+	@refactordone
+	test CanBeDeactivatedAndReactivated {
+		property test.name.skip.portal.instance = "Theme#CanBeDeactivatedAndReactivated";
+
+		var appName = "test-theme";
+
+		User.firstLoginPG();
+
+		FileInstall.deployFileOnServer(liferayDependencyJars = "${appName}.war");
+
+		WaitForConsoleTextPresent(value1 = "STARTED ${appName}");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Theme Test Page");
+
+		ProductMenu.gotoPortlet(
+			category = "Site Builder",
+			portlet = "Pages");
+
+		Page.changeCurrentTheme(
+			pageName = "Theme Test Page",
+			themeName = "test-theme-7-4");
+
+		Navigator.openSitePage(
+			pageName = "Theme Test Page",
+			siteName = "Guest");
+
+		Theme.viewTestThemeBackgroundColor();
+
+		ApplicationsMenu.gotoPortlet(
+			category = "System",
+			panel = "Control Panel",
+			portlet = "App Manager");
+
+		Search.searchCP(searchTerm = "${appName}");
+
+		AppManager.deactivateApp(appName = "${appName}");
+
+		AssertConsoleTextPresent(value1 = "STOPPED test-theme_1.0.0");
+
+		Navigator.openSitePage(
+			pageName = "Theme Test Page",
+			siteName = "Guest");
+
+		AssertConsoleTextPresent(value1 = "No theme found for specified theme id testtheme74_WAR_testtheme. Returning the default theme.");
+
+		Theme.viewClassicThemeBackgroundColor();
+
+		Page.viewCurrentTheme(
+			page = "Public Pages",
+			pageName = "Theme Test Page",
+			themeName = "Classic");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "System",
+			panel = "Control Panel",
+			portlet = "App Manager");
+
+		Search.searchCP(searchTerm = "${appName}");
+
+		AppManager.activateApp(appName = "${appName}");
+
+		Navigator.openSitePage(
+			pageName = "Theme Test Page",
+			siteName = "Guest");
+
+		Theme.viewTestThemeBackgroundColor();
+
+		Page.viewCurrentTheme(
+			page = "Public Pages",
+			pageName = "Theme Test Page",
+			themeName = "test-theme-7-4");
+	}
+
+	@description = "Verify page theme can be uninstalled and redeployed"
+	@priority = "5"
+	@refactordone
+	test CanBeUnInstalledAndRedeployed {
+		property test.name.skip.portal.instance = "Theme#CanBeUnInstalledAndRedeployed";
+
+		var appName = "test-theme";
+
+		User.firstLoginPG();
+
+		FileInstall.deployFileOnServer(liferayDependencyJars = "${appName}.war");
+
+		WaitForConsoleTextPresent(value1 = "STARTED ${appName}");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Theme Test Page");
+
+		ProductMenu.gotoPortlet(
+			category = "Site Builder",
+			portlet = "Pages");
+
+		Page.changeCurrentTheme(
+			pageName = "Theme Test Page",
+			themeName = "test-theme-7-4");
+
+		Navigator.openSitePage(
+			pageName = "Theme Test Page",
+			siteName = "Guest");
+
+		Theme.viewTestThemeBackgroundColor();
+
+		ApplicationsMenu.gotoPortlet(
+			category = "System",
+			panel = "Control Panel",
+			portlet = "App Manager");
+
+		Search.searchCP(searchTerm = "${appName}");
+
+		AppManager.uninstallApp(appName = "${appName}");
+
+		AssertConsoleTextPresent(value1 = "Stopping blacklisted bundle test-theme_1.0.0");
+
+		Navigator.openSitePage(
+			pageName = "Theme Test Page",
+			siteName = "Guest");
+
+		AssertConsoleTextPresent(value1 = "No theme found for specified theme id testtheme74_WAR_testtheme. Returning the default theme.");
+
+		Theme.viewClassicThemeBackgroundColor();
+
+		Page.viewCurrentTheme(
+			page = "Public Pages",
+			pageName = "Theme Test Page",
+			themeName = "Classic");
+
+		Click(locator1 = "SitePagesEditPage#CHANGE_CURRENT_THEME_BUTTON");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		LexiconCard.viewCardNotPresent(card = "test-theme-7-4");
+
+		FileInstall.deleteWarOffline(liferayDependencyWars = "test-theme.war");
+
+		FileInstall.deployFileOnServer(liferayDependencyJars = "${appName}.war");
+
+		Pause(locator1 = "30000");
+
+		Navigator.openSitePage(
+			pageName = "Theme Test Page",
+			siteName = "Guest");
+
+		Theme.viewClassicThemeBackgroundColor();
+
+		Page.viewCurrentTheme(
+			page = "Public Pages",
+			pageName = "Theme Test Page",
+			themeName = "Classic");
+
+		Click(locator1 = "SitePagesEditPage#CHANGE_CURRENT_THEME_BUTTON");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		LexiconCard.viewCardNotPresent(card = "test-theme-7-4");
+	}
+
+}

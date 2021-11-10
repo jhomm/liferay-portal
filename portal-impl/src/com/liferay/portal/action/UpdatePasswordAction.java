@@ -14,63 +14,73 @@
 
 package com.liferay.portal.action;
 
-import com.liferay.portal.NoSuchUserException;
-import com.liferay.portal.UserLockoutException;
-import com.liferay.portal.UserPasswordException;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.exception.NoSuchUserException;
+import com.liferay.portal.kernel.exception.UserLockoutException;
+import com.liferay.portal.kernel.exception.UserPasswordException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.CompanyConstants;
+import com.liferay.portal.kernel.model.Ticket;
+import com.liferay.portal.kernel.model.TicketConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.AuthTokenUtil;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.auth.session.AuthenticatedSessionManagerUtil;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.TicketLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.servlet.SessionErrors;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Company;
-import com.liferay.portal.model.CompanyConstants;
-import com.liferay.portal.model.Ticket;
-import com.liferay.portal.model.TicketConstants;
-import com.liferay.portal.model.User;
-import com.liferay.portal.security.auth.AuthTokenUtil;
-import com.liferay.portal.security.auth.PrincipalException;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.pwd.PwdToolkitUtilThreadLocal;
-import com.liferay.portal.service.CompanyLocalServiceUtil;
-import com.liferay.portal.service.TicketLocalServiceUtil;
-import com.liferay.portal.service.UserLocalServiceUtil;
-import com.liferay.portal.struts.ActionConstants;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.PropsValues;
-import com.liferay.portal.util.WebKeys;
+import com.liferay.portal.struts.Action;
+import com.liferay.portal.struts.model.ActionForward;
+import com.liferay.portal.struts.model.ActionMapping;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.apache.struts.action.Action;
-import org.apache.struts.action.ActionForm;
-import org.apache.struts.action.ActionForward;
-import org.apache.struts.action.ActionMapping;
-
 /**
  * @author Brian Wing Shun Chan
  * @author Mika Koivisto
  */
-public class UpdatePasswordAction extends Action {
+public class UpdatePasswordAction implements Action {
 
 	@Override
 	public ActionForward execute(
-			ActionMapping actionMapping, ActionForm actionForm,
-			HttpServletRequest request, HttpServletResponse response)
+			ActionMapping actionMapping, HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws Exception {
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		Ticket ticket = getTicket(httpServletRequest);
 
-		Ticket ticket = getTicket(request);
+		if ((ticket != null) &&
+			StringUtil.equals(
+				httpServletRequest.getMethod(), HttpMethods.GET)) {
 
-		if (!themeDisplay.isSignedIn() && (ticket == null)) {
-			return actionMapping.findForward(
-				ActionConstants.COMMON_REFERER_JSP);
+			resendAsPost(httpServletRequest, httpServletResponse);
+
+			return null;
 		}
 
-		String cmd = ParamUtil.getString(request, Constants.CMD);
+		httpServletRequest.setAttribute(WebKeys.TICKET, ticket);
+
+		String cmd = ParamUtil.getString(httpServletRequest, Constants.CMD);
 
 		if (Validator.isNull(cmd)) {
 			if (ticket != null) {
@@ -82,18 +92,26 @@ public class UpdatePasswordAction extends Action {
 					UserLocalServiceUtil.updatePasswordReset(
 						user.getUserId(), true);
 				}
-				catch (UserLockoutException ule) {
-					SessionErrors.add(request, ule.getClass(), ule);
+				catch (UserLockoutException userLockoutException) {
+					SessionErrors.add(
+						httpServletRequest, userLockoutException.getClass(),
+						userLockoutException);
 				}
 			}
 
-			return actionMapping.findForward("portal.update_password");
+			return actionMapping.getActionForward("portal.update_password");
 		}
 
-		try {
-			updatePassword(request, response, themeDisplay, ticket);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
-			String redirect = ParamUtil.getString(request, WebKeys.REFERER);
+		try {
+			updatePassword(
+				httpServletRequest, httpServletResponse, themeDisplay, ticket);
+
+			String redirect = ParamUtil.getString(
+				httpServletRequest, WebKeys.REFERER);
 
 			if (Validator.isNotNull(redirect)) {
 				redirect = PortalUtil.escapeRedirect(redirect);
@@ -103,41 +121,45 @@ public class UpdatePasswordAction extends Action {
 				redirect = themeDisplay.getPathMain();
 			}
 
-			response.sendRedirect(redirect);
+			httpServletResponse.sendRedirect(redirect);
 
 			return null;
 		}
-		catch (Exception e) {
-			if (e instanceof UserPasswordException) {
-				SessionErrors.add(request, e.getClass(), e);
+		catch (Exception exception) {
+			if (exception instanceof UserPasswordException) {
+				SessionErrors.add(
+					httpServletRequest, exception.getClass(), exception);
 
-				return actionMapping.findForward("portal.update_password");
+				return actionMapping.getActionForward("portal.update_password");
 			}
-			else if (e instanceof NoSuchUserException ||
-					 e instanceof PrincipalException) {
+			else if (exception instanceof NoSuchUserException ||
+					 exception instanceof PrincipalException) {
 
-				SessionErrors.add(request, e.getClass());
+				SessionErrors.add(httpServletRequest, exception.getClass());
 
-				return actionMapping.findForward("portal.error");
+				return actionMapping.getActionForward("portal.error");
 			}
 
-			PortalUtil.sendError(e, request, response);
+			PortalUtil.sendError(
+				exception, httpServletRequest, httpServletResponse);
 
 			return null;
 		}
 	}
 
-	protected Ticket getTicket(HttpServletRequest request) {
-		String ticketKey = ParamUtil.getString(request, "ticketKey");
+	protected Ticket getTicket(HttpServletRequest httpServletRequest) {
+		String ticketKey = ParamUtil.getString(httpServletRequest, "ticketKey");
 
 		if (Validator.isNull(ticketKey)) {
 			return null;
 		}
 
 		try {
-			Ticket ticket = TicketLocalServiceUtil.getTicket(ticketKey);
+			Ticket ticket = TicketLocalServiceUtil.fetchTicket(ticketKey);
 
-			if (ticket.getType() != TicketConstants.TYPE_PASSWORD) {
+			if ((ticket == null) ||
+				(ticket.getType() != TicketConstants.TYPE_PASSWORD)) {
+
 				return null;
 			}
 
@@ -147,16 +169,21 @@ public class UpdatePasswordAction extends Action {
 
 			TicketLocalServiceUtil.deleteTicket(ticket);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
 		}
 
 		return null;
 	}
 
-	protected boolean isValidatePassword(HttpServletRequest request) {
-		HttpSession session = request.getSession();
+	protected boolean isValidatePassword(
+		HttpServletRequest httpServletRequest) {
 
-		Boolean setupWizardPasswordUpdated = (Boolean)session.getAttribute(
+		HttpSession httpSession = httpServletRequest.getSession();
+
+		Boolean setupWizardPasswordUpdated = (Boolean)httpSession.getAttribute(
 			WebKeys.SETUP_WIZARD_PASSWORD_UPDATED);
 
 		if ((setupWizardPasswordUpdated != null) &&
@@ -168,13 +195,56 @@ public class UpdatePasswordAction extends Action {
 		return true;
 	}
 
+	protected void resendAsPost(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
+		throws IOException {
+
+		httpServletResponse.setHeader(
+			"Cache-Control", "no-cache, no-store, must-revalidate");
+		httpServletResponse.setHeader("Expires", "0");
+		httpServletResponse.setHeader("Pragma", "no-cache");
+
+		PrintWriter printWriter = httpServletResponse.getWriter();
+
+		Map<String, String[]> parameterMap =
+			httpServletRequest.getParameterMap();
+
+		StringBundler sb = new StringBundler(8 + (parameterMap.size() * 5));
+
+		sb.append("<html><body onload=\"document.fm.submit();\">");
+		sb.append("<form action=\"");
+		sb.append(PortalUtil.getPortalURL(httpServletRequest));
+		sb.append(PortalUtil.getPathContext());
+		sb.append("/c/portal/update_password\" method=\"post\" name=\"fm\">");
+
+		for (String name : parameterMap.keySet()) {
+			String value = ParamUtil.getString(httpServletRequest, name);
+
+			sb.append("<input name=\"");
+			sb.append(HtmlUtil.escapeAttribute(name));
+			sb.append("\" type=\"hidden\" value=\"");
+			sb.append(HtmlUtil.escapeAttribute(value));
+			sb.append("\"/>");
+		}
+
+		sb.append("<noscript>");
+		sb.append("<input type=\"submit\" value=\"Please continue here...\"/>");
+		sb.append("</noscript></form></body></html>");
+
+		printWriter.write(sb.toString());
+
+		printWriter.close();
+	}
+
 	protected void updatePassword(
-			HttpServletRequest request, HttpServletResponse response,
-			ThemeDisplay themeDisplay, Ticket ticket)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, ThemeDisplay themeDisplay,
+			Ticket ticket)
 		throws Exception {
 
 		AuthTokenUtil.checkCSRFToken(
-			request, UpdatePasswordAction.class.getName());
+			httpServletRequest, UpdatePasswordAction.class.getName());
 
 		long userId = 0;
 
@@ -185,14 +255,14 @@ public class UpdatePasswordAction extends Action {
 			userId = themeDisplay.getUserId();
 		}
 
-		String password1 = request.getParameter("password1");
-		String password2 = request.getParameter("password2");
+		String password1 = httpServletRequest.getParameter("password1");
+		String password2 = httpServletRequest.getParameter("password2");
 		boolean passwordReset = false;
 
 		boolean previousValidate = PwdToolkitUtilThreadLocal.isValidate();
 
 		try {
-			boolean currentValidate = isValidatePassword(request);
+			boolean currentValidate = isValidatePassword(httpServletRequest);
 
 			PwdToolkitUtilThreadLocal.setValidate(currentValidate);
 
@@ -203,38 +273,41 @@ public class UpdatePasswordAction extends Action {
 			PwdToolkitUtilThreadLocal.setValidate(previousValidate);
 		}
 
+		User user = UserLocalServiceUtil.getUser(userId);
+
+		Company company = CompanyLocalServiceUtil.getCompanyById(
+			user.getCompanyId());
+
 		if (ticket != null) {
 			TicketLocalServiceUtil.deleteTicket(ticket);
 
-			User user = UserLocalServiceUtil.getUser(userId);
-
-			Company company = CompanyLocalServiceUtil.getCompanyById(
-				user.getCompanyId());
-
-			String login = null;
-
-			String authType = company.getAuthType();
-
-			if (authType.equals(CompanyConstants.AUTH_TYPE_EA)) {
-				login = user.getEmailAddress();
-			}
-			else if (authType.equals(CompanyConstants.AUTH_TYPE_SN)) {
-				login = user.getScreenName();
-			}
-			else if (authType.equals(CompanyConstants.AUTH_TYPE_ID)) {
-				login = String.valueOf(userId);
-			}
-
-			AuthenticatedSessionManagerUtil.login(
-				request, response, login, password1, false, null);
-
 			UserLocalServiceUtil.updatePasswordReset(userId, false);
-		}
-		else if (PropsValues.SESSION_STORE_PASSWORD) {
-			HttpSession session = request.getSession();
 
-			session.setAttribute(WebKeys.USER_PASSWORD, password1);
+			if (company.isStrangersVerify()) {
+				UserLocalServiceUtil.updateEmailAddressVerified(userId, true);
+			}
 		}
+
+		String login = null;
+
+		String authType = company.getAuthType();
+
+		if (authType.equals(CompanyConstants.AUTH_TYPE_EA)) {
+			login = user.getEmailAddress();
+		}
+		else if (authType.equals(CompanyConstants.AUTH_TYPE_SN)) {
+			login = user.getScreenName();
+		}
+		else if (authType.equals(CompanyConstants.AUTH_TYPE_ID)) {
+			login = String.valueOf(userId);
+		}
+
+		AuthenticatedSessionManagerUtil.login(
+			httpServletRequest, httpServletResponse, login, password1, false,
+			null);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		UpdatePasswordAction.class);
 
 }

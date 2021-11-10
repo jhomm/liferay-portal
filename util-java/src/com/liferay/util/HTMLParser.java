@@ -30,7 +30,9 @@ import javax.swing.text.html.HTMLEditorKit;
 public class HTMLParser {
 
 	public HTMLParser(Reader reader) throws IOException {
-		HTMLEditorKit.Parser parser = new DefaultParser().getParser();
+		DefaultParser defaultParser = new DefaultParser();
+
+		HTMLEditorKit.Parser parser = defaultParser.getParser();
 
 		parser.parse(reader, new HTMLCallback(), true);
 	}
@@ -46,7 +48,7 @@ public class HTMLParser {
 	private final List<String> _images = new ArrayList<>();
 	private final List<String> _links = new ArrayList<>();
 
-	private class DefaultParser extends HTMLEditorKit {
+	private static class DefaultParser extends HTMLEditorKit {
 
 		@Override
 		public HTMLEditorKit.Parser getParser() {

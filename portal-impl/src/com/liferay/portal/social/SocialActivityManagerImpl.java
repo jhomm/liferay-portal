@@ -14,20 +14,25 @@
 
 package com.liferay.portal.social;
 
+import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapper;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.ClassedModel;
+import com.liferay.portal.kernel.model.GroupedModel;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.social.SocialActivityManager;
-import com.liferay.portal.model.ClassedModel;
-import com.liferay.portal.model.GroupedModel;
-import com.liferay.registry.ServiceReference;
-import com.liferay.registry.collections.ServiceReferenceMapper;
-import com.liferay.registry.collections.ServiceTrackerCollections;
-import com.liferay.registry.collections.ServiceTrackerMap;
 
 import java.util.Date;
 
+import org.osgi.framework.ServiceReference;
+
 /**
- * @author Adolfo Pérez
+ * @author     Adolfo Pérez
+ * @deprecated As of Athanasius (7.3.x), replaced by {@link
+ *             com.liferay.social.activity.internal.manager.SocialActivityManagerImpl}
  */
+@Deprecated
 public class SocialActivityManagerImpl<T extends ClassedModel & GroupedModel>
 	implements SocialActivityManager<T> {
 
@@ -96,10 +101,6 @@ public class SocialActivityManagerImpl<T extends ClassedModel & GroupedModel>
 			userId, model, type, createDate);
 	}
 
-	protected void activate() {
-		_serviceTrackerMap.open();
-	}
-
 	protected SocialActivityManager<T> getSocialActivityManager(
 		String className) {
 
@@ -116,9 +117,10 @@ public class SocialActivityManagerImpl<T extends ClassedModel & GroupedModel>
 	private final SocialActivityManager<T> _defaultSocialActivityManager;
 
 	private final ServiceTrackerMap<String, SocialActivityManager<T>>
-		_serviceTrackerMap = ServiceTrackerCollections.singleValueMap(
-			(Class<SocialActivityManager<T>>)(Class<?>)
-				SocialActivityManager.class,
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			SystemBundleUtil.getBundleContext(),
+			(Class<SocialActivityManager<T>>)
+				(Class<?>)SocialActivityManager.class,
 			"(model.class.name=*)",
 			new ServiceReferenceMapper<String, SocialActivityManager<T>>() {
 

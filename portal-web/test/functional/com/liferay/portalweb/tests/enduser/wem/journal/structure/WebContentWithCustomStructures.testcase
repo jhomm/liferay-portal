@@ -1,0 +1,1829 @@
+@component-name = "portal-wcm"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Web Content Administration";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONGroup.addGroup(groupName = "Test Site Name");
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
+		}
+	}
+
+	@priority = "3"
+	test AddEmbeddedPortletFreemarkerTemplate {
+		JSONLayout.addPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Web Content Display Page");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		LexiconEntry.gotoAdd();
+
+		WebContentTemplates.inputTemplateAddScreenFields(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template Description",
+			templateName = "WC Template Name");
+
+		var templateScript = '''<@liferay_portlet["runtime"] portletName="com_liferay_blogs_web_portlet_BlogsPortlet" />''';
+
+		WebContentTemplates.inputScript(templateScript = "${templateScript}");
+
+		PortletEntry.save();
+
+		SelectFrameTop();
+
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Web Content Display Page",
+			widgetName = "Web Content Display");
+
+		Navigator.gotoSitePage(
+			pageName = "Web Content Display Page",
+			siteName = "Test Site Name");
+
+		WebContent.addStructuredPGViaWCD(
+			structureName = "WC Structure Name",
+			templateName = "WC Template Name",
+			webContentTitle = "WC Title");
+
+		Portlet.viewBody(
+			portletBody = "No entries were found.",
+			portletName = "Blogs");
+	}
+
+	@description = "This is a use case for LPS-52248."
+	@priority = "4"
+	test AddStructureWithSeparatorField {
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Separator",
+			fieldName = "Separator");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template Description",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			structureName = "WC Structure Name",
+			templateName = "WC Template Name",
+			webContentTitle = "WC WebContent Title");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+		AssertConsoleTextNotPresent(value1 = "Expression Separator is instead a com.liferay.portal.freemarker.LiferayTemplateModel");
+
+		AssertConsoleTextNotPresent(value1 = "freemarker.core.NonStringException");
+	}
+
+	@priority = "4"
+	test AddStructureWithSubfield {
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateFieldNames = "Text",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			structureName = "WC Structure Name",
+			templateName = "WC Template Name",
+			webContentNumeric = "123",
+			webContentText = "Text",
+			webContentTitle = "WC WebContent Title");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+		WebContent.viewWithStructureCP(
+			webContentText = "Text",
+			webContentTitle = "WC WebContent Title");
+
+		DataEngine.viewNestedField(
+			fieldName = "Text",
+			nestedField = "Numeric",
+			nestedFieldData = "123");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.viewCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		LexiconEntry.gotoEntry(rowEntry = "WC Structure Name");
+
+		for (var structureFieldName : list "Text,Numeric") {
+			DataEngine.viewField(
+				fieldFieldLabel = "${structureFieldName}",
+				fieldName = "${structureFieldName}");
+		}
+	}
+
+	@description = "This is a use case for LPS-69560."
+	@priority = "5"
+	test AddStructureWithWebContentAndGeolocationFields {
+		property portal.acceptance = "true";
+		property testray.component.names = "Web Content Administration";
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent 1 Content",
+			groupName = "Test Site Name",
+			title = "WC WebContent 1 Title");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Web Content",
+			fieldName = "Web Content");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Geolocation",
+			fieldLocation = "2",
+			fieldName = "Geolocation");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template Description",
+			templateFieldNames = "Web Content,Geolocation",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			webContentTitle = "WC WebContent 2 Title",
+			webContentWebContent = "WC WebContent 1 Title");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent 2 Title");
+
+		WebContent.viewWithStructureCP(
+			webContentGeolocation = "true",
+			webContentTitle = "WC WebContent 2 Title",
+			webContentWebContent = "WC WebContent 1 Title");
+	}
+
+	@priority = "4"
+	test AddWebContentViaWCDWithGlobalStructureAndLocalTemplate {
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "Global WC Structure Description",
+			structureName = "Global WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP(structureName = "Global WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "Global WC Structure Name",
+			templateDescription = "Local WC Template Description",
+			templateFieldNames = "Text",
+			templateName = "Local WC Template Name");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Web Content Display Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Web Content Display Page",
+			widgetName = "Web Content Display");
+
+		Navigator.gotoSitePage(
+			pageName = "Web Content Display Page",
+			siteName = "Test Site Name");
+
+		WebContent.addWithGlobalStructurePGViaWCD(
+			fieldName = "Text",
+			structureName = "Global WC Structure Name",
+			templateName = "Local WC Template Name",
+			webContentContent = "WC WebContent Text",
+			webContentTitle = "WC WebContent Title");
+	}
+
+	@priority = "3"
+	test AddWebContentWithColorField {
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Color",
+			fieldName = "Color");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template Description",
+			templateFieldNames = "Color",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			structureName = "WC Structure Name",
+			templateName = "WC Template Name",
+			webContentColor = "FFFFFF",
+			webContentTitle = "WC WebContent Title");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Test Page");
+
+		Navigator.gotoSitePage(
+			pageName = "Test Page",
+			siteName = "Test Site Name");
+
+		Content.addPG(assetTitle = "WC WebContent Title");
+
+		WebContent.viewPGViaWCD(webContentContent = "FFFFFF");
+	}
+
+	@priority = "3"
+	test AddWebContentWithGlobalStructureAndEditedDefaultValues {
+		property custom.properties = "jsonws.web.service.paths.excludes=";
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "Structure Description",
+			structureName = "Global Structure");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP(
+			addRoleViewPermissions = "Power User",
+			structureName = "Global Structure");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "Global Structure",
+			templateDescription = "Template Description",
+			templateName = "Template Name");
+
+		WebContentTemplates.addRoleViewPermissions(
+			roles = "Power User",
+			templateName = "Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.editStructureDefaultValuesCP(structureName = "Global Structure");
+
+		WebContent.addWithStructureCP(webContentText = "Edited Text Field");
+
+		PortletEntry.save();
+
+		JSONUser.addUser(
+			userEmailAddress = "test1@liferay.com",
+			userFirstName = "test1",
+			userLastName = "test1",
+			userScreenName = "test1test");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "test1@liferay.com");
+
+		JSONRole.assignRoleToUser(
+			roleTitle = "Power User",
+			userEmailAddress = "test1@liferay.com");
+
+		JSONUser.addUserToSite(
+			groupName = "Test Site Name",
+			userEmailAddress = "test1@liferay.com");
+
+		JSONRole.assignSiteRoleToUser(
+			groupName = "Test Site Name",
+			roleTitle = "Site Administrator",
+			userEmailAddress = "test1@liferay.com");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "test1@liferay.com",
+			userLoginFullName = "test1 test1");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "Global Structure");
+
+		WebContent.addWithStructureCP(
+			saveAsDraft = "true",
+			structureName = "Global Structure",
+			webContentText = "Web Content Text",
+			webContentTitle = "Web Content Title");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "Web Content Title");
+	}
+
+	@priority = "4"
+	test AddWebContentWithImageField {
+		property test.name.skip.portal.instance = "WebContentWithCustomStructures#AddWebContentWithImageField";
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Image",
+			fieldName = "Image");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template Description",
+			templateFieldNames = "Image",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			navTab = "Web Content Images",
+			structureName = "WC Structure Name",
+			templateName = "WC Template Name",
+			webContentImage = "Document_2.jpeg",
+			webContentTitle = "WC WebContent Title");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Test Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Test Page",
+			widgetName = "Web Content Display");
+
+		Navigator.gotoSitePage(
+			pageName = "Test Page",
+			siteName = "Test Site Name");
+
+		WebContentDisplayPortlet.selectWebContent(webContentTitle = "WC WebContent Title");
+
+		IFrame.closeFrame();
+
+		WebContentDisplayPortlet.viewImageFieldViaWCD();
+	}
+
+	@description = "This is a test for LPS-86223. A user can create web content without having a template, and web content without templates will display using an automatically defined template."
+	@priority = "4"
+	test AddWebContentWithoutTemplate {
+		property testray.component.names = "Web Content Administration";
+
+		task ("Add a structure with a text field without adding a template") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			NavItem.gotoStructures();
+
+			WebContentStructures.addCP(
+				structureDescription = "WC Structure Description",
+				structureName = "WC Structure Name");
+
+			DataEngine.addField(
+				fieldFieldLabel = "Text",
+				fieldName = "Text");
+
+			WebContentStructures.saveCP(structureName = "WC Structure Name");
+		}
+
+		task ("Add a web content article using the structure") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+			WebContent.addWithStructureCP(
+				webContentText = "WC WebContent Text",
+				webContentTitle = "WC WebContent Title");
+
+			PortletEntry.publish();
+		}
+
+		task ("Assert the web content article was added properly") {
+			WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+			WebContent.viewWithStructureCP(
+				webContentText = "WC WebContent Text",
+				webContentTitle = "WC WebContent Title");
+		}
+
+		task ("Assert an automatic template is used when the web content article is displayed in a web content display widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page");
+
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page",
+				widgetName = "Web Content Display");
+
+			Navigator.gotoSitePage(
+				pageName = "Test Page",
+				siteName = "Test Site Name");
+
+			WebContentDisplayPortlet.selectWebContent(webContentTitle = "WC WebContent Title");
+
+			IFrame.closeFrame();
+
+			AssertTextEquals(
+				locator1 = "//div[@data-analytics-asset-title='WC WebContent Title']//dt",
+				value1 = "Text");
+
+			AssertTextEquals(
+				locator1 = "//div[@data-analytics-asset-title='WC WebContent Title']//dd",
+				value1 = "WC WebContent Text");
+		}
+	}
+
+	@description = "This is a use case for LRQA-61632. Add web content with repeatable HTML field."
+	@priority = "4"
+	test AddWebContentWithRepeatableRichTextField {
+		property environment.acceptance = "true";
+		property portal.acceptance = "true";
+
+		task ("Add a web content structure with a repeatable Rich Text field") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			NavItem.gotoStructures();
+
+			WebContentStructures.addCP(structureName = "WC Structure Name");
+
+			DataEngine.addField(
+				fieldFieldLabel = "Rich Text",
+				fieldName = "Rich Text");
+
+			DataEngine.toggleFieldRepeatable(fieldFieldLabel = "Rich Text");
+
+			WebContentStructures.saveCP(structureName = "WC Structure Name");
+		}
+
+		task ("Add a web content based on new structure") {
+			NavItem.click(navItem = "Web Content");
+
+			WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+		}
+
+		task ("Repeat Rich Text field") {
+			AssertVisible(locator1 = "WCEditWebContent#SIDEBAR");
+
+			PortletEntry.inputTitle(title = "Web Content Title");
+
+			DataEngine.addRepeatableField(fieldLabel = "Rich Text");
+		}
+
+		task ("Type content to the first Rich Text field") {
+			CKEditor.addContentInWebContent(
+				content = "This is the first HTML field",
+				fieldLabel = "Rich Text");
+		}
+
+		task ("Type content to the second Rich Text field") {
+			SelectFrame.selectFrameNoLoading(
+				index = "2",
+				key_fieldLabel = "Rich Text",
+				locator1 = "CKEditor#ANY_BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
+
+			Type(
+				locator1 = "CKEditor#BODY",
+				value1 = "This is the second HTML field");
+
+			SelectFrame(value1 = "relative=top");
+
+			PortletEntry.publish();
+		}
+
+		task ("Add a widget page") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name");
+		}
+
+		task ("Add a Web Content Display to page") {
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name",
+				widgetName = "Web Content Display");
+		}
+
+		task ("Select the web content article") {
+			Navigator.gotoSitePage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			WebContentDisplayPortlet.selectWebContent(webContentTitle = "Web Content Title");
+
+			IFrame.closeFrame();
+		}
+
+		task ("Assert the content shown in Web Content Display") {
+			WebContent.viewPGViaWCD(webContentContent = "This is the first HTML field");
+
+			WebContent.viewPGViaWCD(webContentContent = "This is the second HTML field");
+		}
+	}
+
+	@description = "This is a use case for LRQA-61632. Add web content with required HTML field."
+	@priority = "4"
+	test AddWebContentWithRequiredRichTextField {
+		task ("Add a web content structure with a required Rich Text field") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			NavItem.gotoStructures();
+
+			WebContentStructures.addCP(structureName = "WC Structure Name");
+
+			DataEngine.addField(
+				fieldFieldLabel = "Rich Text",
+				fieldName = "Rich Text");
+
+			DataEngine.editFieldRequired(fieldFieldLabel = "Rich Text");
+
+			WebContentStructures.saveCP(structureName = "WC Structure Name");
+		}
+
+		task ("Add a web content based on new structure") {
+			NavItem.click(navItem = "Web Content");
+
+			WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+		}
+
+		task ("Assert the alert message when publish without content in Rich Text field") {
+			AssertVisible(locator1 = "WCEditWebContent#SIDEBAR");
+
+			PortletEntry.inputTitle(title = "Web Content Title");
+
+			Button.clickPublish();
+
+			AssertTextEquals(
+				key_fieldFieldLabel = "Rich Text",
+				locator1 = "WCEditWebContent#FIELD_REQUIRED_ALERT",
+				value1 = "This field is required.");
+		}
+
+		task ("Assert the alert message is still shown after click the outside of Rich Text field") {
+			WebContent.clickMarginOfContentContainer();
+
+			AssertTextEquals(
+				key_fieldFieldLabel = "Rich Text",
+				locator1 = "WCEditWebContent#FIELD_REQUIRED_ALERT",
+				value1 = "This field is required.");
+		}
+
+		task ("Assert the alert message is still shown after clear content of Rich Text field") {
+			CKEditor.addContentInWebContent(
+				content = "Web Content Content",
+				fieldLabel = "Rich Text");
+
+			CKEditor.addContentInWebContent(
+				content = " ",
+				fieldLabel = "Rich Text");
+
+			AssertTextEquals(
+				key_fieldFieldLabel = "Rich Text",
+				locator1 = "WCEditWebContent#FIELD_REQUIRED_ALERT",
+				value1 = "This field is required.");
+		}
+
+		task ("Type content in Rich Text field then Publish") {
+			CKEditor.addContentInWebContent(
+				content = "Web Content Content",
+				fieldLabel = "Rich Text");
+
+			PortletEntry.publish();
+
+			WebContent.viewTitle(webContentTitle = "Web Content Title");
+		}
+	}
+
+	@priority = "4"
+	test AddWebContentWithStructure {
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template Description",
+			templateFieldNames = "Text",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			structureName = "WC Structure Name",
+			templateName = "WC Template Name",
+			webContentText = "WC WebContent Text",
+			webContentTitle = "WC WebContent Title");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+	}
+
+	@priority = "4"
+	test DeleteTemplateAndStructureWithReferencedWebContent {
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template Description",
+			templateFieldNames = "Text",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			structureName = "WC Structure Name",
+			templateName = "WC Template Name",
+			webContentText = "WC WebContent Text",
+			webContentTitle = "WC WebContent Title");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentStructures.deleteCP(
+			structureName = "WC Structure Name",
+			webContentHasReference = "true");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		Navigator.gotoNavItem(navItem = "Templates");
+
+		WebContentTemplates.deleteCP(
+			templateName = "WC Template Name",
+			webContentHasReference = "true");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentStructures.deleteCP(
+			structureName = "WC Structure Name",
+			webContentHasReference = "true");
+	}
+
+	@priority = "4"
+	test EditArticleMadeFromGlobalStructure {
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "Global WC Structure Description",
+			structureName = "Global WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP(structureName = "Global WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "Global WC Structure Name",
+			templateDescription = "Global WC Template Description",
+			templateFieldNames = "Text",
+			templateName = "Global WC Template Name");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Web Content Display Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Web Content Display Page",
+			widgetName = "Web Content Display");
+
+		Navigator.gotoSitePage(
+			pageName = "Web Content Display Page",
+			siteName = "Test Site Name");
+
+		WebContent.addWithGlobalStructurePGViaWCD(
+			fieldName = "Text",
+			structureName = "Global WC Structure Name",
+			templateName = "Global WC Template Name",
+			webContentContent = "WC WebContent Text",
+			webContentTitle = "WC WebContent Title");
+
+		Navigator.gotoSitePage(
+			pageName = "Web Content Display Page",
+			siteName = "Test Site Name");
+
+		WebContentDisplayPortletNavigator.gotoEdit(
+			menuItem = "Edit Web Content",
+			webContentTitle = "WC WebContent Title");
+
+		WebContent.editPGViaWCD(
+			structureName = "Global WC Structure Name",
+			templateName = "WC Template2 Name",
+			webContentContentEdit = "WC WebContent Text Edit",
+			webContentText = "WC WebContent Text Edit",
+			webContentTitleEdit = "WC WebContent Title Edit");
+	}
+
+	@priority = "5"
+	test EditContentWithTitleAndAllFieldsNull {
+		property portal.acceptance = "true";
+		property testray.component.names = "Training,Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addFields(fieldNameList = "Date,Numeric,Upload,Image,Link to Page,Numeric,Single Selection,Multiple Selection,Grid,Select from List,Text,Rich Text");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template Description",
+			templateFieldNames = "Date,Numeric,Upload,Image,Link to Page,Numeric,Single Selection,Multiple Selection,Grid,Select from List,Text,Rich Text",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			structureName = "WC Structure Name",
+			templateName = "WC Template Name",
+			webContentTitle = "WC WebContent Title");
+
+		PortletEntry.publishAndWait();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+
+		WebContent.editCP(
+			webContentTitle = "WC WebContent Title",
+			webContentTitleEdit = "WC WebContent Title Edit");
+	}
+
+	@priority = "4"
+	test EditGlobalWebContentTemplate {
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "Global WC Structure Description",
+			structureName = "Global WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP(structureName = "Global WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "Global WC Structure Name",
+			templateDescription = "Global WC Template Description",
+			templateFieldNames = "Text",
+			templateName = "Global WC Template Name");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Web Content Display Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Test Site Name",
+			layoutName = "Web Content Display Page",
+			widgetName = "Web Content Display");
+
+		Navigator.gotoSitePage(
+			pageName = "Web Content Display Page",
+			siteName = "Test Site Name");
+
+		WebContent.addWithGlobalStructurePGViaWCD(
+			fieldName = "Text",
+			structureName = "Global WC Structure Name",
+			templateName = "Global WC Template Name",
+			webContentContent = "WC WebContent Text",
+			webContentTitle = "WC WebContent Title");
+
+		Navigator.gotoSitePage(
+			pageName = "Web Content Display Page",
+			siteName = "Test Site Name");
+
+		WebContentDisplayPortlet.editTemplate(
+			editTemplateButton = "true",
+			structureName = "Global WC Structure Name",
+			templateName = "Template Edit",
+			webContentContent = "WC WebContent Text",
+			webContentTitle = "WC WebContent Title");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+
+		WebContent.viewSelectedTemplateCP(
+			templateName = "Template Edit",
+			webContentTitle = "WC WebContent Title");
+	}
+
+	@priority = "4"
+	test EditWebContentTemplate {
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template1 Description",
+			templateFieldNames = "Text",
+			templateName = "WC Template1 Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template2 Description",
+			templateFieldNames = "Text",
+			templateName = "WC Template2 Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			webContentText = "WC WebContent Text",
+			webContentTitle = "WC WebContent Title");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+
+		WebContent.selectTemplateCP(
+			structureName = "WC Structure Name",
+			templateName = "WC Template1 Name");
+
+		PortletEntry.publish();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+
+		WebContent.viewSelectedTemplateCP(
+			templateName = "WC Template1 Name",
+			webContentTitle = "WC WebContent Title");
+	}
+
+	@description = "This is a test for LPS-96545. Cancel reset and reset the default values when edit default values in imported web content structure."
+	@priority = "4"
+	test ResetStructureDefaultValues {
+		task ("Add a widget page") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name");
+		}
+
+		task ("Add a web content based on Basic Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		task ("Add a blogs entry") {
+			HeadlessBlog.addBlogEntry(
+				content = "Blogs Entry Content",
+				groupName = "Test Site Name",
+				title = "Blogs Entry Title");
+		}
+
+		task ("Add a web content structure with all fields") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			NavItem.gotoStructures();
+
+			WebContentStructures.addCP(structureName = "WC Structure Name");
+
+			DataEngine.addFields(fieldNameList = "Text,Select from List,Single Selection,Multiple Selection,Grid,Date,Numeric,Image,Rich Text,Upload,Color,Web Content,Link to Page");
+
+			WebContentStructures.saveCP();
+		}
+
+		task ("Add a template for new structure") {
+			WebContentNavigator.gotoManageTemplatesViaStructures(structureName = "WC Structure Name");
+
+			WebContentTemplates.addCP(
+				templateFieldNames = "Text,Select from List,Single Selection,Multiple Selection,Grid,Date,Numeric,Image,Rich Text,Upload,Color,Web Content,Link to Page",
+				templateName = "WC Template Name");
+		}
+
+		task ("Edit the default values of new structure") {
+			NavItem.gotoStructures();
+
+			WebContentStructures.editStructureDefaultValuesCP(structureName = "WC Structure Name");
+
+			WebContent.addWithStructureCP(
+				column = "1",
+				dmNavTab = "User Personal Folder",
+				navTab = "Web Content Images",
+				row = "1",
+				webContentColor = "FF0D0D",
+				webContentDate = "10/10/2020",
+				webContentGrid = "true",
+				webContentImage = "Document_3.png",
+				webContentLinkToPage = "Test Page Name",
+				webContentMultipleSelection = "Option 1",
+				webContentNumeric = "9",
+				webContentRichText = "This is a Rich Text field",
+				webContentSelectFromList = "Option 2",
+				webContentSingleSelection = "Option 3",
+				webContentText = "Enter Text Here",
+				webContentUpload = "Document_1.jpg",
+				webContentWebContent = "WC Title");
+
+			PortletEntry.save();
+		}
+
+		task ("Edit the default values of web content structure again") {
+			WebContentStructures.editStructureDefaultValuesCP(structureName = "WC Structure Name");
+
+			RelatedAssets.selectAsset(
+				assetTitle = "Blogs Entry Title",
+				assetType = "Blogs Entry",
+				scopeSite = "Everywhere");
+		}
+
+		task ("Cancel reset the default values") {
+			WebContentStructures.resetStructureDefaultValuesCP(
+				assetTitle = "Blogs Entry Title",
+				cancel = "true",
+				templateName = "WC Template Name");
+
+			WebContent.viewWithStructureCP(
+				column = "1",
+				predefinedValue = "true",
+				row = "1",
+				webContentColor = "FF0D0D",
+				webContentDate = "10/10/2020",
+				webContentGrid = "true",
+				webContentImage = "Document_3.png",
+				webContentLinkToPage = "Test Page Name",
+				webContentMultipleSelection = "Option 1",
+				webContentNumeric = "9",
+				webContentRichText = "This is a Rich Text field",
+				webContentSelectFromList = "Option 2",
+				webContentSingleSelection = "Option 3",
+				webContentText = "Enter Text Here",
+				webContentUpload = "Document_1.jpg",
+				webContentWebContent = "WC Title");
+		}
+
+		task ("Reset the default values") {
+			WebContentStructures.resetStructureDefaultValuesCP(
+				assetTitle = "Blogs Entry Title",
+				templateName = "WC Template Name");
+
+			WebContent.viewWithStructureCP(
+				column = "1",
+				predefinedValue = "true",
+				row = "1",
+				webContentColor = "000000",
+				webContentDate = "__/__/____",
+				webContentGrid = "false",
+				webContentLinkToPage = "",
+				webContentNumeric = "",
+				webContentRichText = "",
+				webContentSelectFromList = "Choose an Option",
+				webContentText = "",
+				webContentUpload = "",
+				webContentWebContent = "");
+
+			AssertTextEquals(
+				key_fieldFieldLabel = "Image",
+				locator1 = "TextInput#SELECTOR_INPUT",
+				value1 = "");
+
+			AssertNotChecked.assertNotCheckedNotVisible(
+				key_fieldFieldLabel = "Single Selection",
+				key_optionValue = "Option 3",
+				locator1 = "WCEditWebContent#SELECTION_OPTION");
+
+			AssertNotChecked.assertNotCheckedNotVisible(
+				key_fieldFieldLabel = "Multiple Selection",
+				key_optionValue = "Option 1",
+				locator1 = "WCEditWebContent#SELECTION_OPTION");
+		}
+	}
+
+	@description = "This is a test for LPS-130506. Aseert Web Content Structure defaults not showing in Search Results."
+	@priority = "3"
+	test SearchStructureWithDefaultValue {
+		property test.name.skip.portal.instance = "WebContentWithCustomStructures#SearchStructureWithDefaultValue";
+
+		task ("Add a web content structure with text field") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+			NavItem.gotoStructures();
+
+			WebContentStructures.addCP(structureName = "WC Structure Name");
+
+			DataEngine.addField(
+				fieldFieldLabel = "Text",
+				fieldName = "Text");
+
+			WebContentStructures.saveCP();
+		}
+
+		task ("Edit the default values of new structure") {
+			NavItem.gotoStructures();
+
+			WebContentStructures.editStructureDefaultValuesCP(structureName = "WC Structure Name");
+
+			WebContent.addWithStructureCP(webContentText = "WC WebContent Title");
+
+			PortletEntry.save();
+		}
+
+		task ("Go to Home page and assert no web content displayed after searching") {
+			Navigator.openURL();
+
+			SearchPortlets.searchEmbedded(searchTerm = "WC WebContent Title");
+
+			SearchResultPortlet.viewNoSearchResults(searchTerm = "WC WebContent Title");
+		}
+
+		task ("Reindex and search it again") {
+			SearchAdministration.executeReindex();
+
+			Navigator.openURL();
+
+			SearchPortlets.searchEmbedded(searchTerm = "WC WebContent Title");
+
+			SearchResultPortlet.viewNoSearchResults(searchTerm = "WC WebContent Title");
+		}
+	}
+
+	@priority = "4"
+	test UseStructureAndTemplateFromParentSiteHierarchy {
+		property test.name.skip.portal.instance = "WebContentWithCustomStructures#UseStructureAndtemplateFromParentSiteHierarchy";
+		property testray.component.names = "Web Content Administration";
+
+		SystemSettings.openSystemSettingsAdmin();
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Web Content",
+			configurationName = "Administration",
+			configurationScope = "System Scope");
+
+		FormFields.enableCheckbox(fieldName = "showAncestorScopesByDefault");
+
+		SystemSettings.saveConfiguration();
+
+		JSONGroup.addChildGroup(
+			groupName = "Child SiteName",
+			parentGroupName = "Test Site Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Rich Text",
+			fieldName = "Rich Text");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template Description",
+			templateFieldNames = "Rich Text",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "child-sitename");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.viewCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "child-sitename");
+
+		NavItem.gotoTemplates();
+
+		LexiconEntry.changeDisplayStyle(displayStyle = "table");
+
+		WebContentTemplates.viewTableEntryCP(
+			templateDescription = "WC Template Description",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		Click(locator1 = "TextInput#TITLE");
+
+		PortletEntry.inputTitle(title = "WC WebContent Title");
+
+		CKEditor.addContentInWebContent(
+			content = "WC WebContent Content",
+			fieldLabel = "Rich Text");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+	}
+
+	@description = "This is a test for LPS-125933. Create, read, update and delete a Web Content from a Structure with all possible fields and using a Template with all posible fields."
+	@priority = "5"
+	test ViewAndEditAsWellAsDeleteContentWithTitleAndAllFields {
+		property portal.acceptance = "true";
+
+		task ("Add two widget pages") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name");
+
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Edited Test Page Name");
+		}
+
+		task ("Add two web content based on Basic Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC 1");
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC 2");
+		}
+
+		task ("Add a web content structure with all fields") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			NavItem.gotoStructures();
+
+			WebContentStructures.addCP(
+				structureDescription = "WC Structure Description",
+				structureName = "WC Structure Name");
+
+			DataEngine.addFields(fieldNameList = "Text,Select from List,Single Selection,Multiple Selection,Grid,Date,Numeric,Image,Rich Text,Upload,Color,Web Content,Geolocation,Link to Page,Separator");
+
+			WebContentStructures.saveCP(structureName = "WC Structure Name");
+		}
+
+		task ("Add a web content template with all fields") {
+			WebContentNavigator.gotoManageTemplatesViaStructures(structureName = "WC Structure Name");
+
+			WebContentTemplates.addCP(
+				structureName = "WC Structure Name",
+				templateDescription = "WC Template Description",
+				templateFieldNames = "Text,Select from List,Single Selection,Multiple Selection,Grid,Date,Numeric,Image,Rich Text,Upload,Color,Web Content,Geolocation,Link to Page",
+				templateName = "WC Template Name");
+		}
+
+		task ("Add a web content based on new structure and template") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+			WebContent.addWithStructureCP(
+				column = "1",
+				dmNavTab = "User Personal Folder",
+				navTab = "Web Content Images",
+				row = "1",
+				structureName = "WC Structure Name",
+				templateName = "WC Template Name",
+				webContentColor = "FF0D0D",
+				webContentDate = "10/10/2020",
+				webContentGrid = "true",
+				webContentImage = "Document_3.png",
+				webContentLinkToPage = "Test Page Name",
+				webContentMultipleSelection = "Option 1",
+				webContentNumeric = "9",
+				webContentRichText = "This is a Rich Text field",
+				webContentSelectFromList = "Option 2",
+				webContentSingleSelection = "Option 3",
+				webContentText = "This is a Text field",
+				webContentTitle = "Web Content Title",
+				webContentUpload = "Document_1.doc",
+				webContentWebContent = "WC 1");
+
+			PortletEntry.publish();
+		}
+
+		task ("View web content") {
+			WebContent.viewWithStructureCP(
+				column = "1",
+				row = "1",
+				webContentColor = "FF0D0D",
+				webContentDate = "10/10/2020",
+				webContentGeolocation = "true",
+				webContentGrid = "true",
+				webContentImage = "Document_3.png",
+				webContentLinkToPage = "Test Page Name",
+				webContentMultipleSelection = "Option 1",
+				webContentNumeric = "9",
+				webContentRichText = "This is a Rich Text field",
+				webContentSelectFromList = "Option 2",
+				webContentSeparator = "true",
+				webContentSingleSelection = "Option 3",
+				webContentText = "This is a Text field",
+				webContentTitle = "Web Content Title",
+				webContentUpload = "Document_1.doc",
+				webContentWebContent = "WC 1");
+
+			Button.clickCancel();
+		}
+
+		task ("Edit web content") {
+			WebContent.editWithStructureCP(
+				column = "2",
+				dmNavTab = "User Personal Folder",
+				navTab = "Web Content Images",
+				row = "2",
+				webContentColor = "5F5F5F",
+				webContentDate = "11/11/2019",
+				webContentGrid = "true",
+				webContentLinkToPage = "Edited Test Page Name",
+				webContentMultipleSelection = "Option 2",
+				webContentNumeric = "8",
+				webContentRichText = "This is a Edited Rich Text field",
+				webContentSelectFromList = "Option 1",
+				webContentSingleSelection = "Option 4",
+				webContentText = "This is an edited Text field",
+				webContentTitle = "Web Content Title",
+				webContentTitleEdit = "Web Content Title Edit",
+				webContentUpload = "Document_3.doc",
+				webContentWebContent = "WC 2");
+		}
+
+		task ("Assert web content has been edited") {
+			WebContent.viewWithStructureCP(
+				column = "2",
+				row = "2",
+				webContentColor = "5F5F5F",
+				webContentDate = "11/11/2019",
+				webContentGrid = "true",
+				webContentLinkToPage = "Edited Test Page Name",
+				webContentMultipleSelection = "Option 2",
+				webContentNumeric = "8",
+				webContentRichText = "This is a Edited Rich Text field",
+				webContentSelectFromList = "Option 1",
+				webContentSingleSelection = "Option 4",
+				webContentText = "This is an edited Text field",
+				webContentTitle = "Web Content Title Edit",
+				webContentUpload = "Document_3.doc",
+				webContentWebContent = "WC 2");
+
+			Button.clickCancel();
+		}
+
+		task ("Delete web content") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			WebContent.deleteCP(
+				siteURLKey = "test-site-name",
+				webContentTitle = "Web Content Title Edit");
+		}
+	}
+
+	@description = "This is a use case for LRQA-61632. View structure field with predefined value."
+	@priority = "4"
+	test ViewFieldWithPredefinedValue {
+		task ("Add a web content article based on Basic Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
+		}
+
+		task ("Add a new structure") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			NavItem.gotoStructures();
+
+			WebContentStructures.addCP(structureName = "WC Structure Name");
+		}
+
+		task ("Add the following fields") {
+			DataEngine.addFields(fieldNameList = "Multiple Selection,Color,Date,Upload,Numeric,Rich Text,Single Selection,Select from List,Text,Web Content");
+
+			DataEngine.addField(
+				fieldFieldLabel = "Text Box",
+				fieldLocation = "11",
+				fieldName = "Text",
+				fieldType = "Multiple Lines");
+
+			DataEngine.addField(
+				fieldFieldLabel = "Decimal",
+				fieldLocation = "12",
+				fieldName = "Numeric",
+				numericType = "Decimal");
+
+			var index = "1";
+
+			for (var optionValue : list "Option 1,Option 2,Option 3") {
+				DataEngine.addFieldOption(
+					fieldFieldLabel = "Select from List",
+					index = "${index}",
+					optionValue = "${optionValue}");
+
+				DataEngine.editFieldReferenceOfFieldOption(
+					fieldFieldLabel = "Select from List",
+					fieldReferenceOfFieldOption = "Value${index}",
+					index = "${index}");
+
+				var index = ${index} + 1;
+			}
+
+			var index = "1";
+
+			for (var optionValue : list "Option 1,Option 2,Option 3") {
+				DataEngine.addFieldOption(
+					fieldFieldLabel = "Single Selection",
+					index = "${index}",
+					optionFieldLabel = "Options",
+					optionValue = "${optionValue}");
+
+				DataEngine.editFieldReferenceOfFieldOption(
+					fieldFieldLabel = "Single Selection",
+					fieldReferenceOfFieldOption = "Value${index}",
+					index = "${index}");
+
+				var index = ${index} + 1;
+			}
+
+			DataEngine.addFieldOption(
+				fieldFieldLabel = "Multiple Selection",
+				index = "1",
+				optionFieldLabel = "Options",
+				optionValue = "Boolean");
+		}
+
+		task ("Save the new structure") {
+			WebContentStructures.saveCP(structureName = "WC Structure Name");
+		}
+
+		task ("Edit Structure Default Values") {
+			WebContentStructures.editStructureDefaultValuesCP(structureName = "WC Structure Name");
+
+			WebContent.addWithStructureCP(
+				dmNavTab = "User Personal Folder",
+				webContentColor = "FF0D0D",
+				webContentDate = "10/10/2020",
+				webContentMultipleSelection = "Boolean",
+				webContentNumeric = "9",
+				webContentRichText = "This is a Rich Text field",
+				webContentSelectFromList = "Option 2",
+				webContentSingleSelection = "Option 1",
+				webContentText = "This is a Text field",
+				webContentUpload = "Document_1.jpg",
+				webContentWebContent = "Web Content Title");
+
+			WebContent.addWithStructureCP(
+				numericType = "Decimal",
+				webContentNumeric = "0.5",
+				webContentNumericFieldLabel = "Decimal");
+
+			WebContent.addWithStructureCP(
+				fieldType = "Multiple Lines",
+				webContentText = "This is a Text Box field",
+				webContentTextFieldLabel = "Text Box");
+
+			PortletEntry.save();
+		}
+
+		task ("Add a web content article based on new structure") {
+			NavItem.click(navItem = "Web Content");
+
+			WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+		}
+
+		task ("Assert the predefined value are shown in each field") {
+			AssertVisible(locator1 = "WCEditWebContent#SIDEBAR");
+
+			WebContent.viewWithStructureCP(
+				predefinedValue = "true",
+				webContentColor = "FF0D0D",
+				webContentDate = "10/10/2020",
+				webContentMultipleSelection = "Boolean",
+				webContentNumeric = "9",
+				webContentRichText = "This is a Rich Text field",
+				webContentSelectFromList = "Option 2",
+				webContentSingleSelection = "Option 1",
+				webContentText = "This is a Text field",
+				webContentUpload = "Document_1.jpg",
+				webContentWebContent = "Web Content Title");
+
+			WebContent.viewWithStructureCP(
+				predefinedValue = "true",
+				webContentNumeric = "0.5",
+				webContentNumericFieldLabel = "Decimal");
+
+			WebContent.viewWithStructureCP(
+				fieldType = "Multiple Lines",
+				predefinedValue = "true",
+				webContentText = "This is a Text Box field",
+				webContentTextFieldLabel = "Text Box");
+		}
+	}
+
+	@priority = "3"
+	test ViewGlobalStructureViaAddMenuInLiferaySite {
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContent.viewStructureViaAddMenuCP(structureName = "WC Structure Name");
+	}
+
+	@priority = "4"
+	test ViewSourceContainsNoGarbageData {
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Image",
+			fieldLocation = "2",
+			fieldName = "Image");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template Description",
+			templateFieldNames = "Text,Image",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			structureName = "WC Structure Name",
+			templateName = "WC Template Name",
+			webContentText = "WC WebContent Text",
+			webContentTitle = "WC WebContent Title");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+
+		WebContent.addWithStructureCP(
+			navTab = "Web Content Images",
+			webContentImage = "Document_3.png",
+			webContentImageDescription = "English (United States) Image Description",
+			webContentTitle = "English (United States) Title");
+
+		PortletEntry.changeLocale(locale = "es-ES");
+
+		PortletEntry.inputTitle(title = "Spanish (Spain) Title");
+
+		Type(
+			key_fieldFieldLabel = "Image",
+			locator1 = "WCEditWebContent#IMAGE_DESCRIPTION",
+			value1 = "Spanish (Spain) Image Description");
+
+		PortletEntry.changeLocale(locale = "en-US");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "English (United States) Title");
+
+		AssertTextEquals(
+			key_fieldFieldLabel = "Image",
+			locator1 = "WCEditWebContent#IMAGE_DESCRIPTION",
+			value1 = "English (United States) Image Description");
+
+		PortletEntry.changeLocale(locale = "es-ES");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "Spanish (Spain) Title");
+
+		AssertTextEquals(
+			key_fieldFieldLabel = "Image",
+			locator1 = "WCEditWebContent#IMAGE_DESCRIPTION",
+			value1 = "Spanish (Spain) Image Description");
+
+		PortletEntry.publish();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "English (United States) Title");
+
+		LexiconEntry.gotoHeaderMenuItem(menuItem = "View Source");
+
+		AssertElementNotPresent(locator1 = "WC#SOURCE_GARBAGE_DATA");
+	}
+
+	@priority = "4"
+	test WebContentAdministrationDataValidation {
+		property testray.component.names = "Web Content Administration";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddCP();
+
+		WebContent.addNullCP(webContentContent = "WC WebContent Content");
+
+		WebContent.addCP(
+			webContentContent = "WC WebContent Content",
+			webContentTitle = "WC WebContent Title");
+
+		PortletEntry.publish();
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+
+		WebContent.editNullCP(
+			webContentContent = "WC WebContent Content",
+			webContentContentEdit = "WC WebContent Content");
+
+		WebContent.editCP(
+			webContentContentEdit = "WC WebContent Content Edit",
+			webContentTitle = "WC WebContent Title",
+			webContentTitleEdit = "WC WebContent Title Edit");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		Navigator.gotoNavItem(navItem = "Templates");
+
+		WebContentTemplates.addNullCP();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addNullCP();
+	}
+
+}

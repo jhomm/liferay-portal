@@ -14,29 +14,29 @@
 
 package com.liferay.portal.model.adapter.builder;
 
+import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapper;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.adapter.builder.ModelAdapterBuilder;
+import com.liferay.portal.kernel.model.adapter.builder.ModelAdapterBuilderLocator;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.ReflectionUtil;
-import com.liferay.registry.Registry;
-import com.liferay.registry.RegistryUtil;
-import com.liferay.registry.ServiceReference;
-import com.liferay.registry.collections.ServiceReferenceMapper;
-import com.liferay.registry.collections.ServiceTrackerCollections;
-import com.liferay.registry.collections.ServiceTrackerMap;
 
 import java.io.Closeable;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+
 /**
  * @author Carlos Sierra Andrés
  */
 public class ServiceTrackerMapModelAdapterBuilderLocator
-	implements ModelAdapterBuilderLocator, Closeable {
-
-	public ServiceTrackerMapModelAdapterBuilderLocator() {
-		_modelAdapterBuilders.open();
-	}
+	implements Closeable, ModelAdapterBuilderLocator {
 
 	@Override
 	public void close() {
@@ -48,19 +48,70 @@ public class ServiceTrackerMapModelAdapterBuilderLocator
 		Class<T> adapteeModelClass, Class<V> adaptedModelClass) {
 
 		return _modelAdapterBuilders.getService(
-			getKey(adapteeModelClass, adaptedModelClass));
+			_getKey(adapteeModelClass, adaptedModelClass));
 	}
 
-	private <T, V> String getKey(
+	private Type _getGenericInterface(Class<?> clazz, Class<?> interfaceClass) {
+		Type[] genericInterfaces = clazz.getGenericInterfaces();
+
+		for (Type genericInterface : genericInterfaces) {
+			if (!(genericInterface instanceof ParameterizedType)) {
+				continue;
+			}
+
+			ParameterizedType parameterizedType =
+				(ParameterizedType)genericInterface;
+
+			Type rawType = parameterizedType.getRawType();
+
+			if (rawType.equals(interfaceClass)) {
+				return parameterizedType;
+			}
+		}
+
+		return null;
+	}
+
+	private Type _getGenericInterface(Object object, Class<?> interfaceClass) {
+		Class<?> clazz = object.getClass();
+
+		Type genericInterface = _getGenericInterface(clazz, interfaceClass);
+
+		if (genericInterface != null) {
+			return genericInterface;
+		}
+
+		Class<?> superClass = clazz.getSuperclass();
+
+		while (superClass != null) {
+			genericInterface = _getGenericInterface(superClass, interfaceClass);
+
+			if (genericInterface != null) {
+				return genericInterface;
+			}
+
+			superClass = superClass.getSuperclass();
+		}
+
+		return null;
+	}
+
+	private <T, V> String _getKey(
 		Class<T> adapteeModelClass, Class<V> adaptedModelClass) {
 
 		return adapteeModelClass.getName() + "->" + adaptedModelClass.getName();
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		ServiceTrackerMapModelAdapterBuilderLocator.class);
+
+	private static final BundleContext _bundleContext =
+		SystemBundleUtil.getBundleContext();
+
 	@SuppressWarnings({"unchecked", "rawtypes"})
 	private final ServiceTrackerMap<String, ModelAdapterBuilder>
-		_modelAdapterBuilders = ServiceTrackerCollections.singleValueMap(
-			ModelAdapterBuilder.class, null,
+		_modelAdapterBuilders = ServiceTrackerMapFactory.openSingleValueMap(
+			_bundleContext, ModelAdapterBuilder.class, null,
 			new ServiceReferenceMapper<String, ModelAdapterBuilder>() {
 
 				@Override
@@ -68,12 +119,10 @@ public class ServiceTrackerMapModelAdapterBuilderLocator
 					ServiceReference<ModelAdapterBuilder> serviceReference,
 					Emitter<String> emitter) {
 
-					Registry registry = RegistryUtil.getRegistry();
-
 					ModelAdapterBuilder modelAdapterBuilder =
-						registry.getService(serviceReference);
+						_bundleContext.getService(serviceReference);
 
-					Type genericInterface = ReflectionUtil.getGenericInterface(
+					Type genericInterface = _getGenericInterface(
 						modelAdapterBuilder, ModelAdapterBuilder.class);
 
 					if ((genericInterface == null) ||
@@ -95,14 +144,16 @@ public class ServiceTrackerMapModelAdapterBuilderLocator
 					}
 
 					try {
-						Class adapteeModelClass = (Class)typeArguments[0];
-						Class adaptedModelClass = (Class)typeArguments[1];
+						Class<?> adapteeModelClass = (Class)typeArguments[0];
+						Class<?> adaptedModelClass = (Class)typeArguments[1];
 
 						emitter.emit(
-							getKey(adapteeModelClass, adaptedModelClass));
+							_getKey(adapteeModelClass, adaptedModelClass));
 					}
-					catch (ClassCastException cce) {
-						return;
+					catch (ClassCastException classCastException) {
+						if (_log.isDebugEnabled()) {
+							_log.debug(classCastException, classCastException);
+						}
 					}
 				}
 

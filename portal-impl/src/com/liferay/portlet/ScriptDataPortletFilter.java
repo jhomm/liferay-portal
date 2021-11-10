@@ -16,13 +16,15 @@ package com.liferay.portlet;
 
 import com.liferay.portal.kernel.io.OutputStreamWriter;
 import com.liferay.portal.kernel.servlet.taglib.aui.ScriptData;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portlet.internal.MimeResponseImpl;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
+import javax.portlet.MimeResponse;
 import javax.portlet.PortletException;
 import javax.portlet.RenderRequest;
 import javax.portlet.RenderResponse;
@@ -30,6 +32,7 @@ import javax.portlet.ResourceRequest;
 import javax.portlet.ResourceResponse;
 import javax.portlet.filter.FilterChain;
 import javax.portlet.filter.FilterConfig;
+import javax.portlet.filter.PortletResponseWrapper;
 import javax.portlet.filter.RenderFilter;
 import javax.portlet.filter.ResourceFilter;
 
@@ -54,23 +57,26 @@ public class ScriptDataPortletFilter implements RenderFilter, ResourceFilter {
 
 		filterChain.doFilter(renderRequest, renderResponse);
 
-		HttpServletRequest request = PortalUtil.getHttpServletRequest(
-			renderRequest);
+		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
-		ScriptData scriptData = (ScriptData)request.getAttribute(
+		if (!themeDisplay.isIsolated() && !themeDisplay.isStateExclusive()) {
+			return;
+		}
+
+		HttpServletRequest httpServletRequest =
+			PortalUtil.getHttpServletRequest(renderRequest);
+
+		ScriptData scriptData = (ScriptData)httpServletRequest.getAttribute(
 			WebKeys.AUI_SCRIPT_DATA);
 
 		if (scriptData == null) {
 			return;
 		}
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		if (themeDisplay.isIsolated() || themeDisplay.isStateExclusive()) {
-			_flushScriptData(
-				request, scriptData, (MimeResponseImpl)renderResponse);
-		}
+		_flushScriptData(
+			scriptData, _getMimeResponseImpl(renderResponse),
+			PortalUtil.getPortletId(renderRequest));
 	}
 
 	@Override
@@ -81,10 +87,10 @@ public class ScriptDataPortletFilter implements RenderFilter, ResourceFilter {
 
 		filterChain.doFilter(resourceRequest, resourceResponse);
 
-		HttpServletRequest request = PortalUtil.getHttpServletRequest(
-			resourceRequest);
+		HttpServletRequest httpServletRequest =
+			PortalUtil.getHttpServletRequest(resourceRequest);
 
-		ScriptData scriptData = (ScriptData)request.getAttribute(
+		ScriptData scriptData = (ScriptData)httpServletRequest.getAttribute(
 			WebKeys.AUI_SCRIPT_DATA);
 
 		if (scriptData == null) {
@@ -92,7 +98,8 @@ public class ScriptDataPortletFilter implements RenderFilter, ResourceFilter {
 		}
 
 		_flushScriptData(
-			request, scriptData, (MimeResponseImpl)resourceResponse);
+			scriptData, _getMimeResponseImpl(resourceResponse),
+			PortalUtil.getPortletId(resourceRequest));
 	}
 
 	@Override
@@ -100,8 +107,8 @@ public class ScriptDataPortletFilter implements RenderFilter, ResourceFilter {
 	}
 
 	private void _flushScriptData(
-			HttpServletRequest request, ScriptData scriptData,
-			MimeResponseImpl mimeResponseImpl)
+			ScriptData scriptData, MimeResponseImpl mimeResponseImpl,
+			String portletId)
 		throws IOException {
 
 		if (mimeResponseImpl.isCalledGetPortletOutputStream()) {
@@ -111,13 +118,26 @@ public class ScriptDataPortletFilter implements RenderFilter, ResourceFilter {
 			OutputStreamWriter outputStreamWriter = new OutputStreamWriter(
 				outputStream);
 
-			scriptData.writeTo(request, outputStreamWriter);
+			scriptData.writeTo(outputStreamWriter, portletId);
 
 			outputStreamWriter.flush();
 		}
 		else {
-			scriptData.writeTo(request, mimeResponseImpl.getWriter());
+			scriptData.writeTo(mimeResponseImpl.getWriter(), portletId);
 		}
+	}
+
+	private MimeResponseImpl _getMimeResponseImpl(MimeResponse mimeResponse) {
+		while (!(mimeResponse instanceof MimeResponseImpl) &&
+			   (mimeResponse instanceof PortletResponseWrapper)) {
+
+			PortletResponseWrapper portletResponseWrapper =
+				(PortletResponseWrapper)mimeResponse;
+
+			mimeResponse = (MimeResponse)portletResponseWrapper.getResponse();
+		}
+
+		return (MimeResponseImpl)mimeResponse;
 	}
 
 }

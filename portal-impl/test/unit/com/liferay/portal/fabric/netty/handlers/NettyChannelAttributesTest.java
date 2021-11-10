@@ -14,19 +14,19 @@
 
 package com.liferay.portal.fabric.netty.handlers;
 
+import com.liferay.petra.concurrent.AsyncBroker;
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
 import com.liferay.portal.fabric.local.worker.EmbeddedProcessChannel;
 import com.liferay.portal.fabric.local.worker.LocalFabricWorker;
 import com.liferay.portal.fabric.netty.NettyTestUtil;
 import com.liferay.portal.fabric.netty.agent.NettyFabricAgentStub;
 import com.liferay.portal.fabric.repository.MockRepository;
 import com.liferay.portal.fabric.worker.FabricWorker;
-import com.liferay.portal.kernel.concurrent.AsyncBroker;
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.kernel.test.rule.NewEnv;
 import com.liferay.portal.test.rule.AdviseWith;
-import com.liferay.portal.test.rule.AspectJNewEnvTestRule;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -57,7 +57,7 @@ public class NettyChannelAttributesTest {
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new AggregateTestRule(
-			CodeCoverageAssertor.INSTANCE, AspectJNewEnvTestRule.INSTANCE);
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@AdviseWith(adviceClasses = AttributeAdvice.class)
 	@NewEnv(type = NewEnv.Type.CLASSLOADER)
@@ -69,7 +69,7 @@ public class NettyChannelAttributesTest {
 
 		Assert.assertSame(
 			asyncBroker,
-				NettyChannelAttributes.getAsyncBroker(_embeddedChannel));
+			NettyChannelAttributes.getAsyncBroker(_embeddedChannel));
 
 		// Get from cache
 
@@ -97,10 +97,8 @@ public class NettyChannelAttributesTest {
 		DefaultNoticeableFuture<Serializable> defaultNoticeableFuture =
 			new DefaultNoticeableFuture<>();
 
-		FabricWorker<Serializable> fabricWorker =
-			new LocalFabricWorker<Serializable>(
-				new EmbeddedProcessChannel<Serializable>(
-					defaultNoticeableFuture));
+		FabricWorker<Serializable> fabricWorker = new LocalFabricWorker<>(
+			new EmbeddedProcessChannel<Serializable>(defaultNoticeableFuture));
 
 		NettyChannelAttributes.putFabricWorker(
 			_embeddedChannel, 0, fabricWorker);
@@ -122,11 +120,8 @@ public class NettyChannelAttributesTest {
 
 	@Test
 	public void testGetAsyncBroker() {
-		AsyncBroker<Long, Serializable> asyncBroker =
-			NettyChannelAttributes.getAsyncBroker(_embeddedChannel);
-
 		Assert.assertSame(
-			asyncBroker,
+			NettyChannelAttributes.getAsyncBroker(_embeddedChannel),
 			NettyChannelAttributes.getAsyncBroker(_embeddedChannel));
 	}
 
@@ -138,10 +133,8 @@ public class NettyChannelAttributesTest {
 		DefaultNoticeableFuture<Serializable> defaultNoticeableFuture1 =
 			new DefaultNoticeableFuture<>();
 
-		FabricWorker<Serializable> fabricWorker1 =
-			new LocalFabricWorker<Serializable>(
-				new EmbeddedProcessChannel<Serializable>(
-					defaultNoticeableFuture1));
+		FabricWorker<Serializable> fabricWorker1 = new LocalFabricWorker<>(
+			new EmbeddedProcessChannel<Serializable>(defaultNoticeableFuture1));
 
 		NettyChannelAttributes.putFabricWorker(
 			_embeddedChannel, 0, fabricWorker1);
@@ -158,10 +151,8 @@ public class NettyChannelAttributesTest {
 		DefaultNoticeableFuture<Serializable> defaultNoticeableFuture2 =
 			new DefaultNoticeableFuture<>();
 
-		FabricWorker<Serializable> fabricWorker2 =
-			new LocalFabricWorker<Serializable>(
-				new EmbeddedProcessChannel<Serializable>(
-					defaultNoticeableFuture2));
+		FabricWorker<Serializable> fabricWorker2 = new LocalFabricWorker<>(
+			new EmbeddedProcessChannel<Serializable>(defaultNoticeableFuture2));
 
 		NettyChannelAttributes.putFabricWorker(
 			_embeddedChannel, 1, fabricWorker2);

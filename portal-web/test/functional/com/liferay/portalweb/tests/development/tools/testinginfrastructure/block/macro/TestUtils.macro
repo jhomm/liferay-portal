@@ -1,66 +1,115 @@
-<definition>
-	<command name="assertEquals">
-		<echo message="${expected}" />
-		<echo message="${actual}" />
+definition {
 
-		<if>
-			<equals arg1="${expected}" arg2="${actual}" />
-			<then>
-				<echo message="PASSED" />
-			</then>
-			<else>
-				<execute macro="TestUtils#fail">
-					<var name="message" value="FAILED: expected '${expected}', actual was '${actual}'" />
-				</execute>
-			</else>
-		</if>
-	</command>
+	macro assertEquals {
+		echo("${expected}");
 
-	<command name="fail">
-		<if>
-			<not>
-				<isset var="message" />
-			</not>
-			<then>
-				<var name="message" value="FAIL" />
-			</then>
-		</if>
+		echo("${actual}");
 
-		<echo message="${message}" />
+		if ("${expected}" == "${actual}") {
+			echo("PASSED");
+		}
+		else {
+			TestUtils.fail(message = "FAILED: expected &apos;${expected}&apos;, actual was &apos;${actual}&apos;");
+		}
+	}
 
-		<fail message="${message}" />
-	</command>
+	macro assertNotEquals {
+		echo("${expected}");
 
-	<command name="pass">
-		<if>
-			<not>
-				<isset var="message" />
-			</not>
-			<then>
-				<var name="message" value="PASS" />
-			</then>
-		</if>
+		echo("${actual}");
 
-		<echo message="${message}" />
-	</command>
+		if ("${expected}" != "${actual}") {
+			echo("PASSED");
+		}
+		else {
+			TestUtils.fail(message = "FAILED: &apos;${expected}&apos; equals &apos;${actual}&apos;");
+		}
+	}
 
-	<command name="typeIntoField">
-		<execute macro="Page#openURL">
-			<var name="friendlyURL" value="${friendlyURL}" />
-			<var name="pageAccess" value="${pageAccess}" />
-			<var name="pageStaging" value="${pageStaging}" />
-			<var name="siteName" value="${siteName}" />
-			<var name="siteNameURL" value="${siteNameURL}" />
-			<var name="siteURL" value="${siteURL}" />
-			<var name="specificURL" value="${specificURL}" />
-			<var name="virtualHostsURL" value="${virtualHostsURL}" />
-		</execute>
+	macro fail {
+		if (!(isSet(message))) {
+			var message = "FAIL";
+		}
 
-		<execute function="Click#clickAtSidebarClickAtWaitForScript" locator1="Icon#ADD" value1="Add" />
+		echo("${message}");
 
-		<execute function="AssertClick" locator1="DockbarAddpanelpage#NAVIGATION_PAGE" value1="Page" />
-		<execute function="Type" locator1="TextInput#NAME" value1="${text}" />
+		fail("${message}");
+	}
 
-		<execute function="AssertTextEquals" locator1="TextInput#NAME" value1="${text}" />
-	</command>
-</definition>
+	macro getElementTextContent {
+		WaitForSPARefresh();
+
+		var javascript = '''
+var element = document.evaluate("${element}", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+return element.textContent;
+		''';
+
+		var textContent = selenium.getEval("${javascript}");
+
+		return "${textContent}";
+	}
+
+	macro hardRefresh {
+		var mac = OSDetector.isApple();
+
+		if ("${mac}" == "true") {
+			RobotType.robotTypeShortcut(locator1 = "Shift + Command + r");
+		}
+
+		else {
+			RobotType.robotTypeShortcut(locator1 = "Ctrl + Shift + r");
+		}
+
+		WaitForPageLoad();
+	}
+
+	macro isGreaterThan {
+		echo("${expected}");
+
+		echo("${actual}");
+
+		var result = MathUtil.isGreaterThan("${actual}", "${expected}");
+
+		if ("${result}" == "true") {
+			echo("PASSED");
+		}
+		else {
+			TestUtils.fail(message = "FAILED: actual &apos;${actual}&apos; is less than or equals to expected &apos;${expected}&apos;");
+		}
+	}
+
+	macro isLessThan {
+		echo("${expected}");
+
+		echo("${actual}");
+
+		var result = MathUtil.isLessThan("${actual}", "${expected}");
+
+		if ("${result}" == "true") {
+			echo("PASSED");
+		}
+		else {
+			TestUtils.fail(message = "FAILED: actual &apos;${actual}&apos; is greater than or equals to expected &apos;${expected}&apos;");
+		}
+	}
+
+	macro pass {
+		if (!(isSet(message))) {
+			var message = "PASS";
+		}
+
+		echo("${message}");
+	}
+
+	macro typeIntoField {
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Site Builder",
+			portlet = "Pages");
+
+		SitePages.addPublicPage(pageName = "Test Page Name");
+	}
+
+}

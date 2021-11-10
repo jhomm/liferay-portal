@@ -1,0 +1,224 @@
+<?xml version="1.0"?>
+<!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.4.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_4_0.dtd">
+
+<service-builder auto-import-default-references="false" auto-namespace-tables="false" mvcc-enabled="true" package-path="com.liferay.account">
+	<namespace>Account</namespace>
+	<entity external-reference-code="true" local-service="true" name="AccountEntry" remote-service="true">
+
+		<!-- PK fields -->
+
+		<column name="accountEntryId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="defaultBillingAddressId" type="long" />
+		<column name="defaultShippingAddressId" type="long" />
+		<column name="parentAccountEntryId" type="long" />
+		<column name="description" type="String" />
+		<column name="domains" type="String" />
+		<column name="emailAddress" type="String" />
+		<column name="logoId" type="long" />
+		<column name="name" type="String" />
+		<column name="taxExemptionCode" type="String" />
+		<column name="taxIdNumber" type="String" />
+		<column name="type" type="String" />
+		<column name="status" type="int" />
+
+		<!-- Order -->
+
+		<order by="asc">
+			<order-column name="name" />
+		</order>
+
+		<!-- Finder methods -->
+
+		<finder name="CompanyId" return-type="Collection">
+			<finder-column name="companyId" />
+		</finder>
+		<finder name="C_S" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="status" />
+		</finder>
+		<finder name="U_T" return-type="Collection">
+			<finder-column name="userId" />
+			<finder-column name="type" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="AccountEntryOrganizationRel">
+
+		<!-- PK fields -->
+
+		<column name="accountEntryOrganizationRelId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="accountEntryId" type="long" />
+		<column name="organizationId" type="long" />
+
+		<!-- Finder methods -->
+
+		<finder name="AccountEntryId" return-type="Collection">
+			<finder-column name="accountEntryId" />
+		</finder>
+		<finder name="OrganizationId" return-type="Collection">
+			<finder-column name="organizationId" />
+		</finder>
+		<finder name="A_O" return-type="AccountEntryOrganizationRel">
+			<finder-column name="accountEntryId" />
+			<finder-column name="organizationId" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="AccountEntryUserRel">
+
+		<!-- PK fields -->
+
+		<column name="accountEntryUserRelId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="accountEntryId" type="long" />
+		<column name="accountUserId" type="long" />
+
+		<!-- Finder methods -->
+
+		<finder name="AccountEntryId" return-type="Collection">
+			<finder-column name="accountEntryId" />
+		</finder>
+		<finder name="AccountUserId" return-type="Collection">
+			<finder-column name="accountUserId" />
+		</finder>
+		<finder name="AEI_AUI" return-type="AccountEntryUserRel">
+			<finder-column name="accountEntryId" />
+			<finder-column name="accountUserId" />
+		</finder>
+	</entity>
+	<entity external-reference-code="true" local-service="true" name="AccountGroup" remote-service="true">
+
+		<!-- PK fields -->
+
+		<column name="accountGroupId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="defaultAccountGroup" type="boolean" />
+		<column name="description" type="String" />
+		<column name="name" type="String" />
+		<column name="type" type="String" />
+
+		<!-- Finder methods -->
+
+		<finder name="AccountGroupId" return-type="Collection">
+			<finder-column arrayable-operator="OR" name="accountGroupId" />
+		</finder>
+		<finder name="CompanyId" return-type="Collection">
+			<finder-column name="companyId" />
+		</finder>
+		<finder name="C_D" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="defaultAccountGroup" />
+		</finder>
+		<finder name="C_T" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="type" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="AccountGroupRel">
+
+		<!-- PK fields -->
+
+		<column name="accountGroupRelId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="accountGroupId" type="long" />
+		<column name="classNameId" type="long" />
+		<column name="classPK" type="long" />
+
+		<!-- Finder methods -->
+
+		<finder name="AccountGroupId" return-type="Collection">
+			<finder-column name="accountGroupId" />
+		</finder>
+		<finder name="C_C" return-type="Collection">
+			<finder-column name="classNameId" />
+			<finder-column name="classPK" />
+		</finder>
+		<finder name="A_C_C" return-type="AccountGroupRel">
+			<finder-column name="accountGroupId" />
+			<finder-column name="classNameId" />
+			<finder-column name="classPK" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="AccountRole">
+
+		<!-- PK fields -->
+
+		<column name="accountRoleId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="accountEntryId" type="long" />
+		<column name="roleId" type="long" />
+
+		<!-- Finder methods -->
+
+		<finder name="CompanyId" return-type="Collection">
+			<finder-column name="companyId" />
+		</finder>
+		<finder name="AccountEntryId" return-type="Collection">
+			<finder-column arrayable-operator="OR" name="accountEntryId" />
+		</finder>
+		<finder name="RoleId" return-type="AccountRole">
+			<finder-column name="roleId" />
+		</finder>
+	</entity>
+	<exceptions>
+		<exception>AccountEntryDomains</exception>
+		<exception>AccountEntryEmailAddress</exception>
+		<exception>AccountEntryName</exception>
+		<exception>AccountEntryType</exception>
+		<exception>AccountEntryUserRelEmailAddress</exception>
+		<exception>DefaultAccountGroup</exception>
+		<exception>DuplicateAccountEntryExternalReferenceCode</exception>
+		<exception>DuplicateAccountEntryId</exception>
+		<exception>DuplicateAccountEntryOrganizationRel</exception>
+		<exception>DuplicateAccountEntryUserRel</exception>
+		<exception>DuplicateAccountGroupRel</exception>
+	</exceptions>
+</service-builder>

@@ -16,7 +16,7 @@
 
 <%@ include file="/html/taglib/ui/panel/init.jsp" %>
 
-<div class="panel panel-default <%= cssClass %>" id="<%= id %>">
+<div class="panel panel-secondary <%= cssClass %>" id="<%= id %>">
 	<div class="panel-heading <%= headerCssClass %>" data-persist-id="<%= persistState ? id : StringPool.BLANK %>">
 		<div class="panel-toggle">
 			<c:if test="<%= Validator.isNotNull(iconCssClass) %>">
@@ -32,5 +32,6 @@
 			</c:if>
 		</div>
 	</div>
+
 	<div class="<%= contentCssClass %>" id="<%= id %>Content">
 		<div class="panel-body">

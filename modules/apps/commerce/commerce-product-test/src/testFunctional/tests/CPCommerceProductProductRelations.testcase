@@ -1,0 +1,167 @@
+@component-name = "portal-commerce"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Product Info Management";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		CommerceConfiguration.commerceStoreFrontSetUp();
+	}
+
+	tearDown {
+		Navigator.openURL();
+
+		if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
+			User.logoutPG();
+		}
+
+		User.firstLoginPG();
+
+		CommerceConfiguration.commerceAdminTearDown();
+
+		CommerceConfiguration.commerceInitializersTearDown();
+	}
+
+	@description = "This is a test for COMMERCE-6062. AddAProductRelations"
+	@priority = "3"
+	test AddAProductRelations {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		Click(locator1 = "Icon#BACK");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Shoes",
+			productType = "Simple");
+
+		Click(locator1 = "Icon#BACK");
+
+		AppBuilderAdmin.searchByItem(itemName = "Simple T-Shirt");
+
+		CommerceNavigator.gotoEntry(entryName = "Simple T-Shirt");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Product Relations");
+
+		for (var valueList : list "Up-Sell,Cross-Sell,Related,Accessories,Spare") {
+			CommerceRelations.addAnyProductRelation(
+				key_product = "Shoes",
+				key_relation = "${valueList} Product");
+
+			AssertElementPresent(
+				key_productName = "Shoes",
+				key_Value = "${valueList}",
+				locator1 = "CommerceEntry#VALUE_PRODUCT_RELATIONS");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-6064. EditAProductRelations"
+	@priority = "3"
+	test EditAProductRelations {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		Pause(locator1 = "3000");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		Click(locator1 = "Icon#BACK");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Shoes",
+			productType = "Simple");
+
+		Click(locator1 = "Icon#BACK");
+
+		AppBuilderAdmin.searchByItem(itemName = "Simple T-Shirt");
+
+		CommerceNavigator.gotoEntry(entryName = "Simple T-Shirt");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Product Relations");
+
+		CommerceRelations.addProductRelation(productNameRelation = "Shoes");
+
+		CommerceRelations.productRelationSetPriority(
+			priorityValue = "1",
+			productNameRelation = "Shoes");
+
+		AssertElementPresent(
+			key_productName = "Shoes",
+			key_Value = "1",
+			locator1 = "CommerceEntry#VALUE_PRODUCT_RELATIONS");
+	}
+
+	@description = "This is a test for COMMERCE-6063. RemoveAProductRelations"
+	@priority = "3"
+	test RemoveAProductRelations {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		Click(locator1 = "Icon#BACK");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Shoes",
+			productType = "Simple");
+
+		Click(locator1 = "Icon#BACK");
+
+		CommerceNavigator.gotoEntry(entryName = "Simple T-Shirt");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Product Relations");
+
+		for (var valueList : list "Up-Sell,Cross-Sell,Related,Accessories,Spare") {
+			CommerceRelations.addAnyProductRelation(
+				key_product = "Shoes",
+				key_relation = "${valueList} Product");
+		}
+
+		for (var number : list "1,2,3,4,5") {
+			Click(
+				key_entryName = "Shoes",
+				locator1 = "CommerceEntry#ENTRY_MENU_DROPDOWN_BUTTON");
+
+			Click(
+				filterOption = "Delete",
+				locator1 = "ContentDashboard#FILTER_BY_OPTION");
+
+			AssertElementPresent(locator1 = "Message#SUCCESS");
+		}
+
+		for (var valueList : list "Up-Sell,Cross-Sell,Related,Accessories,Spare") {
+			AssertElementNotPresent(
+				key_productName = "Shoes",
+				key_Value = "${valueList}",
+				locator1 = "CommerceEntry#VALUE_PRODUCT_RELATIONS");
+		}
+	}
+
+}

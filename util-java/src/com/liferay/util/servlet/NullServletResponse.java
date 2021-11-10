@@ -27,10 +27,9 @@ import javax.servlet.http.HttpServletResponseWrapper;
  */
 public class NullServletResponse extends HttpServletResponseWrapper {
 
-	public NullServletResponse(HttpServletResponse response) {
-		super(response);
+	public NullServletResponse(HttpServletResponse httpServletResponse) {
+		super(httpServletResponse);
 
-		_servletOutputStream = new NullServletOutputStream();
 		_printWriter = UnsyncPrintWriterPool.borrow(
 			_servletOutputStream, getCharacterEncoding());
 	}
@@ -46,6 +45,7 @@ public class NullServletResponse extends HttpServletResponseWrapper {
 	}
 
 	private final PrintWriter _printWriter;
-	private final ServletOutputStream _servletOutputStream;
+	private final ServletOutputStream _servletOutputStream =
+		new NullServletOutputStream();
 
 }

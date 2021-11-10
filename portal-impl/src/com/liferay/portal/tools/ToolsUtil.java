@@ -14,11 +14,13 @@
 
 package com.liferay.portal.tools;
 
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
-import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.xml.SAXReaderFactory;
@@ -29,8 +31,12 @@ import de.hunsicker.jalopy.storage.Convention;
 import de.hunsicker.jalopy.storage.ConventionKeys;
 import de.hunsicker.jalopy.storage.Environment;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 import java.net.URL;
 
@@ -43,6 +49,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.dom4j.Document;
 import org.dom4j.Element;
@@ -67,6 +75,29 @@ import org.dom4j.io.SAXReader;
 public class ToolsUtil {
 
 	public static final String AUTHOR = "Brian Wing Shun Chan";
+
+	public static final int PLUGINS_MAX_DIR_LEVEL = 3;
+
+	public static final int PORTAL_MAX_DIR_LEVEL = 7;
+
+	public static String encodeEnvironmentProperty(String property) {
+		StringBundler sb = new StringBundler();
+
+		sb.append("LIFERAY_");
+
+		for (char c : property.toCharArray()) {
+			if (Character.isLowerCase(c)) {
+				sb.append(Character.toUpperCase(c));
+			}
+			else {
+				sb.append(CharPool.UNDERLINE);
+				sb.append(_charPoolChars.get(c));
+				sb.append(CharPool.UNDERLINE);
+			}
+		}
+
+		return sb.toString();
+	}
 
 	public static String getContent(String fileName) throws Exception {
 		Document document = _getContentDocument(fileName);
@@ -133,9 +164,8 @@ public class ToolsUtil {
 			throw new IllegalArgumentException(
 				"The namespace element is required");
 		}
-		else {
-			rootElement.add(namespaceElement);
-		}
+
+		rootElement.add(namespaceElement);
 
 		_addElements(rootElement, entityElements);
 
@@ -148,34 +178,117 @@ public class ToolsUtil {
 		return document.asXML();
 	}
 
+	public static int getLevel(String s) {
+		return getLevel(
+			s, new String[] {StringPool.OPEN_PARENTHESIS},
+			new String[] {StringPool.CLOSE_PARENTHESIS}, 0);
+	}
+
+	public static int getLevel(
+		String s, String increaseLevelString, String decreaseLevelString) {
+
+		return getLevel(
+			s, new String[] {increaseLevelString},
+			new String[] {decreaseLevelString}, 0);
+	}
+
+	public static int getLevel(
+		String s, String[] increaseLevelStrings,
+		String[] decreaseLevelStrings) {
+
+		return getLevel(s, increaseLevelStrings, decreaseLevelStrings, 0);
+	}
+
+	public static int getLevel(
+		String s, String[] increaseLevelStrings, String[] decreaseLevelStrings,
+		int startLevel) {
+
+		int level = startLevel;
+
+		for (String increaseLevelString : increaseLevelStrings) {
+			level = _adjustLevel(level, s, increaseLevelString, 1);
+		}
+
+		for (String decreaseLevelString : decreaseLevelStrings) {
+			level = _adjustLevel(level, s, decreaseLevelString, -1);
+		}
+
+		return level;
+	}
+
 	public static String getPackagePath(File file) {
 		String fileName = StringUtil.replace(
-			file.toString(), StringPool.BACK_SLASH, StringPool.SLASH);
+			file.toString(), CharPool.BACK_SLASH, CharPool.SLASH);
 
-		int x = fileName.lastIndexOf("/com/liferay/");
-		int y = fileName.lastIndexOf(StringPool.SLASH);
+		return getPackagePath(fileName);
+	}
+
+	public static String getPackagePath(String fileName) {
+		int x = Math.max(
+			fileName.lastIndexOf("/com/"), fileName.lastIndexOf("/org/"));
+		int y = fileName.lastIndexOf(CharPool.SLASH);
 
 		String packagePath = fileName.substring(x + 1, y);
 
-		return StringUtil.replace(
-			packagePath, StringPool.SLASH, StringPool.PERIOD);
+		return StringUtil.replace(packagePath, CharPool.SLASH, CharPool.PERIOD);
 	}
 
 	public static boolean isInsideQuotes(String s, int pos) {
+		return isInsideQuotes(s, pos, true);
+	}
+
+	public static boolean isInsideQuotes(
+		String s, int pos, boolean allowEscapedQuotes) {
+
+		int start = s.lastIndexOf(CharPool.NEW_LINE, pos);
+
+		if (start == -1) {
+			start = 0;
+		}
+
+		int end = s.indexOf(CharPool.NEW_LINE, pos);
+
+		if (end == -1) {
+			end = s.length();
+		}
+
+		String line = s.substring(start, end);
+
+		pos -= start;
+
+		char delimeter = CharPool.SPACE;
 		boolean insideQuotes = false;
 
-		for (int i = 0; i < s.length(); i++) {
-			char c = s.charAt(i);
+		for (int i = 0; i < line.length(); i++) {
+			char c = line.charAt(i);
 
 			if (insideQuotes) {
-				if ((c == CharPool.QUOTE) &&
-					((c <= 1) || (s.charAt(i - 1) != CharPool.BACK_SLASH) ||
-					 (s.charAt(i - 2) == CharPool.BACK_SLASH))) {
+				if (c == delimeter) {
+					if (!allowEscapedQuotes) {
+						insideQuotes = false;
+					}
+					else {
+						int precedingBackSlashCount = 0;
 
-					insideQuotes = false;
+						for (int j = i - 1; j >= 0; j--) {
+							if (line.charAt(j) == CharPool.BACK_SLASH) {
+								precedingBackSlashCount += 1;
+							}
+							else {
+								break;
+							}
+						}
+
+						if ((precedingBackSlashCount == 0) ||
+							((precedingBackSlashCount % 2) == 0)) {
+
+							insideQuotes = false;
+						}
+					}
 				}
 			}
-			else if (c == CharPool.QUOTE) {
+			else if ((c == CharPool.APOSTROPHE) || (c == CharPool.QUOTE)) {
+				delimeter = c;
 				insideQuotes = true;
 			}
 
@@ -187,86 +300,113 @@ public class ToolsUtil {
 		return false;
 	}
 
-	public static String stripFullyQualifiedClassNames(String content)
+	public static String stripFullyQualifiedClassNames(
+			String content, String packagePath)
 		throws IOException {
 
-		String imports = JavaImportsFormatter.getImports(content);
-
-		return stripFullyQualifiedClassNames(content, imports);
+		return stripFullyQualifiedClassNames(
+			content, JavaImportsFormatter.getImports(content), packagePath);
 	}
 
 	public static String stripFullyQualifiedClassNames(
-			String content, String imports)
+			String content, String imports, String packagePath)
 		throws IOException {
 
 		if (Validator.isNull(content) || Validator.isNull(imports)) {
 			return content;
 		}
 
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new UnsyncStringReader(imports));
+		String afterImportsContent = null;
 
-		String line = null;
+		int pos = content.lastIndexOf("\nimport ");
 
-		while ((line = unsyncBufferedReader.readLine()) != null) {
-			int x = line.indexOf("import ");
+		if ((pos == -1) && !content.startsWith("import ")) {
+			afterImportsContent = content;
+		}
+		else {
+			pos = content.indexOf("\n", pos + 1);
 
-			if (x == -1) {
-				continue;
-			}
+			afterImportsContent = content.substring(pos);
+		}
 
-			String importPackageAndClassName = line.substring(
-				x + 7, line.lastIndexOf(StringPool.SEMICOLON));
+		afterImportsContent = _stripFullyQualifiedClassNames(
+			imports, afterImportsContent, packagePath);
+		afterImportsContent = _stripFullyQualifiedClassNames(
+			imports, afterImportsContent, "java.lang");
 
-			x = -1;
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(imports))) {
 
-			while (true) {
-				x = content.indexOf(importPackageAndClassName, x + 1);
+			String line = null;
+
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				int x = line.indexOf("import ");
 
 				if (x == -1) {
-					break;
-				}
-
-				if (isInsideQuotes(content, x)) {
 					continue;
 				}
 
-				if (content.length() >
-						(x + importPackageAndClassName.length())) {
+				String importPackageAndClassName = line.substring(
+					x + 7, line.lastIndexOf(StringPool.SEMICOLON));
 
-					char nextChar = content.charAt(
-						x + importPackageAndClassName.length());
-
-					if (Character.isAlphabetic(nextChar) ||
-						Character.isDigit(nextChar) ||
-						(nextChar == CharPool.PERIOD) ||
-						(nextChar == CharPool.SEMICOLON) ||
-						(nextChar == CharPool.UNDERLINE)) {
-
-						continue;
-					}
-
-					if (x > 0) {
-						char previousChar = content.charAt(x - 1);
-
-						if ((previousChar == CharPool.QUOTE) &&
-							(nextChar == CharPool.QUOTE)) {
-
-							continue;
-						}
-					}
+				if (importPackageAndClassName.contains(StringPool.STAR)) {
+					continue;
 				}
 
-				String importClassName = importPackageAndClassName.substring(
-					importPackageAndClassName.lastIndexOf(StringPool.PERIOD) +
-						1);
+				Pattern pattern = Pattern.compile(
+					StringBundler.concat(
+						"[^\\w.](",
+						StringUtil.replace(
+							importPackageAndClassName, CharPool.PERIOD,
+							"\\.\\s*"),
+						")\\W"));
 
-				content = StringUtil.replaceFirst(
-					content, importPackageAndClassName, importClassName, x);
+				outerLoop:
+				while (true) {
+					Matcher matcher = pattern.matcher(afterImportsContent);
+
+					while (matcher.find()) {
+						x = matcher.start();
+
+						int y = afterImportsContent.lastIndexOf(
+							CharPool.NEW_LINE, x);
+
+						if (y == -1) {
+							y = 0;
+						}
+
+						String s = afterImportsContent.substring(y, x + 1);
+
+						if (isInsideQuotes(s, x - y)) {
+							continue;
+						}
+
+						s = StringUtil.trim(s);
+
+						if (s.startsWith("//")) {
+							continue;
+						}
+
+						int z = importPackageAndClassName.lastIndexOf(
+							StringPool.PERIOD);
+
+						afterImportsContent = StringUtil.replaceFirst(
+							afterImportsContent, matcher.group(1),
+							importPackageAndClassName.substring(z + 1), x);
+
+						continue outerLoop;
+					}
+
+					break;
+				}
 			}
-		}
 
-		return content;
+			if (pos == -1) {
+				return afterImportsContent;
+			}
+
+			return content.substring(0, pos) + afterImportsContent;
+		}
 	}
 
 	public static void writeFile(
@@ -281,20 +421,51 @@ public class ToolsUtil {
 			Map<String, Object> jalopySettings, Set<String> modifiedFileNames)
 		throws IOException {
 
-		String packagePath = getPackagePath(file);
+		writeFile(
+			file, content, null, author, jalopySettings, modifiedFileNames,
+			null);
+	}
+
+	public static void writeFile(
+			File file, String content, String author,
+			Map<String, Object> jalopySettings, Set<String> modifiedFileNames,
+			String packagePath)
+		throws IOException {
+
+		writeFile(
+			file, content, null, author, jalopySettings, modifiedFileNames,
+			packagePath);
+	}
+
+	public static void writeFile(
+			File file, String content, String author,
+			Set<String> modifiedFileNames)
+		throws IOException {
+
+		writeFile(file, content, author, null, modifiedFileNames);
+	}
+
+	public static void writeFile(
+			File file, String content, String header, String author,
+			Map<String, Object> jalopySettings, Set<String> modifiedFileNames,
+			String packagePath)
+		throws IOException {
+
+		if (!file.exists()) {
+			_write(file, StringPool.BLANK);
+		}
+
+		if (Validator.isNull(packagePath)) {
+			packagePath = getPackagePath(file);
+		}
 
 		String className = file.getName();
 
 		className = className.substring(0, className.length() - 5);
 
-		content = JavaImportsFormatter.stripJavaImports(
-			content, packagePath, className);
+		ImportsFormatter importsFormatter = new JavaImportsFormatter();
 
-		content = stripFullyQualifiedClassNames(content);
-
-		File tempFile = new File(_TMP_DIR, "ServiceBuilder.temp");
-
-		_write(tempFile, content);
+		content = importsFormatter.format(content, packagePath, className);
 
 		// Beautify
 
@@ -303,7 +474,8 @@ public class ToolsUtil {
 		Jalopy jalopy = new Jalopy();
 
 		jalopy.setFileFormat(FileFormat.UNIX);
-		jalopy.setInput(tempFile);
+		jalopy.setInput(
+			new ByteArrayInputStream(content.getBytes()), file.getPath());
 		jalopy.setOutput(sb);
 
 		File jalopyXmlFile = new File("tools/jalopy.xml");
@@ -346,11 +518,20 @@ public class ToolsUtil {
 
 		env.set("author", author);
 
+		// Fail on format error
+
+		boolean failOnFormatError = MapUtil.getBoolean(
+			jalopySettings, "failOnFormatError");
+
 		// File name
 
 		env.set("fileName", file.getName());
 
 		Convention convention = Convention.getInstance();
+
+		if (Validator.isNotNull(header)) {
+			convention.put(ConventionKeys.HEADER_TEXT, header);
+		}
 
 		String classMask = "/**\n * @author $author$\n*/";
 
@@ -362,7 +543,7 @@ public class ToolsUtil {
 			ConventionKeys.COMMENT_JAVADOC_TEMPLATE_INTERFACE,
 			env.interpolate(classMask));
 
-		jalopy.format();
+		boolean formatSuccess = jalopy.format();
 
 		String newContent = sb.toString();
 
@@ -372,8 +553,7 @@ public class ToolsUtil {
 			"(?m)^[ \t]*((?:package|import) .*;)\\s*^[ \t]*/\\*\\*",
 			"$1\n\n/**");
 
-		/*
-		// Remove blank lines after try {
+		/*// Remove blank lines after try {
 
 		newContent = StringUtil.replace(newContent, "try {\n\n", "try {\n");
 
@@ -387,20 +567,14 @@ public class ToolsUtil {
 
 		// Add space to last }
 
-		newContent = newContent.substring(0, newContent.length() - 2) + "\n\n}";
-		*/
+		newContent =
+			newContent.substring(0, newContent.length() - 2) + "\n\n}";*/
 
 		writeFileRaw(file, newContent, modifiedFileNames);
 
-		tempFile.deleteOnExit();
-	}
-
-	public static void writeFile(
-			File file, String content, String author,
-			Set<String> modifiedFileNames)
-		throws IOException {
-
-		writeFile(file, content, author, null, modifiedFileNames);
+		if (failOnFormatError && !formatSuccess) {
+			throw new IOException("Unable to beautify " + file);
+		}
 	}
 
 	public static void writeFileRaw(
@@ -428,6 +602,49 @@ public class ToolsUtil {
 
 			element.add(childElement);
 		}
+	}
+
+	private static int _adjustLevel(
+		int level, String text, String s, int diff) {
+
+		boolean multiLineComment = false;
+
+		forLoop:
+		for (String line : StringUtil.splitLines(text)) {
+			line = StringUtil.trim(line);
+
+			if (line.startsWith("/*")) {
+				multiLineComment = true;
+			}
+
+			if (multiLineComment) {
+				if (line.endsWith("*/")) {
+					multiLineComment = false;
+				}
+
+				continue;
+			}
+
+			if (line.startsWith("//") || line.startsWith("*")) {
+				continue;
+			}
+
+			int x = -1;
+
+			while (true) {
+				x = line.indexOf(s, x + 1);
+
+				if (x == -1) {
+					continue forLoop;
+				}
+
+				if (!isInsideQuotes(line, x)) {
+					level += diff;
+				}
+			}
+		}
+
+		return level;
 	}
 
 	private static Document _getContentDocument(String fileName)
@@ -501,6 +718,56 @@ public class ToolsUtil {
 		return url;
 	}
 
+	private static String _stripFullyQualifiedClassNames(
+		String imports, String afterImportsContent, String packagePath) {
+
+		if (Validator.isNull(packagePath)) {
+			return afterImportsContent;
+		}
+
+		Pattern pattern1 = Pattern.compile(
+			StringBundler.concat(
+				"\n(.*)(",
+				StringUtil.replace(packagePath, CharPool.PERIOD, "\\.\\s*"),
+				"\\.\\s*)([A-Z]\\w+)\\W"));
+
+		outerLoop:
+		while (true) {
+			Matcher matcher1 = pattern1.matcher(afterImportsContent);
+
+			while (matcher1.find()) {
+				String lineStart = StringUtil.trimLeading(matcher1.group(1));
+
+				if (lineStart.contains("//") || lineStart.startsWith("*") ||
+					isInsideQuotes(afterImportsContent, matcher1.start(2))) {
+
+					continue;
+				}
+
+				String className = matcher1.group(3);
+
+				Pattern pattern2 = Pattern.compile(
+					"import [\\w.]+\\." + className + ";");
+
+				Matcher matcher2 = pattern2.matcher(imports);
+
+				if (matcher2.find()) {
+					continue;
+				}
+
+				afterImportsContent = StringUtil.replaceFirst(
+					afterImportsContent, matcher1.group(2), StringPool.BLANK,
+					matcher1.start());
+
+				continue outerLoop;
+			}
+
+			break;
+		}
+
+		return afterImportsContent;
+	}
+
 	private static void _write(File file, String s) throws IOException {
 		Path path = file.toPath();
 
@@ -509,6 +776,31 @@ public class ToolsUtil {
 		Files.write(path, s.getBytes(StandardCharsets.UTF_8));
 	}
 
-	private static final String _TMP_DIR = System.getProperty("java.io.tmpdir");
+	/**
+	 * @see com.liferay.portal.configuration.ClassLoaderAggregatePropertiesUtil#_getCharPoolChars
+	 */
+	private static final Map<Character, String> _charPoolChars =
+		new HashMap<Character, String>() {
+			{
+				try {
+					for (Field field : CharPool.class.getFields()) {
+						if (Modifier.isStatic(field.getModifiers()) &&
+							(field.getType() == char.class)) {
+
+							put(
+								field.getChar(null),
+								StringUtil.removeChar(
+									field.getName(), CharPool.UNDERLINE));
+						}
+					}
+				}
+				catch (ReflectiveOperationException
+							reflectiveOperationException) {
+
+					throw new ExceptionInInitializerError(
+						reflectiveOperationException);
+				}
+			}
+		};
 
 }

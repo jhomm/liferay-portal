@@ -17,15 +17,19 @@ package com.liferay.portal.service.permission;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.model.Account;
-import com.liferay.portal.model.Company;
-import com.liferay.portal.model.Contact;
-import com.liferay.portal.model.Organization;
-import com.liferay.portal.model.User;
-import com.liferay.portal.security.auth.PrincipalException;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.service.UserLocalServiceUtil;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Contact;
+import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.service.permission.CommonPermission;
+import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
+import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 
 /**
  * @author Charles May
@@ -38,9 +42,9 @@ public class CommonPermissionImpl implements CommonPermission {
 			String actionId)
 		throws PortalException {
 
-		String className = PortalUtil.getClassName(classNameId);
-
-		check(permissionChecker, className, classPK, actionId);
+		check(
+			permissionChecker, PortalUtil.getClassName(classNameId), classPK,
+			actionId);
 	}
 
 	@Override
@@ -49,9 +53,20 @@ public class CommonPermissionImpl implements CommonPermission {
 			String actionId)
 		throws PortalException {
 
-		if (className.equals(Account.class.getName())) {
-		}
-		else if (className.equals(Company.class.getName())) {
+		if (className.equals(Company.class.getName())) {
+			long companyId = permissionChecker.getCompanyId();
+
+			if (classPK > 0) {
+				companyId = classPK;
+			}
+
+			if (!RoleLocalServiceUtil.hasUserRole(
+					permissionChecker.getUserId(), companyId,
+					RoleConstants.ADMINISTRATOR, true)) {
+
+				throw new PrincipalException.MustBeCompanyAdmin(
+					permissionChecker);
+			}
 		}
 		else if (className.equals(Contact.class.getName())) {
 			User user = UserLocalServiceUtil.getUserByContactId(classPK);

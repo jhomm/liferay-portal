@@ -1,17 +1,95 @@
-<definition component-name="portal-smoke">
-	<property name="testray.main.component.name" value="Smoke" />
+@component-name = "portal-smoke"
+definition {
 
-	<set-up>
-		<execute macro="SignIn#signInTestSetup" />
-	</set-up>
+	property portal.acceptance = "true";
+	property portal.release = "true";
+	property portal.smoke = "true";
+	property portal.upstream = "true";
+	property test.assert.warning.exceptions = "true";
+	property testray.main.component.name = "Smoke";
 
-	<tear-down>
-		<execute macro="Page#tearDownPG" />
-	</tear-down>
+	setUp {
+		TestCase.setUpPortalInstance();
 
-	<command description="Ensure that the super admin can add pages, add portlets, and navigate to the product menu." name="Smoke" priority="5">
-		<execute macro="Smoke#viewWelcomePage" />
+		SignIn.signInTestSetup();
+	}
 
-		<execute macro="Smoke#runSmoke" />
-	</command>
-</definition>
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			Page.tearDownCP();
+
+			Site.tearDownCP();
+
+			WebContent.tearDownCP();
+		}
+	}
+
+	@description = "Ensure that the super admin can add pages, add portlets, navigate to the product menu, use the WYSIWYG editor, and view alert messages."
+	@priority = "5"
+	test Smoke {
+		property app.server.types = "jboss,tcserver,tomcat,weblogic,websphere,wildfly";
+		property database.bare.enabled = "true";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+		property environment.acceptance = "true";
+		property portal.acceptance = "false";
+		property testray.component.names = "Training";
+
+		Smoke.viewWelcomeContentPage();
+
+		Smoke.runSmoke();
+
+		// Assert all bundles installed
+
+		AssertConsoleTextNotPresent(value1 = "The portal instance needs to be restarted to complete the installation");
+	}
+
+	@priority = "5"
+	test SmokeWithDeveloperProperties {
+		property custom.properties = "include-and-override=portal-developer.properties";
+		property osgi.module.configuration.file.names = "com.liferay.document.library.document.conversion.configuration.OpenOfficeConfiguration";
+		property osgi.module.configurations = "cacheEnabled=&quot;false&quot;";
+		property portal.smoke = "false";
+
+		Smoke.viewWelcomeContentPage();
+
+		Smoke.runSmoke();
+	}
+
+	@priority = "4"
+	test SmokeWithJNDI {
+		property app.server.types = "tomcat,wildfly,weblogic,websphere";
+		property database.jndi.enabled = "true";
+		property database.types = "mariadb,mysql";
+		property portal.smoke = "false";
+
+		Smoke.viewWelcomeContentPage();
+
+		Smoke.runSmoke();
+	}
+
+	@priority = "5"
+	test SmokeWithRuntimeJSPCompile {
+		property delete.precompiled.jsps = "true";
+		property portal.smoke = "false";
+
+		Smoke.viewWelcomeContentPage();
+
+		Smoke.runSmoke();
+	}
+
+	@priority = "5"
+	test SmokeWithSPADisabled {
+		property custom.properties = "javascript.single.page.application.enabled=false";
+		property portal.smoke = "false";
+
+		Smoke.viewWelcomeContentPage();
+
+		Smoke.runSmoke();
+	}
+
+}

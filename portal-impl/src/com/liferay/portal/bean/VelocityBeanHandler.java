@@ -14,8 +14,6 @@
 
 package com.liferay.portal.bean;
 
-import com.liferay.portal.kernel.util.ClassLoaderUtil;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -30,34 +28,31 @@ public class VelocityBeanHandler implements InvocationHandler {
 		_classLoader = classLoader;
 	}
 
-	public ClassLoader getClassLoader() {
-		return _classLoader;
-	}
-
 	@Override
 	public Object invoke(Object proxy, Method method, Object[] arguments)
 		throws Throwable {
 
-		ClassLoader contextClassLoader =
-			ClassLoaderUtil.getContextClassLoader();
+		Thread currentThread = Thread.currentThread();
+
+		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
 
 		try {
 			if ((_classLoader != null) &&
 				(_classLoader != contextClassLoader)) {
 
-				ClassLoaderUtil.setContextClassLoader(_classLoader);
+				currentThread.setContextClassLoader(_classLoader);
 			}
 
 			return method.invoke(_bean, arguments);
 		}
-		catch (InvocationTargetException ite) {
+		catch (InvocationTargetException invocationTargetException) {
 			return null;
 		}
 		finally {
 			if ((_classLoader != null) &&
 				(_classLoader != contextClassLoader)) {
 
-				ClassLoaderUtil.setContextClassLoader(contextClassLoader);
+				currentThread.setContextClassLoader(contextClassLoader);
 			}
 		}
 	}

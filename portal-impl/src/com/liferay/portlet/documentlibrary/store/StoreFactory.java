@@ -14,21 +14,30 @@
 
 package com.liferay.portlet.documentlibrary.store;
 
+import com.liferay.document.library.kernel.store.Store;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.change.tracking.store.CTStoreFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.registry.Registry;
-import com.liferay.registry.RegistryUtil;
-import com.liferay.registry.ServiceReference;
-import com.liferay.registry.ServiceTrackerCustomizer;
-import com.liferay.registry.collections.ServiceTrackerCollections;
-import com.liferay.registry.collections.ServiceTrackerMap;
 
+import java.util.Collections;
 import java.util.Set;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * @author Brian Wing Shun Chan
@@ -61,7 +70,7 @@ public class StoreFactory {
 
 		boolean found = false;
 
-		for (String key : _storeServiceTrackerMap.keySet()) {
+		for (String key : _storeServiceTrackerMapHolder.keySet()) {
 			Store store = getStore(key);
 
 			Class<?> clazz = store.getClass();
@@ -82,147 +91,201 @@ public class StoreFactory {
 		}
 
 		if (_log.isWarnEnabled()) {
-			StringBundler sb = new StringBundler(13);
-
-			sb.append("Liferay is configured with the legacy ");
-			sb.append("property \"dl.hook.impl=");
-			sb.append(dlHookImpl);
-			sb.append("\" ");
-			sb.append("in portal-ext.properties. Please reconfigure ");
-			sb.append("to use the new property \"");
-			sb.append(PropsKeys.DL_STORE_IMPL);
-			sb.append("\". Liferay will ");
-			sb.append("attempt to temporarily set \"");
-			sb.append(PropsKeys.DL_STORE_IMPL);
-			sb.append("=");
-			sb.append(PropsValues.DL_STORE_IMPL);
-			sb.append("\".");
-
-			_log.warn(sb.toString());
+			_log.warn(
+				StringBundler.concat(
+					"Liferay is configured with the legacy property ",
+					"\"dl.hook.impl=", dlHookImpl,
+					"\" in portal-ext.properties. Please reconfigure to use ",
+					"the new property \"", PropsKeys.DL_STORE_IMPL,
+					"\". Liferay will attempt to temporarily set \"",
+					PropsKeys.DL_STORE_IMPL, "=", PropsValues.DL_STORE_IMPL,
+					"\"."));
 		}
 
 		_warned = true;
 	}
 
-	public void destroy() {
-		_storeServiceTrackerMap.close();
-
-		_storeWrapperServiceTrackerMap.close();
-	}
-
 	public Store getStore() {
-		if (_store == null) {
-			if (Validator.isNull(_storeType)) {
-				setStore(PropsValues.DL_STORE_IMPL);
-			}
-			else {
-				setStore(_storeType);
-			}
-		}
+		Store store = _defaultStore;
 
-		if (_store == null) {
-			throw new IllegalStateException("Store is not available");
-		}
-
-		return _store;
-	}
-
-	public Store getStore(String key) {
-		Store store = _storeServiceTrackerMap.getService(key);
-
-		StoreWrapper storeWrapper = _storeWrapperServiceTrackerMap.getService(
-			key);
-
-		if (storeWrapper != null) {
-			return storeWrapper.wrap(store);
+		if (store == null) {
+			throw new IllegalStateException(
+				"Store is not available. Caller service needs to wait for " +
+					"store factory with \"dl.store.impl.enabled=true\".");
 		}
 
 		return store;
 	}
 
+	public Store getStore(String key) {
+		return _storeServiceTrackerMapHolder.getService(key);
+	}
+
 	public String[] getStoreTypes() {
-		Set<String> storeTypes = _storeServiceTrackerMap.keySet();
+		Set<String> storeTypes = _storeServiceTrackerMapHolder.keySet();
 
-		return storeTypes.toArray(new String[storeTypes.size()]);
+		return storeTypes.toArray(new String[0]);
 	}
 
+	/**
+	 * @deprecated As of Mueller (7.2.x), with no direct replacement
+	 */
+	@Deprecated
 	public void setStore(String key) {
-		if (key == null) {
-			_store = null;
-			_storeType = null;
-
-			return;
-		}
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Set " + key);
-		}
-
-		_store = getStore(key);
-		_storeType = key;
-	}
-
-	private StoreFactory() {
-		_storeServiceTrackerMap.open();
-
-		_storeWrapperServiceTrackerMap.open();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(StoreFactory.class);
 
+	private static final BundleContext _bundleContext =
+		SystemBundleUtil.getBundleContext();
+	private static volatile Store _defaultStore;
 	private static StoreFactory _storeFactory;
+	private static final StoreServiceTrackerMapHolder
+		_storeServiceTrackerMapHolder = new StoreServiceTrackerMapHolder();
 	private static boolean _warned;
 
-	private volatile Store _store;
-	private final ServiceTrackerMap<String, Store> _storeServiceTrackerMap =
-		ServiceTrackerCollections.singleValueMap(
-			Store.class, "store.type", new StoreServiceTrackerCustomizer());
-	private String _storeType;
-	private final ServiceTrackerMap<String, StoreWrapper>
-		_storeWrapperServiceTrackerMap =
-			ServiceTrackerCollections.singleValueMap(
-				StoreWrapper.class, "store.type");
+	private static class CTStoreFactoryServiceTrackerCustomizer
+		implements ServiceTrackerCustomizer
+			<CTStoreFactory, ServiceTrackerMap<String, Store>> {
 
-	private class StoreServiceTrackerCustomizer
+		@Override
+		public ServiceTrackerMap<String, Store> addingService(
+			ServiceReference<CTStoreFactory> serviceReference) {
+
+			CTStoreFactory ctStoreFactory = _bundleContext.getService(
+				serviceReference);
+
+			return ServiceTrackerMapFactory.openSingleValueMap(
+				_bundleContext, Store.class, "store.type",
+				new StoreTypeServiceTrackerCustomizer(ctStoreFactory));
+		}
+
+		@Override
+		public void modifiedService(
+			ServiceReference<CTStoreFactory> serviceReference,
+			ServiceTrackerMap<String, Store> serviceTrackerMap) {
+		}
+
+		@Override
+		public void removedService(
+			ServiceReference<CTStoreFactory> serviceReference,
+			ServiceTrackerMap<String, Store> serviceTrackerMap) {
+
+			serviceTrackerMap.close();
+
+			_bundleContext.ungetService(serviceReference);
+		}
+
+	}
+
+	private static class StoreServiceTrackerMapHolder {
+
+		public StoreServiceTrackerMapHolder() {
+			_serviceTracker = new ServiceTracker<>(
+				_bundleContext, CTStoreFactory.class,
+				new CTStoreFactoryServiceTrackerCustomizer());
+
+			_serviceTracker.open();
+		}
+
+		public Store getService(String key) {
+			ServiceTrackerMap<String, Store> serviceTrackerMap =
+				_serviceTracker.getService();
+
+			if (serviceTrackerMap == null) {
+				return null;
+			}
+
+			return serviceTrackerMap.getService(key);
+		}
+
+		public Set<String> keySet() {
+			ServiceTrackerMap<String, Store> serviceTrackerMap =
+				_serviceTracker.getService();
+
+			if (serviceTrackerMap == null) {
+				return Collections.emptySet();
+			}
+
+			return serviceTrackerMap.keySet();
+		}
+
+		private final ServiceTracker
+			<CTStoreFactory, ServiceTrackerMap<String, Store>> _serviceTracker;
+
+	}
+
+	private static class StoreTypeServiceTrackerCustomizer
 		implements ServiceTrackerCustomizer<Store, Store> {
+
+		public StoreTypeServiceTrackerCustomizer(
+			CTStoreFactory ctStoreFactory) {
+
+			_ctStoreFactory = ctStoreFactory;
+		}
 
 		@Override
 		public Store addingService(ServiceReference<Store> serviceReference) {
-			cleanUp(serviceReference);
+			String storeType = GetterUtil.getString(
+				serviceReference.getProperty("store.type"));
 
-			Registry registry = RegistryUtil.getRegistry();
+			Store store = _getStore(serviceReference, storeType);
 
-			return registry.getService(serviceReference);
+			if (StringUtil.equals(storeType, PropsValues.DL_STORE_IMPL)) {
+				_defaultStore = store;
+
+				_serviceRegistration = _bundleContext.registerService(
+					StoreFactory.class,
+					new StoreFactory() {
+
+						@Override
+						public Store getStore() {
+							return store;
+						}
+
+					},
+					MapUtil.singletonDictionary(
+						"dl.store.impl.enabled", "true"));
+			}
+
+			return store;
 		}
 
 		@Override
 		public void modifiedService(
 			ServiceReference<Store> serviceReference, Store service) {
-
-			cleanUp(serviceReference);
 		}
 
 		@Override
 		public void removedService(
 			ServiceReference<Store> serviceReference, Store service) {
 
-			cleanUp(serviceReference);
+			String storeType = GetterUtil.getString(
+				serviceReference.getProperty("store.type"));
 
-			Registry registry = RegistryUtil.getRegistry();
-
-			registry.ungetService(serviceReference);
-		}
-
-		protected void cleanUp(ServiceReference<Store> serviceReference) {
-			String storeType = (String)serviceReference.getProperty(
-				"store.type");
-
-			if (Validator.isNotNull(_storeType) &&
-				_storeType.equals(storeType)) {
-
-				_store = null;
+			if (StringUtil.equals(storeType, PropsValues.DL_STORE_IMPL)) {
+				_serviceRegistration.unregister();
 			}
+
+			_bundleContext.ungetService(serviceReference);
 		}
+
+		private Store _getStore(
+			ServiceReference<Store> serviceReference, String storeType) {
+
+			Store store = _bundleContext.getService(serviceReference);
+
+			if (!GetterUtil.getBoolean(
+					serviceReference.getProperty("ct.aware"))) {
+
+				store = _ctStoreFactory.createCTStore(store, storeType);
+			}
+
+			return store;
+		}
+
+		private final CTStoreFactory _ctStoreFactory;
+		private ServiceRegistration<StoreFactory> _serviceRegistration;
 
 	}
 

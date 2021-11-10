@@ -14,6 +14,9 @@
 
 package com.liferay.taglib.aui.base;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
 
@@ -33,6 +36,10 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		return super.doStartTag();
 	}
 
+	public List<String> getActiveLanguageIds() {
+		return _activeLanguageIds;
+	}
+
 	public boolean getAutoFocus() {
 		return _autoFocus;
 	}
@@ -43,6 +50,14 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 
 	public java.lang.Object getBean() {
 		return _bean;
+	}
+
+	public java.lang.String getButtonIconOff() {
+		return _buttonIconOff;
+	}
+
+	public java.lang.String getButtonIconOn() {
+		return _buttonIconOn;
 	}
 
 	public boolean getChangesContext() {
@@ -105,6 +120,14 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		return _helpTextCssClass;
 	}
 
+	public java.lang.String getIconOff() {
+		return _iconOff;
+	}
+
+	public java.lang.String getIconOn() {
+		return _iconOn;
+	}
+
 	public java.lang.String getId() {
 		return _id;
 	}
@@ -125,8 +148,8 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		return _label;
 	}
 
-	public boolean getLocalizeLabel() {
-		return _localizeLabel;
+	public java.lang.String getLabelCssClass() {
+		return _labelCssClass;
 	}
 
 	public java.lang.String getLanguageId() {
@@ -141,16 +164,20 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		return _localized;
 	}
 
+	public boolean getLocalizeLabel() {
+		return _localizeLabel;
+	}
+
 	public java.lang.Object getMax() {
 		return _max;
 	}
 
-	public java.lang.Class<?> getModel() {
-		return _model;
-	}
-
 	public java.lang.Object getMin() {
 		return _min;
+	}
+
+	public java.lang.Class<?> getModel() {
+		return _model;
 	}
 
 	public boolean getMultiple() {
@@ -185,6 +212,10 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		return _resizable;
 	}
 
+	public java.lang.String getSelectedLanguageId() {
+		return _selectedLanguageId;
+	}
+
 	public boolean getShowRequiredLabel() {
 		return _showRequiredLabel;
 	}
@@ -217,289 +248,237 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		return _wrapperCssClass;
 	}
 
+	public boolean isAdminMode() {
+		return _adminMode;
+	}
+
+	public void setActiveLanguageIds(List<String> activeLanguageIds) {
+		_activeLanguageIds = activeLanguageIds;
+	}
+
+	public void setAdminMode(boolean adminMode) {
+		_adminMode = adminMode;
+	}
+
 	public void setAutoFocus(boolean autoFocus) {
 		_autoFocus = autoFocus;
-
-		setScopedAttribute("autoFocus", autoFocus);
 	}
 
 	public void setAutoSize(boolean autoSize) {
 		_autoSize = autoSize;
-
-		setScopedAttribute("autoSize", autoSize);
 	}
 
 	public void setBean(java.lang.Object bean) {
 		_bean = bean;
+	}
 
-		setScopedAttribute("bean", bean);
+	public void setButtonIconOff(java.lang.String buttonIconOff) {
+		_buttonIconOff = buttonIconOff;
+	}
+
+	public void setButtonIconOn(java.lang.String buttonIconOn) {
+		_buttonIconOn = buttonIconOn;
 	}
 
 	public void setChangesContext(boolean changesContext) {
 		_changesContext = changesContext;
-
-		setScopedAttribute("changesContext", changesContext);
 	}
 
 	public void setChecked(boolean checked) {
 		_checked = checked;
-
-		setScopedAttribute("checked", checked);
 	}
 
 	public void setClassPK(long classPK) {
 		_classPK = classPK;
-
-		setScopedAttribute("classPK", classPK);
 	}
 
 	public void setClassTypePK(long classTypePK) {
 		_classTypePK = classTypePK;
-
-		setScopedAttribute("classTypePK", classTypePK);
 	}
 
 	public void setCssClass(java.lang.String cssClass) {
 		_cssClass = cssClass;
-
-		setScopedAttribute("cssClass", cssClass);
 	}
 
 	public void setData(java.lang.Object data) {
 		_data = data;
-
-		setScopedAttribute("data", data);
 	}
 
 	public void setDateTogglerCheckboxLabel(java.lang.String dateTogglerCheckboxLabel) {
 		_dateTogglerCheckboxLabel = dateTogglerCheckboxLabel;
-
-		setScopedAttribute("dateTogglerCheckboxLabel", dateTogglerCheckboxLabel);
 	}
 
 	public void setDefaultLanguageId(java.lang.String defaultLanguageId) {
 		_defaultLanguageId = defaultLanguageId;
-
-		setScopedAttribute("defaultLanguageId", defaultLanguageId);
 	}
 
 	public void setDisabled(boolean disabled) {
 		_disabled = disabled;
-
-		setScopedAttribute("disabled", disabled);
 	}
 
 	public void setField(java.lang.String field) {
 		_field = field;
-
-		setScopedAttribute("field", field);
 	}
 
 	public void setFieldParam(java.lang.String fieldParam) {
 		_fieldParam = fieldParam;
-
-		setScopedAttribute("fieldParam", fieldParam);
 	}
 
 	public void setFirst(boolean first) {
 		_first = first;
-
-		setScopedAttribute("first", first);
 	}
 
 	public void setFormName(java.lang.String formName) {
 		_formName = formName;
-
-		setScopedAttribute("formName", formName);
 	}
 
 	public void setHelpMessage(java.lang.String helpMessage) {
 		_helpMessage = helpMessage;
-
-		setScopedAttribute("helpMessage", helpMessage);
 	}
 
 	public void setHelpTextCssClass(java.lang.String helpTextCssClass) {
 		_helpTextCssClass = helpTextCssClass;
+	}
 
-		setScopedAttribute("helpTextCssClass", helpTextCssClass);
+	public void setIconOff(java.lang.String iconOff) {
+		_iconOff = iconOff;
+	}
+
+	public void setIconOn(java.lang.String iconOn) {
+		_iconOn = iconOn;
 	}
 
 	public void setId(java.lang.String id) {
 		_id = id;
-
-		setScopedAttribute("id", id);
 	}
 
 	public void setIgnoreRequestValue(boolean ignoreRequestValue) {
 		_ignoreRequestValue = ignoreRequestValue;
-
-		setScopedAttribute("ignoreRequestValue", ignoreRequestValue);
 	}
 
 	public void setInlineField(boolean inlineField) {
 		_inlineField = inlineField;
-
-		setScopedAttribute("inlineField", inlineField);
 	}
 
 	public void setInlineLabel(java.lang.String inlineLabel) {
 		_inlineLabel = inlineLabel;
-
-		setScopedAttribute("inlineLabel", inlineLabel);
 	}
 
 	public void setLabel(java.lang.String label) {
 		_label = label;
-
-		setScopedAttribute("label", label);
 	}
 
-	public void setLocalizeLabel(boolean localizeLabel) {
-		_localizeLabel = localizeLabel;
-
-		setScopedAttribute("localizeLabel", localizeLabel);
+	public void setLabelCssClass(java.lang.String labelCssClass) {
+		_labelCssClass = labelCssClass;
 	}
 
 	public void setLanguageId(java.lang.String languageId) {
 		_languageId = languageId;
-
-		setScopedAttribute("languageId", languageId);
 	}
 
 	public void setLast(boolean last) {
 		_last = last;
-
-		setScopedAttribute("last", last);
 	}
 
 	public void setLocalized(boolean localized) {
 		_localized = localized;
+	}
 
-		setScopedAttribute("localized", localized);
+	public void setLocalizeLabel(boolean localizeLabel) {
+		_localizeLabel = localizeLabel;
 	}
 
 	public void setMax(java.lang.Object max) {
 		_max = max;
-
-		setScopedAttribute("max", max);
-	}
-
-	public void setModel(java.lang.Class<?> model) {
-		_model = model;
-
-		setScopedAttribute("model", model);
 	}
 
 	public void setMin(java.lang.Object min) {
 		_min = min;
+	}
 
-		setScopedAttribute("min", min);
+	public void setModel(java.lang.Class<?> model) {
+		_model = model;
 	}
 
 	public void setMultiple(boolean multiple) {
 		_multiple = multiple;
-
-		setScopedAttribute("multiple", multiple);
 	}
 
 	public void setName(java.lang.String name) {
 		_name = name;
-
-		setScopedAttribute("name", name);
 	}
 
 	public void setOnChange(java.lang.String onChange) {
 		_onChange = onChange;
-
-		setScopedAttribute("onChange", onChange);
 	}
 
 	public void setOnClick(java.lang.String onClick) {
 		_onClick = onClick;
-
-		setScopedAttribute("onClick", onClick);
 	}
 
 	public void setPlaceholder(java.lang.String placeholder) {
 		_placeholder = placeholder;
-
-		setScopedAttribute("placeholder", placeholder);
 	}
 
 	public void setPrefix(java.lang.String prefix) {
 		_prefix = prefix;
-
-		setScopedAttribute("prefix", prefix);
 	}
 
 	public void setRequired(boolean required) {
 		_required = required;
-
-		setScopedAttribute("required", required);
 	}
 
 	public void setResizable(boolean resizable) {
 		_resizable = resizable;
+	}
 
-		setScopedAttribute("resizable", resizable);
+	public void setSelectedLanguageId(java.lang.String selectedLanguageId) {
+		_selectedLanguageId = selectedLanguageId;
 	}
 
 	public void setShowRequiredLabel(boolean showRequiredLabel) {
 		_showRequiredLabel = showRequiredLabel;
-
-		setScopedAttribute("showRequiredLabel", showRequiredLabel);
 	}
 
 	public void setSuffix(java.lang.String suffix) {
 		_suffix = suffix;
-
-		setScopedAttribute("suffix", suffix);
 	}
 
 	public void setTitle(java.lang.String title) {
 		_title = title;
-
-		setScopedAttribute("title", title);
 	}
 
 	public void setType(java.lang.String type) {
 		_type = type;
-
-		setScopedAttribute("type", type);
 	}
 
 	public void setUseNamespace(boolean useNamespace) {
 		_useNamespace = useNamespace;
-
-		setScopedAttribute("useNamespace", useNamespace);
 	}
 
 	public void setValue(java.lang.Object value) {
 		_value = value;
-
-		setScopedAttribute("value", value);
 	}
 
 	public void setWrappedField(boolean wrappedField) {
 		_wrappedField = wrappedField;
-
-		setScopedAttribute("wrappedField", wrappedField);
 	}
 
 	public void setWrapperCssClass(java.lang.String wrapperCssClass) {
 		_wrapperCssClass = wrapperCssClass;
-
-		setScopedAttribute("wrapperCssClass", wrapperCssClass);
 	}
 
 	@Override
 	protected void cleanUp() {
 		super.cleanUp();
 
+		_activeLanguageIds = new ArrayList<>();
+		_adminMode = false;
 		_autoFocus = false;
 		_autoSize = false;
 		_bean = null;
+		_buttonIconOff = null;
+		_buttonIconOn = null;
 		_changesContext = false;
 		_checked = false;
 		_classPK = 0;
@@ -515,18 +494,21 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		_formName = null;
 		_helpMessage = null;
 		_helpTextCssClass = "input-group-addon";
+		_iconOff = null;
+		_iconOn = null;
 		_id = null;
 		_ignoreRequestValue = false;
 		_inlineField = false;
 		_inlineLabel = null;
 		_label = null;
-		_localizeLabel = true;
+		_labelCssClass = null;
 		_languageId = null;
 		_last = false;
 		_localized = false;
+		_localizeLabel = true;
 		_max = null;
-		_model = null;
 		_min = null;
+		_model = null;
 		_multiple = false;
 		_name = null;
 		_onChange = null;
@@ -535,6 +517,7 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		_prefix = null;
 		_required = false;
 		_resizable = false;
+		_selectedLanguageId = null;
 		_showRequiredLabel = true;
 		_suffix = null;
 		_title = null;
@@ -552,9 +535,13 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 
 	@Override
 	protected void setAttributes(HttpServletRequest request) {
+		setNamespacedAttribute(request, "activeLanguageIds", _activeLanguageIds);
+		setNamespacedAttribute(request, "adminMode", _adminMode);
 		setNamespacedAttribute(request, "autoFocus", _autoFocus);
 		setNamespacedAttribute(request, "autoSize", _autoSize);
 		setNamespacedAttribute(request, "bean", _bean);
+		setNamespacedAttribute(request, "buttonIconOff", _buttonIconOff);
+		setNamespacedAttribute(request, "buttonIconOn", _buttonIconOn);
 		setNamespacedAttribute(request, "changesContext", _changesContext);
 		setNamespacedAttribute(request, "checked", _checked);
 		setNamespacedAttribute(request, "classPK", _classPK);
@@ -570,18 +557,21 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		setNamespacedAttribute(request, "formName", _formName);
 		setNamespacedAttribute(request, "helpMessage", _helpMessage);
 		setNamespacedAttribute(request, "helpTextCssClass", _helpTextCssClass);
+		setNamespacedAttribute(request, "iconOff", _iconOff);
+		setNamespacedAttribute(request, "iconOn", _iconOn);
 		setNamespacedAttribute(request, "id", _id);
 		setNamespacedAttribute(request, "ignoreRequestValue", _ignoreRequestValue);
 		setNamespacedAttribute(request, "inlineField", _inlineField);
 		setNamespacedAttribute(request, "inlineLabel", _inlineLabel);
 		setNamespacedAttribute(request, "label", _label);
-		setNamespacedAttribute(request, "localizeLabel", _localizeLabel);
+		setNamespacedAttribute(request, "labelCssClass", _labelCssClass);
 		setNamespacedAttribute(request, "languageId", _languageId);
 		setNamespacedAttribute(request, "last", _last);
 		setNamespacedAttribute(request, "localized", _localized);
+		setNamespacedAttribute(request, "localizeLabel", _localizeLabel);
 		setNamespacedAttribute(request, "max", _max);
-		setNamespacedAttribute(request, "model", _model);
 		setNamespacedAttribute(request, "min", _min);
+		setNamespacedAttribute(request, "model", _model);
 		setNamespacedAttribute(request, "multiple", _multiple);
 		setNamespacedAttribute(request, "name", _name);
 		setNamespacedAttribute(request, "onChange", _onChange);
@@ -590,6 +580,7 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		setNamespacedAttribute(request, "prefix", _prefix);
 		setNamespacedAttribute(request, "required", _required);
 		setNamespacedAttribute(request, "resizable", _resizable);
+		setNamespacedAttribute(request, "selectedLanguageId", _selectedLanguageId);
 		setNamespacedAttribute(request, "showRequiredLabel", _showRequiredLabel);
 		setNamespacedAttribute(request, "suffix", _suffix);
 		setNamespacedAttribute(request, "title", _title);
@@ -605,9 +596,13 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 	private static final String _PAGE =
 		"/html/taglib/aui/input/page.jsp";
 
+	private List<String> _activeLanguageIds = new ArrayList<>();
+	private boolean _adminMode = false;
 	private boolean _autoFocus = false;
 	private boolean _autoSize = false;
 	private java.lang.Object _bean = null;
+	private java.lang.String _buttonIconOff = null;
+	private java.lang.String _buttonIconOn = null;
 	private boolean _changesContext = false;
 	private boolean _checked = false;
 	private long _classPK = 0;
@@ -623,18 +618,21 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 	private java.lang.String _formName = null;
 	private java.lang.String _helpMessage = null;
 	private java.lang.String _helpTextCssClass = "input-group-addon";
+	private java.lang.String _iconOff = null;
+	private java.lang.String _iconOn = null;
 	private java.lang.String _id = null;
 	private boolean _ignoreRequestValue = false;
 	private boolean _inlineField = false;
 	private java.lang.String _inlineLabel = null;
 	private java.lang.String _label = null;
-	private boolean _localizeLabel = true;
+	private java.lang.String _labelCssClass = null;
 	private java.lang.String _languageId = null;
 	private boolean _last = false;
 	private boolean _localized = false;
+	private boolean _localizeLabel = true;
 	private java.lang.Object _max = null;
-	private java.lang.Class<?> _model = null;
 	private java.lang.Object _min = null;
+	private java.lang.Class<?> _model = null;
 	private boolean _multiple = false;
 	private java.lang.String _name = null;
 	private java.lang.String _onChange = null;
@@ -643,6 +641,7 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 	private java.lang.String _prefix = null;
 	private boolean _required = false;
 	private boolean _resizable = false;
+	private java.lang.String _selectedLanguageId = null;
 	private boolean _showRequiredLabel = true;
 	private java.lang.String _suffix = null;
 	private java.lang.String _title = null;

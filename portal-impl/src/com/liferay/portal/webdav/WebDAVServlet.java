@@ -14,14 +14,23 @@
 
 package com.liferay.portal.webdav;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.InstancePool;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.webdav.WebDAVException;
 import com.liferay.portal.kernel.webdav.WebDAVRequest;
@@ -29,14 +38,6 @@ import com.liferay.portal.kernel.webdav.WebDAVStorage;
 import com.liferay.portal.kernel.webdav.WebDAVUtil;
 import com.liferay.portal.kernel.webdav.methods.Method;
 import com.liferay.portal.kernel.webdav.methods.MethodFactory;
-import com.liferay.portal.model.User;
-import com.liferay.portal.security.auth.PrincipalException;
-import com.liferay.portal.security.auth.PrincipalThreadLocal;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.security.permission.PermissionCheckerFactoryUtil;
-import com.liferay.portal.security.permission.PermissionThreadLocal;
-import com.liferay.portal.service.UserLocalServiceUtil;
-import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.PropsValues;
 
 import javax.servlet.http.HttpServlet;
@@ -52,28 +53,31 @@ public class WebDAVServlet extends HttpServlet {
 
 	@Override
 	public void service(
-		HttpServletRequest request, HttpServletResponse response) {
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
 		int status = HttpServletResponse.SC_PRECONDITION_FAILED;
 
-		String userAgent = request.getHeader(HttpHeaders.USER_AGENT);
+		String userAgent = httpServletRequest.getHeader(HttpHeaders.USER_AGENT);
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("User agent " + userAgent);
 		}
 
 		try {
-			if (isIgnoredResource(request)) {
+			if (isIgnoredResource(httpServletRequest)) {
 				status = HttpServletResponse.SC_NOT_FOUND;
 
 				return;
 			}
 
-			WebDAVStorage storage = getStorage(request);
+			WebDAVStorage storage = getStorage(httpServletRequest);
 
 			if (storage == null) {
 				if (_log.isDebugEnabled()) {
-					_log.debug("Invalid WebDAV path " + request.getPathInfo());
+					_log.debug(
+						"Invalid WebDAV path " +
+							httpServletRequest.getPathInfo());
 				}
 
 				return;
@@ -83,12 +87,12 @@ public class WebDAVServlet extends HttpServlet {
 			// and only if the servlet is not mapped to more than one URL.
 
 			if (storage.getRootPath() == null) {
-				storage.setRootPath(getRootPath(request));
+				storage.setRootPath(getRootPath(httpServletRequest));
 			}
 
 			PermissionChecker permissionChecker = null;
 
-			String remoteUser = request.getRemoteUser();
+			String remoteUser = httpServletRequest.getRemoteUser();
 
 			if (remoteUser != null) {
 				PrincipalThreadLocal.setName(remoteUser);
@@ -106,72 +110,74 @@ public class WebDAVServlet extends HttpServlet {
 
 			MethodFactory methodFactory = storage.getMethodFactory();
 
-			Method method = methodFactory.create(request);
+			Method method = methodFactory.create(httpServletRequest);
 
 			// Process the method
 
 			try {
 				WebDAVRequest webDAVRequest = new WebDAVRequestImpl(
-					storage, request, response, userAgent, permissionChecker);
+					storage, httpServletRequest, httpServletResponse, userAgent,
+					permissionChecker);
 
 				status = method.process(webDAVRequest);
 			}
-			catch (WebDAVException wde) {
+			catch (WebDAVException webDAVException) {
 				boolean logError = false;
 
-				Throwable cause = wde;
+				Throwable throwable = webDAVException;
 
-				while (cause != null) {
-					if (cause instanceof PrincipalException) {
+				while (throwable != null) {
+					if (throwable instanceof PrincipalException) {
 						logError = true;
 					}
 
-					cause = cause.getCause();
+					throwable = throwable.getCause();
 				}
 
 				if (logError) {
-					_log.error(wde, wde);
+					_log.error(webDAVException, webDAVException);
 				}
 				else if (_log.isWarnEnabled()) {
-					_log.warn(wde, wde);
+					_log.warn(webDAVException, webDAVException);
 				}
 
 				status = HttpServletResponse.SC_PRECONDITION_FAILED;
 			}
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 		finally {
-			response.setStatus(status);
+			httpServletResponse.setStatus(status);
 
 			if (_log.isInfoEnabled()) {
 				String xLitmus = GetterUtil.getString(
-					request.getHeader("X-Litmus"));
+					httpServletRequest.getHeader("X-Litmus"));
 
 				if (Validator.isNotNull(xLitmus)) {
 					xLitmus += " ";
 				}
 
 				_log.info(
-					xLitmus + request.getMethod() + " " +
-						request.getRequestURI() + " " + status);
+					StringBundler.concat(
+						xLitmus, httpServletRequest.getMethod(), " ",
+						httpServletRequest.getRequestURI(), " ", status));
 			}
 		}
 	}
 
-	protected String getRootPath(HttpServletRequest request) {
+	protected String getRootPath(HttpServletRequest httpServletRequest) {
 		String contextPath = HttpUtil.fixPath(
-			PortalUtil.getPathContext(request), false, true);
-		String ServletPath = HttpUtil.fixPath(
-			request.getServletPath(), false, true);
+			PortalUtil.getPathContext(httpServletRequest), false, true);
+		String servletPath = HttpUtil.fixPath(
+			httpServletRequest.getServletPath(), false, true);
 
-		return contextPath.concat(ServletPath);
+		return contextPath.concat(servletPath);
 	}
 
-	protected WebDAVStorage getStorage(HttpServletRequest request) {
+	protected WebDAVStorage getStorage(HttpServletRequest httpServletRequest) {
 		String pathInfo = WebDAVUtil.stripManualCheckInRequiredPath(
-			request.getPathInfo());
+			httpServletRequest.getPathInfo());
 
 		pathInfo = WebDAVUtil.stripOfficeExtension(pathInfo);
 
@@ -194,9 +200,9 @@ public class WebDAVServlet extends HttpServlet {
 		return storage;
 	}
 
-	protected boolean isIgnoredResource(HttpServletRequest request) {
+	protected boolean isIgnoredResource(HttpServletRequest httpServletRequest) {
 		String[] pathArray = WebDAVUtil.getPathArray(
-			request.getPathInfo(), true);
+			httpServletRequest.getPathInfo(), true);
 
 		if (ArrayUtil.isEmpty(pathArray)) {
 			return false;
@@ -224,8 +230,9 @@ public class WebDAVServlet extends HttpServlet {
 			if (match) {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
-						"Skipping over " + request.getMethod() + " " +
-							request.getPathInfo());
+						StringBundler.concat(
+							"Skipping over ", httpServletRequest.getMethod(),
+							" ", httpServletRequest.getPathInfo()));
 				}
 
 				return true;

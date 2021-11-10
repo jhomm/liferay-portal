@@ -1,9 +1,14 @@
-<definition default="sikuliUploadTempFile">
-	<command name="sikuliUploadTempFile">
-		<execute selenium="sikuliUploadTempFile" />
+@default = "sikuliUploadTempFile"
+definition {
 
-		<execute selenium="assertJavaScriptErrors" />
+	function sikuliUploadTempFile {
+		WaitForSPARefresh();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.sikuliUploadTempFile();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

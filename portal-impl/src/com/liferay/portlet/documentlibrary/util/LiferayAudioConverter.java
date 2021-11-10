@@ -33,7 +33,9 @@ import java.util.Properties;
  * @author Sergio González
  * @author Brian Wing Shun Chan
  * @author Alexander Chow
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link com.liferay.document.library.kernel.util.AudioConverter}
  */
+@Deprecated
 public class LiferayAudioConverter extends LiferayConverter {
 
 	public LiferayAudioConverter(
@@ -129,12 +131,13 @@ public class LiferayAudioConverter extends LiferayConverter {
 
 			int streamIndex = inputIPacket.getStreamIndex();
 
-			IStreamCoder inputIStreamCoder = inputIStreamCoders[streamIndex];
 			IStreamCoder outputIStreamCoder = outputIStreamCoders[streamIndex];
 
 			if (outputIStreamCoder == null) {
 				continue;
 			}
+
+			IStreamCoder inputIStreamCoder = inputIStreamCoders[streamIndex];
 
 			if (inputIStreamCoder.getCodecType() ==
 					ICodec.Type.CODEC_TYPE_AUDIO) {

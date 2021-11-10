@@ -14,12 +14,15 @@
 
 package com.liferay.taglib.servlet;
 
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.io.WriterOutputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.ServletOutputStreamAdapter;
+import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.UnsyncPrintWriterPool;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Writer;
@@ -27,17 +30,75 @@ import java.io.Writer;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
+import javax.servlet.jsp.JspWriter;
 import javax.servlet.jsp.PageContext;
+import javax.servlet.jsp.tagext.BodyContent;
 
 /**
  * @author Shuyang Zhou
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link com.liferay.portal.kernel.servlet.PipingServletResponse} and {@link PipingServletResponseFactory}
  */
+@Deprecated
 public class PipingServletResponse extends HttpServletResponseWrapper {
 
-	public PipingServletResponse(
-		HttpServletResponse response, OutputStream outputStream) {
+	public static HttpServletResponse createPipingServletResponse(
+		PageContext pageContext) {
 
-		super(response);
+		HttpServletResponse httpServletResponse =
+			(HttpServletResponse)pageContext.getResponse();
+
+		JspWriter jspWriter = pageContext.getOut();
+
+		if (ServerDetector.isWebLogic()) {
+
+			// This optimization cannot be applied to WebLogic because WebLogic
+			// relies on the WriterOutputStream bridging logic insde
+			// getOutputStream().
+
+			// WebLogic's weblogic.servlet.internal.DelegateChunkWriter#
+			// getWriter() always builds its writer on top of
+			// HttpServletResponse#getOutputStream() rather than relying on
+			// the HttpServletResponse#getWriter().
+
+			// In order to avoid the potential heavy
+			// BufferCacheServletResponse#getBufferSize() call, we
+			// preadapt JspWriter to ServletOutputStream using
+			// JspWriter#getBufferSize() rather than the
+			// HttpServletResponse#getBufferSize().
+
+			return new PipingServletResponse(
+				httpServletResponse,
+				new ServletOutputStreamAdapter(
+					new WriterOutputStream(
+						jspWriter, httpServletResponse.getCharacterEncoding(),
+						jspWriter.getBufferSize(), true)));
+		}
+
+		if (!(pageContext instanceof PageContextWrapper) ||
+			(jspWriter instanceof BodyContent)) {
+
+			// This optimization cannot be applied to a page context with a
+			// pushed body
+
+			return new PipingServletResponse(httpServletResponse, jspWriter);
+		}
+
+		if (!ServerDetector.isTomcat()) {
+			try {
+				jspWriter.flush();
+			}
+			catch (IOException ioException) {
+				ReflectionUtil.throwException(ioException);
+			}
+		}
+
+		return httpServletResponse;
+	}
+
+	public PipingServletResponse(
+		HttpServletResponse httpServletResponse, OutputStream outputStream) {
+
+		super(httpServletResponse);
 
 		if (outputStream == null) {
 			throw new NullPointerException("Output stream is null");
@@ -47,9 +108,9 @@ public class PipingServletResponse extends HttpServletResponseWrapper {
 	}
 
 	public PipingServletResponse(
-		HttpServletResponse response, PrintWriter printWriter) {
+		HttpServletResponse httpServletResponse, PrintWriter printWriter) {
 
-		super(response);
+		super(httpServletResponse);
 
 		if (printWriter == null) {
 			throw new NullPointerException("Print writer is null");
@@ -59,9 +120,10 @@ public class PipingServletResponse extends HttpServletResponseWrapper {
 	}
 
 	public PipingServletResponse(
-		HttpServletResponse response, ServletOutputStream servletOutputStream) {
+		HttpServletResponse httpServletResponse,
+		ServletOutputStream servletOutputStream) {
 
-		super(response);
+		super(httpServletResponse);
 
 		if (servletOutputStream == null) {
 			throw new NullPointerException("Servlet output stream is null");
@@ -70,20 +132,16 @@ public class PipingServletResponse extends HttpServletResponseWrapper {
 		_servletOutputStream = servletOutputStream;
 	}
 
-	public PipingServletResponse(HttpServletResponse response, Writer writer) {
-		super(response);
+	public PipingServletResponse(
+		HttpServletResponse httpServletResponse, Writer writer) {
+
+		super(httpServletResponse);
 
 		if (writer == null) {
 			throw new NullPointerException("Writer is null");
 		}
 
 		_printWriter = UnsyncPrintWriterPool.borrow(writer);
-	}
-
-	public PipingServletResponse(PageContext pageContext) {
-		this(
-			(HttpServletResponse)pageContext.getResponse(),
-			pageContext.getOut());
 	}
 
 	@Override

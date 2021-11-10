@@ -14,7 +14,7 @@
 
 package com.liferay.portal.test.aspects;
 
-import com.liferay.portal.kernel.util.ReflectionUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -26,26 +26,23 @@ import org.aspectj.lang.annotation.Aspect;
 @Aspect
 public class ReflectionUtilAdvice {
 
-	public static void setDeclaredFieldThrowable(
-		Throwable declaredFieldThrowable) {
-
-		_declaredFieldThrowable = declaredFieldThrowable;
+	public static void setDeclaredFieldThrowable(Throwable throwable) {
+		_declaredFieldThrowable = throwable;
 	}
 
-	public static void setDeclaredMethodThrowable(
-			Throwable declaredMethodThrowable)
+	public static void setDeclaredMethodThrowable(Throwable throwable)
 		throws ClassNotFoundException {
 
 		Class.forName(
 			ReflectionUtil.class.getName(), true,
 			ReflectionUtil.class.getClassLoader());
 
-		_declaredMethodThrowable = declaredMethodThrowable;
+		_declaredMethodThrowable = throwable;
 	}
 
 	@Around(
 		"execution(public static java.lang.reflect.Field " +
-			"com.liferay.portal.kernel.util.ReflectionUtil." +
+			"com.liferay.petra.reflect.ReflectionUtil." +
 				"getDeclaredField(Class, String))"
 	)
 	public Object getDeclaredField(ProceedingJoinPoint proceedingJoinPoint)
@@ -60,7 +57,7 @@ public class ReflectionUtilAdvice {
 
 	@Around(
 		"execution(public static java.lang.reflect.Method " +
-			"com.liferay.portal.kernel.util.ReflectionUtil." +
+			"com.liferay.petra.reflect.ReflectionUtil." +
 				"getDeclaredMethod(Class, String, Class...))"
 	)
 	public Object getDeclaredMethod(ProceedingJoinPoint proceedingJoinPoint)

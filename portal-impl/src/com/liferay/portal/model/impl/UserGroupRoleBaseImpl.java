@@ -14,10 +14,8 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.model.UserGroupRole;
-import com.liferay.portal.service.UserGroupRoleLocalServiceUtil;
+import com.liferay.portal.kernel.model.UserGroupRole;
+import com.liferay.portal.kernel.service.UserGroupRoleLocalServiceUtil;
 
 /**
  * The extended model base implementation for the UserGroupRole service. Represents a row in the &quot;UserGroupRole&quot; database table, with each column mapped to a property of this class.
@@ -31,13 +29,13 @@ import com.liferay.portal.service.UserGroupRoleLocalServiceUtil;
  * @see UserGroupRole
  * @generated
  */
-@ProviderType
-public abstract class UserGroupRoleBaseImpl extends UserGroupRoleModelImpl
-	implements UserGroupRole {
+public abstract class UserGroupRoleBaseImpl
+	extends UserGroupRoleModelImpl implements UserGroupRole {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. All methods that expect a user group role model instance should use the {@link UserGroupRole} interface instead.
+	 * Never modify or reference this class directly. All methods that expect a user group role model instance should use the <code>UserGroupRole</code> interface instead.
 	 */
 	@Override
 	public void persist() {
@@ -48,4 +46,5 @@ public abstract class UserGroupRoleBaseImpl extends UserGroupRoleModelImpl
 			UserGroupRoleLocalServiceUtil.updateUserGroupRole(this);
 		}
 	}
+
 }

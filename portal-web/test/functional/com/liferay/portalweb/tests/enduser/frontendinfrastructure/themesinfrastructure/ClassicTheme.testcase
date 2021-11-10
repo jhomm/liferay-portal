@@ -1,0 +1,91 @@
+@component-name = "portal-frontend-infrastructure"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.component.names = "Theme";
+	property testray.main.component.name = "Theme";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			Page.tearDownCP();
+		}
+	}
+
+	@description = "Verify custom look and feel Settings can be applied to page"
+	@priority = "5"
+	@refactordone
+	test CanConfigureLookAndFeelSettingsOnSinglePage {
+		property osgi.modules.includes = "frontend-taglib-clay-sample-web";
+		property portal.acceptance = "true";
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Classic Theme Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Guest",
+			layoutName = "Classic Theme Page",
+			widgetName = "Clay Sample");
+
+		ProductMenu.gotoPortlet(
+			category = "Site Builder",
+			portlet = "Pages");
+
+		SitePages.gotoPageMenuItem(
+			menuItem = "Configure",
+			pageName = "Classic Theme Page");
+
+		Navigator.gotoNavTab(navTab = "Look and Feel");
+
+		Theme.configureLookAndFeelSpecificLook();
+
+		Theme.configureLookAndFeelShowHeaderSearch(showHeaderSearch = "false");
+
+		Theme.configureLookAndFeelShowMaxMinAppLinks(showMaxMinAppLinks = "true");
+
+		Theme.configureLookAndFeelCustomCSS(cssText = '''body, #wrapper{background-color: #42f4c5;}''');
+
+		PortletEntry.save();
+
+		Navigator.gotoPage(pageName = "Classic Theme Page");
+
+		var htmlSourceText = '''body, #wrapper{background-color: #42f4c5;}''';
+
+		AssertHTMLSourceTextPresent(value1 = "${htmlSourceText}");
+
+		takeScreenshot();
+
+		AssertElementNotPresent(locator1 = "Search#EMBEDDED_SEARCH_BAR");
+
+		Portlet.gotoPortletOptions(portletName = "Clay Sample");
+
+		Theme.viewMaxPortletOption();
+
+		Theme.viewMinPortlet();
+
+		AssertTextEquals(
+			locator1 = "Portlet#H2_HEADER",
+			value1 = "Clay Sample");
+
+		AssertTextNotPresent(
+			locator1 = "Portlet#PORTLET_CONTENT",
+			value1 = "Clay Sample");
+
+		Portlet.gotoPortletOptions(portletName = "Clay Sample");
+
+		Theme.viewRestorePortlet();
+	}
+
+}

@@ -2,46 +2,37 @@
 <head>
 <title>DocumentsAndMediaMetadataSets</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">DocumentsAndMediaMetadataSets</td></tr>
 </thead>
+
 <tbody>
 <tr>
-	<td>REQUIRED_STRUCTURES_ERROR_MESSAGE</td>
-	<td>//div[contains(@class,'alert-danger') and contains(.,'Required structures could not be deleted.')]</td>
+	<td>ADD_FIELD_TYPE</td>
+	<td>//div[contains(@class,'field-type')]//span[contains(text(),'${key_fieldType}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>METADATA_SETS_IFRAME</td>
-	<td>//iframe[contains(@class,'dialog-iframe-node')]</td>
+	<td>ADD_FIELD_TARGET</td>
+	<td>//div[contains(@class,'col-empty')]/div</td>
 	<td></td>
 </tr>
 <tr>
-	<td>TOOLBAR_ADD</td>
-	<td>//div[contains(@id,'Navbar')]/ul[@aria-label='Dynamic Data Mapping']/li/a/span[contains(.,'Add')]</td>
+	<td>FIELD_BOTTOM_DROP_TARGET</td>
+	<td>//div[contains(@class,'placeholder row')]/div[@data-ddm-field-row='${key_rowNum}']/div[contains(@class,'ddm-target')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--METADATA_SETS_TABLE-->
-<tr>
-	<td>METADATA_SETS_TABLE_CHECKBOX</td>
-	<td>//tr[contains(.,'${key_metadataSetName}')]/td[1]/input</td>
+	<td>FIELD_LABEL</td>
+	<td>xpath=(//div[contains(@class,'ddm-drag')]//div/p[contains(@class,'ddm-label')])[last()]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>METADATA_SETS_TABLE_NAME</td>
-	<td>//tr[contains(.,'${key_metadataSetName}')]/td[3]/a</td>
-	<td></td>
-</tr>
-<tr>
-	<td>METADATA_SETS_TABLE_ACTIONS</td>
-	<td>//tr[contains(.,'${key_metadataSetName}')]/td[6]/div/a[@title='Actions']/span</td>
+	<td>METADATA_SETS_NAME</td>
+	<td>//td//a[contains(.,'${key_metadataSetName}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -50,13 +41,28 @@
 	<td></td>
 </tr>
 <tr>
-	<td>METADATA_SETS_TABLE_CHOOSE</td>
-	<td>//tr[contains(.,'${key_metadataSetName}')]/td[5]/button[contains(.,'Choose')]</td>
+	<td>SIDEBAR_BASIC_TAB</td>
+	<td>//li[contains(@class,'nav-item')]/button[contains(@class,'nav-link') and contains(.,'Basic')]</td>
 	<td></td>
 </tr>
 <tr>
+	<td>SIDEBAR_ACTIVE_BASIC_TAB</td>
+	<td>//li[contains(@class,'nav-item')]/button[contains(@class,'active') and contains(.,'Basic')]</td>
 	<td></td>
+</tr>
+<tr>
+	<td>SIDEBAR_ADVANCED_TAB</td>
+	<td>//li[contains(@class,'nav-item')]/button[contains(@class,'nav-link') and contains(.,'Advanced')]</td>
 	<td></td>
+</tr>
+<tr>
+	<td>SIDEBAR_BACK</td>
+	<td>//button[*[name()='svg'][contains(@class,'lexicon-icon-angle-left')]]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SIDEBAR_FIELDS_TAB</td>
+	<td>//li[contains(@class,'nav-item')]/button[contains(@class,'nav-link') and contains(.,'Fields')]</td>
 	<td></td>
 </tr>
 </tbody>

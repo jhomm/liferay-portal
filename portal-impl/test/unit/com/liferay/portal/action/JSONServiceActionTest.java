@@ -14,16 +14,17 @@
 
 package com.liferay.portal.action;
 
-import com.liferay.portal.json.JSONFactoryImpl;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.service.GroupServiceUtil;
-import com.liferay.portlet.messageboards.service.MBMessageServiceUtil;
+import com.liferay.portal.kernel.service.GroupServiceUtil;
+import com.liferay.portal.kernel.service.RoleServiceUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 
-import junit.framework.TestCase;
+import java.util.Arrays;
 
+import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -31,28 +32,24 @@ import org.springframework.mock.web.MockHttpServletRequest;
 /**
  * @author Igor Spasic
  */
-public class JSONServiceActionTest extends TestCase {
+public class JSONServiceActionTest {
 
-	@Override
-	public void setUp() throws Exception {
-		JSONFactoryUtil jsonFactoryUtil = new JSONFactoryUtil();
-
-		jsonFactoryUtil.setJSONFactory(new JSONFactoryImpl());
-	}
+	@ClassRule
+	public static LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Test
 	public void testGetArgumentValue() throws Exception {
 		JSONServiceAction jsonServiceAction = new JSONServiceAction();
 
 		String[] parameters = {
-			"groupId", "categoryId", "subject", "body", "format",
-			"inputStreamOVPs", "anonymous", "priority", "allowPingbacks",
-			"serviceContext"
+			"companyId", "keywords", "excludedNames", "types",
+			"excludedTeamRoleId", "teamGroupId", "start", "end"
 		};
 
 		Object[] methodAndParameterTypes =
 			jsonServiceAction.getMethodAndParameterTypes(
-				MBMessageServiceUtil.class, "addMessage", parameters,
+				RoleServiceUtil.class, "getGroupRolesAndTeamRoles", parameters,
 				new String[0]);
 
 		Method method = (Method)methodAndParameterTypes[0];
@@ -61,24 +58,24 @@ public class JSONServiceActionTest extends TestCase {
 		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
-		mockHttpServletRequest.setParameter("inputStreamOVPs", "[]");
+		mockHttpServletRequest.setParameter("excludedNames", "[]");
 
 		Object value = jsonServiceAction.getArgValue(
-			mockHttpServletRequest, MBMessageServiceUtil.class,
-			method.getName(), parameters[5], parameterTypes[5]);
+			mockHttpServletRequest, RoleServiceUtil.class, method.getName(),
+			parameters[2], parameterTypes[2]);
 
-		assertEquals("[]", value.toString());
+		Assert.assertEquals("[]", value.toString());
 
 		mockHttpServletRequest.setParameter(
-			"inputStreamOVPs",
+			"excludedNames",
 			"{\"class\": " +
 				"\"com.liferay.portal.kernel.dao.orm.EntityCacheUtil\"}");
 
 		value = jsonServiceAction.getArgValue(
-			mockHttpServletRequest, MBMessageServiceUtil.class,
-			method.getName(), parameters[5], parameterTypes[5]);
+			mockHttpServletRequest, RoleServiceUtil.class, method.getName(),
+			parameters[2], parameterTypes[2]);
 
-		assertEquals(
+		Assert.assertEquals(
 			"{class=com.liferay.portal.kernel.dao.orm.EntityCacheUtil}",
 			value.toString());
 	}
@@ -107,11 +104,13 @@ public class JSONServiceActionTest extends TestCase {
 			mockHttpServletRequest, GroupServiceUtil.class, method.getName(),
 			parameters[1], parameterTypes[1]);
 
-		assertTrue(value.getClass().isArray());
+		Class<?> clazz = value.getClass();
+
+		Assert.assertTrue(clazz.isArray());
 
 		long[] arrayValue = (long[])value;
 
-		assertEquals(3, arrayValue.length);
+		Assert.assertEquals(Arrays.toString(arrayValue), 3, arrayValue.length);
 	}
 
 }

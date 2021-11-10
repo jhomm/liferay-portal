@@ -1,0 +1,135 @@
+.btn {
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	-webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	align-items: center;
+	border: none;
+	border-radius: 0.25rem;
+	cursor: pointer;
+	display: flex;
+	font-size: 1rem;
+	font-weight: bold;
+	gap: $spacer-2;
+	height: 3.5rem;
+	justify-content: center;
+	outline: none;
+	padding: $spacer-0 $spacer-5;
+	text-transform: uppercase;
+	transition: 200ms all ease-out;
+	user-select: none;
+
+	&:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+}
+
+.btn.btn-primary {
+	background: $color-action-primary-hover;
+	color: $background;
+	fill: $background;
+
+	&:hover {
+		background: $color-action-primary-hover;
+	}
+}
+
+.btn.btn-secondary {
+	background: $color-action-secondary-default;
+	color: $background;
+	fill: $background;
+
+	&:hover {
+		background: $color-brand-secondary;
+	}
+}
+
+.btn.continue {
+	padding: $spacer-3 $spacer-6;
+}
+
+.btn.btn-flat {
+	background: $background;
+	color: $color-action-neutral-default;
+	fill: $color-action-neutral-default;
+	padding: 0;
+}
+
+.btn.btn-outline {
+	background: $background;
+	border: 1px solid $color-action-neutral-default;
+	color: $color-action-neutral-default;
+	fill: $color-action-neutral-default;
+	padding: $spacer-3 1.125rem;
+}
+
+.btn.badge {
+	background: $color-brand-primary-lighten-5;
+	color: $color-action-primary-default;
+	fill: $color-action-primary-default;
+	font-size: 0.813rem;
+	gap: $spacer-2;
+	height: $spacer-4;
+	min-width: 4.4rem;
+	padding-left: $spacer-2;
+	padding-right: $spacer-2;
+	text-transform: none;
+
+	&:hover {
+		opacity: 0.8;
+	}
+}
+
+.btn.badge.more-info {
+	align-self: center;
+	font-size: calc(1rem - 5px);
+	font-weight: 700;
+	gap: calc(1rem - 14px);
+	height: calc(1rem + 4px);
+	min-width: 4.4rem;
+	padding-left: calc(1rem - 12px);
+	padding-right: calc(1rem - 13px);
+	text-transform: none;
+
+	& > svg {
+		height: 10px !important;
+		width: 10px !important;
+	}
+}
+
+.btn.search {
+	padding: $spacer-3 1.125rem;
+}
+
+.btn.badge.bottom-list {
+	margin-top: -$spacer-3;
+	width: fit-content;
+}
+
+.question-circle {
+	align-items: center;
+	border: solid 1px;
+	border-radius: 50%;
+	display: flex;
+	flex-shrink: 0;
+	height: 12px;
+	justify-content: center;
+	padding: 0 0 1px 0.5px;
+	width: 12px;
+
+	&.selected {
+		background: $color-neutral-white;
+		border-color: $color-neutral-white;
+
+		span {
+			color: $color-action-primary-hover;
+		}
+	}
+
+	span {
+		font-size: 11px;
+	}
+}

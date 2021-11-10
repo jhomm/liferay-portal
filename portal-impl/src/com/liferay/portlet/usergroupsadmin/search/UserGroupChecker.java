@@ -14,39 +14,35 @@
 
 package com.liferay.portlet.usergroupsadmin.search;
 
-import com.liferay.portal.kernel.dao.search.RowChecker;
-import com.liferay.portal.model.UserGroup;
-import com.liferay.portal.security.permission.ActionKeys;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.security.permission.PermissionThreadLocal;
-import com.liferay.portal.service.permission.UserGroupPermissionUtil;
+import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
+import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.permission.UserGroupPermissionUtil;
 
 import javax.portlet.RenderResponse;
 
 /**
  * @author Drew Brokke
  */
-public class UserGroupChecker extends RowChecker {
+public class UserGroupChecker extends EmptyOnClickRowChecker {
 
 	public UserGroupChecker(RenderResponse renderResponse) {
 		super(renderResponse);
 	}
 
 	@Override
-	public boolean isDisabled(Object obj) {
-		UserGroup userGroup = (UserGroup)obj;
-
-		PermissionChecker permissionChecker =
-			PermissionThreadLocal.getPermissionChecker();
+	public boolean isDisabled(Object object) {
+		UserGroup userGroup = (UserGroup)object;
 
 		if (!UserGroupPermissionUtil.contains(
-				permissionChecker, userGroup.getUserGroupId(),
-				ActionKeys.DELETE)) {
+				PermissionThreadLocal.getPermissionChecker(),
+				userGroup.getUserGroupId(), ActionKeys.DELETE)) {
 
 			return true;
 		}
 
-		return super.isDisabled(obj);
+		return super.isDisabled(object);
 	}
 
 }

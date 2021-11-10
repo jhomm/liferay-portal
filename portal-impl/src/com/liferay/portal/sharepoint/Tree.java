@@ -14,8 +14,8 @@
 
 package com.liferay.portal.sharepoint;
 
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +35,7 @@ public class Tree implements ResponseElement {
 
 	@Override
 	public String parse() {
-		StringBundler sb = new StringBundler(_children.size() * 4 + 4);
+		StringBundler sb = new StringBundler((_children.size() * 4) + 4);
 
 		sb.append(OPEN_UL);
 		sb.append(StringPool.NEW_LINE);

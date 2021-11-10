@@ -14,10 +14,8 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.model.WorkflowDefinitionLink;
-import com.liferay.portal.service.WorkflowDefinitionLinkLocalServiceUtil;
+import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
+import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalServiceUtil;
 
 /**
  * The extended model base implementation for the WorkflowDefinitionLink service. Represents a row in the &quot;WorkflowDefinitionLink&quot; database table, with each column mapped to a property of this class.
@@ -31,21 +29,24 @@ import com.liferay.portal.service.WorkflowDefinitionLinkLocalServiceUtil;
  * @see WorkflowDefinitionLink
  * @generated
  */
-@ProviderType
 public abstract class WorkflowDefinitionLinkBaseImpl
 	extends WorkflowDefinitionLinkModelImpl implements WorkflowDefinitionLink {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. All methods that expect a workflow definition link model instance should use the {@link WorkflowDefinitionLink} interface instead.
+	 * Never modify or reference this class directly. All methods that expect a workflow definition link model instance should use the <code>WorkflowDefinitionLink</code> interface instead.
 	 */
 	@Override
 	public void persist() {
 		if (this.isNew()) {
-			WorkflowDefinitionLinkLocalServiceUtil.addWorkflowDefinitionLink(this);
+			WorkflowDefinitionLinkLocalServiceUtil.addWorkflowDefinitionLink(
+				this);
 		}
 		else {
-			WorkflowDefinitionLinkLocalServiceUtil.updateWorkflowDefinitionLink(this);
+			WorkflowDefinitionLinkLocalServiceUtil.updateWorkflowDefinitionLink(
+				this);
 		}
 	}
+
 }

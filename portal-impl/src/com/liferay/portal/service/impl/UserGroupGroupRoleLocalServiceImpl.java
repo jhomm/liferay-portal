@@ -14,14 +14,14 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.NoSuchUserGroupGroupRoleException;
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.Role;
-import com.liferay.portal.model.UserGroup;
-import com.liferay.portal.model.UserGroupGroupRole;
-import com.liferay.portal.security.permission.PermissionCacheUtil;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.model.UserGroupGroupRole;
+import com.liferay.portal.kernel.service.persistence.RolePersistence;
+import com.liferay.portal.kernel.service.persistence.UserGroupPersistence;
 import com.liferay.portal.service.base.UserGroupGroupRoleLocalServiceBaseImpl;
-import com.liferay.portal.service.persistence.UserGroupGroupRolePK;
 
 import java.util.List;
 
@@ -36,20 +36,22 @@ public class UserGroupGroupRoleLocalServiceImpl
 		long userGroupId, long groupId, long[] roleIds) {
 
 		for (long roleId : roleIds) {
-			UserGroupGroupRolePK pk = new UserGroupGroupRolePK(
-				userGroupId, groupId, roleId);
-
 			UserGroupGroupRole userGroupGroupRole =
-				userGroupGroupRolePersistence.fetchByPrimaryKey(pk);
+				userGroupGroupRolePersistence.fetchByU_G_R(
+					userGroupId, groupId, roleId);
 
 			if (userGroupGroupRole == null) {
-				userGroupGroupRole = userGroupGroupRolePersistence.create(pk);
+				userGroupGroupRole = userGroupGroupRolePersistence.create(
+					counterLocalService.increment(
+						UserGroupGroupRole.class.getName()));
+
+				userGroupGroupRole.setUserGroupId(userGroupId);
+				userGroupGroupRole.setGroupId(groupId);
+				userGroupGroupRole.setRoleId(roleId);
 
 				userGroupGroupRolePersistence.update(userGroupGroupRole);
 			}
 		}
-
-		PermissionCacheUtil.clearCache();
 	}
 
 	@Override
@@ -57,31 +59,33 @@ public class UserGroupGroupRoleLocalServiceImpl
 		long[] userGroupIds, long groupId, long roleId) {
 
 		for (long userGroupId : userGroupIds) {
-			UserGroupGroupRolePK pk = new UserGroupGroupRolePK(
-				userGroupId, groupId, roleId);
-
 			UserGroupGroupRole userGroupGroupRole =
-				userGroupGroupRolePersistence.fetchByPrimaryKey(pk);
+				userGroupGroupRolePersistence.fetchByU_G_R(
+					userGroupId, groupId, roleId);
 
 			if (userGroupGroupRole == null) {
-				userGroupGroupRole = userGroupGroupRolePersistence.create(pk);
+				userGroupGroupRole = userGroupGroupRolePersistence.create(
+					counterLocalService.increment(
+						UserGroupGroupRole.class.getName()));
+
+				userGroupGroupRole.setUserGroupId(userGroupId);
+				userGroupGroupRole.setGroupId(groupId);
+				userGroupGroupRole.setRoleId(roleId);
 
 				userGroupGroupRolePersistence.update(userGroupGroupRole);
 			}
 		}
-
-		PermissionCacheUtil.clearCache();
 	}
 
 	@Override
-	public UserGroupGroupRole deleteUserGroupGroupRole(
-		UserGroupGroupRole userGroupGroupRole) {
+	public void deleteUserGroupGroupRoles(long groupId, int roleType) {
+		List<UserGroupGroupRole> userGroupGroupRoles =
+			userGroupGroupRoleFinder.findByGroupRoleType(groupId, roleType);
 
-		userGroupGroupRolePersistence.remove(userGroupGroupRole);
-
-		PermissionCacheUtil.clearCache();
-
-		return userGroupGroupRole;
+		for (UserGroupGroupRole userGroupGroupRole : userGroupGroupRoles) {
+			userGroupGroupRolePersistence.removeByG_R(
+				groupId, userGroupGroupRole.getRoleId());
+		}
 	}
 
 	@Override
@@ -89,17 +93,14 @@ public class UserGroupGroupRoleLocalServiceImpl
 		long userGroupId, long groupId, long[] roleIds) {
 
 		for (long roleId : roleIds) {
-			UserGroupGroupRolePK pk = new UserGroupGroupRolePK(
-				userGroupId, groupId, roleId);
+			UserGroupGroupRole userGroupGroupRole =
+				userGroupGroupRolePersistence.fetchByU_G_R(
+					userGroupId, groupId, roleId);
 
-			try {
-				userGroupGroupRolePersistence.remove(pk);
-			}
-			catch (NoSuchUserGroupGroupRoleException nsuggre) {
+			if (userGroupGroupRole != null) {
+				userGroupGroupRolePersistence.remove(userGroupGroupRole);
 			}
 		}
-
-		PermissionCacheUtil.clearCache();
 	}
 
 	@Override
@@ -107,8 +108,6 @@ public class UserGroupGroupRoleLocalServiceImpl
 		for (long groupId : groupIds) {
 			userGroupGroupRolePersistence.removeByU_G(userGroupId, groupId);
 		}
-
-		PermissionCacheUtil.clearCache();
 	}
 
 	@Override
@@ -116,8 +115,6 @@ public class UserGroupGroupRoleLocalServiceImpl
 		for (long userGroupId : userGroupIds) {
 			userGroupGroupRolePersistence.removeByU_G(userGroupId, groupId);
 		}
-
-		PermissionCacheUtil.clearCache();
 	}
 
 	@Override
@@ -125,38 +122,29 @@ public class UserGroupGroupRoleLocalServiceImpl
 		long[] userGroupIds, long groupId, long roleId) {
 
 		for (long userGroupId : userGroupIds) {
-			UserGroupGroupRolePK pk = new UserGroupGroupRolePK(
-				userGroupId, groupId, roleId);
+			UserGroupGroupRole userGroupGroupRole =
+				userGroupGroupRolePersistence.fetchByU_G_R(
+					userGroupId, groupId, roleId);
 
-			try {
-				userGroupGroupRolePersistence.remove(pk);
-			}
-			catch (NoSuchUserGroupGroupRoleException nsuggre) {
+			if (userGroupGroupRole != null) {
+				userGroupGroupRolePersistence.remove(userGroupGroupRole);
 			}
 		}
-
-		PermissionCacheUtil.clearCache();
 	}
 
 	@Override
 	public void deleteUserGroupGroupRolesByGroupId(long groupId) {
 		userGroupGroupRolePersistence.removeByGroupId(groupId);
-
-		PermissionCacheUtil.clearCache();
 	}
 
 	@Override
 	public void deleteUserGroupGroupRolesByRoleId(long roleId) {
 		userGroupGroupRolePersistence.removeByRoleId(roleId);
-
-		PermissionCacheUtil.clearCache();
 	}
 
 	@Override
 	public void deleteUserGroupGroupRolesByUserGroupId(long userGroupId) {
 		userGroupGroupRolePersistence.removeByUserGroupId(userGroupId);
-
-		PermissionCacheUtil.clearCache();
 	}
 
 	@Override
@@ -184,21 +172,24 @@ public class UserGroupGroupRoleLocalServiceImpl
 	}
 
 	@Override
+	public List<UserGroupGroupRole> getUserGroupGroupRolesByUser(
+		long userId, long groupId) {
+
+		return userGroupGroupRoleFinder.findByUserGroupsUsers(userId, groupId);
+	}
+
+	@Override
 	public boolean hasUserGroupGroupRole(
 		long userGroupId, long groupId, long roleId) {
 
-		UserGroupGroupRolePK pk = new UserGroupGroupRolePK(
+		int count = userGroupGroupRolePersistence.countByU_G_R(
 			userGroupId, groupId, roleId);
 
-		UserGroupGroupRole userGroupGroupRole =
-			userGroupGroupRolePersistence.fetchByPrimaryKey(pk);
-
-		if (userGroupGroupRole != null) {
+		if (count > 0) {
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	@Override
@@ -206,16 +197,19 @@ public class UserGroupGroupRoleLocalServiceImpl
 			long userGroupId, long groupId, String roleName)
 		throws PortalException {
 
-		UserGroup userGroup = userGroupPersistence.findByPrimaryKey(
+		UserGroup userGroup = _userGroupPersistence.findByPrimaryKey(
 			userGroupId);
 
-		long companyId = userGroup.getCompanyId();
+		Role role = _rolePersistence.findByC_N(
+			userGroup.getCompanyId(), roleName);
 
-		Role role = rolePersistence.findByC_N(companyId, roleName);
-
-		long roleId = role.getRoleId();
-
-		return hasUserGroupGroupRole(userGroupId, groupId, roleId);
+		return hasUserGroupGroupRole(userGroupId, groupId, role.getRoleId());
 	}
+
+	@BeanReference(type = RolePersistence.class)
+	private RolePersistence _rolePersistence;
+
+	@BeanReference(type = UserGroupPersistence.class)
+	private UserGroupPersistence _userGroupPersistence;
 
 }

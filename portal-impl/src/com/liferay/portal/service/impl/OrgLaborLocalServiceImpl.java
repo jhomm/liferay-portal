@@ -14,9 +14,11 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.ListTypeConstants;
-import com.liferay.portal.model.OrgLabor;
+import com.liferay.portal.kernel.model.ListTypeConstants;
+import com.liferay.portal.kernel.model.OrgLabor;
+import com.liferay.portal.kernel.service.ListTypeLocalService;
 import com.liferay.portal.service.base.OrgLaborLocalServiceBaseImpl;
 
 import java.util.List;
@@ -57,9 +59,7 @@ public class OrgLaborLocalServiceImpl extends OrgLaborLocalServiceBaseImpl {
 		orgLabor.setSatOpen(satOpen);
 		orgLabor.setSatClose(satClose);
 
-		orgLaborPersistence.update(orgLabor);
-
-		return orgLabor;
+		return orgLaborPersistence.update(orgLabor);
 	}
 
 	@Override
@@ -95,14 +95,15 @@ public class OrgLaborLocalServiceImpl extends OrgLaborLocalServiceBaseImpl {
 		orgLabor.setSatOpen(satOpen);
 		orgLabor.setSatClose(satClose);
 
-		orgLaborPersistence.update(orgLabor);
-
-		return orgLabor;
+		return orgLaborPersistence.update(orgLabor);
 	}
 
 	protected void validate(long typeId) throws PortalException {
-		listTypeService.validate(
+		_listTypeLocalService.validate(
 			typeId, ListTypeConstants.ORGANIZATION_SERVICE);
 	}
+
+	@BeanReference(type = ListTypeLocalService.class)
+	private ListTypeLocalService _listTypeLocalService;
 
 }

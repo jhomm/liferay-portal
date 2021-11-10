@@ -14,16 +14,16 @@
 
 package com.liferay.taglib;
 
+import com.liferay.petra.string.CharPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.PortalWebResourcesUtil;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
-import com.liferay.portal.kernel.util.CharPool;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PortalUtil;
 
+import java.net.MalformedURLException;
 import java.net.URL;
-
-import java.security.AccessController;
-import java.security.PrivilegedExceptionAction;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -32,14 +32,14 @@ import javax.servlet.ServletContext;
 
 /**
  * @author Shuyang Zhou
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link com.liferay.portal.kernel.servlet.FileAvailabilityUtil}
  */
+@Deprecated
 public class FileAvailabilityUtil {
 
 	public static void clearAvailabilities() {
-		String servletContextName = PortalUtil.getServletContextName();
-
 		ServletContext servletContext = ServletContextPool.get(
-			servletContextName);
+			PortalUtil.getServletContextName());
 
 		Map<String, Boolean> availabilities =
 			(Map<String, Boolean>)servletContext.getAttribute(
@@ -74,10 +74,12 @@ public class FileAvailabilityUtil {
 		URL url = null;
 
 		try {
-			url = AccessController.doPrivileged(
-				new ResourcePrivilegedExceptionAction(servletContext, path));
+			url = servletContext.getResource(path);
 		}
-		catch (Exception e) {
+		catch (MalformedURLException malformedURLException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(malformedURLException, malformedURLException);
+			}
 		}
 
 		if ((url == null) && !PortalWebResourcesUtil.isAvailable(path)) {
@@ -109,24 +111,7 @@ public class FileAvailabilityUtil {
 		return availabilities;
 	}
 
-	private static class ResourcePrivilegedExceptionAction
-		implements PrivilegedExceptionAction<URL> {
-
-		public ResourcePrivilegedExceptionAction(
-			ServletContext servletContext, String path) {
-
-			_servletContext = servletContext;
-			_path = path;
-		}
-
-		@Override
-		public URL run() throws Exception {
-			return _servletContext.getResource(_path);
-		}
-
-		private final String _path;
-		private final ServletContext _servletContext;
-
-	}
+	private static final Log _log = LogFactoryUtil.getLog(
+		FileAvailabilityUtil.class);
 
 }

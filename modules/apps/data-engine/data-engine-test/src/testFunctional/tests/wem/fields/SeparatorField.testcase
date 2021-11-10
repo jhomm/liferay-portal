@@ -1,0 +1,160 @@
+@component-name = "data-engine"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Data Engine";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONGroup.addGroup(groupName = "Test Site Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Separator",
+			fieldName = "Separator");
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
+		}
+	}
+
+	@description = "This is a test for LPS-98081. Delete Separator Field (sing kebab on the top of the field)"
+	@priority = "5"
+	test DeleteSeparatorOnBuilder {
+		property portal.acceptance = "false";
+
+		var fieldLabel = "Separator";
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.delete(fieldFieldLabel = "Separator");
+
+		AssertElementNotPresent(locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		AssertElementNotPresent(locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+	}
+
+	@description = "This is a test for LPS-98081. Duplicate Separator Field (using kebab on the top of the field)"
+	@priority = "4"
+	test DuplicateSeparatorOnBuilder {
+		property portal.acceptance = "false";
+
+		DataEngine.duplicate(fieldFieldLabel = "Separator");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Copy of Separator",
+			fieldName = "Separator");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Copy of Separator",
+			fieldName = "Separator");
+	}
+
+	@description = "This is a test for LPS-98081. Edit the label and help text of Separator Field"
+	@priority = "5"
+	test EditLabelAndHelpTextOfSeparator {
+		property portal.acceptance = "false";
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Separator",
+			fieldFieldLabelEdit = "Edited Separator");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Edited Separator",
+			fieldHelp = "Text Field Help Separator");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Separator",
+			fieldHelp = "Text Field Help Separator",
+			fieldName = "Separator");
+	}
+
+	@description = "This is a test for LPS-98081. Edit Field Reference with valid and invalid characters"
+	@priority = "4"
+	test EditReferenceOfSeparatorWithValidAndInvalidCharacters {
+		DataEngine.editFieldReference(
+			assertFieldReference = "EditedSeparator",
+			fieldFieldLabel = "Separator",
+			fieldReference = "Edited Separator @#@$%$%%");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		DataEngine.editFieldReference(
+			assertFieldReference = "EditedSeparatorValidCharacters",
+			fieldFieldLabel = "Separator",
+			fieldReference = "EditedSeparatorValidCharacters");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		DEBuilder.assertFieldReference(
+			fieldLabel = "Separator",
+			fieldReference = "EditedSeparatorValidCharacters");
+	}
+
+	@description = "This is a test for LPS-98081. Verify Repeatable behavior on Web Content"
+	@priority = "5"
+	test RepeatSeparatorOnWebContent {
+		DataEngine.toggleFieldRepeatable(fieldFieldLabel = "Separator");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		DataEngine.assertFieldRepeated(
+			fieldName = "Separator",
+			index = "1");
+
+		WebContentStructures.saveCP();
+
+		NavItem.click(navItem = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addCP(webContentTitle = "Web Content Title");
+
+		DataEngine.addRepeatableField(fieldLabel = "Separator");
+
+		PortletEntry.publish();
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
+
+		DataEngine.assertFieldRepeated(
+			fieldName = "Separator",
+			index = "2");
+	}
+
+}

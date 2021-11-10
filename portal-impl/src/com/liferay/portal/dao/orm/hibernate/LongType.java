@@ -42,8 +42,8 @@ public class LongType implements CompositeUserType, Serializable {
 	}
 
 	@Override
-	public Object deepCopy(Object obj) {
-		return obj;
+	public Object deepCopy(Object object) {
+		return object;
 	}
 
 	@Override
@@ -59,9 +59,8 @@ public class LongType implements CompositeUserType, Serializable {
 		else if ((x == null) || (y == null)) {
 			return false;
 		}
-		else {
-			return x.equals(y);
-		}
+
+		return x.equals(y);
 	}
 
 	@Override
@@ -91,16 +90,17 @@ public class LongType implements CompositeUserType, Serializable {
 
 	@Override
 	public Object nullSafeGet(
-			ResultSet rs, String[] names, SessionImplementor session,
+			ResultSet resultSet, String[] names, SessionImplementor session,
 			Object owner)
 		throws SQLException {
 
 		Object value = null;
 
 		try {
-			value = StandardBasicTypes.LONG.nullSafeGet(rs, names[0], session);
+			value = StandardBasicTypes.LONG.nullSafeGet(
+				resultSet, names[0], session);
 		}
-		catch (SQLException sqle1) {
+		catch (SQLException sqlException1) {
 
 			// Some JDBC drivers do not know how to convert a VARCHAR column
 			// with a blank entry into a BIGINT
@@ -109,24 +109,23 @@ public class LongType implements CompositeUserType, Serializable {
 				value = Long.valueOf(
 					GetterUtil.getLong(
 						StandardBasicTypes.STRING.nullSafeGet(
-							rs, names[0], session)));
+							resultSet, names[0], session)));
 			}
-			catch (SQLException sqle2) {
-				throw sqle1;
+			catch (SQLException sqlException2) {
+				throw sqlException1;
 			}
 		}
 
 		if (value == null) {
 			return DEFAULT_VALUE;
 		}
-		else {
-			return value;
-		}
+
+		return value;
 	}
 
 	@Override
 	public void nullSafeSet(
-			PreparedStatement ps, Object target, int index,
+			PreparedStatement preparedStatement, Object target, int index,
 			SessionImplementor session)
 		throws SQLException {
 
@@ -134,7 +133,7 @@ public class LongType implements CompositeUserType, Serializable {
 			target = DEFAULT_VALUE;
 		}
 
-		ps.setLong(index, (Long)target);
+		preparedStatement.setLong(index, (Long)target);
 	}
 
 	@Override

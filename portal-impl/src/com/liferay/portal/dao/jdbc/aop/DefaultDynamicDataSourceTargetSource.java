@@ -14,12 +14,14 @@
 
 package com.liferay.portal.dao.jdbc.aop;
 
+import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.portal.kernel.dao.jdbc.aop.DynamicDataSourceTargetSource;
 import com.liferay.portal.kernel.dao.jdbc.aop.Operation;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
-import java.util.Stack;
+import java.util.Deque;
+import java.util.LinkedList;
 
 import javax.sql.DataSource;
 
@@ -32,33 +34,25 @@ public class DefaultDynamicDataSourceTargetSource
 	implements DynamicDataSourceTargetSource, TargetSource {
 
 	@Override
-	public Stack<String> getMethodStack() {
-		Stack<String> methodStack = _methodStack.get();
-
-		if (methodStack == null) {
-			methodStack = new Stack<>();
-
-			_methodStack.set(methodStack);
-		}
-
-		return methodStack;
-	}
-
-	@Override
 	public Operation getOperation() {
-		Operation operation = _operationType.get();
+		Deque<Operation> operations = _operations.get();
+
+		Operation operation = operations.peek();
 
 		if (operation == null) {
 			operation = Operation.WRITE;
-
-			_operationType.set(operation);
 		}
 
 		return operation;
 	}
 
 	@Override
-	public Object getTarget() throws Exception {
+	public DataSource getReadDataSource() {
+		return _readDataSource;
+	}
+
+	@Override
+	public Object getTarget() {
 		Operation operationType = getOperation();
 
 		if (operationType == Operation.READ) {
@@ -82,41 +76,31 @@ public class DefaultDynamicDataSourceTargetSource
 	}
 
 	@Override
+	public DataSource getWriteDataSource() {
+		return _writeDataSource;
+	}
+
+	@Override
 	public boolean isStatic() {
 		return false;
 	}
 
 	@Override
-	public String popMethod() {
-		Stack<String> methodStack = getMethodStack();
+	public Operation popOperation() {
+		Deque<Operation> operations = _operations.get();
 
-		String method = methodStack.pop();
-
-		setOperation(Operation.WRITE);
-
-		return method;
+		return operations.pop();
 	}
 
 	@Override
-	public void pushMethod(String method) {
-		Stack<String> methodStack = getMethodStack();
+	public void pushOperation(Operation operation) {
+		Deque<Operation> operations = _operations.get();
 
-		methodStack.push(method);
+		operations.push(operation);
 	}
 
 	@Override
 	public void releaseTarget(Object target) throws Exception {
-	}
-
-	@Override
-	public void setOperation(Operation operation) {
-		if (_log.isDebugEnabled()) {
-			_log.debug("Method stack " + getMethodStack());
-		}
-
-		if (!inOperation() || (operation == Operation.WRITE)) {
-			_operationType.set(operation);
-		}
 	}
 
 	@Override
@@ -129,19 +113,13 @@ public class DefaultDynamicDataSourceTargetSource
 		_writeDataSource = writeDataSource;
 	}
 
-	protected boolean inOperation() {
-		Stack<String> methodStack = getMethodStack();
-
-		return !methodStack.empty();
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		DefaultDynamicDataSourceTargetSource.class);
 
-	private static final ThreadLocal<Stack<String>> _methodStack =
-		new ThreadLocal<>();
-	private static final ThreadLocal<Operation> _operationType =
-		new ThreadLocal<>();
+	private static final ThreadLocal<Deque<Operation>> _operations =
+		new CentralizedThreadLocal<>(
+			DefaultDynamicDataSourceTargetSource.class + "._operations",
+			LinkedList::new);
 
 	private DataSource _readDataSource;
 	private DataSource _writeDataSource;

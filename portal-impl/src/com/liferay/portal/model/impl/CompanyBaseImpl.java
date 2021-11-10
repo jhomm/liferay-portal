@@ -14,10 +14,8 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.model.Company;
-import com.liferay.portal.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 
 /**
  * The extended model base implementation for the Company service. Represents a row in the &quot;Company&quot; database table, with each column mapped to a property of this class.
@@ -31,13 +29,13 @@ import com.liferay.portal.service.CompanyLocalServiceUtil;
  * @see Company
  * @generated
  */
-@ProviderType
-public abstract class CompanyBaseImpl extends CompanyModelImpl
-	implements Company {
+public abstract class CompanyBaseImpl
+	extends CompanyModelImpl implements Company {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. All methods that expect a company model instance should use the {@link Company} interface instead.
+	 * Never modify or reference this class directly. All methods that expect a company model instance should use the <code>Company</code> interface instead.
 	 */
 	@Override
 	public void persist() {
@@ -48,4 +46,5 @@ public abstract class CompanyBaseImpl extends CompanyModelImpl
 			CompanyLocalServiceUtil.updateCompany(this);
 		}
 	}
+
 }

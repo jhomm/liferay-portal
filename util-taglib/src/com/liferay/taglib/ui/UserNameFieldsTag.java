@@ -17,9 +17,9 @@ package com.liferay.taglib.ui;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.model.Contact;
-import com.liferay.portal.model.User;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.model.Contact;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.taglib.util.IncludeTag;
 
 import javax.servlet.http.HttpServletRequest;
@@ -28,6 +28,14 @@ import javax.servlet.http.HttpServletRequest;
  * @author Pei-Jung Lan
  */
 public class UserNameFieldsTag extends IncludeTag {
+
+	public Object getBean() {
+		return _bean;
+	}
+
+	public Contact getContact() {
+		return _contact;
+	}
 
 	public void setBean(Object bean) {
 		_bean = bean;
@@ -43,6 +51,8 @@ public class UserNameFieldsTag extends IncludeTag {
 
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
 		_bean = null;
 		_contact = null;
 		_user = null;
@@ -56,10 +66,10 @@ public class UserNameFieldsTag extends IncludeTag {
 	protected User getUser() {
 		if (_user == null) {
 			try {
-				return PortalUtil.getSelectedUser(request);
+				return PortalUtil.getSelectedUser(getRequest());
 			}
-			catch (PortalException pe) {
-				_log.error(pe, pe);
+			catch (PortalException portalException) {
+				_log.error(portalException, portalException);
 			}
 		}
 
@@ -67,14 +77,17 @@ public class UserNameFieldsTag extends IncludeTag {
 	}
 
 	@Override
-	protected void setAttributes(HttpServletRequest request) {
+	protected void setAttributes(HttpServletRequest httpServletRequest) {
 		if (_bean == null) {
 			_bean = pageContext.getAttribute("aui:model-context:bean");
 		}
 
-		request.setAttribute("liferay-ui:user-name-fields:bean", _bean);
-		request.setAttribute("liferay-ui:user-name-fields:contact", _contact);
-		request.setAttribute("liferay-ui:user-name-fields:user", getUser());
+		httpServletRequest.setAttribute(
+			"liferay-ui:user-name-fields:bean", _bean);
+		httpServletRequest.setAttribute(
+			"liferay-ui:user-name-fields:contact", _contact);
+		httpServletRequest.setAttribute(
+			"liferay-ui:user-name-fields:user", getUser());
 	}
 
 	private static final String _PAGE =

@@ -14,9 +14,9 @@
 
 package com.liferay.portal.fabric.repository;
 
-import com.liferay.portal.kernel.util.CharPool;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 
 import java.nio.file.Path;
 
@@ -30,34 +30,22 @@ public class RepositoryHelperUtil {
 	public static Path getRepositoryFilePath(
 		Path repositoryPath, Path remoteFilePath) {
 
-		Path fileNamePath = remoteFilePath.getFileName();
-
-		String name = fileNamePath.toString();
+		String name = String.valueOf(remoteFilePath.getFileName());
 
 		int index = name.lastIndexOf(CharPool.PERIOD);
 
 		if (index == -1) {
-			StringBundler sb = new StringBundler(5);
-
-			sb.append(name);
-			sb.append(StringPool.DASH);
-			sb.append(System.currentTimeMillis());
-			sb.append(StringPool.DASH);
-			sb.append(idGenerator.getAndIncrement());
-
-			return repositoryPath.resolve(sb.toString());
+			return repositoryPath.resolve(
+				StringBundler.concat(
+					name, StringPool.DASH, System.currentTimeMillis(),
+					StringPool.DASH, idGenerator.getAndIncrement()));
 		}
 
-		StringBundler sb = new StringBundler(6);
-
-		sb.append(name.substring(0, index));
-		sb.append(StringPool.DASH);
-		sb.append(System.currentTimeMillis());
-		sb.append(StringPool.DASH);
-		sb.append(idGenerator.getAndIncrement());
-		sb.append(name.substring(index));
-
-		return repositoryPath.resolve(sb.toString());
+		return repositoryPath.resolve(
+			StringBundler.concat(
+				name.substring(0, index), StringPool.DASH,
+				System.currentTimeMillis(), StringPool.DASH,
+				idGenerator.getAndIncrement(), name.substring(index)));
 	}
 
 	protected static final AtomicLong idGenerator = new AtomicLong();

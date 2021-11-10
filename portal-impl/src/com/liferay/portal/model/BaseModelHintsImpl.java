@@ -14,11 +14,16 @@
 
 package com.liferay.portal.model;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.ModelHints;
+import com.liferay.portal.kernel.model.ModelHintsCallback;
+import com.liferay.portal.kernel.model.ModelHintsConstants;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Tuple;
 import com.liferay.portal.kernel.util.Validator;
@@ -58,23 +63,30 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 		_models = new TreeSet<>();
 
 		try {
-			ClassLoader classLoader = getClass().getClassLoader();
+			Class<?> clazz = getClass();
+
+			ClassLoader classLoader = clazz.getClassLoader();
 
 			for (String config : getModelHintsConfigs()) {
 				if (config.startsWith("classpath*:")) {
 					String name = config.substring("classpath*:".length());
 
-					Enumeration<URL> enu = classLoader.getResources(name);
+					Enumeration<URL> enumeration = classLoader.getResources(
+						name);
 
-					if (_log.isDebugEnabled() && !enu.hasMoreElements()) {
+					if (_log.isDebugEnabled() &&
+						!enumeration.hasMoreElements()) {
+
 						_log.debug("No resources found for " + name);
 					}
 
-					while (enu.hasMoreElements()) {
-						URL url = enu.nextElement();
+					while (enumeration.hasMoreElements()) {
+						URL url = enumeration.nextElement();
 
 						if (_log.isDebugEnabled()) {
-							_log.debug("Loading " + name + " from " + url);
+							_log.debug(
+								StringBundler.concat(
+									"Loading ", name, " from ", url));
 						}
 
 						InputStream inputStream = url.openStream();
@@ -102,15 +114,15 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 				}
 			}
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 	}
 
 	@Override
 	public String buildCustomValidatorName(String validatorName) {
-		return validatorName.concat(StringPool.UNDERLINE).concat(
-			StringUtil.randomId());
+		return StringBundler.concat(
+			validatorName, StringPool.UNDERLINE, StringUtil.randomId());
 	}
 
 	@Override
@@ -132,9 +144,8 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 		if (fieldsEl == null) {
 			return null;
 		}
-		else {
-			return fieldsEl;
-		}
+
+		return fieldsEl;
 	}
 
 	@Override
@@ -145,9 +156,8 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 		if (fields == null) {
 			return null;
 		}
-		else {
-			return (Map<String, String>)fields.get(field + _HINTS_SUFFIX);
-		}
+
+		return (Map<String, String>)fields.get(field + _HINTS_SUFFIX);
 	}
 
 	@Override
@@ -161,9 +171,7 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 		int maxLength = GetterUtil.getInteger(
 			ModelHintsConstants.TEXT_MAX_LENGTH);
 
-		maxLength = GetterUtil.getInteger(hints.get("max-length"), maxLength);
-
-		return maxLength;
+		return GetterUtil.getInteger(hints.get("max-length"), maxLength);
 	}
 
 	public abstract ModelHintsCallback getModelHintsCallback();
@@ -183,9 +191,8 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 		if (fields == null) {
 			return null;
 		}
-		else {
-			return (Tuple)fields.get(field + _SANITIZE_SUFFIX);
-		}
+
+		return (Tuple)fields.get(field + _SANITIZE_SUFFIX);
 	}
 
 	@Override
@@ -222,9 +229,8 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 		if (fields == null) {
 			return null;
 		}
-		else {
-			return (String)fields.get(field + _TYPE_SUFFIX);
-		}
+
+		return (String)fields.get(field + _TYPE_SUFFIX);
 	}
 
 	@Override
@@ -237,9 +243,8 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 
 			return null;
 		}
-		else {
-			return (List<Tuple>)fields.get(field + _VALIDATORS_SUFFIX);
-		}
+
+		return (List<Tuple>)fields.get(field + _VALIDATORS_SUFFIX);
 	}
 
 	@Override
@@ -290,9 +295,8 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 		if (localized != null) {
 			return localized;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	@Override
@@ -318,10 +322,9 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 
 			return;
 		}
-		else {
-			if (_log.isDebugEnabled()) {
-				_log.debug("Loading " + source);
-			}
+
+		if (_log.isDebugEnabled()) {
+			_log.debug("Loading " + source);
 		}
 
 		SAXReader saxReader = getSAXReader();
@@ -399,9 +402,9 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 				boolean fieldLocalized = GetterUtil.getBoolean(
 					fieldElement.attributeValue("localized"));
 
-				Map<String, String> fieldHints = new HashMap<>();
-
-				fieldHints.putAll(defaultHints);
+				Map<String, String> fieldHints = HashMapBuilder.putAll(
+					defaultHints
+				).build();
 
 				List<Element> fieldElements = fieldElement.elements(
 					"hint-collection");
@@ -450,6 +453,7 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 						validatorElement.attributeValue("error-message"));
 					String validatorValue = GetterUtil.getString(
 						validatorElement.getText());
+
 					boolean customValidator = isCustomValidator(validatorName);
 
 					if (customValidator) {
@@ -492,9 +496,8 @@ public abstract class BaseModelHintsImpl implements ModelHints {
 		if (value.length() > maxLength) {
 			return value.substring(0, maxLength);
 		}
-		else {
-			return value;
-		}
+
+		return value;
 	}
 
 	private static final String _ELEMENTS_SUFFIX = "_ELEMENTS";

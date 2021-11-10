@@ -14,10 +14,10 @@
 
 package com.liferay.portal.servlet.filters.sessionid;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.CookieKeys;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 
 import javax.servlet.http.Cookie;
@@ -32,33 +32,34 @@ import javax.servlet.http.HttpSession;
 public class SessionIdServletRequest extends HttpServletRequestWrapper {
 
 	public SessionIdServletRequest(
-		HttpServletRequest request, HttpServletResponse response) {
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
-		super(request);
+		super(httpServletRequest);
 
-		_response = response;
+		_httpServletResponse = httpServletResponse;
 	}
 
 	@Override
 	public HttpSession getSession() {
-		HttpSession session = super.getSession();
+		HttpSession httpSession = super.getSession();
 
-		process(session);
+		process(httpSession);
 
-		return session;
+		return httpSession;
 	}
 
 	@Override
 	public HttpSession getSession(boolean create) {
-		HttpSession session = super.getSession(create);
+		HttpSession httpSession = super.getSession(create);
 
-		process(session);
+		process(httpSession);
 
-		return session;
+		return httpSession;
 	}
 
-	protected void process(HttpSession session) {
-		if ((session == null) || !session.isNew() || !isSecure() ||
+	protected void process(HttpSession httpSession) {
+		if ((httpSession == null) || !httpSession.isNew() || !isSecure() ||
 			isRequestedSessionIdFromCookie()) {
 
 			return;
@@ -71,10 +72,10 @@ public class SessionIdServletRequest extends HttpServletRequestWrapper {
 		}
 
 		if (_log.isDebugEnabled()) {
-			_log.debug("Processing " + session.getId());
+			_log.debug("Processing " + httpSession.getId());
 		}
 
-		Cookie cookie = new Cookie(_JESSIONID, session.getId());
+		Cookie cookie = new Cookie(_JESSIONID, httpSession.getId());
 
 		cookie.setMaxAge(-1);
 
@@ -88,7 +89,8 @@ public class SessionIdServletRequest extends HttpServletRequestWrapper {
 		}
 
 		CookieKeys.addCookie(
-			(HttpServletRequest)super.getRequest(), _response, cookie);
+			(HttpServletRequest)super.getRequest(), _httpServletResponse,
+			cookie);
 
 		setAttribute(_JESSIONID_ALREADY_SET, Boolean.TRUE);
 	}
@@ -101,6 +103,6 @@ public class SessionIdServletRequest extends HttpServletRequestWrapper {
 	private static final Log _log = LogFactoryUtil.getLog(
 		SessionIdServletRequest.class);
 
-	private final HttpServletResponse _response;
+	private final HttpServletResponse _httpServletResponse;
 
 }

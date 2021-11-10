@@ -1,0 +1,5 @@
+dependencies {
+	testIntegrationCompile project(":apps:portal:portal-notifications-test-util")
+	testIntegrationCompile project(":apps:sharing:sharing-api")
+	testIntegrationCompile project(":test:arquillian-extension-junit-bridge")
+}

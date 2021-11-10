@@ -15,18 +15,21 @@
 package com.liferay.portal.service.base;
 
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.bean.IdentifiableBean;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.model.Region;
-import com.liferay.portal.service.BaseServiceImpl;
-import com.liferay.portal.service.RegionService;
-import com.liferay.portal.service.persistence.CountryPersistence;
-import com.liferay.portal.service.persistence.RegionPersistence;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.model.Region;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
+import com.liferay.portal.kernel.service.BaseServiceImpl;
+import com.liferay.portal.kernel.service.RegionService;
+import com.liferay.portal.kernel.service.RegionServiceUtil;
+import com.liferay.portal.kernel.service.persistence.RegionLocalizationPersistence;
+import com.liferay.portal.kernel.service.persistence.RegionPersistence;
+import com.liferay.portal.kernel.util.PortalUtil;
+
+import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -39,16 +42,39 @@ import javax.sql.DataSource;
  *
  * @author Brian Wing Shun Chan
  * @see com.liferay.portal.service.impl.RegionServiceImpl
- * @see com.liferay.portal.service.RegionServiceUtil
  * @generated
  */
-public abstract class RegionServiceBaseImpl extends BaseServiceImpl
-	implements RegionService, IdentifiableBean {
+public abstract class RegionServiceBaseImpl
+	extends BaseServiceImpl implements IdentifiableOSGiService, RegionService {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Always use {@link com.liferay.portal.service.RegionServiceUtil} to access the region remote service.
+	 * Never modify or reference this class directly. Use <code>RegionService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>RegionServiceUtil</code>.
 	 */
+
+	/**
+	 * Returns the region local service.
+	 *
+	 * @return the region local service
+	 */
+	public com.liferay.portal.kernel.service.RegionLocalService
+		getRegionLocalService() {
+
+		return regionLocalService;
+	}
+
+	/**
+	 * Sets the region local service.
+	 *
+	 * @param regionLocalService the region local service
+	 */
+	public void setRegionLocalService(
+		com.liferay.portal.kernel.service.RegionLocalService
+			regionLocalService) {
+
+		this.regionLocalService = regionLocalService;
+	}
 
 	/**
 	 * Returns the region remote service.
@@ -91,7 +117,9 @@ public abstract class RegionServiceBaseImpl extends BaseServiceImpl
 	 *
 	 * @return the counter local service
 	 */
-	public com.liferay.counter.service.CounterLocalService getCounterLocalService() {
+	public com.liferay.counter.kernel.service.CounterLocalService
+		getCounterLocalService() {
+
 		return counterLocalService;
 	}
 
@@ -101,71 +129,48 @@ public abstract class RegionServiceBaseImpl extends BaseServiceImpl
 	 * @param counterLocalService the counter local service
 	 */
 	public void setCounterLocalService(
-		com.liferay.counter.service.CounterLocalService counterLocalService) {
+		com.liferay.counter.kernel.service.CounterLocalService
+			counterLocalService) {
+
 		this.counterLocalService = counterLocalService;
 	}
 
 	/**
-	 * Returns the country remote service.
+	 * Returns the region localization persistence.
 	 *
-	 * @return the country remote service
+	 * @return the region localization persistence
 	 */
-	public com.liferay.portal.service.CountryService getCountryService() {
-		return countryService;
+	public RegionLocalizationPersistence getRegionLocalizationPersistence() {
+		return regionLocalizationPersistence;
 	}
 
 	/**
-	 * Sets the country remote service.
+	 * Sets the region localization persistence.
 	 *
-	 * @param countryService the country remote service
+	 * @param regionLocalizationPersistence the region localization persistence
 	 */
-	public void setCountryService(
-		com.liferay.portal.service.CountryService countryService) {
-		this.countryService = countryService;
-	}
+	public void setRegionLocalizationPersistence(
+		RegionLocalizationPersistence regionLocalizationPersistence) {
 
-	/**
-	 * Returns the country persistence.
-	 *
-	 * @return the country persistence
-	 */
-	public CountryPersistence getCountryPersistence() {
-		return countryPersistence;
-	}
-
-	/**
-	 * Sets the country persistence.
-	 *
-	 * @param countryPersistence the country persistence
-	 */
-	public void setCountryPersistence(CountryPersistence countryPersistence) {
-		this.countryPersistence = countryPersistence;
+		this.regionLocalizationPersistence = regionLocalizationPersistence;
 	}
 
 	public void afterPropertiesSet() {
+		_setServiceUtilService(regionService);
 	}
 
 	public void destroy() {
+		_setServiceUtilService(null);
 	}
 
 	/**
-	 * Returns the Spring bean ID for this bean.
+	 * Returns the OSGi service identifier.
 	 *
-	 * @return the Spring bean ID for this bean
+	 * @return the OSGi service identifier
 	 */
 	@Override
-	public String getBeanIdentifier() {
-		return _beanIdentifier;
-	}
-
-	/**
-	 * Sets the Spring bean ID for this bean.
-	 *
-	 * @param beanIdentifier the Spring bean ID for this bean
-	 */
-	@Override
-	public void setBeanIdentifier(String beanIdentifier) {
-		_beanIdentifier = beanIdentifier;
+	public String getOSGiServiceIdentifier() {
+		return RegionService.class.getName();
 	}
 
 	protected Class<?> getModelClass() {
@@ -185,30 +190,53 @@ public abstract class RegionServiceBaseImpl extends BaseServiceImpl
 		try {
 			DataSource dataSource = regionPersistence.getDataSource();
 
-			DB db = DBFactoryUtil.getDB();
+			DB db = DBManagerUtil.getDB();
 
 			sql = db.buildSQL(sql);
 			sql = PortalUtil.transformSQL(sql);
 
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(dataSource,
-					sql, new int[0]);
+			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
+				dataSource, sql);
 
 			sqlUpdate.update();
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 	}
 
-	@BeanReference(type = com.liferay.portal.service.RegionService.class)
+	private void _setServiceUtilService(RegionService regionService) {
+		try {
+			Field field = RegionServiceUtil.class.getDeclaredField("_service");
+
+			field.setAccessible(true);
+
+			field.set(null, regionService);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new RuntimeException(reflectiveOperationException);
+		}
+	}
+
+	@BeanReference(
+		type = com.liferay.portal.kernel.service.RegionLocalService.class
+	)
+	protected com.liferay.portal.kernel.service.RegionLocalService
+		regionLocalService;
+
+	@BeanReference(type = RegionService.class)
 	protected RegionService regionService;
+
 	@BeanReference(type = RegionPersistence.class)
 	protected RegionPersistence regionPersistence;
-	@BeanReference(type = com.liferay.counter.service.CounterLocalService.class)
-	protected com.liferay.counter.service.CounterLocalService counterLocalService;
-	@BeanReference(type = com.liferay.portal.service.CountryService.class)
-	protected com.liferay.portal.service.CountryService countryService;
-	@BeanReference(type = CountryPersistence.class)
-	protected CountryPersistence countryPersistence;
-	private String _beanIdentifier;
+
+	@BeanReference(
+		type = com.liferay.counter.kernel.service.CounterLocalService.class
+	)
+	protected com.liferay.counter.kernel.service.CounterLocalService
+		counterLocalService;
+
+	@BeanReference(type = RegionLocalizationPersistence.class)
+	protected RegionLocalizationPersistence regionLocalizationPersistence;
+
 }

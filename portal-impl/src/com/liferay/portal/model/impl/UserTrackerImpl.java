@@ -14,14 +14,14 @@
 
 package com.liferay.portal.model.impl;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserTracker;
+import com.liferay.portal.kernel.model.UserTrackerPath;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.model.User;
-import com.liferay.portal.model.UserTracker;
-import com.liferay.portal.model.UserTrackerPath;
-import com.liferay.portal.service.UserLocalServiceUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,9 +36,11 @@ public class UserTrackerImpl extends UserTrackerBaseImpl {
 		try {
 			_paths.add(path);
 		}
-		catch (ArrayIndexOutOfBoundsException aioobe) {
+		catch (ArrayIndexOutOfBoundsException arrayIndexOutOfBoundsException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(aioobe);
+				_log.warn(
+					arrayIndexOutOfBoundsException,
+					arrayIndexOutOfBoundsException);
 			}
 		}
 
@@ -69,7 +71,10 @@ public class UserTrackerImpl extends UserTrackerBaseImpl {
 
 				_emailAddress = _user.getEmailAddress();
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception, exception);
+				}
 			}
 		}
 
@@ -90,7 +95,10 @@ public class UserTrackerImpl extends UserTrackerBaseImpl {
 
 				_fullName = _user.getFullName();
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception, exception);
+				}
 			}
 		}
 

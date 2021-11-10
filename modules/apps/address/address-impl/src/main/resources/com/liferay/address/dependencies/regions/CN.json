@@ -1,0 +1,138 @@
+[
+	{
+		"name": "Anhui Sheng",
+		"regionCode": "AH"
+	},
+	{
+		"name": "Aomen",
+		"regionCode": "MO"
+	},
+	{
+		"name": "Beijing Shi",
+		"regionCode": "BJ"
+	},
+	{
+		"name": "Chongqing Shi",
+		"regionCode": "CQ"
+	},
+	{
+		"name": "Fujian Sheng",
+		"regionCode": "FJ"
+	},
+	{
+		"name": "Gansu Sheng",
+		"regionCode": "GS"
+	},
+	{
+		"name": "Guangdong Sheng",
+		"regionCode": "GD"
+	},
+	{
+		"name": "Guangxi Zhuangzu Zizhiqu",
+		"regionCode": "GX"
+	},
+	{
+		"name": "Guizhou Sheng",
+		"regionCode": "GZ"
+	},
+	{
+		"name": "Hainan Sheng",
+		"regionCode": "HI"
+	},
+	{
+		"name": "Hebei Sheng",
+		"regionCode": "HE"
+	},
+	{
+		"name": "Heilongjiang Sheng",
+		"regionCode": "HL"
+	},
+	{
+		"name": "Henan Sheng",
+		"regionCode": "HA"
+	},
+	{
+		"name": "Hubei Sheng",
+		"regionCode": "HB"
+	},
+	{
+		"name": "Hunan Sheng",
+		"regionCode": "HN"
+	},
+	{
+		"name": "Jiangsu Sheng",
+		"regionCode": "JS"
+	},
+	{
+		"name": "Jiangxi Sheng",
+		"regionCode": "JX"
+	},
+	{
+		"name": "Jilin Sheng",
+		"regionCode": "JL"
+	},
+	{
+		"name": "Liaoning Sheng",
+		"regionCode": "LN"
+	},
+	{
+		"name": "Nei Mongol Zizhiqu",
+		"regionCode": "NM"
+	},
+	{
+		"name": "Ningxia Sheng",
+		"regionCode": "NX"
+	},
+	{
+		"name": "Qinghai Sheng",
+		"regionCode": "QH"
+	},
+	{
+		"name": "Shaanxi Sheng",
+		"regionCode": "SN"
+	},
+	{
+		"name": "Shandong Sheng",
+		"regionCode": "SD"
+	},
+	{
+		"name": "Shanghai Sheng",
+		"regionCode": "SH"
+	},
+	{
+		"name": "Shanxi Sheng",
+		"regionCode": "SX"
+	},
+	{
+		"name": "Sichuan Sheng",
+		"regionCode": "SC"
+	},
+	{
+		"name": "Taiwan Sheng",
+		"regionCode": "TW"
+	},
+	{
+		"name": "Tianjin Shi",
+		"regionCode": "TJ"
+	},
+	{
+		"name": "Xianggang",
+		"regionCode": "HK"
+	},
+	{
+		"name": "Xinjiang Uygur Zizhiqu",
+		"regionCode": "XJ"
+	},
+	{
+		"name": "Xizang Zizhiqu",
+		"regionCode": "XZ"
+	},
+	{
+		"name": "Yunnan Sheng",
+		"regionCode": "YN"
+	},
+	{
+		"name": "Zhejiang Sheng",
+		"regionCode": "ZJ"
+	}
+]

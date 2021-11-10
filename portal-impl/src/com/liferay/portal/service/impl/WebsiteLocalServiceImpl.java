@@ -14,39 +14,28 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.WebsiteURLException;
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.WebsiteURLException;
+import com.liferay.portal.kernel.model.ListTypeConstants;
+import com.liferay.portal.kernel.model.SystemEventConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.Website;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.ListTypeLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
-import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.ListTypeConstants;
-import com.liferay.portal.model.SystemEventConstants;
-import com.liferay.portal.model.User;
-import com.liferay.portal.model.Website;
-import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.service.base.WebsiteLocalServiceBaseImpl;
 
 import java.util.List;
+
+import org.apache.commons.validator.routines.UrlValidator;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
-
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link #addWebsite(long, String,
-	 *             long, String, int, boolean, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public Website addWebsite(
-			long userId, String className, long classPK, String url,
-			long typeId, boolean primary)
-		throws PortalException {
-
-		return addWebsite(
-			userId, className, classPK, url, typeId, primary,
-			new ServiceContext());
-	}
 
 	@Override
 	public Website addWebsite(
@@ -54,8 +43,8 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 			long typeId, boolean primary, ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userPersistence.findByPrimaryKey(userId);
-		long classNameId = classNameLocalService.getClassNameId(className);
+		User user = _userPersistence.findByPrimaryKey(userId);
+		long classNameId = _classNameLocalService.getClassNameId(className);
 
 		validate(
 			0, user.getCompanyId(), classNameId, classPK, url, typeId, primary);
@@ -74,9 +63,7 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 		website.setTypeId(typeId);
 		website.setPrimary(primary);
 
-		websitePersistence.update(website);
-
-		return website;
+		return websitePersistence.update(website);
 	}
 
 	@Override
@@ -99,10 +86,9 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 
 	@Override
 	public void deleteWebsites(long companyId, String className, long classPK) {
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		List<Website> websites = websitePersistence.findByC_C_C(
-			companyId, classNameId, classPK);
+			companyId, _classNameLocalService.getClassNameId(className),
+			classPK);
 
 		for (Website website : websites) {
 			websiteLocalService.deleteWebsite(website);
@@ -118,9 +104,9 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 	public List<Website> getWebsites(
 		long companyId, String className, long classPK) {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		return websitePersistence.findByC_C_C(companyId, classNameId, classPK);
+		return websitePersistence.findByC_C_C(
+			companyId, _classNameLocalService.getClassNameId(className),
+			classPK);
 	}
 
 	@Override
@@ -136,9 +122,7 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 		website.setTypeId(typeId);
 		website.setPrimary(primary);
 
-		websitePersistence.update(website);
-
-		return website;
+		return websitePersistence.update(website);
 	}
 
 	protected void validate(
@@ -167,8 +151,10 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 			String url, long typeId, boolean primary)
 		throws PortalException {
 
-		if (!Validator.isUrl(url)) {
-			throw new WebsiteURLException();
+		UrlValidator urlValidator = new UrlValidator();
+
+		if (!urlValidator.isValid(url)) {
+			throw new WebsiteURLException(url);
 		}
 
 		if (websiteId > 0) {
@@ -179,10 +165,19 @@ public class WebsiteLocalServiceImpl extends WebsiteLocalServiceBaseImpl {
 			classPK = website.getClassPK();
 		}
 
-		listTypeService.validate(
+		_listTypeLocalService.validate(
 			typeId, classNameId, ListTypeConstants.WEBSITE);
 
 		validate(websiteId, companyId, classNameId, classPK, primary);
 	}
+
+	@BeanReference(type = ClassNameLocalService.class)
+	private ClassNameLocalService _classNameLocalService;
+
+	@BeanReference(type = ListTypeLocalService.class)
+	private ListTypeLocalService _listTypeLocalService;
+
+	@BeanReference(type = UserPersistence.class)
+	private UserPersistence _userPersistence;
 
 }

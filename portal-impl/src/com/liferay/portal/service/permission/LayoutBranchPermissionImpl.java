@@ -15,10 +15,11 @@
 package com.liferay.portal.service.permission;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.LayoutBranch;
-import com.liferay.portal.security.auth.PrincipalException;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.service.LayoutBranchLocalServiceUtil;
+import com.liferay.portal.kernel.model.LayoutBranch;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.LayoutBranchLocalServiceUtil;
+import com.liferay.portal.kernel.service.permission.LayoutBranchPermission;
 
 /**
  * @author Brian Wing Shun Chan
@@ -67,10 +68,10 @@ public class LayoutBranchPermissionImpl implements LayoutBranchPermission {
 			String actionId)
 		throws PortalException {
 
-		LayoutBranch layoutBranch =
-			LayoutBranchLocalServiceUtil.getLayoutBranch(layoutBranchId);
-
-		return contains(permissionChecker, layoutBranch, actionId);
+		return contains(
+			permissionChecker,
+			LayoutBranchLocalServiceUtil.getLayoutBranch(layoutBranchId),
+			actionId);
 	}
 
 }

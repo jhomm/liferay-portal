@@ -1,0 +1,31 @@
+html#{$cadmin-selector} {
+	.cadmin {
+		.page-editor__translation {
+			min-width: 35ch;
+
+			&__label {
+				text-transform: uppercase;
+
+				&-wrapper {
+					width: auto;
+				}
+
+				&.default {
+					border-color: $cadmin-info;
+					color: $cadmin-info;
+				}
+
+				&.untranslated,
+				&.translating {
+					border-color: $cadmin-warning;
+					color: $cadmin-warning;
+				}
+
+				&.translated {
+					border-color: $cadmin-success;
+					color: $cadmin-success;
+				}
+			}
+		}
+	}
+}

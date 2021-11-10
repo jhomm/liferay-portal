@@ -21,6 +21,7 @@ String randomNamespace = PortalUtil.generateRandomKey(request, "taglib_ui_input_
 
 String amPmParam = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-time:amPmParam"));
 int amPmValue = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-time:amPmValue"));
+String autoComplete = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-time:autoComplete"));
 String cssClass = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-time:cssClass"));
 String dateParam = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-time:dateParam"), "date");
 Date dateValue = (Date)GetterUtil.getObject(request.getAttribute("liferay-ui:input-time:dateValue"));
@@ -31,6 +32,16 @@ String minuteParam = GetterUtil.getString((String)request.getAttribute("liferay-
 int minuteValue = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-time:minuteValue"));
 int minuteInterval = GetterUtil.getInteger((String)request.getAttribute("liferay-ui:input-time:minuteInterval"));
 String name = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-time:name"));
+String timeFormat = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-time:timeFormat"));
+
+boolean amPm = DateUtil.isFormatAmPm(locale);
+
+if (timeFormat.equals("am-pm")) {
+	amPm = true;
+}
+else if (timeFormat.equals("24-hour")) {
+	amPm = false;
+}
 
 if (minuteInterval < 1) {
 	minuteInterval = 30;
@@ -55,26 +66,26 @@ String simpleDateFormatPattern = _SIMPLE_DATE_FORMAT_PATTERN_ISO;
 if (BrowserSnifferUtil.isMobile(request)) {
 	simpleDateFormatPattern = _SIMPLE_DATE_FORMAT_PATTERN_HTML5;
 }
-else if (DateUtil.isFormatAmPm(locale)) {
+else if (amPm) {
 	simpleDateFormatPattern = _SIMPLE_DATE_FORMAT_PATTERN;
 }
 
 String placeholder = _PLACEHOLDER_DEFAULT;
 
-if (!DateUtil.isFormatAmPm(locale)) {
+if (!amPm) {
 	placeholder = _PLACEHOLDER_ISO;
 }
 
 Format format = FastDateFormatFactoryUtil.getSimpleDateFormat(simpleDateFormatPattern, locale, timeZone);
 %>
 
-<span class="lfr-input-time <%= cssClass %>" id="<%= randomNamespace %>displayTime">
+<span class="lfr-input-time" id="<%= randomNamespace %>displayTime">
 	<c:choose>
 		<c:when test="<%= BrowserSnifferUtil.isMobile(request) %>">
-			<input class="form-control" <%= disabled ? "disabled=\"disabled\"" : "" %> id="<%= nameId %>" name="<%= namespace + HtmlUtil.escapeAttribute(name) %>" type="time" value="<%= format.format(calendar.getTime()) %>" />
+			<input <%= Validator.isNotNull(autoComplete) ? "autocomplete=\"" + autoComplete + "\"" : StringPool.BLANK %> class="form-control <%= cssClass %>" <%= disabled ? "disabled=\"disabled\"" : "" %> id="<%= nameId %>" name="<%= namespace + HtmlUtil.escapeAttribute(name) %>" type="time" value="<%= format.format(calendar.getTime()) %>" />
 		</c:when>
 		<c:otherwise>
-			<input class="form-control" <%= disabled ? "disabled=\"disabled\"" : "" %> id="<%= nameId %>" name="<%= namespace + HtmlUtil.escapeAttribute(name) %>" placeholder="<%= placeholder %>" type="text" value="<%= format.format(calendar.getTime()) %>" />
+			<input <%= Validator.isNotNull(autoComplete) ? "autocomplete=\"" + autoComplete + "\"" : StringPool.BLANK %> class="form-control <%= cssClass %>" <%= disabled ? "disabled=\"disabled\"" : "" %> id="<%= nameId %>" name="<%= namespace + HtmlUtil.escapeAttribute(name) %>" placeholder="<%= placeholder %>" type="text" value="<%= format.format(calendar.getTime()) %>" />
 		</c:otherwise>
 	</c:choose>
 
@@ -91,36 +102,27 @@ Format format = FastDateFormatFactoryUtil.getSimpleDateFormat(simpleDateFormatPa
 			var timePicker = new A.TimePicker<%= BrowserSnifferUtil.isMobile(request) ? "Native" : StringPool.BLANK %>(
 				{
 					container: '#<%= randomNamespace %>displayTime',
-					mask: '<%= DateUtil.isFormatAmPm(locale) ? "%I:%M %p" : "%H:%M" %>',
+					mask: '<%= amPm ? "%I:%M %p" : "%H:%M" %>',
 					on: {
+						enterKey: function(event) {
+							var instance = this;
+
+							var inputVal = instance.get('activeInput').val();
+
+							var date = instance.getParsedDatesFromInputValue(inputVal).pop();
+
+							instance.updateTime(date);
+						},
 						selectionChange: function(event) {
 							var instance = this;
 
-							var container = instance.get('container');
-
 							var date = event.newSelection[0];
 
-							var hours = date.getHours();
-
-							var amPm = 0;
-
-							<c:if test="<%= DateUtil.isFormatAmPm(locale) %>">
-								if (hours > 11) {
-									amPm = 1;
-									hours -= 12;
-								}
-							</c:if>
-
-							if (date) {
-								container.one('#<%= hourParamId %>').val(hours);
-								container.one('#<%= minuteParamId %>').val(date.getMinutes());
-								container.one('#<%= amPmParamId %>').val(amPm);
-								container.one('#<%= dateParamId %>').val(date);
-							}
+							instance.updateTime(date);
 						}
 					},
 					popover: {
-						zIndex: Liferay.zIndex.TOOLTIP
+						zIndex: Liferay.zIndex.POPOVER
 					},
 					trigger: '#<%= nameId %>',
 					values: <%= _getHoursJSONArray(minuteInterval, locale) %>
@@ -143,6 +145,30 @@ Format format = FastDateFormatFactoryUtil.getSimpleDateFormat(simpleDateFormatPa
 				var time = A.Date.parse(A.Date.aggregates.T, hours + ':' + minutes + ':0');
 
 				return time;
+			};
+
+			timePicker.updateTime = function(date) {
+				var instance = this;
+
+				var container = instance.get('container');
+
+				var hours = date.getHours();
+
+				var amPm = 0;
+
+				<c:if test="<%= amPm %>">
+					if (hours > 11) {
+						amPm = 1;
+						hours -= 12;
+					}
+				</c:if>
+
+				if (date) {
+					container.one('#<%= hourParamId %>').val(hours);
+					container.one('#<%= minuteParamId %>').val(date.getMinutes());
+					container.one('#<%= amPmParamId %>').val(amPm);
+					container.one('#<%= dateParamId %>').val(date);
+				}
 			};
 
 			return timePicker;

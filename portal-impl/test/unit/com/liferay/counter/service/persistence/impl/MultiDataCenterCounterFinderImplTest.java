@@ -14,7 +14,11 @@
 
 package com.liferay.counter.service.persistence.impl;
 
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -23,15 +27,20 @@ import org.junit.Test;
  */
 public class MultiDataCenterCounterFinderImplTest {
 
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
 	@Test
 	public void testIncrement2DataCenters() {
 		MultiDataCenterCounterFinderImpl multiDataCenterCounterFinderImpl =
 			new MultiDataCenterCounterFinderImpl(2, 0);
 
 		Assert.assertEquals(
-			0l, multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(0));
+			0L, multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(0));
 		Assert.assertEquals(
-			4611686018427387903l,
+			4611686018427387903L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(
 				Long.MAX_VALUE));
 
@@ -39,10 +48,10 @@ public class MultiDataCenterCounterFinderImplTest {
 			2, 1);
 
 		Assert.assertEquals(
-			4611686018427387904l,
+			4611686018427387904L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(0));
 		Assert.assertEquals(
-			9223372036854775807l,
+			9223372036854775807L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(
 				Long.MAX_VALUE));
 	}
@@ -53,9 +62,9 @@ public class MultiDataCenterCounterFinderImplTest {
 			new MultiDataCenterCounterFinderImpl(5, 0);
 
 		Assert.assertEquals(
-			0l, multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(0));
+			0L, multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(0));
 		Assert.assertEquals(
-			1152921504606846975l,
+			1152921504606846975L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(
 				Long.MAX_VALUE));
 
@@ -63,10 +72,10 @@ public class MultiDataCenterCounterFinderImplTest {
 			5, 1);
 
 		Assert.assertEquals(
-			1152921504606846976l,
+			1152921504606846976L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(0));
 		Assert.assertEquals(
-			2305843009213693951l,
+			2305843009213693951L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(
 				Long.MAX_VALUE));
 
@@ -74,10 +83,10 @@ public class MultiDataCenterCounterFinderImplTest {
 			5, 2);
 
 		Assert.assertEquals(
-			2305843009213693952l,
+			2305843009213693952L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(0));
 		Assert.assertEquals(
-			3458764513820540927l,
+			3458764513820540927L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(
 				Long.MAX_VALUE));
 
@@ -85,10 +94,10 @@ public class MultiDataCenterCounterFinderImplTest {
 			5, 3);
 
 		Assert.assertEquals(
-			3458764513820540928l,
+			3458764513820540928L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(0));
 		Assert.assertEquals(
-			4611686018427387903l,
+			4611686018427387903L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(
 				Long.MAX_VALUE));
 
@@ -96,10 +105,10 @@ public class MultiDataCenterCounterFinderImplTest {
 			5, 4);
 
 		Assert.assertEquals(
-			4611686018427387904l,
+			4611686018427387904L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(0));
 		Assert.assertEquals(
-			5764607523034234879l,
+			5764607523034234879L,
 			multiDataCenterCounterFinderImpl.getMultiClusterSafeValue(
 				Long.MAX_VALUE));
 	}
@@ -124,10 +133,10 @@ public class MultiDataCenterCounterFinderImplTest {
 
 			Assert.fail();
 		}
-		catch (IllegalArgumentException iae) {
+		catch (IllegalArgumentException illegalArgumentException) {
 			Assert.assertEquals(
 				"Invalid data center count 2 or data center deployment ID 2",
-				iae.getMessage());
+				illegalArgumentException.getMessage());
 		}
 
 		try {
@@ -135,9 +144,10 @@ public class MultiDataCenterCounterFinderImplTest {
 
 			Assert.fail();
 		}
-		catch (IllegalArgumentException iae) {
+		catch (IllegalArgumentException illegalArgumentException) {
 			Assert.assertEquals(
-				"Unable to shift more than 8 bits", iae.getMessage());
+				"Unable to shift more than 8 bits",
+				illegalArgumentException.getMessage());
 		}
 	}
 

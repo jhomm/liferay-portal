@@ -1,25 +1,27 @@
-<definition default="assertConfirmation" summary="Assert that the confirmation window equals the value '${value1}'">
-	<command name="assertConfirmation">
-		<execute selenium="assertConfirmation" />
+@default = "confirm"
+@summary = "Execute the confirmation of a confirmation window"
+definition {
 
-		<execute selenium="assertJavaScriptErrors" />
+	function acceptAlert {
+		selenium.acceptAlert();
+	}
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
+	function confirm {
+		selenium.getConfirmation();
 
-	<command name="assertPartialConfirmation">
-		<execute selenium="assertPartialConfirmation" />
+		selenium.assertJavaScriptErrors();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.assertLiferayErrors();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
+		WaitForSPARefresh();
+	}
 
-	<command name="waitForConfirmation">
-		<execute selenium="waitForConfirmation" />
+	function dismissAlert {
+		selenium.dismissAlert();
+	}
 
-		<execute selenium="assertJavaScriptErrors" />
+	function typeAlert {
+		selenium.typeAlert();
+	}
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+}

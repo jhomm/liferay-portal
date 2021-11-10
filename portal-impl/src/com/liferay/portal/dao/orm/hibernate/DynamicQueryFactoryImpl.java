@@ -14,21 +14,11 @@
 
 package com.liferay.portal.dao.orm.hibernate;
 
-import com.liferay.portal.kernel.concurrent.ConcurrentReferenceKeyHashMap;
+import com.liferay.portal.kernel.annotation.ImplementationClassName;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.memory.FinalizeManager;
-import com.liferay.portal.kernel.security.pacl.permission.PortalRuntimePermission;
-import com.liferay.portal.kernel.util.ClassLoaderUtil;
-import com.liferay.portal.security.lang.DoPrivilegedUtil;
-
-import java.security.PrivilegedAction;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentMap;
 
 import org.hibernate.criterion.DetachedCriteria;
 
@@ -37,28 +27,40 @@ import org.hibernate.criterion.DetachedCriteria;
  */
 public class DynamicQueryFactoryImpl implements DynamicQueryFactory {
 
+	/**
+	 * @deprecated As of Mueller (7.2.x), replaced by {@link #forClass(Class,
+	 *             ClassLoader)}
+	 */
+	@Deprecated
 	@Override
 	public DynamicQuery forClass(Class<?> clazz) {
 		clazz = getImplClass(clazz, null);
 
-		return DoPrivilegedUtil.wrap(
-			new DynamicQueryPrivilegedAction(clazz, null));
+		return new DynamicQueryImpl(DetachedCriteria.forClass(clazz));
 	}
 
 	@Override
 	public DynamicQuery forClass(Class<?> clazz, ClassLoader classLoader) {
 		clazz = getImplClass(clazz, classLoader);
 
-		return DoPrivilegedUtil.wrap(
-			new DynamicQueryPrivilegedAction(clazz, null));
+		return new DynamicQueryImpl(DetachedCriteria.forClass(clazz));
 	}
 
+	/**
+	 * @deprecated As of Mueller (7.2.x), replaced by {@link #forClass(Class,
+	 *             String, ClassLoader)}
+	 */
+	@Deprecated
 	@Override
 	public DynamicQuery forClass(Class<?> clazz, String alias) {
 		clazz = getImplClass(clazz, null);
 
-		return DoPrivilegedUtil.wrap(
-			new DynamicQueryPrivilegedAction(clazz, alias));
+		if (alias != null) {
+			return new DynamicQueryImpl(
+				DetachedCriteria.forClass(clazz, alias));
+		}
+
+		return new DynamicQueryImpl(DetachedCriteria.forClass(clazz));
 	}
 
 	@Override
@@ -67,45 +69,49 @@ public class DynamicQueryFactoryImpl implements DynamicQueryFactory {
 
 		clazz = getImplClass(clazz, classLoader);
 
-		return DoPrivilegedUtil.wrap(
-			new DynamicQueryPrivilegedAction(clazz, alias));
+		if (alias != null) {
+			return new DynamicQueryImpl(
+				DetachedCriteria.forClass(clazz, alias));
+		}
+
+		return new DynamicQueryImpl(DetachedCriteria.forClass(clazz));
 	}
 
 	protected Class<?> getImplClass(Class<?> clazz, ClassLoader classLoader) {
-		Class<?> implClass = clazz;
+		ImplementationClassName implementationClassName = clazz.getAnnotation(
+			ImplementationClassName.class);
 
-		String className = clazz.getName();
+		if (implementationClassName == null) {
+			String className = clazz.getName();
 
-		if (!className.endsWith("Impl")) {
-			if (classLoader == null) {
-				classLoader = ClassLoaderUtil.getContextClassLoader();
+			if (!className.endsWith("Impl")) {
+				_log.error("Unable find model for " + clazz);
 			}
 
-			Package pkg = clazz.getPackage();
-
-			String implClassName =
-				pkg.getName() + ".impl." + clazz.getSimpleName() + "Impl";
-
-			try {
-				implClass = getImplClass(implClassName, classLoader);
-			}
-			catch (Exception e1) {
-				if (classLoader != _portalClassLoader) {
-					try {
-						implClass = getImplClass(
-							implClassName, _portalClassLoader);
-					}
-					catch (Exception e2) {
-						_log.error("Unable find model " + implClassName, e2);
-					}
-				}
-				else {
-					_log.error("Unable find model " + implClassName, e1);
-				}
-			}
+			return clazz;
 		}
 
-		PortalRuntimePermission.checkDynamicQuery(implClass);
+		Class<?> implClass = clazz;
+
+		String implClassName = implementationClassName.value();
+
+		try {
+			implClass = getImplClass(implClassName, classLoader);
+		}
+		catch (Exception exception1) {
+			if (classLoader != _portalClassLoader) {
+				try {
+					implClass = getImplClass(implClassName, _portalClassLoader);
+				}
+				catch (Exception exception2) {
+					_log.error(
+						"Unable find model " + implClassName, exception2);
+				}
+			}
+			else {
+				_log.error("Unable find model " + implClassName, exception1);
+			}
+		}
 
 		return implClass;
 	}
@@ -114,57 +120,13 @@ public class DynamicQueryFactoryImpl implements DynamicQueryFactory {
 			String implClassName, ClassLoader classLoader)
 		throws ClassNotFoundException {
 
-		Map<String, Class<?>> classes = _classes.get(classLoader);
-
-		if (classes == null) {
-			classes = new HashMap<>();
-
-			_classes.put(classLoader, classes);
-		}
-
-		Class<?> clazz = classes.get(implClassName);
-
-		if (clazz == null) {
-			clazz = classLoader.loadClass(implClassName);
-
-			classes.put(implClassName, clazz);
-		}
-
-		return clazz;
+		return classLoader.loadClass(implClassName);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DynamicQueryFactoryImpl.class);
 
-	private static final
-		ConcurrentMap<ClassLoader, Map<String, Class<?>>> _classes =
-			new ConcurrentReferenceKeyHashMap<>(
-				FinalizeManager.WEAK_REFERENCE_FACTORY);
-
 	private final ClassLoader _portalClassLoader =
 		DynamicQueryFactoryImpl.class.getClassLoader();
-
-	private class DynamicQueryPrivilegedAction
-		implements PrivilegedAction<DynamicQuery> {
-
-		public DynamicQueryPrivilegedAction(Class<?> clazz, String alias) {
-			_clazz = clazz;
-			_alias = alias;
-		}
-
-		@Override
-		public DynamicQuery run() {
-			if (_alias != null) {
-				return new DynamicQueryImpl(
-					DetachedCriteria.forClass(_clazz, _alias));
-			}
-
-			return new DynamicQueryImpl(DetachedCriteria.forClass(_clazz));
-		}
-
-		private final String _alias;
-		private final Class<?> _clazz;
-
-	}
 
 }

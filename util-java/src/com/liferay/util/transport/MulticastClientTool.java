@@ -14,6 +14,8 @@
 
 package com.liferay.util.transport;
 
+import com.liferay.petra.string.StringBundler;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,16 +34,14 @@ public class MulticastClientTool {
 		try {
 			new MulticastClientTool(args);
 		}
-		catch (Exception e) {
-			e.printStackTrace();
+		catch (Exception exception) {
+			exception.printStackTrace();
 
-			StringBuilder sb = new StringBuilder(3);
-
-			sb.append("Usage: java -classpath util-java.jar ");
-			sb.append(MulticastClientTool.class.getName());
-			sb.append("[-g] [-s] -h [multicastAddress] -p [port]");
-
-			System.err.println(sb.toString());
+			System.err.println(
+				StringBundler.concat(
+					"Usage: java -classpath util-java.jar ",
+					MulticastClientTool.class.getName(),
+					"[-g] [-s] -h [multicastAddress] -p [port]"));
 
 			System.exit(1);
 		}
@@ -52,6 +52,7 @@ public class MulticastClientTool {
 
 		Integer port = (Integer)argsMap.get("port");
 		String host = (String)argsMap.get("host");
+
 		Boolean gzipData = (Boolean)argsMap.get("gzip");
 		Boolean shortData = (Boolean)argsMap.get("short");
 

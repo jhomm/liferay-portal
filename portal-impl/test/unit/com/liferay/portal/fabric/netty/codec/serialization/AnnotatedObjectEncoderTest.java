@@ -14,13 +14,15 @@
 
 package com.liferay.portal.fabric.netty.codec.serialization;
 
-import com.liferay.portal.kernel.io.AnnotatedObjectInputStream;
+import com.liferay.petra.io.ProtectedAnnotatedObjectInputStream;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.ChannelHandler;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -30,6 +32,7 @@ import java.util.Date;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -38,8 +41,10 @@ import org.junit.Test;
 public class AnnotatedObjectEncoderTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Test
 	public void testEncode() throws Exception {
@@ -54,17 +59,22 @@ public class AnnotatedObjectEncoderTest {
 
 		Assert.assertEquals(byteBuf.readInt(), byteBuf.readableBytes());
 
-		AnnotatedObjectInputStream annotatedObjectInputStream =
-			new AnnotatedObjectInputStream(new ByteBufInputStream(byteBuf));
+		ProtectedAnnotatedObjectInputStream
+			protectedAnnotatedObjectInputStream =
+				new ProtectedAnnotatedObjectInputStream(
+					new ByteBufInputStream(byteBuf));
 
-		Assert.assertEquals(date, annotatedObjectInputStream.readObject());
+		Assert.assertEquals(
+			date, protectedAnnotatedObjectInputStream.readObject());
+
 		Assert.assertFalse(byteBuf.isReadable());
 	}
 
 	@Test
 	public void testStructure() throws ReflectiveOperationException {
 		Assert.assertNotNull(
-			AnnotatedObjectEncoder.class.getAnnotation(Sharable.class));
+			AnnotatedObjectEncoder.class.getAnnotation(
+				ChannelHandler.Sharable.class));
 
 		Field instanceField = AnnotatedObjectEncoder.class.getField("INSTANCE");
 

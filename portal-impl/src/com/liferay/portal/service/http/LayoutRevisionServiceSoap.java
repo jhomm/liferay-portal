@@ -14,29 +14,28 @@
 
 package com.liferay.portal.service.http;
 
-import aQute.bnd.annotation.ProviderType;
-
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.service.LayoutRevisionServiceUtil;
+import com.liferay.portal.kernel.service.LayoutRevisionServiceUtil;
 
 import java.rmi.RemoteException;
 
 /**
  * Provides the SOAP utility for the
- * {@link LayoutRevisionServiceUtil} service utility. The
- * static methods of this class calls the same methods of the service utility.
- * However, the signatures are different because it is difficult for SOAP to
- * support certain types.
+ * <code>LayoutRevisionServiceUtil</code> service
+ * utility. The static methods of this class call the same methods of the
+ * service utility. However, the signatures are different because it is
+ * difficult for SOAP to support certain types.
  *
  * <p>
  * ServiceBuilder follows certain rules in translating the methods. For example,
- * if the method in the service utility returns a {@link java.util.List}, that
- * is translated to an array of {@link com.liferay.portal.model.LayoutRevisionSoap}.
- * If the method in the service utility returns a
- * {@link com.liferay.portal.model.LayoutRevision}, that is translated to a
- * {@link com.liferay.portal.model.LayoutRevisionSoap}. Methods that SOAP cannot
- * safely wire are skipped.
+ * if the method in the service utility returns a <code>java.util.List</code>,
+ * that is translated to an array of
+ * <code>com.liferay.portal.kernel.model.LayoutRevisionSoap</code>. If the method in the
+ * service utility returns a
+ * <code>com.liferay.portal.kernel.model.LayoutRevision</code>, that is translated to a
+ * <code>com.liferay.portal.kernel.model.LayoutRevisionSoap</code>. Methods that SOAP
+ * cannot safely wire are skipped.
  * </p>
  *
  * <p>
@@ -58,40 +57,44 @@ import java.rmi.RemoteException;
  *
  * @author Brian Wing Shun Chan
  * @see LayoutRevisionServiceHttp
- * @see com.liferay.portal.model.LayoutRevisionSoap
- * @see LayoutRevisionServiceUtil
+ * @deprecated As of Athanasius (7.3.x), with no direct replacement
  * @generated
  */
-@ProviderType
+@Deprecated
 public class LayoutRevisionServiceSoap {
-	public static com.liferay.portal.model.LayoutRevisionSoap addLayoutRevision(
-		long userId, long layoutSetBranchId, long layoutBranchId,
-		long parentLayoutRevisionId, boolean head, long plid,
-		long portletPreferencesPlid, boolean privateLayout,
-		java.lang.String name, java.lang.String title,
-		java.lang.String description, java.lang.String keywords,
-		java.lang.String robots, java.lang.String typeSettings,
-		boolean iconImage, long iconImageId, java.lang.String themeId,
-		java.lang.String colorSchemeId, java.lang.String wapThemeId,
-		java.lang.String wapColorSchemeId, java.lang.String css,
-		com.liferay.portal.service.ServiceContext serviceContext)
+
+	public static com.liferay.portal.kernel.model.LayoutRevisionSoap
+			addLayoutRevision(
+				long userId, long layoutSetBranchId, long layoutBranchId,
+				long parentLayoutRevisionId, boolean head, long plid,
+				long portletPreferencesPlid, boolean privateLayout, String name,
+				String title, String description, String keywords,
+				String robots, String typeSettings, boolean iconImage,
+				long iconImageId, String themeId, String colorSchemeId,
+				String css,
+				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws RemoteException {
+
 		try {
-			com.liferay.portal.model.LayoutRevision returnValue = LayoutRevisionServiceUtil.addLayoutRevision(userId,
-					layoutSetBranchId, layoutBranchId, parentLayoutRevisionId,
-					head, plid, portletPreferencesPlid, privateLayout, name,
-					title, description, keywords, robots, typeSettings,
-					iconImage, iconImageId, themeId, colorSchemeId, wapThemeId,
-					wapColorSchemeId, css, serviceContext);
+			com.liferay.portal.kernel.model.LayoutRevision returnValue =
+				LayoutRevisionServiceUtil.addLayoutRevision(
+					userId, layoutSetBranchId, layoutBranchId,
+					parentLayoutRevisionId, head, plid, portletPreferencesPlid,
+					privateLayout, name, title, description, keywords, robots,
+					typeSettings, iconImage, iconImageId, themeId,
+					colorSchemeId, css, serviceContext);
 
-			return com.liferay.portal.model.LayoutRevisionSoap.toSoapModel(returnValue);
+			return com.liferay.portal.kernel.model.LayoutRevisionSoap.
+				toSoapModel(returnValue);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(LayoutRevisionServiceSoap.class);
+	private static Log _log = LogFactoryUtil.getLog(
+		LayoutRevisionServiceSoap.class);
+
 }

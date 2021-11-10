@@ -1,8 +1,6 @@
 Bundle-Name: Liferay Document Library Service
 Bundle-SymbolicName: com.liferay.document.library.service
-Bundle-Version: 1.0.0
-Export-Package:\
-	com.liferay.document.library.events,\
-	com.liferay.document.library.lar.xstream,\
-	com.liferay.document.library.verify
-Include-Resource: classes
+Bundle-Version: 6.0.27
+Liferay-Require-SchemaVersion: 3.2.3
+Liferay-Service: true
+-dsannotations-options: inherit

@@ -14,15 +14,26 @@
 
 package com.liferay.portlet.asset.service.impl;
 
+import com.liferay.asset.kernel.exception.NoSuchLinkException;
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.model.AssetLink;
+import com.liferay.asset.kernel.model.AssetLinkConstants;
+import com.liferay.asset.kernel.model.adapter.StagedAssetLink;
+import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.asset.kernel.service.persistence.AssetEntryPersistence;
+import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.SystemEventConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.adapter.ModelAdapterUtil;
+import com.liferay.portal.kernel.service.SystemEventLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.model.User;
-import com.liferay.portlet.asset.NoSuchLinkException;
-import com.liferay.portlet.asset.model.AssetEntry;
-import com.liferay.portlet.asset.model.AssetLink;
-import com.liferay.portlet.asset.model.AssetLinkConstants;
 import com.liferay.portlet.asset.service.base.AssetLinkLocalServiceBaseImpl;
 
 import java.util.ArrayList;
@@ -56,30 +67,29 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 * @param  weight the weight of the relationship, allowing precedence
 	 *         ordering of links
 	 * @return the asset link
-	 * @throws PortalException if the user could not be found
 	 */
 	@Override
 	public AssetLink addLink(
 			long userId, long entryId1, long entryId2, int type, int weight)
 		throws PortalException {
 
-		User user = userPersistence.findByPrimaryKey(userId);
-		Date now = new Date();
+		User user = _userLocalService.getUser(userId);
+		Date date = new Date();
 
-		long linkId = counterLocalService.increment();
+		long linkId1 = counterLocalService.increment();
 
-		AssetLink link = assetLinkPersistence.create(linkId);
+		AssetLink link1 = assetLinkPersistence.create(linkId1);
 
-		link.setCompanyId(user.getCompanyId());
-		link.setUserId(user.getUserId());
-		link.setUserName(user.getFullName());
-		link.setCreateDate(now);
-		link.setEntryId1(entryId1);
-		link.setEntryId2(entryId2);
-		link.setType(type);
-		link.setWeight(weight);
+		link1.setCompanyId(user.getCompanyId());
+		link1.setUserId(user.getUserId());
+		link1.setUserName(user.getFullName());
+		link1.setCreateDate(date);
+		link1.setEntryId1(entryId1);
+		link1.setEntryId2(entryId2);
+		link1.setType(type);
+		link1.setWeight(weight);
 
-		assetLinkPersistence.update(link);
+		link1 = assetLinkPersistence.update(link1);
 
 		if (AssetLinkConstants.isTypeBi(type)) {
 			long linkId2 = counterLocalService.increment();
@@ -89,7 +99,7 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 			link2.setCompanyId(user.getCompanyId());
 			link2.setUserId(user.getUserId());
 			link2.setUserName(user.getFullName());
-			link2.setCreateDate(now);
+			link2.setCreateDate(date);
 			link2.setEntryId1(entryId2);
 			link2.setEntryId2(entryId1);
 			link2.setType(type);
@@ -98,7 +108,35 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 			assetLinkPersistence.update(link2);
 		}
 
-		return link;
+		return link1;
+	}
+
+	@Override
+	public AssetLink deleteAssetLink(AssetLink assetLink) {
+		AssetLink deletedAssetLink = super.deleteAssetLink(assetLink);
+
+		addDeletionSystemEvent(assetLink);
+
+		return deletedAssetLink;
+	}
+
+	@Override
+	public AssetLink deleteAssetLink(long linkId) throws PortalException {
+		AssetLink assetLink = super.deleteAssetLink(linkId);
+
+		addDeletionSystemEvent(assetLink);
+
+		return assetLink;
+	}
+
+	@Override
+	public void deleteGroupLinks(long groupId) {
+		List<AssetLink> assetLinks = assetLinkFinder.findByAssetEntryGroupId(
+			groupId, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		for (AssetLink assetLink : assetLinks) {
+			deleteAssetLink(assetLink);
+		}
 	}
 
 	/**
@@ -110,24 +148,28 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	public void deleteLink(AssetLink link) {
 		if (AssetLinkConstants.isTypeBi(link.getType())) {
 			try {
-				assetLinkPersistence.removeByE_E_T(
+				AssetLink assetLink = assetLinkPersistence.findByE_E_T(
 					link.getEntryId2(), link.getEntryId1(), link.getType());
+
+				deleteAssetLink(assetLink);
 			}
-			catch (NoSuchLinkException nsle) {
+			catch (NoSuchLinkException noSuchLinkException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn("Unable to delete asset link", nsle);
+					_log.warn(
+						"Unable to delete asset link", noSuchLinkException);
 				}
 			}
 		}
 
 		assetLinkPersistence.remove(link);
+
+		addDeletionSystemEvent(link);
 	}
 
 	/**
 	 * Deletes the asset link.
 	 *
-	 * @param  linkId the primary key of the asset link
-	 * @throws PortalException if the asset link could not be found
+	 * @param linkId the primary key of the asset link
 	 */
 	@Override
 	public void deleteLink(long linkId) throws PortalException {
@@ -143,11 +185,11 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 */
 	@Override
 	public void deleteLinks(long entryId) {
-		for (AssetLink link : assetLinkPersistence.findByE1(entryId)) {
+		for (AssetLink link : assetLinkPersistence.findByEntryId1(entryId)) {
 			deleteLink(link);
 		}
 
-		for (AssetLink link : assetLinkPersistence.findByE2(entryId)) {
+		for (AssetLink link : assetLinkPersistence.findByEntryId2(entryId)) {
 			deleteLink(link);
 		}
 	}
@@ -176,25 +218,17 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 */
 	@Override
 	public List<AssetLink> getDirectLinks(long entryId) {
-		List<AssetLink> assetLinks = assetLinkPersistence.findByE1(entryId);
+		return getDirectLinks(entryId, true);
+	}
 
-		if (!assetLinks.isEmpty()) {
-			List<AssetLink> filteredAssetLinks = new ArrayList<>(
-				assetLinks.size());
+	@Override
+	public List<AssetLink> getDirectLinks(
+		long entryId, boolean excludeInvisibleLinks) {
 
-			for (AssetLink assetLink : assetLinks) {
-				AssetEntry assetEntry = assetEntryPersistence.fetchByPrimaryKey(
-					assetLink.getEntryId2());
+		List<AssetLink> assetLinks = assetLinkPersistence.findByEntryId1(
+			entryId);
 
-				if ((assetEntry != null) && assetEntry.isVisible()) {
-					filteredAssetLinks.add(assetLink);
-				}
-			}
-
-			assetLinks = Collections.unmodifiableList(filteredAssetLinks);
-		}
-
-		return assetLinks;
+		return filterAssetLinks(assetLinks, excludeInvisibleLinks);
 	}
 
 	/**
@@ -212,26 +246,17 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 */
 	@Override
 	public List<AssetLink> getDirectLinks(long entryId, int typeId) {
+		return getDirectLinks(entryId, typeId, true);
+	}
+
+	@Override
+	public List<AssetLink> getDirectLinks(
+		long entryId, int typeId, boolean excludeInvisibleLinks) {
+
 		List<AssetLink> assetLinks = assetLinkPersistence.findByE1_T(
 			entryId, typeId);
 
-		if (!assetLinks.isEmpty()) {
-			List<AssetLink> filteredAssetLinks = new ArrayList<>(
-				assetLinks.size());
-
-			for (AssetLink assetLink : assetLinks) {
-				AssetEntry assetEntry = assetEntryPersistence.fetchByPrimaryKey(
-					assetLink.getEntryId2());
-
-				if ((assetEntry != null) && assetEntry.isVisible()) {
-					filteredAssetLinks.add(assetLink);
-				}
-			}
-
-			assetLinks = Collections.unmodifiableList(filteredAssetLinks);
-		}
-
-		return assetLinks;
+		return filterAssetLinks(assetLinks, excludeInvisibleLinks);
 	}
 
 	/**
@@ -244,8 +269,8 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 */
 	@Override
 	public List<AssetLink> getLinks(long entryId) {
-		List<AssetLink> e1Links = assetLinkPersistence.findByE1(entryId);
-		List<AssetLink> e2Links = assetLinkPersistence.findByE2(entryId);
+		List<AssetLink> e1Links = assetLinkPersistence.findByEntryId1(entryId);
+		List<AssetLink> e2Links = assetLinkPersistence.findByEntryId2(entryId);
 
 		List<AssetLink> links = new ArrayList<>(
 			e1Links.size() + e2Links.size());
@@ -254,6 +279,14 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 		links.addAll(e2Links);
 
 		return links;
+	}
+
+	@Override
+	public List<AssetLink> getLinks(
+		long groupId, Date startDate, Date endDate, int start, int end) {
+
+		return assetLinkFinder.findByG_C(
+			groupId, startDate, endDate, start, end);
 	}
 
 	/**
@@ -283,6 +316,18 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 		links.addAll(e2Links);
 
 		return links;
+	}
+
+	/**
+	 * Returns all the asset links of an AssetEntry.
+	 *
+	 * @param  classNameId AssetEntry's classNameId
+	 * @param  classPK AssetEntry's classPK
+	 * @return the asset links of the given entry params
+	 */
+	@Override
+	public List<AssetLink> getLinks(long classNameId, long classPK) {
+		return assetLinkFinder.findByC_C(classNameId, classPK);
 	}
 
 	/**
@@ -317,9 +362,7 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 
 		assetLink.setWeight(weight);
 
-		assetLinkPersistence.update(assetLink);
-
-		return assetLink;
+		return assetLinkPersistence.update(assetLink);
 	}
 
 	/**
@@ -334,16 +377,15 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 	 * contained in the given link entry IDs.
 	 * </p>
 	 *
-	 * @param  userId the primary key of the user updating the links
-	 * @param  entryId the primary key of the asset entry to be managed
-	 * @param  linkEntryIds the primary keys of the asset entries to be linked
-	 *         with the asset entry to be managed
-	 * @param  typeId the type of the asset links to be created. Acceptable
-	 *         values include {@link AssetLinkConstants#TYPE_RELATED} which is a
-	 *         bidirectional relationship and {@link
-	 *         AssetLinkConstants#TYPE_CHILD} which is a unidirectional
-	 *         relationship. For more information see {@link AssetLinkConstants}
-	 * @throws PortalException if the user could not be found
+	 * @param userId the primary key of the user updating the links
+	 * @param entryId the primary key of the asset entry to be managed
+	 * @param linkEntryIds the primary keys of the asset entries to be linked
+	 *        with the asset entry to be managed
+	 * @param typeId the type of the asset links to be created. Acceptable
+	 *        values include {@link AssetLinkConstants#TYPE_RELATED} which is a
+	 *        bidirectional relationship and {@link
+	 *        AssetLinkConstants#TYPE_CHILD} which is a unidirectional
+	 *        relationship. For more information see {@link AssetLinkConstants}
 	 */
 	@Override
 	public void updateLinks(
@@ -378,7 +420,64 @@ public class AssetLinkLocalServiceImpl extends AssetLinkLocalServiceBaseImpl {
 		}
 	}
 
+	protected void addDeletionSystemEvent(AssetLink assetLink) {
+		AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
+			assetLink.getEntryId1());
+
+		if (assetEntry == null) {
+			return;
+		}
+
+		StagedAssetLink stagedAssetLink = ModelAdapterUtil.adapt(
+			assetLink, AssetLink.class, StagedAssetLink.class);
+
+		StagedModelType stagedModelType = stagedAssetLink.getStagedModelType();
+
+		try {
+			_systemEventLocalService.addSystemEvent(
+				0, assetEntry.getGroupId(), stagedModelType.getClassName(),
+				stagedAssetLink.getPrimaryKey(), stagedAssetLink.getUuid(),
+				null, SystemEventConstants.TYPE_DELETE, StringPool.BLANK);
+		}
+		catch (PortalException portalException) {
+			throw new RuntimeException(portalException);
+		}
+	}
+
+	protected List<AssetLink> filterAssetLinks(
+		List<AssetLink> assetLinks, boolean excludeInvisibleLinks) {
+
+		if (assetLinks.isEmpty() || !excludeInvisibleLinks) {
+			return assetLinks;
+		}
+
+		List<AssetLink> filteredAssetLinks = new ArrayList<>(assetLinks.size());
+
+		for (AssetLink assetLink : assetLinks) {
+			AssetEntry assetEntry = _assetEntryPersistence.fetchByPrimaryKey(
+				assetLink.getEntryId2());
+
+			if ((assetEntry != null) && assetEntry.isVisible()) {
+				filteredAssetLinks.add(assetLink);
+			}
+		}
+
+		return Collections.unmodifiableList(filteredAssetLinks);
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		AssetLinkLocalServiceImpl.class);
+
+	@BeanReference(type = AssetEntryLocalService.class)
+	private AssetEntryLocalService _assetEntryLocalService;
+
+	@BeanReference(type = AssetEntryPersistence.class)
+	private AssetEntryPersistence _assetEntryPersistence;
+
+	@BeanReference(type = SystemEventLocalService.class)
+	private SystemEventLocalService _systemEventLocalService;
+
+	@BeanReference(type = UserLocalService.class)
+	private UserLocalService _userLocalService;
 
 }

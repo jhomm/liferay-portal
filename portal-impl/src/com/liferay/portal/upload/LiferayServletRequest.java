@@ -26,22 +26,22 @@ import javax.servlet.http.HttpServletRequestWrapper;
  */
 public class LiferayServletRequest extends HttpServletRequestWrapper {
 
-	public LiferayServletRequest(HttpServletRequest request) {
-		super(request);
+	public LiferayServletRequest(HttpServletRequest httpServletRequest) {
+		super(httpServletRequest);
 
-		_request = request;
+		_httpServletRequest = httpServletRequest;
 	}
 
 	public void cleanUp() {
-		if (_lis != null) {
-			_lis.cleanUp();
+		if (_liferayInputStream != null) {
+			_liferayInputStream.cleanUp();
 		}
 	}
 
 	@Override
 	public ServletInputStream getInputStream() throws IOException {
-		if (_lis == null) {
-			_lis = new LiferayInputStream(_request);
+		if (_liferayInputStream == null) {
+			_liferayInputStream = new LiferayInputStream(_httpServletRequest);
 		}
 
 		if (_finishedReadingOriginalStream) {
@@ -50,15 +50,15 @@ public class LiferayServletRequest extends HttpServletRequestWrapper {
 			// the input stream, otherwise, it will return an empty input stream
 			// because it has already been parsed
 
-			if (_cachedInputStream == null) {
-				_cachedInputStream = _lis.getCachedInputStream();
+			if (_cachedServletInputStream == null) {
+				_cachedServletInputStream =
+					_liferayInputStream.getCachedInputStream();
 			}
 
-			return _cachedInputStream;
+			return _cachedServletInputStream;
 		}
-		else {
-			return _lis;
-		}
+
+		return _liferayInputStream;
 	}
 
 	public void setFinishedReadingOriginalStream(
@@ -67,9 +67,9 @@ public class LiferayServletRequest extends HttpServletRequestWrapper {
 		_finishedReadingOriginalStream = finishedReadingOriginalStream;
 	}
 
-	private ServletInputStream _cachedInputStream = null;
-	private boolean _finishedReadingOriginalStream = false;
-	private LiferayInputStream _lis = null;
-	private final HttpServletRequest _request;
+	private ServletInputStream _cachedServletInputStream;
+	private boolean _finishedReadingOriginalStream;
+	private final HttpServletRequest _httpServletRequest;
+	private LiferayInputStream _liferayInputStream;
 
 }

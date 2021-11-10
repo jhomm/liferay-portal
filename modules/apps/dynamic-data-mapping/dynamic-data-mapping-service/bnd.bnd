@@ -1,28 +1,40 @@
 Bundle-Name: Liferay Dynamic Data Mapping Service
 Bundle-SymbolicName: com.liferay.dynamic.data.mapping.service
-Bundle-Version: 1.0.0
+Bundle-Version: 6.0.38
+Export-Package: com.liferay.dynamic.data.mapping.service.http
 Import-Package:\
-	com.liferay.portal.xml,\
+	!com.fasterxml.jackson.*,\
+	\
+	!com.google.gson.*,\
+	\
+	!org.apache.tapestry5.json.*,\
+	\
+	com.github.*;resolution:=optional,\
+	\
+	com.graphbuilder.*;resolution:=optional,\
+	\
+	com.microsoft.schemas.office.powerpoint.*;resolution:=optional,\
+	com.microsoft.schemas.office.word.*;resolution:=optional,\
+	\
+	com.sun.*;resolution:=optional,\
+	\
+	net.sf.*;resolution:=optional,\
+	\
+	org.apache.batik.*;resolution:=optional,\
+	org.apache.commons.math3.*;resolution:=optional,\
+	org.apache.jcp.*;resolution:=optional,\
+	\
+	org.bouncycastle.*;resolution:=optional,\
+	\
+	org.brotli.*;resolution:=optional,\
+	\
+	org.etsi.*;resolution:=optional,\
+	\
+	org.openxmlformats.schemas.*;resolution:=optional,\
+	\
+	org.tukaani.*;resolution:=optional,\
+	\
 	*
-Export-Package:\
-    com.liferay.dynamic.data.mapping.configuration,\
-	com.liferay.dynamic.data.mapping.model.impl,\
-	com.liferay.dynamic.data.mapping.search,\
-	com.liferay.dynamic.data.mapping.service.permission,\
-	com.liferay.dynamic.data.mapping.storage.impl,\
-	com.liferay.dynamic.data.mapping.template,\
-	com.liferay.dynamic.data.mapping.util.impl,\
-	com.liferay.dynamic.data.mapping.webdav
-Include-Resource:\
-	classes,\
-	custom-sql/default.xml=classes/META-INF/custom-sql/default.xml,\
-	META-INF/=../../../../portal-impl/src/META-INF/log4j.dtd,\
-	@${app.server.lib.portal.dir}/util-java.jar!/com/liferay/util/dao/orm/CustomSQL.class,\
-	@${app.server.lib.portal.dir}/util-java.jar!/com/liferay/util/dao/orm/CustomSQLUtil.class,\
-	@${app.server.lib.portal.dir}/util-java.jar!/com/liferay/util/xml/XMLUtil.class
+Liferay-Require-SchemaVersion: 5.1.1
 Liferay-Service: true
-Require-Capability:\
-	liferay.extender;\
-	filter:="(&(liferay.extender=spring.extender)(version>=1.0)(!(version>=2.0)))"
-Spring-Context: META-INF/spring
--spring-dependency: com.liferay.portal.spring.extender.service.ServiceReference
+-dsannotations-options: inherit

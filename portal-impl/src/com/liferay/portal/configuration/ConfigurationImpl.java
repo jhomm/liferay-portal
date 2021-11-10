@@ -14,28 +14,26 @@
 
 package com.liferay.portal.configuration;
 
-import com.germinus.easyconf.ComponentConfiguration;
-import com.germinus.easyconf.ComponentProperties;
-
-import com.liferay.portal.configuration.easyconf.ClassLoaderAggregateProperties;
-import com.liferay.portal.configuration.easyconf.ClassLoaderComponentConfiguration;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropertiesUtil;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Company;
-import com.liferay.portal.model.CompanyConstants;
-import com.liferay.portal.service.CompanyLocalServiceUtil;
 
 import java.lang.reflect.Field;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,29 +49,11 @@ import org.apache.commons.configuration.MapConfiguration;
 public class ConfigurationImpl
 	implements com.liferay.portal.kernel.configuration.Configuration {
 
-	public ConfigurationImpl(ClassLoader classLoader, String name) {
-		this(classLoader, name, CompanyConstants.SYSTEM);
-	}
-
 	public ConfigurationImpl(
-		ClassLoader classLoader, String name, long companyId) {
+		ClassLoader classLoader, String name, long companyId, String webId) {
 
-		String webId = null;
-
-		if (companyId > CompanyConstants.SYSTEM) {
-			try {
-				Company company = CompanyLocalServiceUtil.getCompanyById(
-					companyId);
-
-				webId = company.getWebId();
-			}
-			catch (Exception e) {
-				_log.error(e, e);
-			}
-		}
-
-		_componentConfiguration = new ClassLoaderComponentConfiguration(
-			classLoader, webId, name);
+		_classLoaderAggregateProperties =
+			ClassLoaderAggregatePropertiesUtil.create(classLoader, webId, name);
 
 		printSources(companyId, webId);
 	}
@@ -81,12 +61,6 @@ public class ConfigurationImpl
 	@Override
 	public void addProperties(Properties properties) {
 		try {
-			ComponentProperties componentProperties = getComponentProperties();
-
-			ClassLoaderAggregateProperties classLoaderAggregateProperties =
-				(ClassLoaderAggregateProperties)
-					componentProperties.toConfiguration();
-
 			Field field1 = CompositeConfiguration.class.getDeclaredField(
 				"configList");
 
@@ -94,56 +68,62 @@ public class ConfigurationImpl
 
 			// Add to configList of base conf
 
-			List<Configuration> configurations =
-				(List<Configuration>)field1.get(classLoaderAggregateProperties);
+			List<Configuration> configurations = new LinkedList<>(
+				(List<Configuration>)field1.get(
+					_classLoaderAggregateProperties));
 
 			MapConfiguration newConfiguration = new MapConfiguration(
-				properties);
+				_castPropertiesToMap(properties));
 
 			newConfiguration.setTrimmingDisabled(true);
 
 			configurations.add(0, newConfiguration);
 
+			field1.set(_classLoaderAggregateProperties, configurations);
+
 			// Add to configList of AggregatedProperties itself
 
 			CompositeConfiguration compositeConfiguration =
-				classLoaderAggregateProperties.getBaseConfiguration();
+				_classLoaderAggregateProperties.getBaseConfiguration();
 
-			configurations = (List<Configuration>)field1.get(
-				compositeConfiguration);
+			configurations = new LinkedList<>(
+				(List<Configuration>)field1.get(compositeConfiguration));
 
 			configurations.add(0, newConfiguration);
+
+			field1.set(compositeConfiguration, configurations);
 
 			_properties = null;
 
 			clearCache();
 		}
-		catch (Exception e) {
-			_log.error("The properties could not be added", e);
+		catch (Exception exception) {
+			_log.error("The properties could not be added", exception);
 		}
 	}
 
 	@Override
 	public void clearCache() {
-		_values.clear();
+		_configurationArrayCache.clear();
+		_configurationCache.clear();
+		_configurationFilterArrayCache.clear();
+		_configurationFilterCache.clear();
 
 		_properties = null;
 	}
 
 	@Override
 	public boolean contains(String key) {
-		Object value = _values.get(key);
+		Object value = _configurationCache.get(key);
 
 		if (value == null) {
-			ComponentProperties componentProperties = getComponentProperties();
-
-			value = componentProperties.getProperty(key);
+			value = _classLoaderAggregateProperties.getProperty(key);
 
 			if (value == null) {
 				value = _nullValue;
 			}
 
-			_values.put(key, value);
+			_configurationCache.put(key, value);
 		}
 
 		if (value == _nullValue) {
@@ -155,18 +135,16 @@ public class ConfigurationImpl
 
 	@Override
 	public String get(String key) {
-		Object value = _values.get(key);
+		Object value = _configurationCache.get(key);
 
 		if (value == null) {
-			ComponentProperties componentProperties = getComponentProperties();
-
-			value = componentProperties.getString(key);
+			value = _classLoaderAggregateProperties.getString(key);
 
 			if (value == null) {
 				value = _nullValue;
 			}
 
-			_values.put(key, value);
+			_configurationCache.put(key, value);
 		}
 		else if (_PRINT_DUPLICATE_CALLS_TO_GET) {
 			System.out.println("Duplicate call to get " + key);
@@ -181,26 +159,23 @@ public class ConfigurationImpl
 
 	@Override
 	public String get(String key, Filter filter) {
-		String filterCacheKey = buildFilterCacheKey(key, filter, false);
+		FilterCacheKey filterCacheKey = new FilterCacheKey(key, filter);
 
 		Object value = null;
 
 		if (filterCacheKey != null) {
-			value = _values.get(filterCacheKey);
+			value = _configurationFilterCache.get(filterCacheKey);
 		}
 
 		if (value == null) {
-			ComponentProperties componentProperties = getComponentProperties();
-
-			value = componentProperties.getString(
-				key, getEasyConfFilter(filter));
+			value = _classLoaderAggregateProperties.getString(key, filter);
 
 			if (filterCacheKey != null) {
 				if (value == null) {
 					value = _nullValue;
 				}
 
-				_values.put(filterCacheKey, value);
+				_configurationFilterCache.put(filterCacheKey, value);
 			}
 		}
 
@@ -213,49 +188,50 @@ public class ConfigurationImpl
 
 	@Override
 	public String[] getArray(String key) {
-		String cacheKey = _ARRAY_KEY_PREFIX.concat(key);
-
-		Object value = _values.get(cacheKey);
+		Object value = _configurationArrayCache.get(key);
 
 		if (value == null) {
-			ComponentProperties componentProperties = getComponentProperties();
+			String[] array = _classLoaderAggregateProperties.getStringArray(
+				key);
 
-			String[] array = componentProperties.getStringArray(key);
+			value = _fixArrayValue(array);
 
-			value = fixArrayValue(cacheKey, array);
+			_configurationArrayCache.put(key, value);
 		}
 
 		if (value instanceof String[]) {
 			return (String[])value;
 		}
 
-		return _emptyArray;
+		return _EMPTY_ARRAY;
 	}
 
 	@Override
 	public String[] getArray(String key, Filter filter) {
-		String filterCacheKey = buildFilterCacheKey(key, filter, true);
+		FilterCacheKey filterCacheKey = new FilterCacheKey(key, filter);
 
 		Object value = null;
 
 		if (filterCacheKey != null) {
-			value = _values.get(filterCacheKey);
+			value = _configurationFilterArrayCache.get(filterCacheKey);
 		}
 
 		if (value == null) {
-			ComponentProperties componentProperties = getComponentProperties();
+			String[] array = _classLoaderAggregateProperties.getStringArray(
+				key, filter);
 
-			String[] array = componentProperties.getStringArray(
-				key, getEasyConfFilter(filter));
+			value = _fixArrayValue(array);
 
-			value = fixArrayValue(filterCacheKey, array);
+			if (filterCacheKey != null) {
+				_configurationFilterArrayCache.put(filterCacheKey, value);
+			}
 		}
 
 		if (value instanceof String[]) {
 			return (String[])value;
 		}
 
-		return _emptyArray;
+		return _EMPTY_ARRAY;
 	}
 
 	@Override
@@ -272,38 +248,32 @@ public class ConfigurationImpl
 		// method fixes the weird behavior by returning properties with the
 		// correct values.
 
-		_properties = new Properties();
-
-		ComponentProperties componentProperties = getComponentProperties();
+		Properties properties = new Properties();
 
 		Properties componentPropertiesProperties =
-			componentProperties.getProperties();
+			_classLoaderAggregateProperties.getProperties();
 
 		for (String key : componentPropertiesProperties.stringPropertyNames()) {
-			_properties.setProperty(key, componentProperties.getString(key));
+			properties.setProperty(
+				key, _classLoaderAggregateProperties.getString(key));
 		}
 
-		return _properties;
+		_properties = properties;
+
+		return properties;
 	}
 
 	@Override
 	public Properties getProperties(String prefix, boolean removePrefix) {
-		Properties properties = getProperties();
-
-		return PropertiesUtil.getProperties(properties, prefix, removePrefix);
+		return PropertiesUtil.getProperties(
+			getProperties(), prefix, removePrefix);
 	}
 
 	@Override
 	public void removeProperties(Properties properties) {
 		try {
-			ComponentProperties componentProperties = getComponentProperties();
-
-			ClassLoaderAggregateProperties classLoaderAggregateProperties =
-				(ClassLoaderAggregateProperties)
-					componentProperties.toConfiguration();
-
 			CompositeConfiguration compositeConfiguration =
-				classLoaderAggregateProperties.getBaseConfiguration();
+				_classLoaderAggregateProperties.getBaseConfiguration();
 
 			Field field2 = CompositeConfiguration.class.getDeclaredField(
 				"configList");
@@ -314,10 +284,10 @@ public class ConfigurationImpl
 			List<Configuration> configurations =
 				(List<Configuration>)field2.get(compositeConfiguration);
 
-			Iterator<Configuration> itr = configurations.iterator();
+			Iterator<Configuration> iterator = configurations.iterator();
 
-			while (itr.hasNext()) {
-				Configuration configuration = itr.next();
+			while (iterator.hasNext()) {
+				Configuration configuration = iterator.next();
 
 				if (!(configuration instanceof MapConfiguration)) {
 					break;
@@ -327,9 +297,9 @@ public class ConfigurationImpl
 					(MapConfiguration)configuration;
 
 				if (mapConfiguration.getMap() == (Map<?, ?>)properties) {
-					itr.remove();
+					iterator.remove();
 
-					classLoaderAggregateProperties.removeConfiguration(
+					_classLoaderAggregateProperties.removeConfiguration(
 						configuration);
 				}
 			}
@@ -338,101 +308,26 @@ public class ConfigurationImpl
 
 			clearCache();
 		}
-		catch (Exception e) {
-			_log.error("The properties could not be removed", e);
+		catch (Exception exception) {
+			_log.error("The properties could not be removed", exception);
 		}
 	}
 
 	@Override
 	public void set(String key, String value) {
-		ComponentProperties componentProperties = getComponentProperties();
+		_classLoaderAggregateProperties.setProperty(key, value);
 
-		componentProperties.setProperty(key, value);
-
-		_values.put(key, value);
-	}
-
-	protected String buildFilterCacheKey(
-		String key, Filter filter, boolean arrayValue) {
-
-		if (filter.getVariables() != null) {
-			return null;
-		}
-
-		String[] selectors = filter.getSelectors();
-
-		int length = 0;
-
-		if (arrayValue) {
-			length = selectors.length + 2;
-		}
-		else {
-			length = selectors.length + 1;
-		}
-
-		StringBundler sb = new StringBundler(length);
-
-		if (arrayValue) {
-			sb.append(_ARRAY_KEY_PREFIX);
-		}
-
-		sb.append(key);
-		sb.append(selectors);
-
-		return sb.toString();
-	}
-
-	protected Object fixArrayValue(String cacheKey, String[] array) {
-		if (cacheKey == null) {
-			return array;
-		}
-
-		Object value = _nullValue;
-
-		if (ArrayUtil.isNotEmpty(array)) {
-
-			// Commons Configuration parses an empty property into a String
-			// array with one String containing one space. It also leaves a
-			// trailing array member if you set a property in more than one
-			// line.
-
-			if (Validator.isNull(array[array.length - 1])) {
-				String[] subArray = new String[array.length - 1];
-
-				System.arraycopy(array, 0, subArray, 0, subArray.length);
-
-				array = subArray;
-			}
-
-			if (array.length > 0) {
-				value = array;
-			}
-		}
-
-		_values.put(cacheKey, value);
-
-		return value;
-	}
-
-	protected ComponentProperties getComponentProperties() {
-		return _componentConfiguration.getProperties();
-	}
-
-	protected com.germinus.easyconf.Filter getEasyConfFilter(Filter filter) {
-		com.germinus.easyconf.Filter easyConfFilter =
-			com.germinus.easyconf.Filter.by(filter.getSelectors());
-
-		if (filter.getVariables() != null) {
-			easyConfFilter.setVariables(filter.getVariables());
-		}
-
-		return easyConfFilter;
+		clearCache();
 	}
 
 	protected void printSources(long companyId, String webId) {
-		ComponentProperties componentProperties = getComponentProperties();
+		if (GetterUtil.getBoolean(
+				System.getProperty("configuration.impl.quiet"))) {
 
-		List<String> sources = componentProperties.getLoadedSources();
+			return;
+		}
+
+		List<String> sources = _classLoaderAggregateProperties.loadedSources();
 
 		for (int i = sources.size() - 1; i >= 0; i--) {
 			String source = sources.get(i);
@@ -443,30 +338,109 @@ public class ConfigurationImpl
 
 			_printedSources.add(source);
 
+			if (source.startsWith("bundleresource://")) {
+				continue;
+			}
+
 			String info = "Loading " + source;
 
 			if (companyId > CompanyConstants.SYSTEM) {
-				info +=
-					" for {companyId=" + companyId + ", webId=" + webId + "}";
+				info += StringBundler.concat(
+					" for {companyId=", companyId, ", webId=", webId, "}");
 			}
 
 			System.out.println(info);
 		}
 	}
 
-	private static final String _ARRAY_KEY_PREFIX = "ARRAY_";
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> _castPropertiesToMap(Properties properties) {
+		return (Map)properties;
+	}
+
+	private Object _fixArrayValue(String[] array) {
+		Object value = _nullValue;
+
+		if (ArrayUtil.isNotEmpty(array)) {
+
+			// Commons Configuration parses an empty property into a String
+			// array with one String containing one space. It also leaves a
+			// trailing array member if you set a property in more than one
+			// line.
+
+			if (Validator.isNull(array[array.length - 1])) {
+				String[] subarray = new String[array.length - 1];
+
+				System.arraycopy(array, 0, subarray, 0, subarray.length);
+
+				array = subarray;
+			}
+
+			if (array.length > 0) {
+				value = array;
+			}
+		}
+
+		return value;
+	}
+
+	private static final String[] _EMPTY_ARRAY = new String[0];
 
 	private static final boolean _PRINT_DUPLICATE_CALLS_TO_GET = false;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ConfigurationImpl.class);
 
-	private static final String[] _emptyArray = new String[0];
 	private static final Object _nullValue = new Object();
 
-	private final ComponentConfiguration _componentConfiguration;
+	private final ClassLoaderAggregateProperties
+		_classLoaderAggregateProperties;
+	private final Map<String, Object> _configurationArrayCache =
+		new ConcurrentHashMap<>();
+	private final Map<String, Object> _configurationCache =
+		new ConcurrentHashMap<>();
+	private final Map<FilterCacheKey, Object> _configurationFilterArrayCache =
+		new ConcurrentHashMap<>();
+	private final Map<FilterCacheKey, Object> _configurationFilterCache =
+		new ConcurrentHashMap<>();
 	private final Set<String> _printedSources = new HashSet<>();
 	private Properties _properties;
-	private final Map<String, Object> _values = new ConcurrentHashMap<>();
+
+	private static class FilterCacheKey {
+
+		@Override
+		public boolean equals(Object object) {
+			FilterCacheKey filterCacheKey = (FilterCacheKey)object;
+
+			if (Objects.equals(_key, filterCacheKey._key) &&
+				Arrays.equals(_selectors, filterCacheKey._selectors)) {
+
+				return true;
+			}
+
+			return false;
+		}
+
+		@Override
+		public int hashCode() {
+			int hashCode = HashUtil.hash(0, _key);
+
+			for (String selector : _selectors) {
+				hashCode = HashUtil.hash(hashCode, selector);
+			}
+
+			return hashCode;
+		}
+
+		private FilterCacheKey(String key, Filter filter) {
+			_key = key;
+
+			_selectors = filter.getSelectors();
+		}
+
+		private final String _key;
+		private final String[] _selectors;
+
+	}
 
 }

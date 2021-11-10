@@ -14,9 +14,12 @@
 
 package com.liferay.portal.util;
 
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -25,8 +28,13 @@ import org.junit.Test;
  */
 public class FileImplTest {
 
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
 	@Test
-	public void testAppendSuffixWhenFileNameHasParenthesis() {
+	public void testAppendParentheticalSuffixWhenFileNameHasParenthesis() {
 		String fileName = _fileImpl.appendParentheticalSuffix(
 			"test(1).jsp", "1");
 
@@ -34,7 +42,7 @@ public class FileImplTest {
 	}
 
 	@Test
-	public void testAppendSuffixWithMultipleCharacterValue() {
+	public void testAppendParentheticalSuffixWithMultipleCharacterValue() {
 		String fileName = _fileImpl.appendParentheticalSuffix(
 			"test.jsp", "1!$eae1");
 
@@ -42,7 +50,7 @@ public class FileImplTest {
 	}
 
 	@Test
-	public void testAppendSuffixWithMultipleNumericalValue() {
+	public void testAppendParentheticalSuffixWithMultipleNumericalValue() {
 		String fileName = _fileImpl.appendParentheticalSuffix(
 			"test.jsp", "1111111");
 
@@ -50,7 +58,7 @@ public class FileImplTest {
 	}
 
 	@Test
-	public void testAppendSuffixWithMultipleStringValue() {
+	public void testAppendParentheticalSuffixWithMultipleStringValue() {
 		String fileName = _fileImpl.appendParentheticalSuffix(
 			"test.jsp", "AAAAAAA");
 
@@ -58,7 +66,7 @@ public class FileImplTest {
 	}
 
 	@Test
-	public void testAppendSuffixWithMultipleStringWithSpaceValue() {
+	public void testAppendParentheticalSuffixWithMultipleStringWithSpaceValue() {
 		String fileName = _fileImpl.appendParentheticalSuffix(
 			"test.jsp", "A B");
 
@@ -66,17 +74,27 @@ public class FileImplTest {
 	}
 
 	@Test
-	public void testAppendSuffixWithSingleNumericalValue() {
+	public void testAppendParentheticalSuffixWithSingleNumericalValue() {
 		String fileName = _fileImpl.appendParentheticalSuffix("test.jsp", "1");
 
 		Assert.assertEquals("test (1).jsp", fileName);
 	}
 
 	@Test
-	public void testAppendSuffixWithSingleStringValue() {
+	public void testAppendParentheticalSuffixWithSingleStringValue() {
 		String fileName = _fileImpl.appendParentheticalSuffix("test.jsp", "A");
 
 		Assert.assertEquals("test (A).jsp", fileName);
+	}
+
+	@Test
+	public void testAppendSuffix() {
+		Assert.assertEquals("test_rtl", _fileImpl.appendSuffix("test", "_rtl"));
+		Assert.assertEquals(
+			"test_rtl.css", _fileImpl.appendSuffix("test.css", "_rtl"));
+		Assert.assertEquals(
+			"/folder/test_rtl.css",
+			_fileImpl.appendSuffix("/folder/test.css", "_rtl"));
 	}
 
 	@Test
@@ -185,6 +203,12 @@ public class FileImplTest {
 	public void testStripSuffixWhenFileNameHasNoCloseParenthesis() {
 		Assert.assertEquals(
 			"test(1.jsp", _fileImpl.stripParentheticalSuffix("test(1.jsp"));
+	}
+
+	@Test
+	public void testStripSuffixWhenFileNameHasNoExtension() {
+		Assert.assertEquals(
+			"test", _fileImpl.stripParentheticalSuffix("test (1)"));
 	}
 
 	@Test

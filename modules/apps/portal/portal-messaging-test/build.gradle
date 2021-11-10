@@ -1,0 +1,6 @@
+dependencies {
+	testIntegrationCompile group: "org.osgi", name: "osgi.core", version: "6.0.0"
+	testIntegrationCompile project(":apps:layout:layout-test-util")
+	testIntegrationCompile project(":apps:subscription:subscription-api")
+	testIntegrationCompile project(":test:arquillian-extension-junit-bridge")
+}

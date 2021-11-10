@@ -1,26 +1,19 @@
+clean {
+	ext {
+		cleanDeployed = false
+	}
+}
+
 dependencies {
-	compile group: "org.apache.ant", name: "ant", transitive: false, version: "1.9.4"
+	compileOnly group: "com.liferay.portal", name: "com.liferay.portal.kernel", version: "default"
+	compileOnly group: "org.apache.ant", name: "ant", transitive: false, version: "1.10.11"
+	compileOnly project(":core:petra:petra-process")
 }
 
 liferay {
-	deployDir = file("../../../tools/sdk/dependencies/${bundle.instructions['Bundle-SymbolicName']}/lib")
+	deployDir = "../../../tools/sdk/dependencies/com.liferay.ant.heap.dump/lib"
 }
 
-task deployJar(type: Copy)
-
-deploy {
-	finalizedBy deployJar
-}
-
-deployJar {
-	ext {
-		autoClean = false
-	}
-
-	from jar
-	into "../../../lib/development"
-
-	rename {
-		project.name + ".jar"
-	}
+updateFileVersions {
+	match(/\t\t<dependency name="com.liferay.ant.heap.dump" org="com.liferay" rev="(\d.+)" \/>/, "../../../tools/sdk/dependencies/com.liferay.ant.heap.dump/ivy.xml")
 }

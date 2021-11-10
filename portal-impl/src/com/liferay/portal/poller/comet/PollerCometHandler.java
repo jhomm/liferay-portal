@@ -48,7 +48,14 @@ public class PollerCometHandler extends BaseCometHandler {
 				ChannelHubManagerUtil.unregisterChannelListener(
 					_companyId, _userId, _channelListener);
 			}
-			catch (UnknownChannelException uce) {
+			catch (UnknownChannelException unknownChannelException) {
+
+				// LPS-52675
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						unknownChannelException, unknownChannelException);
+				}
 			}
 		}
 	}
@@ -74,11 +81,12 @@ public class PollerCometHandler extends BaseCometHandler {
 				ChannelHubManagerUtil.registerChannelListener(
 					_companyId, _userId, _channelListener);
 			}
-			catch (UnknownChannelException uce) {
+			catch (UnknownChannelException unknownChannelException) {
 				if (_log.isDebugEnabled()) {
 					_log.debug(
 						"Terminating request for " + _userId +
-							" because user session ended");
+							" because user session ended",
+						unknownChannelException);
 				}
 
 				cometSession.close();

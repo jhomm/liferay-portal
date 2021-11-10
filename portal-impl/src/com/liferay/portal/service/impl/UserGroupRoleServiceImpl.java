@@ -14,16 +14,20 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.Role;
-import com.liferay.portal.model.RoleConstants;
-import com.liferay.portal.model.UserGroupRole;
-import com.liferay.portal.security.membershippolicy.OrganizationMembershipPolicyUtil;
-import com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.UserGroupRole;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicyUtil;
+import com.liferay.portal.kernel.security.membershippolicy.SiteMembershipPolicyUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.permission.UserGroupRolePermissionUtil;
+import com.liferay.portal.kernel.service.persistence.GroupPersistence;
+import com.liferay.portal.kernel.service.persistence.RolePersistence;
 import com.liferay.portal.service.base.UserGroupRoleServiceBaseImpl;
-import com.liferay.portal.service.permission.UserGroupRolePermissionUtil;
-import com.liferay.portal.service.persistence.UserGroupRolePK;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,19 +44,19 @@ public class UserGroupRoleServiceImpl extends UserGroupRoleServiceBaseImpl {
 		List<UserGroupRole> organizationUserGroupRoles = new ArrayList<>();
 		List<UserGroupRole> siteUserGroupRoles = new ArrayList<>();
 
-		Group group = groupLocalService.getGroup(groupId);
+		Group group = _groupLocalService.getGroup(groupId);
 
 		for (long roleId : roleIds) {
-			Role role = rolePersistence.findByPrimaryKey(roleId);
+			Role role = _rolePersistence.findByPrimaryKey(roleId);
 
 			UserGroupRolePermissionUtil.check(
 				getPermissionChecker(), group, role);
 
-			UserGroupRolePK userGroupRolePK = new UserGroupRolePK(
-				userId, groupId, roleId);
+			UserGroupRole userGroupRole = userGroupRolePersistence.create(0);
 
-			UserGroupRole userGroupRole = userGroupRolePersistence.create(
-				userGroupRolePK);
+			userGroupRole.setUserId(userId);
+			userGroupRole.setGroupId(groupId);
+			userGroupRole.setRoleId(roleId);
 
 			if (role.getType() == RoleConstants.TYPE_ORGANIZATION) {
 				organizationUserGroupRoles.add(userGroupRole);
@@ -93,11 +97,11 @@ public class UserGroupRoleServiceImpl extends UserGroupRoleServiceBaseImpl {
 		List<UserGroupRole> userGroupRoles = new ArrayList<>();
 
 		for (long userId : userIds) {
-			UserGroupRolePK userGroupRolePK = new UserGroupRolePK(
-				userId, groupId, roleId);
+			UserGroupRole userGroupRole = userGroupRolePersistence.create(0);
 
-			UserGroupRole userGroupRole = userGroupRolePersistence.create(
-				userGroupRolePK);
+			userGroupRole.setUserId(userId);
+			userGroupRole.setGroupId(groupId);
+			userGroupRole.setRoleId(roleId);
 
 			userGroupRoles.add(userGroupRole);
 		}
@@ -106,7 +110,7 @@ public class UserGroupRoleServiceImpl extends UserGroupRoleServiceBaseImpl {
 			return;
 		}
 
-		Role role = rolePersistence.findByPrimaryKey(roleId);
+		Role role = _rolePersistence.findByPrimaryKey(roleId);
 
 		if (role.getType() == RoleConstants.TYPE_ORGANIZATION) {
 			OrganizationMembershipPolicyUtil.checkRoles(userGroupRoles, null);
@@ -130,25 +134,29 @@ public class UserGroupRoleServiceImpl extends UserGroupRoleServiceBaseImpl {
 	public void deleteUserGroupRoles(long userId, long groupId, long[] roleIds)
 		throws PortalException {
 
+		List<UserGroupRole> filteredDepotUserGroupRoles = new ArrayList<>();
 		List<UserGroupRole> filteredOrganizationUserGroupRoles =
 			new ArrayList<>();
 		List<UserGroupRole> filteredSiteUserGroupRoles = new ArrayList<>();
 
-		Group group = groupLocalService.getGroup(groupId);
+		Group group = _groupLocalService.getGroup(groupId);
 
 		for (long roleId : roleIds) {
-			Role role = roleLocalService.getRole(roleId);
+			Role role = _roleLocalService.getRole(roleId);
 
 			UserGroupRolePermissionUtil.check(
 				getPermissionChecker(), group, role);
 
-			UserGroupRolePK userGroupRolePK = new UserGroupRolePK(
-				userId, groupId, roleId);
+			UserGroupRole userGroupRole = userGroupRolePersistence.create(0);
 
-			UserGroupRole userGroupRole = userGroupRolePersistence.create(
-				userGroupRolePK);
+			userGroupRole.setUserId(userId);
+			userGroupRole.setGroupId(groupId);
+			userGroupRole.setRoleId(roleId);
 
-			if (role.getType() == RoleConstants.TYPE_ORGANIZATION) {
+			if (role.getType() == RoleConstants.TYPE_DEPOT) {
+				filteredDepotUserGroupRoles.add(userGroupRole);
+			}
+			else if (role.getType() == RoleConstants.TYPE_ORGANIZATION) {
 				if (!OrganizationMembershipPolicyUtil.isRoleProtected(
 						getPermissionChecker(), userId,
 						group.getOrganizationId(), roleId)) {
@@ -160,11 +168,12 @@ public class UserGroupRoleServiceImpl extends UserGroupRoleServiceBaseImpl {
 					 !SiteMembershipPolicyUtil.isRoleProtected(
 						 getPermissionChecker(), userId, groupId, roleId)) {
 
-					filteredSiteUserGroupRoles.add(userGroupRole);
+				filteredSiteUserGroupRoles.add(userGroupRole);
 			}
 		}
 
-		if (filteredOrganizationUserGroupRoles.isEmpty() &&
+		if (filteredDepotUserGroupRoles.isEmpty() &&
+			filteredOrganizationUserGroupRoles.isEmpty() &&
 			filteredSiteUserGroupRoles.isEmpty()) {
 
 			return;
@@ -203,17 +212,20 @@ public class UserGroupRoleServiceImpl extends UserGroupRoleServiceBaseImpl {
 
 		List<UserGroupRole> filteredUserGroupRoles = new ArrayList<>();
 
-		Role role = rolePersistence.findByPrimaryKey(roleId);
+		Role role = _rolePersistence.findByPrimaryKey(roleId);
 
 		for (long userId : userIds) {
-			UserGroupRolePK userGroupRolePK = new UserGroupRolePK(
-				userId, groupId, roleId);
+			UserGroupRole userGroupRole = userGroupRolePersistence.create(0);
 
-			UserGroupRole userGroupRole = userGroupRolePersistence.create(
-				userGroupRolePK);
+			userGroupRole.setUserId(userId);
+			userGroupRole.setGroupId(groupId);
+			userGroupRole.setRoleId(roleId);
 
-			if (role.getType() == RoleConstants.TYPE_ORGANIZATION) {
-				Group group = groupPersistence.findByPrimaryKey(groupId);
+			if (role.getType() == RoleConstants.TYPE_DEPOT) {
+				filteredUserGroupRoles.add(userGroupRole);
+			}
+			else if (role.getType() == RoleConstants.TYPE_ORGANIZATION) {
+				Group group = _groupPersistence.findByPrimaryKey(groupId);
 
 				if (!OrganizationMembershipPolicyUtil.isRoleProtected(
 						getPermissionChecker(), userId,
@@ -226,7 +238,7 @@ public class UserGroupRoleServiceImpl extends UserGroupRoleServiceBaseImpl {
 					 !SiteMembershipPolicyUtil.isRoleProtected(
 						 getPermissionChecker(), userId, groupId, roleId)) {
 
-					filteredUserGroupRoles.add(userGroupRole);
+				filteredUserGroupRoles.add(userGroupRole);
 			}
 		}
 
@@ -254,5 +266,27 @@ public class UserGroupRoleServiceImpl extends UserGroupRoleServiceBaseImpl {
 				null, filteredUserGroupRoles);
 		}
 	}
+
+	@Override
+	public void updateUserGroupRoles(
+			long userId, long groupId, long[] addedRoleIds,
+			long[] deletedRoleIds)
+		throws PortalException {
+
+		addUserGroupRoles(userId, groupId, addedRoleIds);
+		deleteUserGroupRoles(userId, groupId, deletedRoleIds);
+	}
+
+	@BeanReference(type = GroupLocalService.class)
+	private GroupLocalService _groupLocalService;
+
+	@BeanReference(type = GroupPersistence.class)
+	private GroupPersistence _groupPersistence;
+
+	@BeanReference(type = RoleLocalService.class)
+	private RoleLocalService _roleLocalService;
+
+	@BeanReference(type = RolePersistence.class)
+	private RolePersistence _rolePersistence;
 
 }

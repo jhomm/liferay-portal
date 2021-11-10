@@ -1,7 +1,17 @@
-<definition>
-	<command name="gotoSelectForm">
-		<execute function="AssertClick#pauseMakeVisibleAssertTextEqualsClickAt" locator1="FormPortlet#SELECT_FORM" value1="Select Form" />
+definition {
 
-		<execute function="SelectFrame" locator1="IFrame#DIALOG" />
-	</command>
-</definition>
+	macro exitWidgetModal {
+		SelectFrameTop();
+
+		Click(locator1 = "FormPortlet#WIDGET_MODAL_CLOSE_BUTTON");
+	}
+
+	macro gotoSelectForm {
+		AssertClick(
+			locator1 = "FormPortlet#SELECT_FORM",
+			value1 = "Select Form");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+	}
+
+}

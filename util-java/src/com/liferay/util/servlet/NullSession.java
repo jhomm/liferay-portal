@@ -14,8 +14,8 @@
 
 package com.liferay.util.servlet;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.util.Collections;
@@ -26,6 +26,7 @@ import java.util.Map;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionContext;
 
 /**
  * @author Brian Wing Shun Chan
@@ -33,7 +34,6 @@ import javax.servlet.http.HttpSession;
 public class NullSession implements HttpSession {
 
 	public NullSession() {
-		_attributes = new HashMap<>();
 		_creationTime = System.currentTimeMillis();
 		_id =
 			NullSession.class.getName() + StringPool.POUND +
@@ -80,16 +80,16 @@ public class NullSession implements HttpSession {
 	}
 
 	/**
-	 * @deprecated As of 6.1.0
+	 * @deprecated As of Bunyan (6.0.x)
 	 */
 	@Deprecated
 	@Override
-	public javax.servlet.http.HttpSessionContext getSessionContext() {
+	public HttpSessionContext getSessionContext() {
 		return null;
 	}
 
 	/**
-	 * @deprecated As of 7.0.0
+	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
 	@Override
@@ -98,7 +98,7 @@ public class NullSession implements HttpSession {
 	}
 
 	/**
-	 * @deprecated As of 7.0.0
+	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
 	@Override
@@ -119,7 +119,7 @@ public class NullSession implements HttpSession {
 	}
 
 	/**
-	 * @deprecated As of 7.0.0
+	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
 	@Override
@@ -133,7 +133,7 @@ public class NullSession implements HttpSession {
 	}
 
 	/**
-	 * @deprecated As of 7.0.0
+	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
 	@Override
@@ -151,7 +151,7 @@ public class NullSession implements HttpSession {
 		_maxInactiveInterval = maxInactiveInterval;
 	}
 
-	private final Map<String, Object> _attributes;
+	private final Map<String, Object> _attributes = new HashMap<>();
 	private final long _creationTime;
 	private final String _id;
 	private final long _lastAccessedTime;

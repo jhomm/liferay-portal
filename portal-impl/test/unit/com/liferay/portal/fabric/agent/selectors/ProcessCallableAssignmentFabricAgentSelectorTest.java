@@ -14,11 +14,12 @@
 
 package com.liferay.portal.fabric.agent.selectors;
 
+import com.liferay.portal.fabric.ExceptionProcessCallable;
+import com.liferay.portal.fabric.ReturnProcessCallable;
 import com.liferay.portal.fabric.agent.FabricAgent;
-import com.liferay.portal.kernel.process.local.ExceptionProcessCallable;
-import com.liferay.portal.kernel.process.local.ReturnProcessCallable;
-import com.liferay.portal.kernel.process.log.LoggingProcessCallable;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,6 +29,7 @@ import java.util.Iterator;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -37,8 +39,10 @@ public class ProcessCallableAssignmentFabricAgentSelectorTest
 	extends SystemPropertiesFilterFabricAgentSelectorTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Override
 	@Test
@@ -52,41 +56,23 @@ public class ProcessCallableAssignmentFabricAgentSelectorTest
 					PROCESS_CALLABLE_ASSIGNMENT_EXPRESSION_KEY,
 				".*ReturnProcessCallable"));
 		FabricAgent fabricAgent2 = createFabricAgent(
-			Collections.<String, String>singletonMap(
-				ProcessCallableAssignmentFabricAgentSelector.
-					PROCESS_CALLABLE_ASSIGNMENT_EXPRESSION_KEY,
-				".*LoggingProcessCallable"));
-		FabricAgent fabricAgent3 = createFabricAgent(
 			Collections.<String, String>emptyMap());
 
 		Collection<FabricAgent> fabricAgents = fabricAgentSelector.select(
-			new ArrayList<FabricAgent>(
-				Arrays.asList(fabricAgent1, fabricAgent2, fabricAgent3)),
-			new ReturnProcessCallable<String>(null));
+			new ArrayList<>(Arrays.asList(fabricAgent1, fabricAgent2)),
+			new ReturnProcessCallable<>(null));
 
-		Assert.assertEquals(1, fabricAgents.size());
+		Assert.assertEquals(fabricAgents.toString(), 1, fabricAgents.size());
 
 		Iterator<FabricAgent> iterator = fabricAgents.iterator();
 
 		Assert.assertSame(fabricAgent1, iterator.next());
 
 		fabricAgents = fabricAgentSelector.select(
-			new ArrayList<FabricAgent>(
-				Arrays.asList(fabricAgent1, fabricAgent2)),
-			new LoggingProcessCallable(null));
-
-		Assert.assertEquals(1, fabricAgents.size());
-
-		iterator = fabricAgents.iterator();
-
-		Assert.assertSame(fabricAgent2, iterator.next());
-
-		fabricAgents = fabricAgentSelector.select(
-			new ArrayList<FabricAgent>(
-				Arrays.asList(fabricAgent1, fabricAgent2)),
+			new ArrayList<>(Arrays.asList(fabricAgent1)),
 			new ExceptionProcessCallable(null));
 
-		Assert.assertTrue(fabricAgents.isEmpty());
+		Assert.assertTrue(fabricAgents.toString(), fabricAgents.isEmpty());
 	}
 
 }

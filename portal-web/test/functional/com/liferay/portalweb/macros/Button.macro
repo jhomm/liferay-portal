@@ -1,21 +1,149 @@
-<definition>
-	<command name="clickCancel">
-		<execute function="AssertClick" locator1="Button#CANCEL" value1="Cancel" />
-	</command>
+definition {
 
-	<command name="clickPublish">
-		<execute function="AssertClick" locator1="Button#PUBLISH" value1="Publish" />
-	</command>
+	macro click {
+		Click.mouseDownMouseUp(
+			key_text = "${button}",
+			locator1 = "Button#ANY");
+	}
 
-	<command name="clickSave">
-		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
-	</command>
+	macro clickAdd {
+		Button.click(button = "Add");
+	}
 
-	<command name="clickSaveAsDraft">
-		<execute function="AssertClick" locator1="Button#SAVE_AS_DRAFT" value1="Save as Draft" />
-	</command>
+	macro clickAddRow {
+		Click(locator1 = "Button#ADD_ROW");
+	}
 
-	<command name="clickSubmitForPublication">
-		<execute function="AssertClick" locator1="Button#SUBMIT_FOR_PUBLICATION" value1="Submit for Publication" />
-	</command>
-</definition>
+	macro clickApply {
+		Button.click(button = "Apply");
+	}
+
+	macro clickAssign {
+		Button.click(button = "Assign");
+	}
+
+	macro clickCancel {
+		Button.click(button = "Cancel");
+	}
+
+	macro clickCheckOut {
+		Click(locator1 = "Button#CHECKOUT");
+	}
+
+	macro clickCollapse {
+		Click(
+			key_label = "${label}",
+			locator1 = "DDMEditStructure#FORM_COLLAPSE_BUTTON");
+	}
+
+	macro clickComment {
+		Click(locator1 = "Button#COMMENT");
+	}
+
+	macro clickConfirm {
+		Click(locator1 = "Button#CONFIRM");
+	}
+
+	macro clickDelete {
+		Button.click(button = "Delete");
+	}
+
+	macro clickDone {
+		Button.click(button = "Done");
+	}
+
+	macro clickEdit {
+		Button.click(button = "Edit");
+	}
+
+	macro clickImport {
+		Button.click(button = "Import");
+	}
+
+	macro clickInstall {
+		Button.click(button = "Install");
+	}
+
+	macro clickMap {
+		Button.click(button = "Map");
+	}
+
+	macro clickMore {
+		Button.click(button = "More");
+	}
+
+	macro clickNext {
+		Button.click(button = "Next");
+	}
+
+	macro clickNoError {
+		ClickNoError.mouseDownMouseUp(
+			key_text = "${button}",
+			locator1 = "Button#ANY");
+	}
+
+	macro clickPublish {
+		ScrollWebElementIntoView(
+			key_text = "Publish",
+			locator1 = "Button#ANY");
+
+		Button.click(button = "Publish");
+	}
+
+	macro clickRemove {
+		Button.click(button = "Remove");
+	}
+
+	macro clickSave {
+		Button.click(button = "Save");
+
+		WaitForLiferayEvent.initializeLiferayEventLog();
+	}
+
+	macro clickSaveAsDraft {
+		Button.click(button = "Save as Draft");
+	}
+
+	macro clickSelect {
+		Click.javaScriptClick(
+			key_text = "Select",
+			locator1 = "Button#ANY");
+	}
+
+	macro clickShare {
+		Button.click(button = "Share");
+	}
+
+	macro clickSubmitButton {
+		Click(locator1 = "Button#SUBMIT");
+	}
+
+	macro clickSubmitForPublication {
+		Button.click(button = "Submit for Publication");
+	}
+
+	macro clickUpdate {
+		ScrollWebElementIntoView(
+			key_text = "Update",
+			locator1 = "Button#ANY");
+
+		Button.click(button = "Update");
+	}
+
+	macro clickVerifyButton {
+		Click(locator1 = "Button#VERIFY");
+	}
+
+	macro viewNotPresent {
+		AssertElementNotPresent(
+			key_text = "${button}",
+			locator1 = "Button#ANY");
+	}
+
+	macro viewPresent {
+		AssertElementPresent(
+			key_text = "${button}",
+			locator1 = "Button#ANY");
+	}
+
+}

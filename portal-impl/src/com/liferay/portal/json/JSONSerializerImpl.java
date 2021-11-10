@@ -17,8 +17,13 @@ package com.liferay.portal.json;
 import com.liferay.portal.kernel.json.JSONSerializer;
 import com.liferay.portal.kernel.json.JSONTransformer;
 
+import jodd.json.JsonContext;
 import jodd.json.JsonSerializer;
 import jodd.json.TypeJsonSerializer;
+import jodd.json.TypeJsonSerializerMap;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * @author Igor Spasic
@@ -26,7 +31,7 @@ import jodd.json.TypeJsonSerializer;
 public class JSONSerializerImpl implements JSONSerializer {
 
 	public JSONSerializerImpl() {
-		_jsonSerializer = new JsonSerializer();
+		_jsonSerializer.strictStringEncoding(true);
 	}
 
 	@Override
@@ -50,7 +55,9 @@ public class JSONSerializerImpl implements JSONSerializer {
 
 	@Override
 	public String serializeDeep(Object target) {
-		return _jsonSerializer.deep(true).serialize(target);
+		JsonSerializer jsonSerializer = _jsonSerializer.deep(true);
+
+		return jsonSerializer.serialize(target);
 	}
 
 	@Override
@@ -66,7 +73,7 @@ public class JSONSerializerImpl implements JSONSerializer {
 			typeJsonSerializer = new JoddJsonTransformer(jsonTransformer);
 		}
 
-		_jsonSerializer.use(type, typeJsonSerializer);
+		_jsonSerializer.withSerializer(type, typeJsonSerializer);
 
 		return this;
 	}
@@ -84,11 +91,63 @@ public class JSONSerializerImpl implements JSONSerializer {
 			typeJsonSerializer = new JoddJsonTransformer(jsonTransformer);
 		}
 
-		_jsonSerializer.use(field, typeJsonSerializer);
+		_jsonSerializer.withSerializer(field, typeJsonSerializer);
 
 		return this;
 	}
 
-	private final JsonSerializer _jsonSerializer;
+	private final JsonSerializer _jsonSerializer = new JsonSerializer();
+
+	private static class JSONArrayTypeJSONSerializer
+		implements TypeJsonSerializer<JSONArray> {
+
+		@Override
+		public boolean serialize(JsonContext jsonContext, JSONArray jsonArray) {
+			jsonContext.write(jsonArray.toString());
+
+			return true;
+		}
+
+	}
+
+	private static class JSONObjectTypeJSONSerializer
+		implements TypeJsonSerializer<JSONObject> {
+
+		@Override
+		public boolean serialize(
+			JsonContext jsonContext, JSONObject jsonObject) {
+
+			jsonContext.write(jsonObject.toString());
+
+			return true;
+		}
+
+	}
+
+	private static class LongToStringTypeJSONSerializer
+		implements TypeJsonSerializer<Long> {
+
+		@Override
+		public boolean serialize(JsonContext jsonContext, Long value) {
+			jsonContext.writeString(String.valueOf(value));
+
+			return true;
+		}
+
+	}
+
+	static {
+		TypeJsonSerializerMap typeJsonSerializerMap =
+			TypeJsonSerializerMap.get();
+
+		typeJsonSerializerMap.register(
+			JSONArray.class, new JSONArrayTypeJSONSerializer());
+		typeJsonSerializerMap.register(
+			JSONObject.class, new JSONObjectTypeJSONSerializer());
+		typeJsonSerializerMap.register(
+			Long.TYPE, new LongToStringTypeJSONSerializer());
+		typeJsonSerializerMap.register(
+			Long.class, new LongToStringTypeJSONSerializer());
+	}
 
 }

@@ -14,10 +14,9 @@
 
 package com.liferay.portal.spring.transaction;
 
-import org.aopalliance.intercept.MethodInvocation;
+import com.liferay.petra.function.UnsafeSupplier;
 
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.interceptor.TransactionAttribute;
 
 /**
  * @author Michael C. Han
@@ -25,10 +24,11 @@ import org.springframework.transaction.interceptor.TransactionAttribute;
  */
 public interface TransactionExecutor {
 
-	public Object execute(
-			PlatformTransactionManager platformTransactionManager,
-			TransactionAttribute transactionAttribute,
-			MethodInvocation methodInvocation)
+	public <T> T execute(
+			TransactionAttributeAdapter transactionAttributeAdapter,
+			UnsafeSupplier<T, Throwable> unsafeSupplier)
 		throws Throwable;
+
+	public PlatformTransactionManager getPlatformTransactionManager();
 
 }

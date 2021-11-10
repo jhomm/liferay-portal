@@ -14,22 +14,22 @@
 
 package com.liferay.portal.model.impl;
 
+import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
-import com.liferay.portal.kernel.servlet.BrowserSnifferUtil;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutTypeController;
+import com.liferay.portal.kernel.servlet.DirectRequestDispatcherFactoryUtil;
+import com.liferay.portal.kernel.servlet.PipingServletResponse;
+import com.liferay.portal.kernel.servlet.TransferHeadersHelperUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.model.LayoutConstants;
-import com.liferay.portal.model.LayoutTypeController;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.struts.StrutsUtil;
 import com.liferay.portal.util.PropsUtil;
-import com.liferay.portal.util.WebKeys;
-import com.liferay.taglib.servlet.PipingServletResponse;
 
 import java.util.Collection;
 import java.util.Locale;
@@ -64,6 +64,8 @@ public class LayoutTypeControllerImpl implements LayoutTypeController {
 			PropsUtil.get(PropsKeys.LAYOUT_EDIT_PAGE, filter));
 		_firstPageable = GetterUtil.getBoolean(
 			PropsUtil.get(PropsKeys.LAYOUT_FIRST_PAGEABLE, filter));
+		_fullPageDisplayable = GetterUtil.getBoolean(
+			PropsUtil.get(PropsKeys.FULL_PAGE_DISPLAYABLE, filter));
 		_parentable = GetterUtil.getBoolean(
 			PropsUtil.get(PropsKeys.LAYOUT_PARENTABLE, filter), true);
 		_sitemapable = GetterUtil.getBoolean(
@@ -72,8 +74,11 @@ public class LayoutTypeControllerImpl implements LayoutTypeController {
 			PropsUtil.get(PropsKeys.LAYOUT_URL, filter));
 		_urlFriendliable = GetterUtil.getBoolean(
 			PropsUtil.get(PropsKeys.LAYOUT_URL_FRIENDLIABLE, filter), true);
-		_viewPage = GetterUtil.getString(
+
+		String viewPage = GetterUtil.getString(
 			PropsUtil.get(PropsKeys.LAYOUT_VIEW_PAGE, filter));
+
+		_viewPage = StrutsUtil.TEXT_HTML_DIR + viewPage;
 	}
 
 	@Override
@@ -87,86 +92,84 @@ public class LayoutTypeControllerImpl implements LayoutTypeController {
 	}
 
 	@Override
+	public String getType() {
+		return _type;
+	}
+
+	@Override
 	public String getURL() {
 		return _url;
 	}
 
-	public String getViewPath(String portletId, boolean wap) {
-		String path = StrutsUtil.TEXT_HTML_DIR;
-
-		if (wap) {
-			path = StrutsUtil.TEXT_WAP_DIR;
-		}
+	public String getViewPath(String portletId) {
 
 		// Manually check the p_p_id. See LEP-1724.
 
-		if (Validator.isNotNull(portletId)) {
-			if (_type.equals(LayoutConstants.TYPE_PANEL)) {
-				path += "/portal/layout/view/panel.jsp";
-			}
-			else {
-				path += "/portal/layout/view/portlet.jsp";
-			}
-		}
-		else {
-			path = StrutsUtil.TEXT_HTML_DIR + _viewPage;
+		if (Validator.isNull(portletId)) {
+			return _viewPage;
 		}
 
-		return path;
+		return StrutsUtil.TEXT_HTML_DIR + "/portal/layout/view/portlet.jsp";
 	}
 
 	@Override
 	public String includeEditContent(
-			HttpServletRequest request, HttpServletResponse response,
-			Layout layout)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, Layout layout)
 		throws Exception {
 
-		ServletContext servletContext = (ServletContext)request.getAttribute(
-			WebKeys.CTX);
+		httpServletRequest.setAttribute(WebKeys.SEL_LAYOUT, layout);
+
+		ServletContext servletContext =
+			(ServletContext)httpServletRequest.getAttribute(WebKeys.CTX);
 
 		RequestDispatcher requestDispatcher =
-			servletContext.getRequestDispatcher(getEditPage());
+			TransferHeadersHelperUtil.getTransferHeadersRequestDispatcher(
+				DirectRequestDispatcherFactoryUtil.getRequestDispatcher(
+					servletContext, getEditPage()));
 
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
 		PipingServletResponse pipingServletResponse = new PipingServletResponse(
-			response, unsyncStringWriter);
+			httpServletResponse, unsyncStringWriter);
 
-		requestDispatcher.include(request, pipingServletResponse);
+		requestDispatcher.include(httpServletRequest, pipingServletResponse);
 
 		return unsyncStringWriter.toString();
 	}
 
 	@Override
 	public boolean includeLayoutContent(
-			HttpServletRequest request, HttpServletResponse response,
-			Layout layout)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, Layout layout)
 		throws Exception {
 
-		ServletContext servletContext = (ServletContext)request.getAttribute(
-			WebKeys.CTX);
+		ServletContext servletContext =
+			(ServletContext)httpServletRequest.getAttribute(WebKeys.CTX);
 
-		String portletId = ParamUtil.getString(request, "p_p_id");
+		String portletId = ParamUtil.getString(httpServletRequest, "p_p_id");
 
-		String path = getViewPath(portletId, BrowserSnifferUtil.isWap(request));
+		String path = getViewPath(portletId);
 
 		RequestDispatcher requestDispatcher =
-			servletContext.getRequestDispatcher(path);
+			TransferHeadersHelperUtil.getTransferHeadersRequestDispatcher(
+				DirectRequestDispatcherFactoryUtil.getRequestDispatcher(
+					servletContext, path));
 
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
 		PipingServletResponse pipingServletResponse = new PipingServletResponse(
-			response, unsyncStringWriter);
+			httpServletResponse, unsyncStringWriter);
 
 		String contentType = pipingServletResponse.getContentType();
 
-		requestDispatcher.include(request, pipingServletResponse);
+		requestDispatcher.include(httpServletRequest, pipingServletResponse);
 
 		if (contentType != null) {
-			response.setContentType(contentType);
+			httpServletResponse.setContentType(contentType);
 		}
 
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			WebKeys.LAYOUT_CONTENT, unsyncStringWriter.getStringBundler());
 
 		return false;
@@ -178,8 +181,23 @@ public class LayoutTypeControllerImpl implements LayoutTypeController {
 	}
 
 	@Override
+	public boolean isCheckLayoutViewPermission() {
+		return true;
+	}
+
+	@Override
 	public boolean isFirstPageable() {
 		return _firstPageable;
+	}
+
+	@Override
+	public boolean isFullPageDisplayable() {
+		return _fullPageDisplayable;
+	}
+
+	@Override
+	public boolean isInstanceable() {
+		return true;
 	}
 
 	@Override
@@ -198,8 +216,14 @@ public class LayoutTypeControllerImpl implements LayoutTypeController {
 	}
 
 	@Override
+	public boolean isWorkflowEnabled() {
+		return true;
+	}
+
+	@Override
 	public boolean matches(
-		HttpServletRequest request, String friendlyURL, Layout layout) {
+		HttpServletRequest httpServletRequest, String friendlyURL,
+		Layout layout) {
 
 		try {
 			Map<Locale, String> friendlyURLMap = layout.getFriendlyURLMap();
@@ -208,8 +232,8 @@ public class LayoutTypeControllerImpl implements LayoutTypeController {
 
 			return values.contains(friendlyURL);
 		}
-		catch (SystemException e) {
-			throw new RuntimeException(e);
+		catch (SystemException systemException) {
+			throw new RuntimeException(systemException);
 		}
 	}
 
@@ -222,6 +246,7 @@ public class LayoutTypeControllerImpl implements LayoutTypeController {
 	private final String[] _configurationActionUpdate;
 	private final String _editPage;
 	private final boolean _firstPageable;
+	private final boolean _fullPageDisplayable;
 	private final boolean _parentable;
 	private final boolean _sitemapable;
 	private final String _type;

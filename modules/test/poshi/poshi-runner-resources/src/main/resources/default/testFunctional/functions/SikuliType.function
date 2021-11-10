@@ -1,0 +1,8 @@
+@default = "sikuliType"
+definition {
+
+	function sikuliType {
+		selenium.sikuliType();
+	}
+
+}

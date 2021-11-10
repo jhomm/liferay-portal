@@ -1,0 +1,31 @@
+@default = "isTextNotEqual"
+definition {
+
+	function isNotPartialText {
+		selenium.waitForElementPresent();
+
+		selenium.isNotPartialText();
+	}
+
+	function isNotText {
+		selenium.waitForElementPresent();
+
+		selenium.isNotText();
+	}
+
+	function isNotValue {
+		selenium.waitForElementPresent();
+
+		selenium.isNotValue();
+	}
+
+	function isTextNotEqual {
+		if (contains("${locator1}", "/input")) {
+			IsTextNotEqual.isNotValue();
+		}
+		else {
+			IsTextNotEqual.isNotText();
+		}
+	}
+
+}

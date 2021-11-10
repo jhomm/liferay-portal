@@ -15,21 +15,19 @@
 package com.liferay.portal.security.access.control;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.access.control.AccessControl;
 import com.liferay.portal.kernel.security.access.control.AccessControlThreadLocal;
 import com.liferay.portal.kernel.security.access.control.AccessControlUtil;
+import com.liferay.portal.kernel.security.auth.AccessControlContext;
+import com.liferay.portal.kernel.security.auth.AuthException;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.auth.verifier.AuthVerifierResult;
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
-import com.liferay.portal.model.User;
-import com.liferay.portal.security.auth.AccessControlContext;
-import com.liferay.portal.security.auth.AuthException;
+import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.security.auth.AuthVerifierPipeline;
-import com.liferay.portal.security.auth.CompanyThreadLocal;
-import com.liferay.portal.security.auth.PrincipalThreadLocal;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.security.permission.PermissionCheckerFactoryUtil;
-import com.liferay.portal.security.permission.PermissionThreadLocal;
-import com.liferay.portal.service.UserLocalServiceUtil;
 
 import java.util.Map;
 
@@ -39,13 +37,12 @@ import javax.servlet.http.HttpServletResponse;
 /**
  * @author Raymond Augé
  */
-@DoPrivileged
 public class AccessControlImpl implements AccessControl {
 
 	@Override
 	public void initAccessControlContext(
-		HttpServletRequest request, HttpServletResponse response,
-		Map<String, Object> settings) {
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse, Map<String, Object> settings) {
 
 		AccessControlContext accessControlContext =
 			AccessControlUtil.getAccessControlContext();
@@ -57,8 +54,8 @@ public class AccessControlImpl implements AccessControl {
 
 		accessControlContext = new AccessControlContext();
 
-		accessControlContext.setRequest(request);
-		accessControlContext.setResponse(response);
+		accessControlContext.setRequest(httpServletRequest);
+		accessControlContext.setResponse(httpServletResponse);
 
 		Map<String, Object> accessControlContextSettings =
 			accessControlContext.getSettings();
@@ -77,32 +74,55 @@ public class AccessControlImpl implements AccessControl {
 
 			PrincipalThreadLocal.setName(userId);
 
-			PermissionChecker permissionChecker =
-				PermissionCheckerFactoryUtil.create(user);
-
-			PermissionThreadLocal.setPermissionChecker(permissionChecker);
+			PermissionThreadLocal.setPermissionChecker(
+				PermissionCheckerFactoryUtil.create(user));
 
 			AccessControlThreadLocal.setRemoteAccess(false);
 		}
-		catch (Exception e) {
-			throw new AuthException(e.getMessage(), e);
+		catch (Exception exception) {
+			throw new AuthException(exception.getMessage(), exception);
 		}
 	}
 
 	@Override
 	public AuthVerifierResult.State verifyRequest() throws PortalException {
+		AuthVerifierResult authVerifierResult = null;
+
 		AccessControlContext accessControlContext =
 			AccessControlUtil.getAccessControlContext();
 
-		AuthVerifierResult authVerifierResult =
-			AuthVerifierPipeline.verifyRequest(accessControlContext);
+		Map<String, Object> settings = accessControlContext.getSettings();
+
+		if (!settings.containsKey(AuthVerifierPipeline.class.getName())) {
+			AuthVerifierPipeline portalAuthVerifierPipeline =
+				AuthVerifierPipeline.getPortalAuthVerifierPipeline();
+
+			authVerifierResult = portalAuthVerifierPipeline.verifyRequest(
+				accessControlContext);
+		}
+		else {
+			AuthVerifierPipeline authVerifierPipeline =
+				(AuthVerifierPipeline)settings.get(
+					AuthVerifierPipeline.class.getName());
+
+			authVerifierResult = authVerifierPipeline.verifyRequest(
+				accessControlContext);
+
+			if (authVerifierResult.getState() !=
+					AuthVerifierResult.State.SUCCESS) {
+
+				AuthVerifierPipeline portalAuthVerifierPipeline =
+					AuthVerifierPipeline.getPortalAuthVerifierPipeline();
+
+				authVerifierResult = portalAuthVerifierPipeline.verifyRequest(
+					accessControlContext);
+			}
+		}
 
 		Map<String, Object> authVerifierResultSettings =
 			authVerifierResult.getSettings();
 
 		if (authVerifierResultSettings != null) {
-			Map<String, Object> settings = accessControlContext.getSettings();
-
 			settings.putAll(authVerifierResultSettings);
 		}
 

@@ -14,14 +14,14 @@
 
 package com.liferay.portal.image;
 
+import com.liferay.document.library.kernel.exception.NoSuchFileException;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.model.Image;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.Image;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portlet.documentlibrary.NoSuchFileException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -41,9 +41,7 @@ public class FileSystemHook extends BaseHook {
 
 	@Override
 	public void deleteImage(Image image) {
-		File file = getFile(image.getImageId(), image.getType());
-
-		FileUtil.delete(file);
+		FileUtil.delete(getFile(image.getImageId(), image.getType()));
 	}
 
 	@Override
@@ -57,8 +55,8 @@ public class FileSystemHook extends BaseHook {
 
 			return FileUtil.getBytes(file);
 		}
-		catch (IOException ioe) {
-			throw new SystemException(ioe);
+		catch (IOException ioException) {
+			throw new SystemException(ioException);
 		}
 	}
 
@@ -73,20 +71,18 @@ public class FileSystemHook extends BaseHook {
 
 			return new FileInputStream(file);
 		}
-		catch (IOException ioe) {
-			throw new SystemException(ioe);
+		catch (IOException ioException) {
+			throw new SystemException(ioException);
 		}
 	}
 
 	@Override
 	public void updateImage(Image image, String type, byte[] bytes) {
 		try {
-			File file = getFile(image.getImageId(), type);
-
-			FileUtil.write(file, bytes);
+			FileUtil.write(getFile(image.getImageId(), type), bytes);
 		}
-		catch (IOException ioe) {
-			throw new SystemException(ioe);
+		catch (IOException ioException) {
+			throw new SystemException(ioException);
 		}
 	}
 
@@ -98,7 +94,7 @@ public class FileSystemHook extends BaseHook {
 		}
 
 		StringBundler sb = new StringBundler(
-			fileNameFragmentLength / 2 + fileNameFragmentLength);
+			(fileNameFragmentLength / 2) + fileNameFragmentLength);
 
 		for (int i = 0; i < fileNameFragmentLength; i += 2) {
 			if ((i + 2) < fileNameFragmentLength) {
@@ -114,8 +110,9 @@ public class FileSystemHook extends BaseHook {
 		String path = buildPath(String.valueOf(imageId));
 
 		return new File(
-			_rootDir + StringPool.SLASH + path + StringPool.SLASH +
-				imageId + StringPool.PERIOD + type);
+			StringBundler.concat(
+				_rootDir, StringPool.SLASH, path, StringPool.SLASH, imageId,
+				StringPool.PERIOD, type));
 	}
 
 	private final File _rootDir;

@@ -1,0 +1,747 @@
+@component-name = "portal-collaboration"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Blogs";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Blogs Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = "1",
+			groupName = "Guest",
+			layoutName = "Blogs Page",
+			widgetName = "Blogs");
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			BlogsEntry.tearDownCP();
+
+			Blogs.tearDownConfigurationDisplaySettingsPG(
+				pageName = "Blogs Page",
+				portletName = "Blogs");
+
+			Blogs.tearDownConfigurationScopePG(
+				pageName = "Blogs Page",
+				portletName = "Blogs");
+
+			Page.tearDownCP();
+
+			Site.tearDownCP();
+
+			Organization.tearDownCP();
+
+			JSONUser.tearDownNonAdminUsers();
+
+			ServerAdministration.tearDownMailServerSettings();
+		}
+	}
+
+	@description = "This is a test for LPS-136766. It checks that comments can be disabled from the widget."
+	@priority = "3"
+	test CanDisableComments {
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		Portlet.gotoPortletOptions(portletOption = "Configuration");
+
+		BlogsConfiguration.selectConfigurationIFrame();
+
+		BlogsConfiguration.uncheckComments();
+
+		IFrame.saveConfiguration();
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		AssertElementNotPresent(
+			key_text = "comments",
+			locator1 = "Icon#ANY");
+
+		BlogsNavigator.openToBlogEntry(
+			entryTitle = "Blogs Entry Title",
+			layoutName = "Blogs Page",
+			siteURLKey = "guest");
+
+		AssertElementNotPresent(locator1 = "CKEditor#BODY_FIELD_IFRAME");
+	}
+
+	@description = "This is a test for LPS-136767. It checks that related assets can be disabled from the widget."
+	@priority = "3"
+	test CanDisableRelatedAssets {
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry1 Content",
+			entryTitle = "Blogs Entry1 Title");
+
+		BlogsNavigator.gotoAddEntry();
+
+		BlogsEntry.addEntryContent(
+			entryContent = "Blogs Entry2 Content",
+			entryTitle = "Blogs Entry2 Title");
+
+		RelatedAssets.selectAsset(
+			assetTitle = "Blogs Entry1 Title",
+			assetType = "Blogs Entry");
+
+		PortletEntry.publish();
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		Portlet.gotoPortletOptions(portletOption = "Configuration");
+
+		BlogsConfiguration.selectConfigurationIFrame();
+
+		BlogsConfiguration.uncheckRelatedAssets();
+
+		IFrame.saveConfiguration();
+
+		BlogsNavigator.openToBlogEntry(
+			entryTitle = "Blogs Entry2 Title",
+			layoutName = "Blogs Page",
+			siteURLKey = "guest");
+
+		AssertElementNotPresent(locator1 = "AssetRelatedAssets#HEADER");
+	}
+
+	@description = "This checks that an entry can be edited in card view"
+	@priority = "4"
+	@refactordone
+	test CanEditEntryInCardViewViaADT {
+		ApplicationDisplayTemplates.selectPortletADT(
+			portletName = "Blogs",
+			templateName = "Card");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		BlogsEntry.editContentViaCardViewPG(
+			entryContent = "Blogs Entry Content",
+			entryContentEdit = "Blogs Entry Content Edited",
+			entryTitle = "Blogs Entry Title");
+
+		PortletEntry.publish();
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		BlogsEntry.viewPG(
+			entryCardTitle = "Blogs Entry Title",
+			entryContent = "Blogs Entry Content Edited");
+	}
+
+	@description = "This checks that a guest cannot view a blog entry in the AP when permissions are removed."
+	@priority = "4"
+	@refactordone
+	test CannotViewAsGuestInAPWhenPermissionsAreRemoved {
+		property test.name.skip.portal.instance = "BlogsWidget#CannotViewAsGuestInAPWhenPermissionsAreRemoved";
+
+		Portlet.addPG(portletName = "Asset Publisher");
+
+		AssetPublisherPortlet.configureAssetLinkBehaviorPG(assetLinkBehavior = "Show Full Content");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content 2",
+			entryTitle = "Blogs Entry Title 2");
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		BlogsEntry.removeViewPermissionsPG(
+			entryTitle = "Blogs Entry Title 2",
+			roleTitle = "Guest");
+
+		User.logoutPG();
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		BlogsEntry.viewEntryViaAPPG(
+			assetTitle = "Blogs Entry Title",
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		BlogsEntry.viewNoEntryViaAPPG(
+			assetTitle = "Blogs Entry Title 2",
+			entryContent = "Blogs Entry Content 2",
+			entryTitle = "Blogs Entry Title 2");
+	}
+
+	@description = "This test covers LPS-102199. This ensures that the user can search for a pending blog entry."
+	@priority = "3"
+	@refactordone
+	test CanSearchForPendingEntry {
+		ProductMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Site Administration",
+			portlet = "Workflow");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
+
+		Blogs.addWithWorkflow(
+			entryContent = "Blogs Entry Content",
+			entrySubtitle = "Subtitle",
+			entryTitle = "Blogs Entry Title");
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
+
+		LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+		BlogsEntry.searchCP(
+			entryContent = "Blogs Entry Content",
+			entrySearchTerm = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+	}
+
+	@description = "This checks that an entry with an abstract template can be displayed."
+	@priority = "3"
+	@refactordone
+	test CanViewBlogWithAbstractDisplay {
+		property test.name.skip.portal.instance = "BlogsWidget#CanViewBlogWithAbstractDisplay";
+
+		task ("Add a blog entry with custom abstract") {
+			JSONBlog.addEntry(
+				entryContent = "Blogs Entry Content",
+				entryTitle = "Blogs Entry Title");
+
+			Navigator.gotoPage(pageName = "Blogs Page");
+
+			BlogsNavigator.gotoEditPG(entryTitle = "Blogs Entry Title");
+
+			Panel.expandPanel(panel = "Configuration");
+
+			BlogsEntry.addCustomAbstract(entryAbstractDescription = "Blogs Entry Abstract Description");
+
+			PortletEntry.publish();
+		}
+
+		task ("Configure widget to display abstract") {
+			Navigator.gotoPage(pageName = "Blogs Page");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Blogs",
+				portletOption = "Configuration");
+
+			BlogsConfiguration.selectConfigurationIFrame();
+
+			BlogsConfiguration.selectDisplayTemplate(displayTemplate = "Abstract");
+
+			IFrame.saveConfiguration();
+		}
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		BlogsEntry.viewWithAbstractDisplayTemplatePG(
+			entryAbstract = "Blogs Entry Abstract Description",
+			entryAbstractDescription = "Blogs Entry Abstract Description",
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+	}
+
+	@description = "This is a test for LPS-136809. It checks that a Blog entry can be viewed with the Menu Display configured."
+	@priority = "3"
+	test CanViewBlogWithCardDisplay {
+		property test.name.skip.portal.instance = "BlogsWidget#CanViewBlogWithCardDisplay";
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		BlogsConfiguration.configureDisplayStyleInSystemSettings(displayStyle = "Card");
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		BlogsEntry.viewPG(
+			entryCardTitle = "Blogs Entry Title",
+			entryContent = "Blogs Entry Content");
+
+		Portlet.gotoPortletOptions(portletOption = "Configuration");
+
+		BlogsConfiguration.selectConfigurationIFrame();
+
+		AssertSelectedLabel(
+			locator1 = "Select#DISPLAY_TEMPLATE",
+			value1 = "Card");
+	}
+
+	@description = "This checks that the full content of an entry can be displayed."
+	@priority = "4"
+	@refactordone
+	test CanViewBlogWithFullContentDisplay {
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		Portlet.gotoPortletOptions(
+			portletName = "Blogs",
+			portletOption = "Configuration");
+
+		BlogsConfiguration.selectConfigurationIFrame();
+
+		BlogsConfiguration.selectDisplayTemplate(displayTemplate = "Full Content");
+
+		IFrame.saveConfiguration();
+
+		BlogsNavigator.openToBlogEntry(
+			entryTitle = "Blogs Entry Title",
+			layoutName = "Blogs Page",
+			siteURLKey = "guest");
+
+		BlogsEntry.viewEntryPG(
+			entryContent = "${entryContent}",
+			entryTitle = "Blogs Entry Title");
+	}
+
+	@priority = "3"
+	@refactorneeded
+	test CanViewBlogWithFutureDisplayDateViaBlogsAggregator {
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Blogs Aggregator Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = "1",
+			groupName = "Guest",
+			layoutName = "Blogs Aggregator Page",
+			widgetName = "Blogs Aggregator");
+
+		BlogsNavigator.openToAddEntry(
+			layoutName = "Blogs Page",
+			siteURLKey = "guest");
+
+		BlogsEntry.addEntryContent(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		BlogsEntry.scheduleBlogEntry();
+
+		PortletEntry.publish();
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		Navigator.gotoNavItem(navItem = "Not Published (1)");
+
+		BlogsNavigator.gotoEditPG(entryTitle = "Blogs Entry Title");
+
+		Panel.expandPanel(panel = "Configuration");
+
+		BlogsEntry.addCustomAbstract(entryAbstractDescription = "Blogs Entry Abstract Description");
+
+		PortletEntry.publish();
+
+		Navigator.gotoPage(pageName = "Blogs Aggregator Page");
+
+		BlogsEntry.viewNoEntryViaBlogsAggregatorPG();
+
+		User.logoutPG();
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		BlogsEntry.viewNoEntryAsGuestPG(entryTitle = "Blogs Entry Title");
+
+		Navigator.gotoPage(pageName = "Blogs Aggregator Page");
+
+		BlogsEntry.viewNoEntryViaBlogsAggregatorPG();
+
+		Pause(locator1 = "120000");
+
+		Navigator.gotoPage(pageName = "Blogs Aggregator Page");
+
+		AssertTextEquals(
+			locator1 = "Portlet#H2_HEADER",
+			value1 = "Blogs Aggregator");
+
+		var key_entryAbstractDescription = "Blogs Entry Abstract Description";
+		var key_entryTitle = "Blogs Entry Title";
+
+		AssertTextEquals(
+			locator1 = "BlogsAggregator#ENTRY_TITLE",
+			value1 = "Blogs Entry Title");
+
+		AssertTextEquals(
+			locator1 = "BlogsEntry#CONTENT_ABSTRACT",
+			value1 = "Blogs Entry Abstract Description");
+
+		AssertClick(
+			locator1 = "BlogsAggregator#ENTRY_TITLE",
+			value1 = "Blogs Entry Title");
+
+		BlogsEntry.viewEntryPG(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		User.loginPG(
+			password = "test",
+			userEmailAddress = "test@liferay.com");
+
+		Navigator.gotoPage(pageName = "Blogs Aggregator Page");
+
+		AssertTextEquals(
+			locator1 = "Portlet#H2_HEADER",
+			value1 = "Blogs Aggregator");
+
+		AssertTextEquals(
+			locator1 = "BlogsEntry#CONTENT_ABSTRACT",
+			value1 = "Blogs Entry Abstract Description");
+
+		AssertClick(
+			locator1 = "BlogsAggregator#ENTRY_TITLE",
+			value1 = "Blogs Entry Title");
+
+		BlogsEntry.viewEntryPG(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+	}
+
+	@description = "This checks that the title of an entry can be displayed."
+	@priority = "3"
+	@refactordone
+	test CanViewBlogWithTitleDisplay {
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		Portlet.gotoPortletOptions(
+			portletName = "Blogs",
+			portletOption = "Configuration");
+
+		BlogsConfiguration.selectConfigurationIFrame();
+
+		BlogsConfiguration.selectDisplayTemplate(displayTemplate = "Title");
+
+		IFrame.saveConfiguration();
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		BlogsEntry.viewWithTitleDisplayTemplatePG(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+	}
+
+	@description = "This checks that a blog entry can be added, edited, saved as a draft and published via AP."
+	@priority = "4"
+	@refactordone
+	@uittest
+	test CanViewEntryInAP {
+		property test.name.skip.portal.instance = "BlogsWidget#CanViewEntryInAP";
+
+		// This is lengthy but we'll keep this as a UI test to validate blogs behavior when used with AP.
+
+		task ("Add a blog entry via AP") {
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "Asset Publisher Page");
+
+			JSONLayout.addWidgetToPublicLayout(
+				column = "1",
+				groupName = "Guest",
+				layoutName = "Asset Publisher Page",
+				widgetName = "Asset Publisher");
+
+			Navigator.gotoPage(pageName = "Asset Publisher Page");
+
+			AssetPublisherPortlet.configureAssetLinkBehaviorPG(assetLinkBehavior = "Show Full Content");
+
+			Navigator.gotoPage(pageName = "Asset Publisher Page");
+
+			Blogs.addViaAP(
+				entryContent = "Blogs Entry Content",
+				entrySubtitle = "Blogs Entry Subtitle",
+				entryTitle = "Blogs Entry Title");
+		}
+
+		task ("Edit the blog entry via AP and save as draft") {
+			Navigator.gotoPage(pageName = "Blogs Page");
+
+			BlogsNavigator.gotoEditPG(entryTitle = "Blogs Entry Title");
+
+			BlogsEntry.editEntryContent(
+				entryContent = "Blogs Entry Content",
+				entryContentEdit = "Blogs Entry Content Edit",
+				entrySubtitle = "",
+				entrySubtitleEdit = "Blogs Entry Subtitle Edit",
+				entryTitle = "Blogs Entry Title",
+				entryTitleEdit = "Blogs Entry Title Edit");
+
+			BlogsEntry.saveAsDraft();
+		}
+
+		task ("Check that the AP doesn't display the blog draft") {
+			Navigator.gotoPage(pageName = "Asset Publisher Page");
+
+			BlogsEntry.viewNoEntryViaAPPG(
+				assetTitle = "Blogs Entry Title",
+				entryContent = "Blogs Entry Content",
+				entryTitle = "Blogs Entry Title");
+		}
+
+		task ("Publish the blog entry then view it in AP") {
+			BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
+
+			Blogs.publishDraftCP(
+				entryContent = "Blogs Entry Content Edit",
+				entrySubtitle = "Blogs Entry Subtitle Edit",
+				entryTitle = "Blogs Entry Title Edit");
+
+			Navigator.gotoPage(pageName = "Asset Publisher Page");
+
+			BlogsEntry.viewEntryViaAPPG(
+				assetTitle = "Blogs Entry Title Edit",
+				entryContent = "Blogs Entry Content Edit",
+				entryTitle = "Blogs Entry Title Edit");
+		}
+	}
+
+	@description = "This is a test for LPS-136810. It checks that a blog can be viewed with Quote Display in the Aggregator widget."
+	@priority = "3"
+	test CanViewEntryInQuoteDisplayStyleViaAggregator {
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Blogs Aggregator Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = "1",
+			groupName = "Guest",
+			layoutName = "Blogs Aggregator Page",
+			widgetName = "Blogs Aggregator");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		Navigator.gotoPage(pageName = "Blogs Aggregator Page");
+
+		BlogsAggregatorPortlet.viewBlogsEntryViaBAPortletPG(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		BlogsAggregatorPortlet.selectDisplayStyle(displayStyle = "Quote");
+
+		Navigator.gotoPage(pageName = "Blogs Aggregator Page");
+
+		BlogsAggregatorPortlet.viewBlogsEntryViaBAPortletPG(
+			entryQuoteContent = "Blogs Entry Content...",
+			entryTitle = "Blogs Entry Title");
+	}
+
+	@description = "This is a test for LPS-136811. It checks that a blog can be viewed through the Navigations Portlet."
+	@priority = "3"
+	test CanViewEntryViaNavigationsPortlet {
+		JSONCategory.addVocabulary(
+			groupName = "Guest",
+			title = "Vocabulary Name");
+
+		var categoryId = JSONCategory.addCategory(
+			groupName = "Guest",
+			title = "Category Name",
+			vocabularyName = "Vocabulary Name");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = "2",
+			groupName = "Guest",
+			layoutName = "Blogs Page",
+			widgetName = "Categories Navigation");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content 1",
+			entryTitle = "Blogs Entry Title 1");
+
+		JSONBlog.addEntry(
+			assetCategoryIds = "${categoryId}",
+			entryContent = "Blogs Entry Content 2",
+			entryTitle = "Blogs Entry Title 2");
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		CategoriesNavigationPortlet.selectCategoryPG(categoryName = "Category Name");
+
+		BlogsEntry.viewNoPG(entryTitle = "Blogs Entry Title 1");
+
+		BlogsEntry.viewPG(
+			entryContent = "Blogs Entry Content 2",
+			entryTitle = "Blogs Entry Title 2");
+	}
+
+	@description = "This is a test for LPS-136812. It checks that a blog can be viewed through the Recent Bloggers Portlet."
+	@ignore = "true"
+	@priority = "4"
+	test CanViewEntryViaRecentBloggers {
+		property portal.acceptance = "false";
+
+		// TODO LPS-136812 CanViewEntryViaRecentBloggers pending implementation
+
+	}
+
+	@description = "This is a test for LPS-141740. It checks that a user can view the details of latest blogs entry via recent bloggers."
+	@priority = "4"
+	test CanViewLatestEntryViaRecentBloggers {
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Recent Bloggers Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = "1",
+			groupName = "Guest",
+			layoutName = "Recent Bloggers Page",
+			widgetName = "Blogs");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = "2",
+			groupName = "Guest",
+			layoutName = "Recent Bloggers Page",
+			widgetName = "Recent Bloggers");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content Latest",
+			entryTitle = "Blogs Entry Title Latest");
+
+		Navigator.gotoPage(pageName = "Recent Bloggers Page");
+
+		BlogsRecentBloggersPortlet.gotoEntryDetails(userName = "Test Test");
+
+		BlogsEntry.viewEntryPG(
+			entryContent = "Blogs Entry Content Latest",
+			entryTitle = "Blogs Entry Title Latest");
+
+		JSONBlog.moveEntryToTrash(
+			entryTitle = "Blogs Entry Title Latest",
+			groupName = "Guest");
+
+		Navigator.gotoPage(pageName = "Recent Bloggers Page");
+
+		BlogsRecentBloggersPortlet.gotoEntryDetails(userName = "Test Test");
+
+		BlogsEntry.viewEntryPG(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+	}
+
+	@description = "This checks that Blogs widgets are independently configured."
+	@priority = "4"
+	@refactordone
+	test ConfiguringWidgetWillNotAffectAnother {
+		task ("Add two pages each with a blog widget") {
+			JSONGroup.addGroup(groupName = "Site Name");
+
+			JSONLayout.addPublicLayout(
+				groupName = "Site Name",
+				layoutName = "Site Page 1");
+
+			JSONLayout.addWidgetToPublicLayout(
+				column = "1",
+				groupName = "Site Name",
+				layoutName = "Site Page 1",
+				widgetName = "Blogs");
+
+			JSONLayout.addPublicLayout(
+				groupName = "Site Name",
+				layoutName = "Site Page 2");
+
+			JSONLayout.addWidgetToPublicLayout(
+				column = "1",
+				groupName = "Site Name",
+				layoutName = "Site Page 2",
+				widgetName = "Blogs");
+
+			Navigator.gotoSitePage(
+				pageName = "Site Page 1",
+				siteName = "Site Name");
+		}
+
+		task ("Configure one of the blog widgets") {
+			Portlet.gotoPortletOptions(portletOption = "Configuration");
+
+			BlogsConfiguration.selectConfigurationIFrame();
+
+			BlogsConfiguration.selectMaximumItemstoDisplay(maximumItemsToDisplay = "60");
+
+			BlogsConfiguration.uncheckComments();
+
+			BlogsConfiguration.uncheckRelatedAssets();
+
+			Button.clickSave();
+
+			BlogsNavigator.openBlogsAdmin(siteURLKey = "site-name");
+
+			Portlet.gotoPortletOptions(portletOption = "Configuration");
+
+			BlogsConfiguration.selectConfigurationIFrame();
+
+			BlogsConfiguration.gotoRSS();
+
+			BlogsConfiguration.uncheckRSSSubscriptionCheckbox();
+
+			Button.clickSave();
+		}
+
+		task ("Check that the second blog widget did not inherit the configuration from the first widget") {
+			Navigator.gotoSitePage(
+				pageName = "Site Page 2",
+				siteName = "Site Name");
+
+			Portlet.gotoPortletOptions(portletOption = "Configuration");
+
+			BlogsConfiguration.selectConfigurationIFrame();
+
+			BlogsConfiguration.viewDefaultConfiguration();
+
+			BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
+
+			Portlet.gotoPortletOptions(portletOption = "Configuration");
+
+			BlogsConfiguration.selectConfigurationIFrame();
+
+			BlogsConfiguration.gotoRSS();
+
+			BlogsConfiguration.viewDefaultConfigurationRSS();
+		}
+	}
+
+	@description = "This test ensures that blogs widgets follow W3C accessibility standards."
+	@ignore = "true"
+	@priority = "4"
+	test WidgetsFollowAccessibilityStandards {
+		for (var widgetName : list "Blogs Aggregator,Recent Bloggers") {
+			JSONLayout.addWidgetToPublicLayout(
+				column = "1",
+				groupName = "Guest",
+				layoutName = "Blogs Page",
+				widgetName = "${widgetName}");
+		}
+
+		Navigator.openSitePage(
+			pageName = "Blogs Page",
+			siteName = "Guest");
+
+		AssertAccessible();
+	}
+
+}

@@ -16,21 +16,24 @@ package com.liferay.portal.util;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.LayoutTypePortlet;
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.model.PortletApp;
+import com.liferay.portal.kernel.model.PortletCategory;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.portlet.PortletConfigFactoryUtil;
+import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PortletLister;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.TreeNodeView;
 import com.liferay.portal.kernel.util.TreeView;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.LayoutTypePortlet;
-import com.liferay.portal.model.Portlet;
-import com.liferay.portal.model.PortletApp;
-import com.liferay.portal.model.PortletCategory;
-import com.liferay.portal.model.User;
-import com.liferay.portal.service.PortletLocalServiceUtil;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.comparator.PortletCategoryComparator;
-import com.liferay.portal.util.comparator.PortletTitleComparator;
-import com.liferay.portlet.PortletConfigFactoryUtil;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.util.comparator.PortletCategoryComparator;
+import com.liferay.portal.kernel.util.comparator.PortletTitleComparator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -178,10 +181,10 @@ public class PortletListerImpl implements PortletLister {
 
 			int nodeId = _nodeId;
 
-			List<PortletCategory> subCategories = ListUtil.fromCollection(
+			List<PortletCategory> subcategories = ListUtil.fromCollection(
 				portletCategory.getCategories());
 
-			iteratePortletCategories(nodeView, subCategories, nodeId, depth);
+			iteratePortletCategories(nodeView, subcategories, nodeId, depth);
 
 			if (_iteratePortlets) {
 				iteratePortlets(
@@ -192,9 +195,8 @@ public class PortletListerImpl implements PortletLister {
 	}
 
 	protected void iteratePortlets(
-			TreeNodeView parentNodeView, PortletCategory portletCategory,
-			Set<String> portletIds, int parentNodeId, int depth)
-		throws PortalException {
+		TreeNodeView parentNodeView, PortletCategory portletCategory,
+		Set<String> portletIds, int parentNodeId, int depth) {
 
 		List<Portlet> portlets = new ArrayList<>();
 
@@ -204,41 +206,41 @@ public class PortletListerImpl implements PortletLister {
 			Portlet portlet = PortletLocalServiceUtil.getPortletById(
 				_user.getCompanyId(), portletId);
 
-			if (portlet != null) {
-				if (portlet.isSystem()) {
-				}
-				else if (!portlet.isActive()) {
-				}
-				else if (portlet.isInstanceable() &&
-						 !_includeInstanceablePortlets) {
-				}
-				else if (!portlet.isInstanceable() &&
-						 _layoutTypePortlet.hasPortletId(
-							 portlet.getPortletId())) {
+			if (portlet == null) {
+				continue;
+			}
 
-					portlets.add(portlet);
-				}
-				else if (!portlet.hasAddPortletPermission(_user.getUserId())) {
-				}
-				else {
-					portlets.add(portlet);
-				}
+			if (portlet.isSystem()) {
+			}
+			else if (!portlet.isActive()) {
+			}
+			else if (portlet.isInstanceable() &&
+					 !_includeInstanceablePortlets) {
+			}
+			else if (!portlet.isInstanceable() &&
+					 _layoutTypePortlet.hasPortletId(portlet.getPortletId())) {
 
-				PortletApp portletApp = portlet.getPortletApp();
+				portlets.add(portlet);
+			}
+			else if (!portlet.hasAddPortletPermission(_user.getUserId())) {
+			}
+			else {
+				portlets.add(portlet);
+			}
 
-				if (portletApp.isWARFile() &&
-					Validator.isNull(externalPortletCategory)) {
+			PortletApp portletApp = portlet.getPortletApp();
 
-					PortletConfig portletConfig =
-						PortletConfigFactoryUtil.create(
-							portlet, _servletContext);
+			if (portletApp.isWARFile() &&
+				Validator.isNull(externalPortletCategory)) {
 
-					ResourceBundle resourceBundle =
-						portletConfig.getResourceBundle(getLocale());
+				PortletConfig portletConfig = PortletConfigFactoryUtil.create(
+					portlet, _servletContext);
 
-					externalPortletCategory = ResourceBundleUtil.getString(
-						resourceBundle, portletCategory.getName());
-				}
+				ResourceBundle resourceBundle = portletConfig.getResourceBundle(
+					getLocale());
+
+				externalPortletCategory = ResourceBundleUtil.getString(
+					resourceBundle, portletCategory.getName());
 			}
 		}
 

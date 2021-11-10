@@ -40,8 +40,8 @@ public class FloatType implements CompositeUserType, Serializable {
 	}
 
 	@Override
-	public Object deepCopy(Object obj) {
-		return obj;
+	public Object deepCopy(Object object) {
+		return object;
 	}
 
 	@Override
@@ -57,9 +57,8 @@ public class FloatType implements CompositeUserType, Serializable {
 		else if ((x == null) || (y == null)) {
 			return false;
 		}
-		else {
-			return x.equals(y);
-		}
+
+		return x.equals(y);
 	}
 
 	@Override
@@ -89,24 +88,23 @@ public class FloatType implements CompositeUserType, Serializable {
 
 	@Override
 	public Object nullSafeGet(
-			ResultSet rs, String[] names, SessionImplementor session,
+			ResultSet resultSet, String[] names, SessionImplementor session,
 			Object owner)
 		throws SQLException {
 
 		Float value = StandardBasicTypes.FLOAT.nullSafeGet(
-			rs, names[0], session);
+			resultSet, names[0], session);
 
 		if (value == null) {
 			return DEFAULT_VALUE;
 		}
-		else {
-			return value;
-		}
+
+		return value;
 	}
 
 	@Override
 	public void nullSafeSet(
-			PreparedStatement ps, Object target, int index,
+			PreparedStatement preparedStatement, Object target, int index,
 			SessionImplementor session)
 		throws SQLException {
 
@@ -114,7 +112,7 @@ public class FloatType implements CompositeUserType, Serializable {
 			target = DEFAULT_VALUE;
 		}
 
-		ps.setFloat(index, (Float)target);
+		preparedStatement.setFloat(index, (Float)target);
 	}
 
 	@Override

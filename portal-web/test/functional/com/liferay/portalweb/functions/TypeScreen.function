@@ -1,5 +1,10 @@
-<definition default="typeScreen">
-	<command name="typeScreen">
-		<execute selenium="typeScreen" />
-	</command>
-</definition>
+@default = "typeScreen"
+definition {
+
+	function typeScreen {
+		WaitForSPARefresh();
+
+		selenium.typeScreen();
+	}
+
+}

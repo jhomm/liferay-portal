@@ -1,49 +1,59 @@
-<definition default="assertTextNotEquals" summary="Assert that '${locator1}' does not equal the value '${value1}'">
-	<command name="assertNotPartialText" summary="Assert that '${locator1}' does not contain the value '${value1}'">
-		<execute selenium="waitForVisible" />
+@default = "assertTextNotEquals"
+@summary = "Assert that '${locator1}' does not equal the value '${value1}'"
+definition {
 
-		<execute selenium="waitForNotPartialText" />
+	@summary = "Assert that '${locator1}' does not contain the value '${value1}'"
+	function assertNotPartialText {
+		WaitForSPARefresh();
 
-		<execute selenium="assertNotPartialText" />
+		selenium.waitForVisible();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.waitForNotPartialText();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
+		selenium.assertNotPartialText();
 
-	<command name="assertNotText">
-		<execute selenium="waitForVisible" />
+		selenium.assertJavaScriptErrors();
 
-		<execute selenium="waitForNotText" />
+		selenium.assertLiferayErrors();
+	}
 
-		<execute selenium="assertNotText" />
+	function assertNotText {
+		WaitForSPARefresh();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.waitForVisible();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
+		selenium.waitForNotText();
 
-	<command name="assertNotValue">
-		<execute selenium="waitForVisible" />
+		selenium.assertNotText();
 
-		<execute selenium="waitForNotValue" />
+		selenium.assertJavaScriptErrors();
 
-		<execute selenium="assertNotValue" />
+		selenium.assertLiferayErrors();
+	}
 
-		<execute selenium="assertJavaScriptErrors" />
+	function assertNotValue {
+		WaitForSPARefresh();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
+		selenium.waitForVisible();
 
-	<command name="assertTextNotEquals">
-		<if>
-			<contains string="${locator1}" substring="/input" />
-			<then>
-				<execute function="AssertTextNotEquals#assertNotValue" />
-			</then>
-			<else>
-				<execute function="AssertTextNotEquals#assertNotText" />
-			</else>
-		</if>
-	</command>
-</definition>
+		selenium.waitForNotValue();
+
+		selenium.assertNotValue();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+	function assertTextNotEquals {
+		WaitForSPARefresh();
+
+		if (contains("${locator1}", "/input")) {
+			AssertTextNotEquals.assertNotValue();
+		}
+		else {
+			AssertTextNotEquals.assertNotText();
+		}
+	}
+
+}

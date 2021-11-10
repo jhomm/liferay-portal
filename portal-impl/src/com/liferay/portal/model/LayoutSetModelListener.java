@@ -14,6 +14,8 @@
 
 package com.liferay.portal.model;
 
+import com.liferay.portal.kernel.model.BaseModelListener;
+import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.servlet.filters.cache.CacheUtil;
 
 /**
@@ -24,19 +26,25 @@ public class LayoutSetModelListener extends BaseModelListener<LayoutSet> {
 
 	@Override
 	public void onAfterRemove(LayoutSet layoutSet) {
-		clearCache(layoutSet);
-	}
-
-	@Override
-	public void onAfterUpdate(LayoutSet layoutSet) {
-		clearCache(layoutSet);
-	}
-
-	protected void clearCache(LayoutSet layoutSet) {
 		if (layoutSet == null) {
 			return;
 		}
 
+		clearCache(layoutSet);
+	}
+
+	@Override
+	public void onAfterUpdate(
+		LayoutSet originalLayoutSet, LayoutSet layoutSet) {
+
+		if (layoutSet == null) {
+			return;
+		}
+
+		clearCache(layoutSet);
+	}
+
+	protected void clearCache(LayoutSet layoutSet) {
 		if (!layoutSet.isPrivateLayout()) {
 			CacheUtil.clearCache(layoutSet.getCompanyId());
 		}

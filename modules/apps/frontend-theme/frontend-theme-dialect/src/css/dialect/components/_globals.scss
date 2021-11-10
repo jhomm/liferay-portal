@@ -1,0 +1,20 @@
+// Border Radius
+
+.rounded-xs {
+	border-radius: var(--border-radius-xs) !important;
+}
+
+.rounded-xl {
+	border-radius: var(--border-radius-xl) !important;
+}
+
+.rounded-xxl {
+	border-radius: var(--border-radius-xxl) !important;
+}
+
+// Links
+
+a:not(.btn):visited {
+	color: var(--link-visited-color);
+	text-decoration: var(--link-visited-text-decoration);
+}

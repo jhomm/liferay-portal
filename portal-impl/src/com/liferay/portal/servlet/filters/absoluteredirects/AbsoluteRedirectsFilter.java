@@ -14,18 +14,18 @@
 
 package com.liferay.portal.servlet.filters.absoluteredirects;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextFactory;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.servlet.TryFilter;
 import com.liferay.portal.kernel.servlet.WrapHttpServletResponseFilter;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.service.ServiceContext;
-import com.liferay.portal.service.ServiceContextFactory;
-import com.liferay.portal.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
 import com.liferay.portal.util.PortalInstances;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.WebKeys;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -48,33 +48,37 @@ public class AbsoluteRedirectsFilter
 
 	@Override
 	public Object doFilterTry(
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws Exception {
 
-		request.setCharacterEncoding(StringPool.UTF8);
+		if (httpServletRequest.getCharacterEncoding() == null) {
+			httpServletRequest.setCharacterEncoding(StringPool.UTF8);
+		}
+
 		//response.setContentType(ContentTypes.TEXT_HTML_UTF8);
 
 		// Company id needs to always be called here so that it's properly set
 		// in subsequent calls
 
-		long companyId = PortalInstances.getCompanyId(request);
+		long companyId = PortalInstances.getCompanyId(httpServletRequest);
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("Company id " + companyId);
 		}
 
-		PortalUtil.getCurrentCompleteURL(request);
-		PortalUtil.getCurrentURL(request);
+		PortalUtil.getCurrentCompleteURL(httpServletRequest);
+		PortalUtil.getCurrentURL(httpServletRequest);
 
-		HttpSession session = request.getSession();
+		HttpSession httpSession = httpServletRequest.getSession();
 
-		Boolean httpsInitial = (Boolean)session.getAttribute(
+		Boolean httpsInitial = (Boolean)httpSession.getAttribute(
 			WebKeys.HTTPS_INITIAL);
 
 		if (httpsInitial == null) {
-			httpsInitial = Boolean.valueOf(request.isSecure());
+			httpsInitial = Boolean.valueOf(httpServletRequest.isSecure());
 
-			session.setAttribute(WebKeys.HTTPS_INITIAL, httpsInitial);
+			httpSession.setAttribute(WebKeys.HTTPS_INITIAL, httpsInitial);
 
 			if (_log.isDebugEnabled()) {
 				_log.debug("Setting httpsInitial to " + httpsInitial);
@@ -82,7 +86,7 @@ public class AbsoluteRedirectsFilter
 		}
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			request);
+			httpServletRequest);
 
 		ServiceContextThreadLocal.pushServiceContext(serviceContext);
 
@@ -91,9 +95,11 @@ public class AbsoluteRedirectsFilter
 
 	@Override
 	public HttpServletResponse getWrappedHttpServletResponse(
-		HttpServletRequest request, HttpServletResponse response) {
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
-		return new AbsoluteRedirectsResponse(request, response);
+		return new AbsoluteRedirectsResponse(
+			httpServletRequest, httpServletResponse);
 	}
 
 	@Override

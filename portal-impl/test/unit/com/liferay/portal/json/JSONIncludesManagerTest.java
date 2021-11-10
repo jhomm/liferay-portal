@@ -15,9 +15,12 @@
 package com.liferay.portal.json;
 
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -25,66 +28,55 @@ import org.junit.Test;
  */
 public class JSONIncludesManagerTest {
 
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
 	@Before
 	public void setUp() throws Exception {
-		JSONFactoryUtil jsonFactoryUtil = new JSONFactoryUtil();
-
-		jsonFactoryUtil.setJSONFactory(new JSONFactoryImpl());
-
 		JSONInit.init();
 	}
 
 	@Test
 	public void testExtendsOne() {
-		ExtendsOne extendsOne = new ExtendsOne();
-
-		String json = JSONFactoryUtil.looseSerialize(extendsOne);
+		String json = JSONFactoryUtil.looseSerialize(new ExtendsOne());
 
 		Assert.assertEquals("{\"ftwo\":173}", json);
 	}
 
 	@Test
 	public void testExtendsTwo() {
-		ExtendsTwo extendsTwo = new ExtendsTwo();
-
-		String json = JSONFactoryUtil.looseSerialize(extendsTwo);
+		String json = JSONFactoryUtil.looseSerialize(new ExtendsTwo());
 
 		Assert.assertEquals("{\"ftwo\":173}", json);
 	}
 
 	@Test
 	public void testFour() {
-		Four four = new Four();
+		String json = JSONFactoryUtil.looseSerialize(new Four());
 
-		String json = JSONFactoryUtil.looseSerialize(four);
-
-		Assert.assertTrue(json.contains("nuMber"));
-		Assert.assertTrue(json.contains("vaLue"));
+		Assert.assertTrue(json, json.contains("nuMber"));
+		Assert.assertTrue(json, json.contains("vaLue"));
 	}
 
 	@Test
 	public void testOne() {
-		One one = new One();
-
-		String json = JSONFactoryUtil.looseSerialize(one);
+		String json = JSONFactoryUtil.looseSerialize(new One());
 
 		Assert.assertEquals("{\"fone\":\"string\",\"ftwo\":173}", json);
 	}
 
 	@Test
 	public void testThree() {
-		Three three = new Three();
-
-		String json = JSONFactoryUtil.looseSerialize(three);
+		String json = JSONFactoryUtil.looseSerialize(new Three());
 
 		Assert.assertEquals("{\"flag\":true}", json);
 	}
 
 	@Test
 	public void testTwo() {
-		Two two = new Two();
-
-		String json = JSONFactoryUtil.looseSerialize(two);
+		String json = JSONFactoryUtil.looseSerialize(new Two());
 
 		Assert.assertEquals("{\"ftwo\":173}", json);
 	}

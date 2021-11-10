@@ -14,6 +14,13 @@
 
 package com.liferay.portal.upgrade.util;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.dao.jdbc.postgresql.PostgreSQLJDBCUtil;
+import com.liferay.portal.kernel.dao.db.DB;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.db.DBType;
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedWriter;
@@ -25,20 +32,22 @@ import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
-import com.liferay.portal.util.PropsUtil;
 
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.Reader;
+
+import java.math.BigDecimal;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import java.sql.Clob;
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -73,8 +82,9 @@ public class Table {
 
 		if (value == null) {
 			throw new UpgradeException(
-				"Nulls should never be inserted into the database. " +
-					"Attempted to append column to " + sb.toString() + ".");
+				StringBundler.concat(
+					"Nulls should never be inserted into the database. ",
+					"Attempted to append column to ", sb.toString(), "."));
 		}
 		else if (value instanceof byte[]) {
 			sb.append(Base64.encode((byte[])value));
@@ -102,16 +112,20 @@ public class Table {
 	}
 
 	public void appendColumn(
-			StringBuilder sb, ResultSet rs, String name, Integer type,
+			StringBuilder sb, ResultSet resultSet, String name, Integer type,
 			boolean last)
 		throws Exception {
 
 		Object value = null;
 
 		try {
-			value = getValue(rs, name, type);
+			value = getValue(resultSet, name, type);
 		}
-		catch (SQLException sqle) {
+		catch (SQLException sqlException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(sqlException, sqlException);
+			}
+
 			if (name.equals("uuid_")) {
 				sb.append(PortalUUIDUtil.generate());
 			}
@@ -129,25 +143,18 @@ public class Table {
 	}
 
 	public void generateTempFile() throws Exception {
-		Connection con = DataAccess.getUpgradeOptimizedConnection();
-
-		try {
-			generateTempFile(con);
-		}
-		finally {
-			DataAccess.cleanUp(con);
+		try (Connection connection = DataAccess.getConnection()) {
+			generateTempFile(connection);
 		}
 	}
 
-	public void generateTempFile(Connection con) throws Exception {
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-
+	public void generateTempFile(Connection connection) throws Exception {
 		boolean empty = true;
 
-		String tempFileName =
-			SystemProperties.get(SystemProperties.TMP_DIR) + "/temp-db-" +
-				_tableName + "-" + System.currentTimeMillis();
+		String tempFileName = String.valueOf(
+			Files.createTempFile(
+				Paths.get(SystemProperties.get(SystemProperties.TMP_DIR)),
+				"temp-db-" + _tableName + "-", null));
 
 		StopWatch stopWatch = new StopWatch();
 
@@ -155,22 +162,21 @@ public class Table {
 
 		if (_log.isInfoEnabled()) {
 			_log.info(
-				"Starting backup of " + _tableName + " to " + tempFileName);
+				StringBundler.concat(
+					"Starting backup of ", _tableName, " to ", tempFileName));
 		}
 
-		UnsyncBufferedWriter unsyncBufferedWriter = new UnsyncBufferedWriter(
-			new FileWriter(tempFileName));
+		try (UnsyncBufferedWriter unsyncBufferedWriter =
+				new UnsyncBufferedWriter(new FileWriter(tempFileName));
+			PreparedStatement preparedStatement = getSelectPreparedStatement(
+				connection);
+			ResultSet resultSet = preparedStatement.executeQuery()) {
 
-		try {
-			ps = getSelectPreparedStatement(con);
-
-			rs = ps.executeQuery();
-
-			while (rs.next()) {
+			while (resultSet.next()) {
 				String data = null;
 
 				try {
-					data = getExportedData(rs);
+					data = getExportedData(resultSet);
 
 					unsyncBufferedWriter.write(data);
 
@@ -178,30 +184,27 @@ public class Table {
 
 					empty = false;
 				}
-				catch (StagnantRowException sre) {
+				catch (StagnantRowException stagnantRowException) {
 					if (_log.isWarnEnabled()) {
 						_log.warn(
-							"Skipping stagnant data in " + _tableName + ": " +
-								sre.getMessage());
+							StringBundler.concat(
+								"Skipping stagnant data in ", _tableName, ": ",
+								stagnantRowException.getMessage()));
 					}
 				}
 			}
 
 			if (_log.isInfoEnabled()) {
 				_log.info(
-					"Finished backup of " + _tableName + " to " +
-						tempFileName + " in " + stopWatch.getTime() + " ms");
+					StringBundler.concat(
+						"Finished backup of ", _tableName, " to ", tempFileName,
+						" in ", stopWatch.getTime(), " ms"));
 			}
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			FileUtil.delete(tempFileName);
 
-			throw e;
-		}
-		finally {
-			DataAccess.cleanUp(null, ps, rs);
-
-			unsyncBufferedWriter.close();
+			throw exception;
 		}
 
 		if (!empty) {
@@ -225,7 +228,7 @@ public class Table {
 		return "DELETE FROM " + _tableName;
 	}
 
-	public String getExportedData(ResultSet rs) throws Exception {
+	public String getExportedData(ResultSet resultSet) throws Exception {
 		StringBuilder sb = new StringBuilder();
 
 		Object[][] columns = getColumns();
@@ -238,7 +241,8 @@ public class Table {
 			}
 
 			appendColumn(
-				sb, rs, (String)columns[i][0], (Integer)columns[i][1], last);
+				sb, resultSet, (String)columns[i][0], (Integer)columns[i][1],
+				last);
 		}
 
 		return sb.toString();
@@ -290,21 +294,20 @@ public class Table {
 
 			int y = createSQL.indexOf(" ", x);
 
-			return createSQL.substring(x, y).trim();
+			return StringUtil.trim(createSQL.substring(x, y));
 		}
-		else {
-			return _tableName;
-		}
+
+		return _tableName;
 	}
 
 	public int[] getOrder() {
 		return _order;
 	}
 
-	public PreparedStatement getSelectPreparedStatement(Connection con)
+	public PreparedStatement getSelectPreparedStatement(Connection connection)
 		throws Exception {
 
-		return con.prepareStatement(getSelectSQL());
+		return connection.prepareStatement(getSelectSQL());
 	}
 
 	public String getSelectSQL() throws Exception {
@@ -326,9 +329,8 @@ public class Table {
 
 			return "select * from " + _tableName;
 		}
-		else {
-			return _selectSQL;
-		}
+
+		return _selectSQL;
 	}
 
 	public String getTableName() {
@@ -343,7 +345,10 @@ public class Table {
 		return _totalRows;
 	}
 
-	public Object getValue(ResultSet rs, String name, Integer type)
+	/**
+	 * @see com.liferay.object.service.impl.ObjectEntryLocalServiceImpl#_getValue
+	 */
+	public Object getValue(ResultSet resultSet, String name, Integer type)
 		throws Exception {
 
 		Object value = null;
@@ -352,82 +357,121 @@ public class Table {
 
 		if (t == Types.BIGINT) {
 			try {
-				value = GetterUtil.getLong(rs.getLong(name));
+				value = GetterUtil.getLong(resultSet.getLong(name));
 			}
-			catch (SQLException sqle) {
-				value = GetterUtil.getLong(rs.getString(name));
+			catch (SQLException sqlException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(sqlException, sqlException);
+				}
+
+				value = GetterUtil.getLong(resultSet.getString(name));
 			}
 		}
 		else if (t == Types.BIT) {
-			value = GetterUtil.getBoolean(rs.getBoolean(name));
+			value = GetterUtil.getBoolean(resultSet.getBoolean(name));
 		}
 		else if ((t == Types.BLOB) || (t == Types.LONGVARBINARY)) {
-			value = rs.getBytes(name);
+			DB db = DBManagerUtil.getDB();
+
+			DBType dbType = db.getDBType();
+
+			if (dbType.equals(DBType.POSTGRESQL) &&
+				PostgreSQLJDBCUtil.isPGStatement(resultSet.getStatement())) {
+
+				value = PostgreSQLJDBCUtil.getLargeObject(resultSet, name);
+			}
+			else {
+				value = resultSet.getBytes(name);
+			}
 
 			if (value == null) {
 				value = new byte[0];
 			}
 		}
 		else if (t == Types.BOOLEAN) {
-			value = GetterUtil.getBoolean(rs.getBoolean(name));
+			value = GetterUtil.getBoolean(resultSet.getBoolean(name));
 		}
 		else if (t == Types.CLOB) {
 			try {
-				Clob clob = rs.getClob(name);
+				Clob clob = resultSet.getClob(name);
 
 				if (clob == null) {
 					value = StringPool.BLANK;
 				}
 				else {
-					UnsyncBufferedReader unsyncBufferedReader =
-						new UnsyncBufferedReader(clob.getCharacterStream());
+					try (Reader reader = clob.getCharacterStream();
+						UnsyncBufferedReader unsyncBufferedReader =
+							new UnsyncBufferedReader(reader)) {
 
-					StringBundler sb = new StringBundler();
+						StringBundler sb = new StringBundler();
 
-					String line = null;
+						String line = null;
 
-					while ((line = unsyncBufferedReader.readLine()) != null) {
-						if (sb.length() != 0) {
-							sb.append(_SAFE_TABLE_NEWLINE_CHARACTER);
+						while ((line = unsyncBufferedReader.readLine()) !=
+									null) {
+
+							if (sb.length() != 0) {
+								sb.append(_SAFE_TABLE_NEWLINE_CHARACTER);
+							}
+
+							sb.append(line);
 						}
 
-						sb.append(line);
+						value = sb.toString();
 					}
-
-					value = sb.toString();
 				}
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception, exception);
+				}
 
 				// If the database doesn't allow CLOB types for the column
 				// value, then try retrieving it as a String
 
-				value = GetterUtil.getString(rs.getString(name));
+				value = GetterUtil.getString(resultSet.getString(name));
 			}
 		}
+		else if (t == Types.DECIMAL) {
+			try {
+				value = resultSet.getBigDecimal(name);
+			}
+			catch (SQLException sqlException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(sqlException, sqlException);
+				}
+
+				value = resultSet.getString(name);
+			}
+
+			value = GetterUtil.get(value, BigDecimal.ZERO);
+		}
 		else if (t == Types.DOUBLE) {
-			value = GetterUtil.getDouble(rs.getDouble(name));
+			value = GetterUtil.getDouble(resultSet.getDouble(name));
 		}
 		else if (t == Types.FLOAT) {
-			value = GetterUtil.getFloat(rs.getFloat(name));
+			value = GetterUtil.getFloat(resultSet.getFloat(name));
 		}
 		else if (t == Types.INTEGER) {
-			value = GetterUtil.getInteger(rs.getInt(name));
+			value = GetterUtil.getInteger(resultSet.getInt(name));
 		}
 		else if (t == Types.LONGVARCHAR) {
-			value = GetterUtil.getString(rs.getString(name));
+			value = GetterUtil.getString(resultSet.getString(name));
 		}
 		else if (t == Types.NUMERIC) {
-			value = GetterUtil.getLong(rs.getLong(name));
+			value = GetterUtil.getLong(resultSet.getLong(name));
 		}
 		else if (t == Types.SMALLINT) {
-			value = GetterUtil.getShort(rs.getShort(name));
+			value = GetterUtil.getShort(resultSet.getShort(name));
 		}
 		else if (t == Types.TIMESTAMP) {
 			try {
-				value = rs.getTimestamp(name);
+				value = resultSet.getTimestamp(name);
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception, exception);
+				}
 			}
 
 			if (value == null) {
@@ -435,10 +479,10 @@ public class Table {
 			}
 		}
 		else if (t == Types.TINYINT) {
-			value = GetterUtil.getShort(rs.getShort(name));
+			value = GetterUtil.getShort(resultSet.getShort(name));
 		}
 		else if (t == Types.VARCHAR) {
-			value = GetterUtil.getString(rs.getString(name));
+			value = GetterUtil.getString(resultSet.getString(name));
 		}
 		else {
 			throw new UpgradeException(
@@ -449,40 +493,23 @@ public class Table {
 	}
 
 	public void populateTable() throws Exception {
-		Connection con = DataAccess.getUpgradeOptimizedConnection();
-
-		try {
-			populateTable(con);
-		}
-		finally {
-			DataAccess.cleanUp(con);
+		try (Connection connection = DataAccess.getConnection()) {
+			populateTable(connection);
 		}
 	}
 
-	public void populateTable(Connection con) throws Exception {
+	public void populateTable(Connection connection) throws Exception {
 		if (_tempFileName == null) {
 			return;
 		}
 
-		PreparedStatement ps = null;
+		try (PreparedStatement preparedStatement =
+				AutoBatchPreparedStatementUtil.autoBatch(
+					connection.prepareStatement(getInsertSQL()));
+			UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new FileReader(_tempFileName))) {
 
-		String insertSQL = getInsertSQL();
-
-		UnsyncBufferedReader unsyncBufferedReader = new UnsyncBufferedReader(
-			new FileReader(_tempFileName));
-
-		String line = null;
-
-		try {
-			DatabaseMetaData databaseMetaData = con.getMetaData();
-
-			if (!databaseMetaData.supportsBatchUpdates()) {
-				if (_log.isDebugEnabled()) {
-					_log.debug("Database does not support batch updates");
-				}
-			}
-
-			int count = 0;
+			String line = null;
 
 			while ((line = unsyncBufferedReader.readLine()) != null) {
 				String[] values = StringUtil.split(line);
@@ -491,12 +518,9 @@ public class Table {
 
 				if (values.length != columns.length) {
 					throw new UpgradeException(
-						"Column lengths differ between temp file and schema. " +
-							"Attempted to insert row " + line + ".");
-				}
-
-				if (count == 0) {
-					ps = con.prepareStatement(insertSQL);
+						StringBundler.concat(
+							"Column lengths differ between temp file and ",
+							"schema. Attempted to insert row ", line, "."));
 				}
 
 				int[] order = getOrder();
@@ -504,36 +528,15 @@ public class Table {
 				for (int i = 0; i < order.length; i++) {
 					int pos = order[i];
 
-					setColumn(ps, i, (Integer)columns[pos][1], values[pos]);
+					setColumn(
+						preparedStatement, i, (Integer)columns[pos][1],
+						values[pos]);
 				}
 
-				if (databaseMetaData.supportsBatchUpdates()) {
-					ps.addBatch();
-
-					if (count == _BATCH_SIZE) {
-						populateTableRows(ps, true);
-
-						count = 0;
-					}
-					else {
-						count++;
-					}
-				}
-				else {
-					populateTableRows(ps, false);
-				}
+				preparedStatement.addBatch();
 			}
 
-			if (databaseMetaData.supportsBatchUpdates()) {
-				if (count != 0) {
-					populateTableRows(ps, true);
-				}
-			}
-		}
-		finally {
-			DataAccess.cleanUp(null, ps);
-
-			unsyncBufferedReader.close();
+			preparedStatement.executeBatch();
 		}
 
 		if (_log.isDebugEnabled()) {
@@ -541,7 +544,8 @@ public class Table {
 		}
 	}
 
-	public void populateTableRows(PreparedStatement ps, boolean batch)
+	public void populateTableRows(
+			PreparedStatement preparedStatement, boolean batch)
 		throws Exception {
 
 		if (_log.isDebugEnabled()) {
@@ -549,31 +553,43 @@ public class Table {
 		}
 
 		if (batch) {
-			ps.executeBatch();
+			preparedStatement.executeBatch();
 		}
 		else {
-			ps.executeUpdate();
+			preparedStatement.executeUpdate();
 		}
 
-		ps.close();
+		preparedStatement.close();
 	}
 
+	/**
+	 * @see com.liferay.object.service.impl.ObjectEntryLocalServiceImpl#_setColumn
+	 */
 	public void setColumn(
-			PreparedStatement ps, int index, Integer type, String value)
+			PreparedStatement preparedStatement, int index, Integer type,
+			String value)
 		throws Exception {
+
+		index++;
 
 		int t = type.intValue();
 
-		int paramIndex = index + 1;
-
 		if (t == Types.BIGINT) {
-			ps.setLong(paramIndex, GetterUtil.getLong(value));
+			preparedStatement.setLong(index, GetterUtil.getLong(value));
 		}
 		else if ((t == Types.BLOB) || (t == Types.LONGVARBINARY)) {
-			ps.setBytes(paramIndex, Base64.decode(value));
+			byte[] valueBytes = Base64.decode(value);
+
+			if (PostgreSQLJDBCUtil.isPGStatement(preparedStatement)) {
+				PostgreSQLJDBCUtil.setLargeObject(
+					preparedStatement, index, valueBytes);
+			}
+			else {
+				preparedStatement.setBytes(index, valueBytes);
+			}
 		}
 		else if (t == Types.BOOLEAN) {
-			ps.setBoolean(paramIndex, GetterUtil.getBoolean(value));
+			preparedStatement.setBoolean(index, GetterUtil.getBoolean(value));
 		}
 		else if ((t == Types.CLOB) || (t == Types.LONGVARCHAR) ||
 				 (t == Types.VARCHAR)) {
@@ -581,33 +597,39 @@ public class Table {
 			value = StringUtil.replace(
 				value, _SAFE_TABLE_CHARS[1], _SAFE_TABLE_CHARS[0]);
 
-			ps.setString(paramIndex, value);
+			preparedStatement.setString(index, value);
+		}
+		else if (t == Types.DECIMAL) {
+			preparedStatement.setBigDecimal(
+				index, (BigDecimal)GetterUtil.get(value, BigDecimal.ZERO));
 		}
 		else if (t == Types.DOUBLE) {
-			ps.setDouble(paramIndex, GetterUtil.getDouble(value));
+			preparedStatement.setDouble(index, GetterUtil.getDouble(value));
 		}
 		else if (t == Types.FLOAT) {
-			ps.setFloat(paramIndex, GetterUtil.getFloat(value));
+			preparedStatement.setFloat(index, GetterUtil.getFloat(value));
 		}
 		else if (t == Types.INTEGER) {
-			ps.setInt(paramIndex, GetterUtil.getInteger(value));
+			preparedStatement.setInt(index, GetterUtil.getInteger(value));
 		}
 		else if (t == Types.SMALLINT) {
-			ps.setShort(paramIndex, GetterUtil.getShort(value));
+			preparedStatement.setShort(index, GetterUtil.getShort(value));
 		}
 		else if (t == Types.TIMESTAMP) {
 			if (StringPool.NULL.equals(value)) {
-				ps.setTimestamp(paramIndex, null);
+				preparedStatement.setTimestamp(index, null);
 			}
 			else {
-				DateFormat df = DateUtil.getISOFormat();
+				DateFormat dateFormat = DateUtil.getISOFormat();
 
-				ps.setTimestamp(
-					paramIndex, new Timestamp(df.parse(value).getTime()));
+				Date date = dateFormat.parse(value);
+
+				preparedStatement.setTimestamp(
+					index, new Timestamp(date.getTime()));
 			}
 		}
 		else if (t == Types.TINYINT) {
-			ps.setShort(paramIndex, GetterUtil.getShort(value));
+			preparedStatement.setShort(index, GetterUtil.getShort(value));
 		}
 		else {
 			throw new UpgradeException(
@@ -653,45 +675,26 @@ public class Table {
 	public void updateColumnValue(
 		String columnName, String oldValue, String newValue) {
 
-		Connection con = null;
-		PreparedStatement ps = null;
+		String sql = StringBundler.concat(
+			"update ", _tableName, " set ", columnName, " = ? where ",
+			columnName, " = ?");
 
-		StringBundler sb = new StringBundler(7);
+		try (Connection connection = DataAccess.getConnection();
+			PreparedStatement preparedStatement = connection.prepareStatement(
+				sql)) {
 
-		sb.append("update ");
-		sb.append(_tableName);
-		sb.append(" set ");
-		sb.append(columnName);
-		sb.append(" = ? where ");
-		sb.append(columnName);
-		sb.append(" = ?");
+			preparedStatement.setString(1, newValue);
+			preparedStatement.setString(2, oldValue);
 
-		String sql = sb.toString();
-
-		try {
-			con = DataAccess.getUpgradeOptimizedConnection();
-
-			ps = con.prepareStatement(sql);
-
-			ps.setString(1, newValue);
-			ps.setString(2, oldValue);
-
-			ps.executeUpdate();
+			preparedStatement.executeUpdate();
 		}
-		catch (SQLException sqle) {
-			if (_log.isErrorEnabled()) {
-				_log.error(sqle, sqle);
-			}
+		catch (SQLException sqlException) {
+			_log.error(sqlException, sqlException);
 
-			throw new RuntimeException("Unable to execute " + sql, sqle);
-		}
-		finally {
-			DataAccess.cleanUp(con, ps);
+			throw new RuntimeException(
+				"Unable to execute " + sql, sqlException);
 		}
 	}
-
-	private static final int _BATCH_SIZE = GetterUtil.getInteger(
-		PropsUtil.get("hibernate.jdbc.batch_size"));
 
 	private static final String[][] _SAFE_TABLE_CHARS = {
 		{StringPool.COMMA, StringPool.NEW_LINE, StringPool.RETURN},

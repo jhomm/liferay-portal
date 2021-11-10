@@ -1,0 +1,98 @@
+definition {
+
+	macro cleanWorkflowIndex {
+		var companyId = JSONCompany.getCompanyId();
+
+		var cleanCurl = '''
+			http://localhost:9200/liferay-${companyId}-${workflowIndexName}/_delete_by_query?pretty \
+			-H 'Content-Type: application/json' \
+			-d '{
+				"query": {
+					"match_all": {}
+				}
+			}'
+		''';
+
+		com.liferay.poshi.runner.util.JSONCurlUtil.post("${cleanCurl}");
+	}
+
+	macro setupCrossClusterReplication {
+		ApplicationsMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Control Panel",
+			portlet = "System Settings");
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Search",
+			configurationName = "Cross-Cluster Replication",
+			configurationScope = "System Scope");
+
+		FormFields.enableCheckbox(fieldName = "ccrEnabled");
+
+		FormFields.editTextMultiline(
+			fieldName = "ccrLocalClusterConnectionConfigurations",
+			fieldValue = "localhost:8080,localcluster");
+
+		SystemSettings.saveConfiguration();
+
+		echo("##");
+		echo("## Local Cluster Index List");
+		echo("##");
+
+		var localClusterIndexList = JSONCurlUtil.get("http://localhost:9202/_cat/indices?h=index");
+
+		echo("##");
+		echo("## Remote Cluster Index List");
+		echo("##");
+
+		var remoteClusterIndexList = JSONCurlUtil.get("http://localhost:9200/_cat/indices?h=index");
+		var remoteClusterIndexList = RegexUtil.replace("${remoteClusterIndexList}", "\n", ",");
+
+		for (var indexName : list "${remoteClusterIndexList}") {
+			if ((!(contains("${indexName}", "."))) && (!(contains("${indexName}", "ilm-history"))) && (!(contains("${localClusterIndexList}", "${indexName}")))) {
+				fail("Failed to create a follower index for ${indexName}.");
+			}
+		}
+
+		echo("##");
+		echo("## Local Cluster Health");
+		echo("##");
+
+		var localClusterHealth = JSONCurlUtil.get("http://localhost:9202/_cluster/health?pretty");
+
+		if (contains("${localClusterHealth}", "red")) {
+			echo("##");
+			echo("## Local Cluster Index Status");
+			echo("##");
+
+			JSONCurlUtil.get("http://localhost:9202/_cat/indices?pretty");
+
+			fail("A follower index is in red status.");
+		}
+	}
+
+	macro setupWorkflow {
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Configuration",
+			portlet = "Workflow");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Blogs");
+
+		Blogs.addWithWorkflow(
+			entryContent = "Blogs Entry Content",
+			entrySubtitle = "Subtitle",
+			entryTitle = "Blogs Entry Title");
+
+		Navigator.openURL();
+	}
+
+}

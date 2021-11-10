@@ -14,8 +14,8 @@
 
 package com.liferay.portal.security.permission;
 
-import com.liferay.portal.model.BaseModelListener;
-import com.liferay.portal.model.ResourcePermission;
+import com.liferay.portal.kernel.model.BaseModelListener;
+import com.liferay.portal.kernel.model.ResourcePermission;
 import com.liferay.portal.model.impl.ResourcePermissionModelImpl;
 
 /**
@@ -35,12 +35,18 @@ public class ResourcePermissionModelListener
 	}
 
 	@Override
-	public void onAfterUpdate(ResourcePermission resourcePermission) {
+	public void onAfterUpdate(
+		ResourcePermission originalResourcePermission,
+		ResourcePermission resourcePermission) {
+
 		_clearCache(resourcePermission);
 	}
 
 	@Override
-	public void onBeforeUpdate(ResourcePermission resourcePermission) {
+	public void onBeforeUpdate(
+		ResourcePermission originalResourcePermission,
+		ResourcePermission resourcePermission) {
+
 		ResourcePermissionModelImpl resourcePermissionModelImpl =
 			(ResourcePermissionModelImpl)resourcePermission;
 
@@ -48,9 +54,9 @@ public class ResourcePermissionModelListener
 
 		if ((columnBitmask & _CLEAR_ON_BEFORE_BITMASK) != 0) {
 			PermissionCacheUtil.clearResourcePermissionCache(
-				resourcePermissionModelImpl.getOriginalScope(),
-				resourcePermissionModelImpl.getOriginalName(),
-				resourcePermissionModelImpl.getOriginalPrimKey());
+				resourcePermissionModelImpl.getColumnOriginalValue("scope"),
+				resourcePermissionModelImpl.getColumnOriginalValue("name"),
+				resourcePermissionModelImpl.getColumnOriginalValue("primKey"));
 		}
 	}
 
@@ -64,6 +70,6 @@ public class ResourcePermissionModelListener
 
 	private static final long _CLEAR_ON_BEFORE_BITMASK =
 		ResourcePermissionModelImpl.NAME_COLUMN_BITMASK |
-			ResourcePermissionModelImpl.PRIMKEY_COLUMN_BITMASK;
+		ResourcePermissionModelImpl.PRIMKEY_COLUMN_BITMASK;
 
 }

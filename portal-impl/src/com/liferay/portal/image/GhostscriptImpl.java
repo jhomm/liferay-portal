@@ -14,14 +14,15 @@
 
 package com.liferay.portal.image;
 
+import com.liferay.petra.process.LoggingOutputProcessor;
+import com.liferay.petra.process.ProcessUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.image.Ghostscript;
 import com.liferay.portal.kernel.image.ImageMagickUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.process.ProcessUtil;
 import com.liferay.portal.kernel.util.OSDetector;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -38,16 +39,14 @@ public class GhostscriptImpl implements Ghostscript {
 	@Override
 	public Future<?> execute(List<String> commandArguments) throws Exception {
 		if (!isEnabled()) {
-			StringBundler sb = new StringBundler(6);
-
-			sb.append("Cannot execute the Ghostscript command. Please ");
-			sb.append("install ImageMagick and Ghostscript and enable ");
-			sb.append("ImageMagick in portal-ext.properties or in the Server ");
-			sb.append("Administration section of the Control Panel at: ");
-			sb.append("http://<server>/group/control_panel/manage/-/server/");
-			sb.append("external-services");
-
-			throw new IllegalStateException(sb.toString());
+			throw new IllegalStateException(
+				StringBundler.concat(
+					"Cannot execute the Ghostscript command. Please install ",
+					"ImageMagick and Ghostscript and enable ImageMagick in ",
+					"portal-ext.properties or in the Server Administration ",
+					"section of the Control Panel at: ",
+					"http://<server>/group/control_panel/manage/-/server",
+					"/external-services."));
 		}
 
 		LinkedList<String> arguments = new LinkedList<>();
@@ -57,7 +56,7 @@ public class GhostscriptImpl implements Ghostscript {
 		arguments.add("-dSAFER");
 		arguments.add("-dNOPAUSE");
 		arguments.add("-dNOPROMPT");
-		arguments.add("-sFONTPATH" + _globalSearchPath);
+		arguments.add("-sFONTPATH=" + _globalSearchPath);
 		arguments.addAll(commandArguments);
 
 		if (_log.isInfoEnabled()) {
@@ -68,11 +67,20 @@ public class GhostscriptImpl implements Ghostscript {
 				sb.append(StringPool.SPACE);
 			}
 
-			_log.info("Excecuting command '" + sb.toString() + "'");
+			_log.info("Executing command '" + sb.toString() + "'");
 		}
 
 		return ProcessUtil.execute(
-			ProcessUtil.LOGGING_OUTPUT_PROCESSOR, arguments);
+			new LoggingOutputProcessor(
+				(stdErr, line) -> {
+					if (stdErr) {
+						_log.error(line);
+					}
+					else if (_log.isInfoEnabled()) {
+						_log.info(line);
+					}
+				}),
+			arguments);
 	}
 
 	@Override
@@ -88,8 +96,8 @@ public class GhostscriptImpl implements Ghostscript {
 
 				_commandPath = getCommandPath();
 			}
-			catch (Exception e) {
-				_log.error(e, e);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 			}
 		}
 	}
@@ -105,14 +113,12 @@ public class GhostscriptImpl implements Ghostscript {
 		}
 
 		if (commandPath == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append("Unable to find the Ghostscript command. Please verify ");
-			sb.append("the path specified in the Server Administration ");
-			sb.append("control panel at: http://<server>/group/control_panel/");
-			sb.append("manage/-/server/external-services");
-
-			throw new FileNotFoundException(sb.toString());
+			throw new FileNotFoundException(
+				StringBundler.concat(
+					"Unable to find the Ghostscript command. Please verify ",
+					"the path specified in the Server Administration control ",
+					"panel at: http://<server>/group/control_panel/manage/-",
+					"/server/external-services."));
 		}
 
 		return commandPath;

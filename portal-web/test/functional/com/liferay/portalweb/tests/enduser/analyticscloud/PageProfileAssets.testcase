@@ -1,0 +1,121 @@
+@component-name = "portal-analytics-cloud"
+definition {
+
+	property portal.release = "false";
+	property portal.upstream = "true";
+	property property.group = "analytics.cloud.profile";
+	property testray.main.component.name = "Analytics Cloud";
+
+	setUp {
+		ACUtils.launchAC();
+
+		ACSettings.takeTokenFromAnalyticsCloud();
+
+		TestCase.setUpPortalInstance();
+
+		ACUtils.launchDXP();
+
+		ACUtils.addSiteAndPage();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		ACUtils.tearDownDXP();
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Site Name");
+		}
+
+		JSONUser.tearDownNonAdminUsers();
+
+		ACUtils.tearDownAC();
+	}
+
+	@description = "Feature ID: Legacy | Automation ID: LRAC-8368 | Test Summary: Page profile assets card shows which assets are on the page"
+	@ignore = "true"
+	@priority = "5"
+	test ShowsWhichAssetsOnPage {
+		property portal.upstream = "quarantine";
+
+		// AC Refactor: the issue is due to data not appearing on time
+		// AC Refactor ticket: LRAC-8965
+
+		task ("Create Blog and WC to Add to Page") {
+			ACUtils.createBlogsAndAddToPage();
+
+			ACUtils.createWCAndAddToPage();
+		}
+
+		task ("Connect DXP to AC") {
+			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
+		}
+
+		task ("Create New User and Sync New Contact Data") {
+			JSONUser.addUser(
+				userEmailAddress = "ac@liferay.com",
+				userFirstName = "ac",
+				userLastName = "ac",
+				userScreenName = "ac");
+
+			ACDXPSettings.syncNewContactData();
+		}
+
+		task ("Login on the New User and Navigate to Site Page") {
+			User.logoutAndLoginPG(
+				userLoginEmailAddress = "ac@liferay.com",
+				userLoginFullName = "ac ac");
+
+			ACUtils.navigateToSitePage(
+				pageName = "AC Page",
+				siteName = "Site Name");
+		}
+
+		task ("Launch AC and Switch Property") {
+			ACUtils.closeAllSessionsAndWait();
+
+			ACUtils.launchAC();
+
+			ACProperties.switchProperty(propertyName = "${propertyName}");
+		}
+
+		task ("Go to Sites > Pages > Set 24 hours on Time Filter") {
+			ACNavigation.goToSites();
+
+			ACNavigation.switchTab(tabName = "Pages");
+
+			ACTimeFilter.clickTimeFilterButton();
+
+			ACTimeFilter.setLast24Hours();
+
+			// It is not possible to validade the data because of timing issues.
+
+		}
+
+		task ("Navigate to AC Page > Overview > Displayed Assets") {
+			ACNavigation.openItem(itemName = "AC Page - Site Name - Liferay DXP");
+
+			ACNavigation.viewActiveSwitchTab(tabName = "Overview");
+
+			ACCards.viewCards(cardTitle = "Displayed Assets");
+		}
+
+		task ("Assert Blog and WC on the List") {
+			for (var assetName : list "Blogs AC Title,Blogs") {
+				AssertTextEquals(
+					categoryName = "${assetName}",
+					locator1 = "ContentDashboard#CATEGORY_NAME_ELEMENT");
+			}
+
+			for (var assetName : list "Web Content AC Title,Web Content") {
+				AssertTextEquals(
+					categoryName = "${assetName}",
+					locator1 = "ContentDashboard#CATEGORY_NAME_ELEMENT");
+			}
+		}
+	}
+
+}

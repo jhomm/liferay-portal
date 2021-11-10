@@ -18,16 +18,16 @@ import com.liferay.portal.kernel.events.Action;
 import com.liferay.portal.kernel.events.ActionException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.security.RandomUtil;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.GroupConstants;
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.model.LayoutTypePortlet;
-import com.liferay.portal.service.GroupLocalServiceUtil;
-import com.liferay.portal.service.LayoutLocalServiceUtil;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.WebKeys;
+import com.liferay.portal.kernel.util.WebKeys;
 
 import java.util.List;
 
@@ -40,15 +40,18 @@ import javax.servlet.http.HttpServletResponse;
 public class RandomLayoutAction extends Action {
 
 	@Override
-	public void run(HttpServletRequest request, HttpServletResponse response)
+	public void run(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws ActionException {
 
 		try {
 
 			// Do not randomize layout unless the user is logged in
 
-			ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-				WebKeys.THEME_DISPLAY);
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
 
 			if (!themeDisplay.isSignedIn()) {
 				return;
@@ -56,7 +59,8 @@ public class RandomLayoutAction extends Action {
 
 			// Do not randomize layout unless the user is accessing the portal
 
-			String requestURI = GetterUtil.getString(request.getRequestURI());
+			String requestURI = GetterUtil.getString(
+				httpServletRequest.getRequestURI());
 
 			if (!requestURI.endsWith("/portal/layout")) {
 				return;
@@ -85,13 +89,13 @@ public class RandomLayoutAction extends Action {
 				themeDisplay.setLayoutTypePortlet(
 					(LayoutTypePortlet)randomLayout.getLayoutType());
 
-				request.setAttribute(WebKeys.LAYOUT, randomLayout);
+				httpServletRequest.setAttribute(WebKeys.LAYOUT, randomLayout);
 			}
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new ActionException(e);
+			throw new ActionException(exception);
 		}
 	}
 

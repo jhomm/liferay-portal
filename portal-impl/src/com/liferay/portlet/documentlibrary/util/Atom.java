@@ -121,7 +121,7 @@ public class Atom {
 	}
 
 	public void patchAtom() {
-		for (int index = 4; index < _size - 4; index++) {
+		for (int index = 4; index < (_size - 4); index++) {
 			String type = new String(
 				ArrayUtil.clone(_buffer, index, index + 4));
 
@@ -154,7 +154,7 @@ public class Atom {
 		long value = 0;
 
 		for (int i = 0; i < buffer.length; i++) {
-			value += ((buffer[i] & _BITMASK) << 8 * (buffer.length - i - 1));
+			value += (buffer[i] & _BITMASK) << (8 * (buffer.length - i - 1));
 		}
 
 		return value;
@@ -166,9 +166,8 @@ public class Atom {
 		if (StringUtil.equalsIgnoreCase(type, Atom.CMOV)) {
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	protected int patchCo64Atom(int index) {
@@ -178,7 +177,7 @@ public class Atom {
 			ArrayUtil.clone(_buffer, index + 8, index + 12));
 
 		for (int i = 0; i < offsetCount; i++) {
-			int offsetIndex = index + 12 + i * 8;
+			int offsetIndex = index + 12 + (i * 8);
 
 			long offset = bytesToLong(
 				ArrayUtil.clone(_buffer, offsetIndex, offsetIndex + 8));
@@ -205,7 +204,7 @@ public class Atom {
 			ArrayUtil.clone(_buffer, index + 8, index + 12));
 
 		for (int i = 0; i < offsetCount; i++) {
-			int offsetIndex = index + 12 + i * 4;
+			int offsetIndex = index + 12 + (i * 4);
 
 			int offset = (int)bytesToLong(
 				ArrayUtil.clone(_buffer, offsetIndex, offsetIndex + 4));

@@ -1,0 +1,69 @@
+@default = "assertTextEquals"
+@summary = "Assert that '${locator1}' equals the value '${value1}'"
+definition {
+
+	function assertCKEditorText {
+		selenium.waitForVisible(
+			"//a[contains(@class,'cke_button__unlink') and contains(@class,'cke_button_disabled')]"
+		);
+
+		selenium.selectFrame();
+
+		selenium.waitForVisible("//html/body");
+
+		selenium.assertText("//html/body");
+
+		selenium.selectFrame("relative=parent");
+	}
+
+	@summary = "Assert that '${locator1}' contains the value '${value1}'"
+	function assertPartialText {
+		selenium.waitForVisible();
+
+		selenium.waitForPartialText();
+
+		selenium.assertPartialText();
+	}
+
+	function assertPartialTextAceEditor {
+		selenium.waitForVisible();
+
+		selenium.waitForPartialTextAceEditor();
+
+		selenium.assertPartialTextAceEditor();
+	}
+
+	function assertText {
+		selenium.waitForVisible();
+
+		selenium.waitForText();
+
+		selenium.assertText();
+	}
+
+	function assertTextEquals {
+		if (contains("${locator1}", "/input")) {
+			AssertTextEquals.assertValue();
+		}
+		else {
+			AssertTextEquals.assertText();
+		}
+	}
+
+	function assertTextWaitForCKEditor {
+		selenium.waitForVisible(
+			"//a[contains(@class,'cke_button__unlink') and contains(@class,'cke_button_disabled')]"
+		);
+
+		AssertTextEquals.assertText();
+	}
+
+	function assertValue {
+		selenium.waitForVisible();
+
+		selenium.waitForValue();
+
+		selenium.assertValue();
+	}
+
+}

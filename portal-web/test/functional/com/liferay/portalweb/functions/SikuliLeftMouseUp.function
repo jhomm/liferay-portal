@@ -1,9 +1,16 @@
-<definition default="sikuliLeftMouseUp">
-	<command name="sikuliLeftMouseUp">
-		<execute selenium="sikuliLeftMouseUp" />
+@default = "sikuliLeftMouseUp"
+definition {
 
-		<execute selenium="assertJavaScriptErrors" />
+	function sikuliLeftMouseUp {
+		WaitForSPARefresh();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.pause("1000");
+
+		selenium.sikuliLeftMouseUp();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

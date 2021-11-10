@@ -14,14 +14,17 @@
 
 package com.liferay.portal.dao.orm.hibernate;
 
-import com.liferay.portal.kernel.dao.orm.ClassLoaderSession;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.portal.kernel.dao.orm.Dialect;
 import com.liferay.portal.kernel.dao.orm.ORMException;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.dao.orm.SessionCustomizer;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.ClassLoaderUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PreloadClassLoader;
 import com.liferay.portal.util.PropsValues;
 
@@ -48,6 +51,10 @@ public class SessionFactoryImpl implements SessionFactory {
 		}
 	}
 
+	public void destroy() {
+		_sessionCustomizers.close();
+	}
+
 	@Override
 	public Session getCurrentSession() throws ORMException {
 		return wrapSession(_sessionFactoryImplementor.getCurrentSession());
@@ -56,10 +63,6 @@ public class SessionFactoryImpl implements SessionFactory {
 	@Override
 	public Dialect getDialect() throws ORMException {
 		return new DialectImpl(_sessionFactoryImplementor.getDialect());
-	}
-
-	public ClassLoader getSessionFactoryClassLoader() {
-		return _sessionFactoryClassLoader;
 	}
 
 	public SessionFactoryImplementor getSessionFactoryImplementor() {
@@ -97,12 +100,9 @@ public class SessionFactoryImpl implements SessionFactory {
 	public void setSessionFactoryClassLoader(
 		ClassLoader sessionFactoryClassLoader) {
 
-		ClassLoader portalClassLoader = ClassLoaderUtil.getPortalClassLoader();
+		if (sessionFactoryClassLoader !=
+				PortalClassLoaderUtil.getClassLoader()) {
 
-		if (sessionFactoryClassLoader == portalClassLoader) {
-			_sessionFactoryClassLoader = sessionFactoryClassLoader;
-		}
-		else {
 			_sessionFactoryClassLoader = new PreloadClassLoader(
 				sessionFactoryClassLoader, getPreloadClassLoaderClasses());
 		}
@@ -120,7 +120,7 @@ public class SessionFactoryImpl implements SessionFactory {
 
 			for (String className : _PRELOAD_CLASS_NAMES) {
 				ClassLoader portalClassLoader =
-					ClassLoaderUtil.getPortalClassLoader();
+					PortalClassLoaderUtil.getClassLoader();
 
 				Class<?> clazz = portalClassLoader.loadClass(className);
 
@@ -129,20 +129,17 @@ public class SessionFactoryImpl implements SessionFactory {
 
 			return classes;
 		}
-		catch (ClassNotFoundException cnfe) {
-			throw new RuntimeException(cnfe);
+		catch (ClassNotFoundException classNotFoundException) {
+			throw new RuntimeException(classNotFoundException);
 		}
 	}
 
 	protected Session wrapSession(org.hibernate.Session session) {
-		Session liferaySession = new SessionImpl(session);
+		Session liferaySession = new SessionImpl(
+			session, _sessionFactoryClassLoader);
 
-		if (_sessionFactoryClassLoader != null) {
-
-			// LPS-4190
-
-			liferaySession = new ClassLoaderSession(
-				liferaySession, _sessionFactoryClassLoader);
+		for (SessionCustomizer sessionCustomizer : _sessionCustomizers) {
+			liferaySession = sessionCustomizer.customize(liferaySession);
 		}
 
 		return liferaySession;
@@ -155,6 +152,9 @@ public class SessionFactoryImpl implements SessionFactory {
 	private static final Log _log = LogFactoryUtil.getLog(
 		SessionFactoryImpl.class);
 
+	private final ServiceTrackerList<SessionCustomizer> _sessionCustomizers =
+		ServiceTrackerListFactory.open(
+			SystemBundleUtil.getBundleContext(), SessionCustomizer.class);
 	private ClassLoader _sessionFactoryClassLoader;
 	private SessionFactoryImplementor _sessionFactoryImplementor;
 

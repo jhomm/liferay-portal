@@ -1,104 +1,155 @@
-<definition>
-	<command name="configureDisplaySettings">
-		<execute function="SelectFrame" locator1="Configuration#CONFIGURATION_IFRAME" />
+definition {
 
-		<for list="${uncheckSetting}" param="SettingName">
-			<execute function="Uncheck" locator1="Checkbox#${SettingName}" />
-		</for>
+	macro configureDisplaySettings {
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		<execute function="Click" locator1="Button#SAVE" />
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="You have successfully updated the setup." />
-	</command>
+		for (var SettingName : list "${uncheckSetting}") {
+			Uncheck(locator1 = "Checkbox#${SettingName}");
+		}
 
-	<command name="configureSharingAllowUsersToAddWikiToAnyWebsite">
-		<execute function="SelectFrame" locator1="BasePortletConfiguration#CONFIGURATION_IFRAME" />
-		<execute function="AssertClick" locator1="BasePortletConfiguration#NAVIGATION_SHARING" value1="Sharing" />
+		Click(locator1 = "Button#SAVE");
 
-		<if>
-			<equals arg1="${enabled}" arg2="true" />
-			<then>
-				<execute function="Check" locator1="WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX" />
-			</then>
-			<else>
-				<execute function="Uncheck" locator1="WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX" />
-			</else>
-		</if>
+		Alert.viewSuccessMessage();
 
-		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
+		SelectFrame(value1 = "relative=top");
+	}
 
-		<execute function="SelectFrame" value1="relative=top" />
-	</command>
+	macro configureEmailCP {
+		Portlet.gotoPortletOptions(portletOption = "Configuration");
 
-	<command name="gotoConfiguration">
-		<execute function="SelectFrameTop" value1="relative=top" />
-		<execute function="Click" locator1="Icon#COG" />
-		<execute function="AssertClick" locator1="BasePortlet#OPTIONS_MENULIST_CONFIGURATION" value1="Configuration" />
-	</command>
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-	<command name="subscribeToNodeCP">
-		<var name="key_wikiNodeName" value="${wikiNodeName}" />
+		if (isSet(pageAddedEmail)) {
+			AssertClick(
+				locator1 = "Configuration#NAVIGATION_PAGE_ADDED_EMAIL",
+				value1 = "Page Added Email");
 
-		<execute function="Click" locator1="Wiki#NODE_TABLE_ACTIONS_DROPDOWN" />
-		<execute function="AssertClick" locator1="MenuItem#SUBSCRIBE" value1="Subscribe" />
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
-		<execute function="Click" locator1="Wiki#NODE_TABLE_ACTIONS_DROPDOWN" />
-		<execute function="AssertTextEquals" locator1="CPWiki#WIKI_NODE_MENULIST_UNSUBSCRIBE" value1="Unsubscribe" />
-	</command>
+			SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
 
-	<command name="tearDownCP">
-		<execute macro="Page#gotoContentCP">
-			<var name="portletName" value="Wiki" />
-		</execute>
+			Type(
+				locator1 = "CKEditor#BODY",
+				value1 = "${bodyContent}");
 
-		<var name="key_wikiNodeName" value="Main" />
+			SelectFrame(value1 = "relative=top");
 
-		<execute function="Click" locator1="Wiki#NODE_TABLE_ACTIONS_DROPDOWN" />
-		<execute function="AssertClick" locator1="MenuItem#UNSUBSCRIBE" value1="Unsubscribe" />
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
-		<execute function="Click" locator1="Wiki#NODE_TABLE_ACTIONS_DROPDOWN" />
-		<execute function="AssertTextEquals" locator1="MenuItem#SUBSCRIBE" value1="Subscribe" />
-	</command>
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-	<command name="viewConfigurationTabs">
-		<execute function="SelectFrame" locator1="Configuration#CONFIGURATION_IFRAME" />
+			PortletEntry.save();
+		}
+	}
 
-		<for list="${isPresent}" param="isPresent">
-			<execute function="AssertElementPresent" locator1="Configuration#${isPresent}" />
-		</for>
+	macro configureSharingAllowUsersToAddWikiToAnyWebsite {
+		SelectFrame(locator1 = "IFrame#CONFIGURATION");
 
-		<for list="${isNotPresent}" param="isNotPresent">
-			<execute function="AssertElementNotPresent" locator1="Configuration#${isNotPresent}" />
-		</for>
-	</command>
+		Navigator.gotoNavItem(navItem = "Sharing");
 
-	<command name="viewConfigureSharingAllowUsersToAddWikiToAnyWebsite">
-		<execute function="SelectFrame" locator1="BasePortletConfiguration#CONFIGURATION_IFRAME" />
-		<execute function="AssertClick" locator1="BasePortletConfiguration#NAVIGATION_SHARING" value1="Sharing" />
+		if ("${enabled}" == "true") {
+			Check.checkToggleSwitch(locator1 = "WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX");
+		}
+		else {
+			Uncheck.uncheckToggleSwitch(locator1 = "WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX");
+		}
 
-		<if>
-			<equals arg1="${enabled}" arg2="true" />
-			<then>
-				<execute function="AssertChecked" locator1="WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX" />
-			</then>
-			<else>
-				<execute function="AssertNotChecked" locator1="WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX" />
-			</else>
-		</if>
+		Button.clickSave();
 
-		<execute function="SelectFrame" value1="relative=top" />
-	</command>
+		SelectFrame(value1 = "relative=top");
+	}
 
-	<command name="viewDisplaySettings">
-		<execute function="SelectFrame" locator1="Configuration#CONFIGURATION_IFRAME" />
+	macro subscribeToNodeCP {
+		var key_wikiNodeName = "${wikiNodeName}";
 
-		<for list="${uncheckedSetting}" param="SettingName">
-			<execute function="AssertNotChecked" locator1="Checkbox#${SettingName}" />
-		</for>
-	</command>
+		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Subscribe");
 
-	<command name="viewNoPermissionCP">
-		<execute function="AssertTextEquals" locator1="Portlet#TITLE" value1="Wiki" />
-		<execute function="AssertElementNotPresent" locator1="Button#ADD_WIKI" />
-		<execute function="AssertElementNotPresent" locator1="Button#PERMISSIONS" />
-	</command>
-</definition>
+		Alert.viewSuccessMessage();
+
+		Click.waitForMenuToggleJSClick(locator1 = "Icon#BODY_VERTICAL_ELLIPSIS");
+
+		MenuItem.viewPresent(menuItem = "Unsubscribe");
+	}
+
+	macro tearDownCP {
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			portlet = "Wiki");
+
+		LexiconEntry.openEntryMenu(rowEntry = "Main");
+
+		MenuItem.click(menuItem = "Unsubscribe");
+
+		Alert.viewSuccessMessage();
+
+		LexiconEntry.openEntryMenu(rowEntry = "Main");
+
+		MenuItem.viewPresent(menuItem = "Subscribe");
+	}
+
+	macro viewConfigurationTabs {
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		for (var isPresent : list "${isPresent}") {
+			AssertElementPresent(locator1 = "Configuration#${isPresent}");
+		}
+
+		for (var isNotPresent : list "${isNotPresent}") {
+			AssertElementNotPresent(locator1 = "Configuration#${isNotPresent}");
+		}
+
+		SelectFrame(value1 = "relative=top");
+	}
+
+	macro viewConfigureSharingAllowUsersToAddWikiToAnyWebsite {
+		SelectFrame(locator1 = "IFrame#CONFIGURATION");
+
+		Navigator.gotoNavItem(navItem = "Sharing");
+
+		if ("${enabled}" == "true") {
+			AssertChecked.assertCheckedNotVisible(locator1 = "WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX");
+		}
+		else {
+			AssertNotChecked.assertNotCheckedNotVisible(locator1 = "WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX");
+		}
+
+		SelectFrame(value1 = "relative=top");
+	}
+
+	macro viewDisplaySettings {
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		for (var SettingName : list "${uncheckedSetting}") {
+			AssertNotChecked(locator1 = "Checkbox#${SettingName}");
+		}
+	}
+
+	macro viewEmailCP {
+		Portlet.gotoPortletOptions(portletOption = "Configuration");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		if (isSet(pageAddedEmail)) {
+			AssertClick(
+				locator1 = "Configuration#NAVIGATION_PAGE_ADDED_EMAIL",
+				value1 = "Page Added Email");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "CKEditor#BODY",
+				value1 = "${bodyContent}");
+
+			SelectFrame(value1 = "relative=top");
+		}
+	}
+
+	macro viewNoPermissionCP {
+		SiteAdmin.viewPortletTitle(portletTitle = "Wiki");
+
+		AssertElementNotPresent(locator1 = "Button#ADD_WIKI");
+
+		LexiconEntry.openEntryMenu(rowEntry = "Main");
+
+		MenuItem.viewNotPresent(menuItem = "Permissions");
+	}
+
+}

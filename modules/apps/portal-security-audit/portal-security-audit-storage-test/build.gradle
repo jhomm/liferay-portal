@@ -1,0 +1,5 @@
+dependencies {
+	testIntegrationCompile project(":apps:portal-security-audit:portal-security-audit-storage-api")
+	testIntegrationCompile project(":apps:portal-security-audit:portal-security-audit-storage-service")
+	testIntegrationCompile project(":test:arquillian-extension-junit-bridge")
+}

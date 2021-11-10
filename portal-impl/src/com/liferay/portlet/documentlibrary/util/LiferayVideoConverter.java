@@ -14,11 +14,12 @@
 
 package com.liferay.portlet.documentlibrary.util;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.StringPool;
 
 import com.xuggle.xuggler.Configuration;
 import com.xuggle.xuggler.IAudioResampler;
@@ -27,7 +28,7 @@ import com.xuggle.xuggler.ICodec;
 import com.xuggle.xuggler.IContainer;
 import com.xuggle.xuggler.IContainerFormat;
 import com.xuggle.xuggler.IPacket;
-import com.xuggle.xuggler.IPixelFormat.Type;
+import com.xuggle.xuggler.IPixelFormat;
 import com.xuggle.xuggler.IRational;
 import com.xuggle.xuggler.IStream;
 import com.xuggle.xuggler.IStreamCoder;
@@ -43,7 +44,9 @@ import java.util.Properties;
  * @author Sergio González
  * @author Brian Wing Shun Chan
  * @author Alexander Chow
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link com.liferay.document.library.kernel.util.VideoConverter}
  */
+@Deprecated
 public class LiferayVideoConverter extends LiferayConverter {
 
 	public LiferayVideoConverter(
@@ -104,9 +107,10 @@ public class LiferayVideoConverter extends LiferayConverter {
 				tempFile.renameTo(videoFile);
 			}
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn("Unable to move MOOV atom to front of MP4 file");
+				_log.warn(
+					"Unable to move MOOV atom to front of MP4 file", exception);
 			}
 		}
 		finally {
@@ -179,7 +183,7 @@ public class LiferayVideoConverter extends LiferayConverter {
 		}
 
 		boolean keyPacketFound = false;
-		int nonKeyAfterKeyCount = 0;
+		int nonkeyAfterKeyCount = 0;
 		boolean onlyDecodeKeyPackets = false;
 		int previousPacketSize = -1;
 
@@ -193,7 +197,6 @@ public class LiferayVideoConverter extends LiferayConverter {
 
 			int streamIndex = inputIPacket.getStreamIndex();
 
-			IStreamCoder inputIStreamCoder = inputIStreamCoders[streamIndex];
 			IStreamCoder outputIStreamCoder = outputIStreamCoders[streamIndex];
 
 			if (outputIStreamCoder == null) {
@@ -203,6 +206,8 @@ public class LiferayVideoConverter extends LiferayConverter {
 			IStream iStream = _inputIContainer.getStream(streamIndex);
 
 			long timeStampOffset = getStreamTimeStampOffset(iStream);
+
+			IStreamCoder inputIStreamCoder = inputIStreamCoders[streamIndex];
 
 			if (inputIStreamCoder.getCodecType() ==
 					ICodec.Type.CODEC_TYPE_AUDIO) {
@@ -220,12 +225,12 @@ public class LiferayVideoConverter extends LiferayConverter {
 
 				keyPacketFound = isKeyPacketFound(inputIPacket, keyPacketFound);
 
-				nonKeyAfterKeyCount = countNonKeyAfterKey(
-					inputIPacket, keyPacketFound, nonKeyAfterKeyCount);
+				nonkeyAfterKeyCount = countNonKeyAfterKey(
+					inputIPacket, keyPacketFound, nonkeyAfterKeyCount);
 
 				if (isStartDecoding(
 						inputIPacket, inputIStreamCoder, keyPacketFound,
-						nonKeyAfterKeyCount, onlyDecodeKeyPackets)) {
+						nonkeyAfterKeyCount, onlyDecodeKeyPackets)) {
 
 					int value = decodeVideo(
 						iVideoResamplers[streamIndex],
@@ -289,10 +294,9 @@ public class LiferayVideoConverter extends LiferayConverter {
 		if (outputFormat.equals("mp4")) {
 			return ICodec.findEncodingCodec(ICodec.ID.CODEC_ID_H264);
 		}
-		else {
-			return ICodec.guessEncodingCodec(
-				null, null, outputURL, null, inputICodecType);
-		}
+
+		return ICodec.guessEncodingCodec(
+			null, null, outputURL, null, inputICodecType);
 	}
 
 	protected IRational getVideoFrameRate(IRational originalFrameRate) {
@@ -313,22 +317,26 @@ public class LiferayVideoConverter extends LiferayConverter {
 	protected void initVideoFrameRate(Properties videoProperties) {
 		int numerator = GetterUtil.getInteger(
 			videoProperties.getProperty(
-				PropsKeys.DL_FILE_ENTRY_PREVIEW_VIDEO_FRAME_RATE_NUMERATOR +
-					"[" + _videoContainer + "]"));
+				StringBundler.concat(
+					PropsKeys.DL_FILE_ENTRY_PREVIEW_VIDEO_FRAME_RATE_NUMERATOR,
+					"[", _videoContainer, "]")));
 		int denominator = GetterUtil.getInteger(
 			videoProperties.getProperty(
-				PropsKeys.DL_FILE_ENTRY_PREVIEW_VIDEO_FRAME_RATE_DENOMINATOR +
-					StringPool.OPEN_BRACKET + _videoContainer +
-						StringPool.CLOSE_BRACKET));
+				StringBundler.concat(
+					PropsKeys.
+						DL_FILE_ENTRY_PREVIEW_VIDEO_FRAME_RATE_DENOMINATOR,
+					StringPool.OPEN_BRACKET, _videoContainer,
+					StringPool.CLOSE_BRACKET)));
 
 		if ((numerator > 0) && (denominator > 0)) {
 			_videoFrameRate = IRational.make(numerator, denominator);
 
 			if (_log.isInfoEnabled()) {
 				_log.info(
-					"Default frame rate for " + _videoContainer +
-						" configured to " + _videoFrameRate.getNumerator() +
-							"/" + _videoFrameRate.getDenominator());
+					StringBundler.concat(
+						"Default frame rate for ", _videoContainer,
+						" configured to ", _videoFrameRate.getNumerator(), "/",
+						_videoFrameRate.getDenominator()));
 			}
 		}
 	}
@@ -346,8 +354,9 @@ public class LiferayVideoConverter extends LiferayConverter {
 
 		if (iCodec == null) {
 			throw new RuntimeException(
-				"Unable to determine " + inputICodecType + " encoder for " +
-					outputURL);
+				StringBundler.concat(
+					"Unable to determine ", inputICodecType, " encoder for ",
+					outputURL));
 		}
 
 		IStream outputIStream = outputIContainer.addNewStream(iCodec);
@@ -376,46 +385,28 @@ public class LiferayVideoConverter extends LiferayConverter {
 
 		if (_log.isInfoEnabled()) {
 			_log.info(
-				"Original frame rate " + iRational.getNumerator() + "/" +
-					iRational.getDenominator());
+				StringBundler.concat(
+					"Original frame rate ", iRational.getNumerator(), "/",
+					iRational.getDenominator()));
 		}
 
 		iRational = getVideoFrameRate(iRational);
 
 		if (_log.isInfoEnabled()) {
 			_log.info(
-				"Modified frame rate " + iRational.getNumerator() + "/" +
-					iRational.getDenominator());
+				StringBundler.concat(
+					"Modified frame rate ", iRational.getNumerator(), "/",
+					iRational.getDenominator()));
 		}
 
 		outputIStreamCoder.setFrameRate(iRational);
 
-		if (inputIStreamCoder.getHeight() <= 0) {
-			throw new RuntimeException(
-				"Unable to determine height for " + _inputURL);
-		}
+		_computeDimensions(inputIStreamCoder, outputIStreamCoder);
 
-		if (_height == 0) {
-			_height = inputIStreamCoder.getHeight();
-		}
-
-		outputIStreamCoder.setHeight(_height);
-
-		outputIStreamCoder.setPixelType(Type.YUV420P);
+		outputIStreamCoder.setPixelType(IPixelFormat.Type.YUV420P);
 		outputIStreamCoder.setTimeBase(
 			IRational.make(
 				iRational.getDenominator(), iRational.getNumerator()));
-
-		if (inputIStreamCoder.getWidth() <= 0) {
-			throw new RuntimeException(
-				"Unable to determine width for " + _inputURL);
-		}
-
-		if (_width == 0) {
-			_width = inputIStreamCoder.getWidth();
-		}
-
-		outputIStreamCoder.setWidth(_width);
 
 		iVideoResamplers[index] = createIVideoResampler(
 			inputIStreamCoder, outputIStreamCoder, _height, _width);
@@ -434,6 +425,72 @@ public class LiferayVideoConverter extends LiferayConverter {
 		}
 	}
 
+	private void _computeDimensions(
+		IStreamCoder inputIStreamCoder, IStreamCoder outputIStreamCoder) {
+
+		if (inputIStreamCoder.getHeight() <= 0) {
+			throw new RuntimeException(
+				"Unable to determine height for " + _inputURL);
+		}
+
+		if (inputIStreamCoder.getWidth() <= 0) {
+			throw new RuntimeException(
+				"Unable to determine width for " + _inputURL);
+		}
+
+		double aspectRatio =
+			(double)inputIStreamCoder.getWidth() /
+				inputIStreamCoder.getHeight();
+
+		if (inputIStreamCoder.getWidth() > inputIStreamCoder.getHeight()) {
+			if (_width == 0) {
+				_width = inputIStreamCoder.getWidth();
+			}
+			else {
+				_width = Math.min(inputIStreamCoder.getWidth(), _width);
+			}
+
+			if (_height == 0) {
+				_height = inputIStreamCoder.getHeight();
+			}
+			else {
+				_height = (int)Math.ceil(_width / aspectRatio);
+			}
+		}
+		else {
+			if (_height == 0) {
+				_height = inputIStreamCoder.getHeight();
+			}
+			else {
+				_height = Math.min(inputIStreamCoder.getHeight(), _height);
+			}
+
+			if (_width == 0) {
+				_width = inputIStreamCoder.getWidth();
+			}
+			else {
+				_width = (int)Math.ceil(_height * aspectRatio);
+			}
+		}
+
+		double heightRatio = _height / (double)inputIStreamCoder.getHeight();
+		double widthRatio = _width / (double)inputIStreamCoder.getWidth();
+
+		if ((heightRatio < _RATIO_THRESHOLD) ||
+			(widthRatio < _RATIO_THRESHOLD)) {
+
+			_height = (int)Math.ceil(
+				inputIStreamCoder.getHeight() * _RATIO_THRESHOLD);
+			_width = (int)Math.ceil(
+				inputIStreamCoder.getWidth() * _RATIO_THRESHOLD);
+		}
+
+		outputIStreamCoder.setHeight(_height);
+		outputIStreamCoder.setWidth(_width);
+	}
+
+	private static final double _RATIO_THRESHOLD = (double)1 / 3;
+
 	private static final int _VIDEO_BIT_RATE_DEFAULT = 250000;
 
 	private static final int _VIDEO_BIT_RATE_MAX = 1200000;
@@ -442,7 +499,7 @@ public class LiferayVideoConverter extends LiferayConverter {
 		LiferayVideoConverter.class);
 
 	private final Properties _ffpresetProperties;
-	private int _height = 0;
+	private int _height;
 	private IContainer _inputIContainer;
 	private final String _inputURL;
 	private IContainer _outputIContainer;
@@ -450,6 +507,6 @@ public class LiferayVideoConverter extends LiferayConverter {
 	private int _videoBitRate;
 	private final String _videoContainer;
 	private IRational _videoFrameRate;
-	private int _width = 0;
+	private int _width;
 
 }

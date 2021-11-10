@@ -1,0 +1,210 @@
+[
+	{
+		"name": "Alabama",
+		"regionCode": "AL"
+	},
+	{
+		"name": "Alaska",
+		"regionCode": "AK"
+	},
+	{
+		"name": "Arizona",
+		"regionCode": "AZ"
+	},
+	{
+		"name": "Arkansas",
+		"regionCode": "AR"
+	},
+	{
+		"name": "California",
+		"regionCode": "CA"
+	},
+	{
+		"name": "Colorado",
+		"regionCode": "CO"
+	},
+	{
+		"name": "Connecticut",
+		"regionCode": "CT"
+	},
+	{
+		"name": "District of Columbia",
+		"regionCode": "DC"
+	},
+	{
+		"name": "Delaware",
+		"regionCode": "DE"
+	},
+	{
+		"name": "Florida",
+		"regionCode": "FL"
+	},
+	{
+		"name": "Georgia",
+		"regionCode": "GA"
+	},
+	{
+		"name": "Hawaii",
+		"regionCode": "HI"
+	},
+	{
+		"name": "Idaho",
+		"regionCode": "ID"
+	},
+	{
+		"name": "Illinois",
+		"regionCode": "IL"
+	},
+	{
+		"name": "Indiana",
+		"regionCode": "IN"
+	},
+	{
+		"name": "Iowa",
+		"regionCode": "IA"
+	},
+	{
+		"name": "Kansas",
+		"regionCode": "KS"
+	},
+	{
+		"name": "Kentucky",
+		"regionCode": "KY"
+	},
+	{
+		"name": "Louisiana",
+		"regionCode": "LA"
+	},
+	{
+		"name": "Maine",
+		"regionCode": "ME"
+	},
+	{
+		"name": "Maryland",
+		"regionCode": "MD"
+	},
+	{
+		"name": "Massachusetts",
+		"regionCode": "MA"
+	},
+	{
+		"name": "Michigan",
+		"regionCode": "MI"
+	},
+	{
+		"name": "Minnesota",
+		"regionCode": "MN"
+	},
+	{
+		"name": "Mississippi",
+		"regionCode": "MS"
+	},
+	{
+		"name": "Missouri",
+		"regionCode": "MO"
+	},
+	{
+		"name": "Montana",
+		"regionCode": "MT"
+	},
+	{
+		"name": "Nebraska",
+		"regionCode": "NE"
+	},
+	{
+		"name": "Nevada",
+		"regionCode": "NV"
+	},
+	{
+		"name": "New Hampshire",
+		"regionCode": "NH"
+	},
+	{
+		"name": "New Jersey",
+		"regionCode": "NJ"
+	},
+	{
+		"name": "New Mexico",
+		"regionCode": "NM"
+	},
+	{
+		"name": "New York",
+		"regionCode": "NY"
+	},
+	{
+		"name": "North Carolina",
+		"regionCode": "NC"
+	},
+	{
+		"name": "North Dakota",
+		"regionCode": "ND"
+	},
+	{
+		"name": "Ohio",
+		"regionCode": "OH"
+	},
+	{
+		"name": "Oklahoma",
+		"regionCode": "OK"
+	},
+	{
+		"name": "Oregon",
+		"regionCode": "OR"
+	},
+	{
+		"name": "Pennsylvania",
+		"regionCode": "PA"
+	},
+	{
+		"name": "Puerto Rico",
+		"regionCode": "PR"
+	},
+	{
+		"name": "Rhode Island",
+		"regionCode": "RI"
+	},
+	{
+		"name": "South Carolina",
+		"regionCode": "SC"
+	},
+	{
+		"name": "South Dakota",
+		"regionCode": "SD"
+	},
+	{
+		"name": "Tennessee",
+		"regionCode": "TN"
+	},
+	{
+		"name": "Texas",
+		"regionCode": "TX"
+	},
+	{
+		"name": "Utah",
+		"regionCode": "UT"
+	},
+	{
+		"name": "Vermont",
+		"regionCode": "VT"
+	},
+	{
+		"name": "Virginia",
+		"regionCode": "VA"
+	},
+	{
+		"name": "Washington",
+		"regionCode": "WA"
+	},
+	{
+		"name": "West Virginia",
+		"regionCode": "WV"
+	},
+	{
+		"name": "Wisconsin",
+		"regionCode": "WI"
+	},
+	{
+		"name": "Wyoming",
+		"regionCode": "WY"
+	}
+]

@@ -16,12 +16,14 @@ package com.liferay.portal.spring.context;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.spring.bean.LiferayBeanFactory;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.FileNotFoundException;
 
 import javax.servlet.ServletContext;
 
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -61,15 +63,20 @@ public class PortalApplicationContext extends XmlWebApplicationContext {
 	}
 
 	@Override
+	protected DefaultListableBeanFactory createBeanFactory() {
+		return new LiferayBeanFactory(getInternalParentBeanFactory());
+	}
+
+	@Override
 	protected void loadBeanDefinitions(
 		XmlBeanDefinitionReader xmlBeanDefinitionReader) {
 
 		try {
 			super.loadBeanDefinitions(xmlBeanDefinitionReader);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
+				_log.warn(exception, exception);
 			}
 		}
 
@@ -84,16 +91,16 @@ public class PortalApplicationContext extends XmlWebApplicationContext {
 			try {
 				xmlBeanDefinitionReader.loadBeanDefinitions(configLocation);
 			}
-			catch (Exception e) {
-				Throwable cause = e.getCause();
+			catch (Exception exception) {
+				Throwable throwable = exception.getCause();
 
-				if (cause instanceof FileNotFoundException) {
+				if (throwable instanceof FileNotFoundException) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(cause.getMessage());
+						_log.warn(throwable.getMessage());
 					}
 				}
 				else {
-					_log.error(e, e);
+					_log.error(exception, exception);
 				}
 			}
 		}

@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Translation renders 1`] = `
+<DocumentFragment>
+  <div
+    class="autofit-row"
+  >
+    <div
+      class="autofit-col"
+    >
+      <div
+        class="dropdown"
+      >
+        <button
+          class="dropdown-toggle btn-monospaced btn btn-sm btn-secondary"
+          style=""
+          type="button"
+        >
+          <svg
+            class="lexicon-icon lexicon-icon-en-us"
+            role="presentation"
+          >
+            <use
+              xlink:href="#en-us"
+            />
+          </svg>
+          <span
+            class="d-block font-weight-normal"
+            style="font-size: 9px;"
+          >
+            en-US
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;

@@ -14,14 +14,11 @@
 
 package com.liferay.portlet.asset.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-
-import com.liferay.portlet.asset.model.AssetTag;
+import com.liferay.asset.kernel.model.AssetTag;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -34,24 +31,26 @@ import java.util.Date;
  * The cache model class for representing AssetTag in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see AssetTag
  * @generated
  */
-@ProviderType
-public class AssetTagCacheModel implements CacheModel<AssetTag>, Externalizable {
+public class AssetTagCacheModel
+	implements CacheModel<AssetTag>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof AssetTagCacheModel)) {
+		if (!(object instanceof AssetTagCacheModel)) {
 			return false;
 		}
 
-		AssetTagCacheModel assetTagCacheModel = (AssetTagCacheModel)obj;
+		AssetTagCacheModel assetTagCacheModel = (AssetTagCacheModel)object;
 
-		if (tagId == assetTagCacheModel.tagId) {
+		if ((tagId == assetTagCacheModel.tagId) &&
+			(mvccVersion == assetTagCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -60,14 +59,30 @@ public class AssetTagCacheModel implements CacheModel<AssetTag>, Externalizable 
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, tagId);
+		int hashCode = HashUtil.hash(0, tagId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(23);
+		StringBundler sb = new StringBundler(27);
 
-		sb.append("{uuid=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
+		sb.append(", uuid=");
 		sb.append(uuid);
 		sb.append(", tagId=");
 		sb.append(tagId);
@@ -98,8 +113,11 @@ public class AssetTagCacheModel implements CacheModel<AssetTag>, Externalizable 
 	public AssetTag toEntityModel() {
 		AssetTagImpl assetTagImpl = new AssetTagImpl();
 
+		assetTagImpl.setMvccVersion(mvccVersion);
+		assetTagImpl.setCtCollectionId(ctCollectionId);
+
 		if (uuid == null) {
-			assetTagImpl.setUuid(StringPool.BLANK);
+			assetTagImpl.setUuid("");
 		}
 		else {
 			assetTagImpl.setUuid(uuid);
@@ -111,7 +129,7 @@ public class AssetTagCacheModel implements CacheModel<AssetTag>, Externalizable 
 		assetTagImpl.setUserId(userId);
 
 		if (userName == null) {
-			assetTagImpl.setUserName(StringPool.BLANK);
+			assetTagImpl.setUserName("");
 		}
 		else {
 			assetTagImpl.setUserName(userName);
@@ -132,7 +150,7 @@ public class AssetTagCacheModel implements CacheModel<AssetTag>, Externalizable 
 		}
 
 		if (name == null) {
-			assetTagImpl.setName(StringPool.BLANK);
+			assetTagImpl.setName("");
 		}
 		else {
 			assetTagImpl.setName(name);
@@ -154,36 +172,50 @@ public class AssetTagCacheModel implements CacheModel<AssetTag>, Externalizable 
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+
 		tagId = objectInput.readLong();
+
 		groupId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
+
 		userId = objectInput.readLong();
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
 		name = objectInput.readUTF();
+
 		assetCount = objectInput.readInt();
 		lastPublishDate = objectInput.readLong();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
+
 		if (uuid == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(uuid);
 		}
 
 		objectOutput.writeLong(tagId);
+
 		objectOutput.writeLong(groupId);
+
 		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(userId);
 
 		if (userName == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(userName);
@@ -193,7 +225,7 @@ public class AssetTagCacheModel implements CacheModel<AssetTag>, Externalizable 
 		objectOutput.writeLong(modifiedDate);
 
 		if (name == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(name);
@@ -203,6 +235,8 @@ public class AssetTagCacheModel implements CacheModel<AssetTag>, Externalizable 
 		objectOutput.writeLong(lastPublishDate);
 	}
 
+	public long mvccVersion;
+	public long ctCollectionId;
 	public String uuid;
 	public long tagId;
 	public long groupId;
@@ -214,4 +248,5 @@ public class AssetTagCacheModel implements CacheModel<AssetTag>, Externalizable 
 	public String name;
 	public int assetCount;
 	public long lastPublishDate;
+
 }

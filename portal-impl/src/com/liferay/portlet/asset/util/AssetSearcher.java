@@ -14,30 +14,38 @@
 
 package com.liferay.portlet.asset.util;
 
+import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.model.AssetVocabularyConstants;
+import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
+import com.liferay.asset.kernel.service.AssetVocabularyLocalServiceUtil;
+import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
+import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.search.BaseSearcher;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
-import com.liferay.portal.kernel.search.DocumentImpl;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
+import com.liferay.portal.kernel.search.filter.QueryFilter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
+import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
+import com.liferay.portal.kernel.search.generic.StringQuery;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.security.permission.PermissionThreadLocal;
-import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portlet.asset.model.AssetCategory;
-import com.liferay.portlet.asset.service.AssetCategoryLocalServiceUtil;
-import com.liferay.portlet.asset.service.persistence.AssetEntryQuery;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Eudaldo Alonso
@@ -81,69 +89,54 @@ public class AssetSearcher extends BaseSearcher {
 		queryBooleanFilter.addTerm(field, "-1", BooleanClauseOccur.MUST);
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
 	protected void addSearchAllCategories(BooleanFilter queryBooleanFilter)
 		throws Exception {
 
-		PermissionChecker permissionChecker =
-			PermissionThreadLocal.getPermissionChecker();
+		addSearchAllCategories(queryBooleanFilter, Field.ASSET_CATEGORY_IDS);
+	}
 
-		long[] allCategoryIds = _assetEntryQuery.getAllCategoryIds();
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
+	protected void addSearchAllCategories(
+			BooleanFilter queryBooleanFilter, String fieldNamesArray)
+		throws Exception {
 
-		if (allCategoryIds.length == 0) {
+		_addSearchAllCategories(queryBooleanFilter, fieldNamesArray);
+	}
+
+	protected void addSearchAllKeywords(BooleanFilter queryBooleanFilter)
+		throws Exception {
+
+		String[] allKeywords = _assetEntryQuery.getAllKeywords();
+
+		if (allKeywords.length == 0) {
 			return;
 		}
 
-		long[] filteredAllCategoryIds = AssetUtil.filterCategoryIds(
-			permissionChecker, allCategoryIds);
+		BooleanQuery keywordsQuery = new BooleanQueryImpl();
 
-		if (allCategoryIds.length != filteredAllCategoryIds.length) {
-			addImpossibleTerm(queryBooleanFilter, Field.ASSET_CATEGORY_IDS);
-
-			return;
-		}
-
-		BooleanFilter categoryIdsBooleanFilter = new BooleanFilter();
-
-		for (long allCategoryId : filteredAllCategoryIds) {
-			AssetCategory assetCategory =
-				AssetCategoryLocalServiceUtil.fetchAssetCategory(allCategoryId);
-
-			if (assetCategory == null) {
-				continue;
+		for (String keyword : allKeywords) {
+			if (keyword.contains(" ")) {
+				keyword = StringUtil.quote(keyword, CharPool.QUOTE);
 			}
 
-			List<Long> categoryIds = new ArrayList<>();
+			StringQuery stringQuery = new StringQuery(keyword);
 
-			if (PropsValues.ASSET_CATEGORIES_SEARCH_HIERARCHICAL) {
-				categoryIds.addAll(
-					AssetCategoryLocalServiceUtil.getSubcategoryIds(
-						allCategoryId));
-			}
-
-			if (categoryIds.isEmpty()) {
-				categoryIds.add(allCategoryId);
-			}
-
-			TermsFilter categoryIdTermsFilter = new TermsFilter(
-				Field.ASSET_CATEGORY_IDS);
-
-			categoryIdTermsFilter.addValues(
-				ArrayUtil.toStringArray(
-					categoryIds.toArray(new Long[categoryIds.size()])));
-
-			categoryIdsBooleanFilter.add(
-				categoryIdTermsFilter, BooleanClauseOccur.MUST);
+			keywordsQuery.add(stringQuery, BooleanClauseOccur.MUST);
 		}
 
 		queryBooleanFilter.add(
-			categoryIdsBooleanFilter, BooleanClauseOccur.MUST);
+			new QueryFilter(keywordsQuery), BooleanClauseOccur.MUST);
 	}
 
 	protected void addSearchAllTags(BooleanFilter queryBooleanFilter)
 		throws Exception {
-
-		PermissionChecker permissionChecker =
-			PermissionThreadLocal.getPermissionChecker();
 
 		long[][] allTagIdsArray = _assetEntryQuery.getAllTagIdsArray();
 
@@ -156,15 +149,6 @@ public class AssetSearcher extends BaseSearcher {
 		for (long[] allTagIds : allTagIdsArray) {
 			if (allTagIds.length == 0) {
 				continue;
-			}
-
-			long[] filteredAllTagIds = AssetUtil.filterTagIds(
-				permissionChecker, allTagIds);
-
-			if (allTagIds.length != filteredAllTagIds.length) {
-				addImpossibleTerm(queryBooleanFilter, Field.ASSET_TAG_IDS);
-
-				return;
 			}
 
 			TermsFilter tagIdsTermsFilter = new TermsFilter(
@@ -180,76 +164,58 @@ public class AssetSearcher extends BaseSearcher {
 			tagIdsArrayBooleanFilter, BooleanClauseOccur.MUST);
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
 	protected void addSearchAnyCategories(BooleanFilter queryBooleanFilter)
 		throws Exception {
 
-		PermissionChecker permissionChecker =
-			PermissionThreadLocal.getPermissionChecker();
+		addSearchAllCategories(queryBooleanFilter, Field.ASSET_CATEGORY_IDS);
+	}
 
-		long[] anyCategoryIds = _assetEntryQuery.getAnyCategoryIds();
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
+	protected void addSearchAnyCategories(
+			BooleanFilter queryBooleanFilter, String fieldNamesArray)
+		throws Exception {
 
-		if (anyCategoryIds.length == 0) {
+		_addSearchAnyCategories(queryBooleanFilter, fieldNamesArray);
+	}
+
+	protected void addSearchAnyKeywords(BooleanFilter queryBooleanFilter)
+		throws Exception {
+
+		String[] anyKeywords = _assetEntryQuery.getAnyKeywords();
+
+		if (anyKeywords.length == 0) {
 			return;
 		}
 
-		long[] filteredAnyCategoryIds = AssetUtil.filterCategoryIds(
-			permissionChecker, anyCategoryIds);
+		BooleanQuery keywordsQuery = new BooleanQueryImpl();
 
-		if (filteredAnyCategoryIds.length == 0) {
-			addImpossibleTerm(queryBooleanFilter, Field.ASSET_CATEGORY_IDS);
+		for (String keyword : anyKeywords) {
+			if (keyword.contains(" ")) {
+				keyword = StringUtil.quote(keyword, CharPool.QUOTE);
+			}
 
-			return;
+			StringQuery stringQuery = new StringQuery(keyword);
+
+			keywordsQuery.add(stringQuery, BooleanClauseOccur.SHOULD);
 		}
 
-		TermsFilter categoryIdsTermsFilter = new TermsFilter(
-			Field.ASSET_CATEGORY_IDS);
-
-		for (long anyCategoryId : filteredAnyCategoryIds) {
-			AssetCategory assetCategory =
-				AssetCategoryLocalServiceUtil.fetchAssetCategory(anyCategoryId);
-
-			if (assetCategory == null) {
-				continue;
-			}
-
-			List<Long> categoryIds = new ArrayList<>();
-
-			if (PropsValues.ASSET_CATEGORIES_SEARCH_HIERARCHICAL) {
-				categoryIds.addAll(
-					AssetCategoryLocalServiceUtil.getSubcategoryIds(
-						anyCategoryId));
-			}
-
-			if (categoryIds.isEmpty()) {
-				categoryIds.add(anyCategoryId);
-			}
-
-			categoryIdsTermsFilter.addValues(
-				ArrayUtil.toStringArray(
-					categoryIds.toArray(new Long[categoryIds.size()])));
-		}
-
-		queryBooleanFilter.add(categoryIdsTermsFilter, BooleanClauseOccur.MUST);
+		queryBooleanFilter.add(
+			new QueryFilter(keywordsQuery), BooleanClauseOccur.MUST);
 	}
 
 	protected void addSearchAnyTags(BooleanFilter queryBooleanFilter)
 		throws Exception {
 
-		PermissionChecker permissionChecker =
-			PermissionThreadLocal.getPermissionChecker();
-
 		long[] anyTagIds = _assetEntryQuery.getAnyTagIds();
 
 		if (anyTagIds.length == 0) {
-			return;
-		}
-
-		long[] filteredAnyTagIds = AssetUtil.filterTagIds(
-			permissionChecker, anyTagIds);
-
-		if (filteredAnyTagIds.length == 0) {
-			addImpossibleTerm(queryBooleanFilter, Field.ASSET_TAG_IDS);
-
 			return;
 		}
 
@@ -265,10 +231,18 @@ public class AssetSearcher extends BaseSearcher {
 			BooleanFilter queryBooleanFilter, SearchContext searchContext)
 		throws Exception {
 
-		addSearchAllCategories(queryBooleanFilter);
-		addSearchAnyCategories(queryBooleanFilter);
-		addSearchNotAnyCategories(queryBooleanFilter);
-		addSearchNotAllCategories(queryBooleanFilter);
+		String[] fieldNamesArray = {Field.ASSET_CATEGORY_IDS};
+
+		if (searchContext.isIncludeInternalAssetCategories()) {
+			fieldNamesArray = new String[] {
+				Field.ASSET_CATEGORY_IDS, Field.ASSET_INTERNAL_CATEGORY_IDS
+			};
+		}
+
+		_addSearchAllCategories(queryBooleanFilter, fieldNamesArray);
+		_addSearchAnyCategories(queryBooleanFilter, fieldNamesArray);
+		_addSearchNotAllCategories(queryBooleanFilter, fieldNamesArray);
+		_addSearchNotAnyCategories(queryBooleanFilter, fieldNamesArray);
 	}
 
 	@Override
@@ -296,7 +270,7 @@ public class AssetSearcher extends BaseSearcher {
 		Map<String, Query> queries = super.addSearchKeywords(
 			searchQuery, searchContext);
 
-		String field = DocumentImpl.getLocalizedName(
+		String field = Field.getLocalizedName(
 			searchContext.getLocale(), "localized_title");
 
 		Query query = searchQuery.addTerm(field, keywords, true);
@@ -319,51 +293,50 @@ public class AssetSearcher extends BaseSearcher {
 		}
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
 	protected void addSearchNotAllCategories(BooleanFilter queryBooleanFilter)
 		throws Exception {
 
-		long[] notAllCategoryIds = _assetEntryQuery.getNotAllCategoryIds();
+		addSearchNotAllCategories(queryBooleanFilter, Field.ASSET_CATEGORY_IDS);
+	}
 
-		if (notAllCategoryIds.length == 0) {
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
+	protected void addSearchNotAllCategories(
+			BooleanFilter queryBooleanFilter, String fieldNamesArray)
+		throws Exception {
+
+		_addSearchNotAllCategories(queryBooleanFilter, fieldNamesArray);
+	}
+
+	protected void addSearchNotAllKeywords(BooleanFilter queryBooleanFilter)
+		throws Exception {
+
+		String[] notAllKeywords = _assetEntryQuery.getNotAllKeywords();
+
+		if (notAllKeywords.length == 0) {
 			return;
 		}
 
-		BooleanFilter categoryIdsBooleanFilter = new BooleanFilter();
+		BooleanQuery keywordsQuery = new BooleanQueryImpl();
 
-		for (long notAllCategoryId : notAllCategoryIds) {
-			AssetCategory assetCategory =
-				AssetCategoryLocalServiceUtil.fetchAssetCategory(
-					notAllCategoryId);
-
-			if (assetCategory == null) {
-				continue;
+		for (String keyword : notAllKeywords) {
+			if (keyword.contains(" ")) {
+				keyword = StringUtil.quote(keyword, CharPool.QUOTE);
 			}
 
-			List<Long> categoryIds = new ArrayList<>();
+			StringQuery stringQuery = new StringQuery(keyword);
 
-			if (PropsValues.ASSET_CATEGORIES_SEARCH_HIERARCHICAL) {
-				categoryIds.addAll(
-					AssetCategoryLocalServiceUtil.getSubcategoryIds(
-						notAllCategoryId));
-			}
-
-			if (categoryIds.isEmpty()) {
-				categoryIds.add(notAllCategoryId);
-			}
-
-			TermsFilter categoryIdTermsFilter = new TermsFilter(
-				Field.ASSET_CATEGORY_IDS);
-
-			categoryIdTermsFilter.addValues(
-				ArrayUtil.toStringArray(
-					categoryIds.toArray(new Long[categoryIds.size()])));
-
-			categoryIdsBooleanFilter.add(
-				categoryIdTermsFilter, BooleanClauseOccur.MUST);
+			keywordsQuery.add(stringQuery, BooleanClauseOccur.MUST);
 		}
 
 		queryBooleanFilter.add(
-			categoryIdsBooleanFilter, BooleanClauseOccur.MUST_NOT);
+			new QueryFilter(keywordsQuery), BooleanClauseOccur.MUST_NOT);
 	}
 
 	protected void addSearchNotAllTags(BooleanFilter queryBooleanFilter)
@@ -395,46 +368,50 @@ public class AssetSearcher extends BaseSearcher {
 			tagIdsArrayBooleanFilter, BooleanClauseOccur.MUST_NOT);
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
 	protected void addSearchNotAnyCategories(BooleanFilter queryBooleanFilter)
 		throws Exception {
 
-		long[] notAnyCategoryIds = _assetEntryQuery.getNotAnyCategoryIds();
+		addSearchNotAnyCategories(queryBooleanFilter, Field.ASSET_CATEGORY_IDS);
+	}
 
-		if (notAnyCategoryIds.length == 0) {
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
+	protected void addSearchNotAnyCategories(
+			BooleanFilter queryBooleanFilter, String fieldNamesArray)
+		throws Exception {
+
+		_addSearchNotAnyCategories(queryBooleanFilter, fieldNamesArray);
+	}
+
+	protected void addSearchNotAnyKeywords(BooleanFilter queryBooleanFilter)
+		throws Exception {
+
+		String[] notAnyKeywords = _assetEntryQuery.getNotAnyKeywords();
+
+		if (notAnyKeywords.length == 0) {
 			return;
 		}
 
-		TermsFilter categoryIdsTermsFilter = new TermsFilter(
-			Field.ASSET_CATEGORY_IDS);
+		BooleanQuery keywordsQuery = new BooleanQueryImpl();
 
-		for (long notAnyCategoryId : notAnyCategoryIds) {
-			AssetCategory assetCategory =
-				AssetCategoryLocalServiceUtil.fetchAssetCategory(
-					notAnyCategoryId);
-
-			if (assetCategory == null) {
-				continue;
+		for (String keyword : notAnyKeywords) {
+			if (keyword.contains(" ")) {
+				keyword = StringUtil.quote(keyword, CharPool.QUOTE);
 			}
 
-			List<Long> categoryIds = new ArrayList<>();
+			StringQuery stringQuery = new StringQuery(keyword);
 
-			if (PropsValues.ASSET_CATEGORIES_SEARCH_HIERARCHICAL) {
-				categoryIds.addAll(
-					AssetCategoryLocalServiceUtil.getSubcategoryIds(
-						notAnyCategoryId));
-			}
-
-			if (categoryIds.isEmpty()) {
-				categoryIds.add(notAnyCategoryId);
-			}
-
-			categoryIdsTermsFilter.addValues(
-				ArrayUtil.toStringArray(
-					categoryIds.toArray(new Long[categoryIds.size()])));
+			keywordsQuery.add(stringQuery, BooleanClauseOccur.SHOULD);
 		}
 
 		queryBooleanFilter.add(
-			categoryIdsTermsFilter, BooleanClauseOccur.MUST_NOT);
+			new QueryFilter(keywordsQuery), BooleanClauseOccur.MUST_NOT);
 	}
 
 	protected void addSearchNotAnyTags(BooleanFilter queryBooleanFilter)
@@ -454,9 +431,29 @@ public class AssetSearcher extends BaseSearcher {
 	}
 
 	@Override
+	protected BooleanQuery createFullQuery(
+			BooleanFilter fullQueryBooleanFilter, SearchContext searchContext)
+		throws Exception {
+
+		addSearchAllKeywords(fullQueryBooleanFilter);
+		addSearchAnyKeywords(fullQueryBooleanFilter);
+		addSearchNotAnyKeywords(fullQueryBooleanFilter);
+		addSearchNotAllKeywords(fullQueryBooleanFilter);
+
+		return super.createFullQuery(fullQueryBooleanFilter, searchContext);
+	}
+
+	@Override
 	protected void postProcessFullQuery(
 			BooleanQuery fullQuery, SearchContext searchContext)
 		throws Exception {
+
+		boolean showInvisible = GetterUtil.getBoolean(
+			_assetEntryQuery.getAttribute("showInvisible"));
+
+		if (showInvisible) {
+			return;
+		}
 
 		BooleanFilter booleanFilter = fullQuery.getPreBooleanFilter();
 
@@ -466,9 +463,212 @@ public class AssetSearcher extends BaseSearcher {
 
 		booleanFilter.addRequiredTerm("visible", true);
 
-		if (booleanFilter.hasClauses()) {
+		if (booleanFilter.hasClauses() && !showInvisible) {
 			fullQuery.setPreBooleanFilter(booleanFilter);
 		}
+	}
+
+	private void _addSearchAllCategories(
+			BooleanFilter queryBooleanFilter, String... fieldNamesArray)
+		throws Exception {
+
+		for (String fieldName : fieldNamesArray) {
+			long[] allCategoryIds = _filterCategoryIdsByVisibilityType(
+				_assetEntryQuery.getAllCategoryIds(), fieldName);
+
+			if (allCategoryIds.length == 0) {
+				continue;
+			}
+
+			long[] filteredAllCategoryIds = AssetUtil.filterCategoryIds(
+				PermissionThreadLocal.getPermissionChecker(), allCategoryIds);
+
+			if (allCategoryIds.length != filteredAllCategoryIds.length) {
+				addImpossibleTerm(queryBooleanFilter, fieldName);
+
+				continue;
+			}
+
+			queryBooleanFilter.add(
+				_getCategoryIdsBooleanFilter(fieldName, filteredAllCategoryIds),
+				BooleanClauseOccur.MUST);
+		}
+	}
+
+	private void _addSearchAnyCategories(
+			BooleanFilter queryBooleanFilter, String... fieldNamesArray)
+		throws Exception {
+
+		BooleanFilter categoryIdsQueryBooleanFilter = new BooleanFilter();
+
+		for (String fieldName : fieldNamesArray) {
+			long[] anyCategoryIds = _filterCategoryIdsByVisibilityType(
+				_assetEntryQuery.getAnyCategoryIds(), fieldName);
+
+			if (anyCategoryIds.length == 0) {
+				continue;
+			}
+
+			long[] filteredAnyCategoryIds = AssetUtil.filterCategoryIds(
+				PermissionThreadLocal.getPermissionChecker(), anyCategoryIds);
+
+			filteredAnyCategoryIds = _filterCategoryIdsByVisibilityType(
+				filteredAnyCategoryIds, fieldName);
+
+			if (filteredAnyCategoryIds.length == 0) {
+				addImpossibleTerm(queryBooleanFilter, fieldName);
+
+				continue;
+			}
+
+			categoryIdsQueryBooleanFilter.add(
+				_getCategoryIdsTermsFilter(fieldName, filteredAnyCategoryIds),
+				BooleanClauseOccur.SHOULD);
+		}
+
+		if (categoryIdsQueryBooleanFilter.hasClauses()) {
+			queryBooleanFilter.add(
+				categoryIdsQueryBooleanFilter, BooleanClauseOccur.MUST);
+		}
+	}
+
+	private void _addSearchNotAllCategories(
+		BooleanFilter queryBooleanFilter, String... fieldNamesArray) {
+
+		BooleanFilter categoryIdsQueryBooleanFilter = new BooleanFilter();
+
+		for (String fieldName : fieldNamesArray) {
+			long[] filteredNotAllCategoryIds =
+				_filterCategoryIdsByVisibilityType(
+					_assetEntryQuery.getNotAllCategoryIds(), fieldName);
+
+			if (filteredNotAllCategoryIds.length == 0) {
+				continue;
+			}
+
+			categoryIdsQueryBooleanFilter.add(
+				_getCategoryIdsBooleanFilter(
+					fieldName, filteredNotAllCategoryIds),
+				BooleanClauseOccur.MUST);
+		}
+
+		if (categoryIdsQueryBooleanFilter.hasClauses()) {
+			queryBooleanFilter.add(
+				categoryIdsQueryBooleanFilter, BooleanClauseOccur.MUST_NOT);
+		}
+	}
+
+	private void _addSearchNotAnyCategories(
+		BooleanFilter queryBooleanFilter, String... fieldNamesArray) {
+
+		for (String fieldName : fieldNamesArray) {
+			long[] filteredNotAnyCategoryIds =
+				_filterCategoryIdsByVisibilityType(
+					_assetEntryQuery.getNotAnyCategoryIds(), fieldName);
+
+			if (filteredNotAnyCategoryIds.length == 0) {
+				continue;
+			}
+
+			queryBooleanFilter.add(
+				_getCategoryIdsTermsFilter(
+					fieldName, filteredNotAnyCategoryIds),
+				BooleanClauseOccur.MUST_NOT);
+		}
+	}
+
+	private long[] _filterCategoryIdsByVisibilityType(
+		long[] assetCategoryIds, String fieldName) {
+
+		List<Long> filteredCategoryIds = new ArrayList<>();
+
+		for (long assetCategoryId : assetCategoryIds) {
+			AssetCategory assetCategory =
+				AssetCategoryLocalServiceUtil.fetchAssetCategory(
+					assetCategoryId);
+
+			if (assetCategory == null) {
+				continue;
+			}
+
+			AssetVocabulary assetVocabulary =
+				AssetVocabularyLocalServiceUtil.fetchAssetVocabulary(
+					assetCategory.getVocabularyId());
+
+			if ((assetVocabulary == null) ||
+				((assetVocabulary.getVisibilityType() ==
+					AssetVocabularyConstants.VISIBILITY_TYPE_INTERNAL) &&
+				 Objects.equals(fieldName, Field.ASSET_CATEGORY_IDS))) {
+
+				continue;
+			}
+
+			if ((assetVocabulary.getVisibilityType() ==
+					AssetVocabularyConstants.VISIBILITY_TYPE_PUBLIC) &&
+				Objects.equals(fieldName, Field.ASSET_INTERNAL_CATEGORY_IDS)) {
+
+				continue;
+			}
+
+			filteredCategoryIds.add(assetCategoryId);
+		}
+
+		return ArrayUtil.toArray(filteredCategoryIds.toArray(new Long[0]));
+	}
+
+	private BooleanFilter _getCategoryIdsBooleanFilter(
+		String fieldName, long[] filteredCategoryIds) {
+
+		BooleanFilter categoryIdsBooleanFilter = new BooleanFilter();
+
+		for (long categoryId : filteredCategoryIds) {
+			List<Long> categoryIds = new ArrayList<>();
+
+			if (PropsValues.ASSET_CATEGORIES_SEARCH_HIERARCHICAL) {
+				categoryIds.addAll(
+					AssetCategoryLocalServiceUtil.getSubcategoryIds(
+						categoryId));
+			}
+
+			if (categoryIds.isEmpty()) {
+				categoryIds.add(categoryId);
+			}
+
+			TermsFilter categoryIdTermsFilter = new TermsFilter(fieldName);
+
+			categoryIdTermsFilter.addValues(
+				ArrayUtil.toStringArray(categoryIds.toArray(new Long[0])));
+
+			categoryIdsBooleanFilter.add(
+				categoryIdTermsFilter, BooleanClauseOccur.MUST);
+		}
+
+		return categoryIdsBooleanFilter;
+	}
+
+	private TermsFilter _getCategoryIdsTermsFilter(
+		String fieldName, long[] filteredCategoryIds) {
+
+		TermsFilter categoryIdsTermsFilter = new TermsFilter(fieldName);
+
+		for (long categoryId : filteredCategoryIds) {
+			List<Long> categoryIds = new ArrayList<>();
+
+			if (PropsValues.ASSET_CATEGORIES_SEARCH_HIERARCHICAL) {
+				categoryIds.addAll(
+					AssetCategoryLocalServiceUtil.getSubcategoryIds(
+						categoryId));
+			}
+
+			if (categoryIds.isEmpty()) {
+				categoryIds.add(categoryId);
+			}
+
+			categoryIdsTermsFilter.addValues(
+				ArrayUtil.toStringArray(categoryIds.toArray(new Long[0])));
+		}
+
+		return categoryIdsTermsFilter;
 	}
 
 	private AssetEntryQuery _assetEntryQuery;

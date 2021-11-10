@@ -14,21 +14,21 @@
 
 package com.liferay.portal.service.http;
 
-import aQute.bnd.annotation.ProviderType;
-
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.auth.HttpPrincipal;
+import com.liferay.portal.kernel.service.PluginSettingServiceUtil;
+import com.liferay.portal.kernel.service.http.TunnelUtil;
 import com.liferay.portal.kernel.util.MethodHandler;
 import com.liferay.portal.kernel.util.MethodKey;
-import com.liferay.portal.security.auth.HttpPrincipal;
-import com.liferay.portal.service.PluginSettingServiceUtil;
 
 /**
  * Provides the HTTP utility for the
- * {@link PluginSettingServiceUtil} service utility. The
+ * <code>PluginSettingServiceUtil</code> service
+ * utility. The
  * static methods of this class calls the same methods of the service utility.
  * However, the signatures are different because it requires an additional
- * {@link HttpPrincipal} parameter.
+ * <code>HttpPrincipal</code> parameter.
  *
  * <p>
  * The benefits of using the HTTP utility is that it is fast and allows for
@@ -47,48 +47,58 @@ import com.liferay.portal.service.PluginSettingServiceUtil;
  *
  * @author Brian Wing Shun Chan
  * @see PluginSettingServiceSoap
- * @see HttpPrincipal
- * @see PluginSettingServiceUtil
  * @generated
  */
-@ProviderType
 public class PluginSettingServiceHttp {
-	public static com.liferay.portal.model.PluginSetting updatePluginSetting(
-		HttpPrincipal httpPrincipal, long companyId, java.lang.String pluginId,
-		java.lang.String pluginType, java.lang.String roles, boolean active)
-		throws com.liferay.portal.kernel.exception.PortalException {
-		try {
-			MethodKey methodKey = new MethodKey(PluginSettingServiceUtil.class,
-					"updatePluginSetting", _updatePluginSettingParameterTypes0);
 
-			MethodHandler methodHandler = new MethodHandler(methodKey,
-					companyId, pluginId, pluginType, roles, active);
+	public static com.liferay.portal.kernel.model.PluginSetting
+			updatePluginSetting(
+				HttpPrincipal httpPrincipal, long companyId, String pluginId,
+				String pluginType, String roles, boolean active)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				PluginSettingServiceUtil.class, "updatePluginSetting",
+				_updatePluginSettingParameterTypes0);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, companyId, pluginId, pluginType, roles, active);
 
 			Object returnObj = null;
 
 			try {
 				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
 			}
-			catch (Exception e) {
-				if (e instanceof com.liferay.portal.kernel.exception.PortalException) {
-					throw (com.liferay.portal.kernel.exception.PortalException)e;
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
 				}
 
-				throw new com.liferay.portal.kernel.exception.SystemException(e);
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
 			}
 
-			return (com.liferay.portal.model.PluginSetting)returnObj;
+			return (com.liferay.portal.kernel.model.PluginSetting)returnObj;
 		}
-		catch (com.liferay.portal.kernel.exception.SystemException se) {
-			_log.error(se, se);
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
 
-			throw se;
+			_log.error(systemException, systemException);
+
+			throw systemException;
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(PluginSettingServiceHttp.class);
-	private static final Class<?>[] _updatePluginSettingParameterTypes0 = new Class[] {
-			long.class, java.lang.String.class, java.lang.String.class,
-			java.lang.String.class, boolean.class
+	private static Log _log = LogFactoryUtil.getLog(
+		PluginSettingServiceHttp.class);
+
+	private static final Class<?>[] _updatePluginSettingParameterTypes0 =
+		new Class[] {
+			long.class, String.class, String.class, String.class, boolean.class
 		};
+
 }

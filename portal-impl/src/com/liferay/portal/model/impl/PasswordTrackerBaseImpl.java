@@ -14,10 +14,8 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.model.PasswordTracker;
-import com.liferay.portal.service.PasswordTrackerLocalServiceUtil;
+import com.liferay.portal.kernel.model.PasswordTracker;
+import com.liferay.portal.kernel.service.PasswordTrackerLocalServiceUtil;
 
 /**
  * The extended model base implementation for the PasswordTracker service. Represents a row in the &quot;PasswordTracker&quot; database table, with each column mapped to a property of this class.
@@ -31,13 +29,13 @@ import com.liferay.portal.service.PasswordTrackerLocalServiceUtil;
  * @see PasswordTracker
  * @generated
  */
-@ProviderType
-public abstract class PasswordTrackerBaseImpl extends PasswordTrackerModelImpl
-	implements PasswordTracker {
+public abstract class PasswordTrackerBaseImpl
+	extends PasswordTrackerModelImpl implements PasswordTracker {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. All methods that expect a password tracker model instance should use the {@link PasswordTracker} interface instead.
+	 * Never modify or reference this class directly. All methods that expect a password tracker model instance should use the <code>PasswordTracker</code> interface instead.
 	 */
 	@Override
 	public void persist() {
@@ -48,4 +46,5 @@ public abstract class PasswordTrackerBaseImpl extends PasswordTrackerModelImpl
 			PasswordTrackerLocalServiceUtil.updatePasswordTracker(this);
 		}
 	}
+
 }

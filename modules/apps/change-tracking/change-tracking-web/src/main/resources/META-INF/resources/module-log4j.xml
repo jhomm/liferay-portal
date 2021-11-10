@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+
+<Configuration strict="true">
+	<Loggers>
+		<Logger level="WARN" name="com.liferay.change.tracking.web.internal.display.CTDisplayRendererRegistry" />
+	</Loggers>
+
+	<Loggers>
+		<Logger level="WARN" name="com.liferay.change.tracking.web.internal.display.context.ViewChangesDisplayContext" />
+	</Loggers>
+</Configuration>

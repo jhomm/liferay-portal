@@ -1,21 +1,40 @@
-<definition default="assertChecked">
-	<command name="assertChecked">
-		<execute selenium="waitForVisible" />
+@default = "assertChecked"
+definition {
 
-		<execute selenium="assertChecked" />
+	function assertChecked {
+		WaitForSPARefresh();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.waitForVisible();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
+		selenium.assertChecked();
 
-	<command name="waitForElementPresentAssertChecked">
-		<execute selenium="waitForElementPresent" />
+		selenium.assertJavaScriptErrors();
 
-		<execute selenium="assertChecked" />
+		selenium.assertLiferayErrors();
+	}
 
-		<execute selenium="assertJavaScriptErrors" />
+	function assertCheckedHiddenToggleSwitch {
+		WaitForSPARefresh();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.waitForElementPresent();
+
+		selenium.assertChecked("xpath=(${locator1})/../../input");
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+	function assertCheckedNotVisible {
+		WaitForSPARefresh();
+
+		selenium.waitForElementPresent();
+
+		selenium.assertChecked();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

@@ -1,0 +1,25 @@
+// Sticker Variants
+
+$sticker-primary-bg: var(--color-action-primary-inverted);
+$sticker-primary-color: var(--color-action-primary-default);
+
+$sticker-secondary-bg: var(--color-action-secondary-inverted);
+$sticker-secondary-color: var(--color-action-secondary-default);
+
+$sticker-info-bg: $dialect-white;
+$sticker-info-color: $dialect-info;
+
+$sticker-success-bg: $dialect-white;
+$sticker-success-color: $dialect-success;
+
+$sticker-warning-bg: $dialect-white;
+$sticker-warning-color: $dialect-warning;
+
+$sticker-danger-bg: $dialect-white;
+$sticker-danger-color: $dialect-danger;
+
+$sticker-light-bg: var(--color-action-neutral-default);
+$sticker-light-color: var(--color-action-neutral-inverted);
+
+$sticker-dark-bg: var(--color-action-neutral-inverted);
+$sticker-dark-color: var(--color-action-neutral-default);

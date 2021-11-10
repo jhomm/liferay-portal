@@ -14,20 +14,18 @@
 
 package com.liferay.portal.service.http;
 
-import aQute.bnd.annotation.ProviderType;
-
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.service.PermissionServiceUtil;
+import com.liferay.portal.kernel.service.PermissionServiceUtil;
 
 import java.rmi.RemoteException;
 
 /**
  * Provides the SOAP utility for the
- * {@link PermissionServiceUtil} service utility. The
- * static methods of this class calls the same methods of the service utility.
- * However, the signatures are different because it is difficult for SOAP to
- * support certain types.
+ * <code>PermissionServiceUtil</code> service
+ * utility. The static methods of this class call the same methods of the
+ * service utility. However, the signatures are different because it is
+ * difficult for SOAP to support certain types.
  *
  * <p>
  * The benefits of using the SOAP utility is that it is cross platform
@@ -48,54 +46,54 @@ import java.rmi.RemoteException;
  *
  * @author Brian Wing Shun Chan
  * @see PermissionServiceHttp
- * @see PermissionServiceUtil
+ * @deprecated As of Athanasius (7.3.x), with no direct replacement
  * @generated
  */
-@ProviderType
+@Deprecated
 public class PermissionServiceSoap {
+
 	/**
-	* Checks to see if the group has permission to the service.
-	*
-	* @param groupId the primary key of the group
-	* @param name the service name
-	* @param primKey the primary key of the service
-	* @throws PortalException if the group did not have permission to the
-	service, if a group with the primary key could not be found or if
-	the permission information was invalid
-	*/
-	public static void checkPermission(long groupId, java.lang.String name,
-		long primKey) throws RemoteException {
+	 * Checks to see if the group has permission to the service.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param name the service name
+	 * @param primKey the primary key of the service
+	 */
+	public static void checkPermission(long groupId, String name, long primKey)
+		throws RemoteException {
+
 		try {
 			PermissionServiceUtil.checkPermission(groupId, name, primKey);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	/**
-	* Checks to see if the group has permission to the service.
-	*
-	* @param groupId the primary key of the group
-	* @param name the service name
-	* @param primKey the primary key of the service
-	* @throws PortalException if the group did not have permission to the
-	service, if a group with the primary key could not be found or if
-	the permission information was invalid
-	*/
-	public static void checkPermission(long groupId, java.lang.String name,
-		java.lang.String primKey) throws RemoteException {
+	 * Checks to see if the group has permission to the service.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param name the service name
+	 * @param primKey the primary key of the service
+	 */
+	public static void checkPermission(
+			long groupId, String name, String primKey)
+		throws RemoteException {
+
 		try {
 			PermissionServiceUtil.checkPermission(groupId, name, primKey);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(PermissionServiceSoap.class);
+	private static Log _log = LogFactoryUtil.getLog(
+		PermissionServiceSoap.class);
+
 }

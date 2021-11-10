@@ -16,13 +16,13 @@ package com.liferay.portal.theme;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.service.ThemeLocalServiceUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
-import com.liferay.portal.service.ThemeLocalServiceUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
@@ -65,13 +65,13 @@ public class ThemeLoader {
 			return;
 		}
 
-		for (int i = 0; i < files.length; i++) {
+		for (File directory : files) {
 			if (_log.isDebugEnabled()) {
-				_log.debug("Process directory " + files[i]);
+				_log.debug("Process directory " + directory);
 			}
 
 			File liferayLookAndFeelXML = new File(
-				files[i] + "/liferay-look-and-feel.xml");
+				directory + "/liferay-look-and-feel.xml");
 
 			if (liferayLookAndFeelXML.exists()) {
 				String lastModifiedKey = liferayLookAndFeelXML.toString();
@@ -149,8 +149,8 @@ public class ThemeLoader {
 				}
 			}
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 
 		_loadFromServletContext = loadFromServletContext;
@@ -175,10 +175,10 @@ public class ThemeLoader {
 				_servletContextName, _servletContext, _themesPath,
 				_loadFromServletContext, new String[] {content}, null);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			_log.error(
 				"Error registering theme " + liferayLookAndFeelXML.toString(),
-				e);
+				exception);
 		}
 	}
 

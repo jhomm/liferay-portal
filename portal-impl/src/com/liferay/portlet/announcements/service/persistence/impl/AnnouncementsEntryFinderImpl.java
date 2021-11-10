@@ -14,6 +14,11 @@
 
 package com.liferay.portlet.announcements.service.persistence.impl;
 
+import com.liferay.announcements.kernel.model.AnnouncementsEntry;
+import com.liferay.announcements.kernel.model.AnnouncementsFlagConstants;
+import com.liferay.announcements.kernel.service.persistence.AnnouncementsEntryFinder;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
@@ -21,16 +26,12 @@ import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.Type;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.CalendarUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.service.persistence.impl.BasePersistenceImpl;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.announcements.model.AnnouncementsEntry;
-import com.liferay.portlet.announcements.model.AnnouncementsFlagConstants;
 import com.liferay.portlet.announcements.model.impl.AnnouncementsEntryImpl;
-import com.liferay.portlet.announcements.service.persistence.AnnouncementsEntryFinder;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
 import java.sql.Timestamp;
@@ -46,7 +47,7 @@ import java.util.Map;
  * @author Raymond Augé
  */
 public class AnnouncementsEntryFinderImpl
-	extends BasePersistenceImpl<AnnouncementsEntry>
+	extends AnnouncementsEntryFinderBaseImpl
 	implements AnnouncementsEntryFinder {
 
 	public static final String COUNT_BY_HIDDEN =
@@ -66,10 +67,10 @@ public class AnnouncementsEntryFinderImpl
 
 	@Override
 	public int countByScope(
-		long userId, long classNameId, long[] classPKs, int displayDateMonth,
-		int displayDateDay, int displayDateYear, int displayDateHour,
-		int displayDateMinute, int expirationDateMonth, int expirationDateDay,
-		int expirationDateYear, int expirationDateHour,
+		long companyId, long userId, long classNameId, long[] classPKs,
+		int displayDateMonth, int displayDateDay, int displayDateYear,
+		int displayDateHour, int displayDateMinute, int expirationDateMonth,
+		int expirationDateDay, int expirationDateYear, int expirationDateHour,
 		int expirationDateMinute, boolean alert, int flagValue) {
 
 		Session session = null;
@@ -87,28 +88,38 @@ public class AnnouncementsEntryFinderImpl
 				sql, "[$CLASS_PKS$]", getClassPKs(classNameId, classPKs));
 			sql = CustomSQLUtil.replaceAndOperator(sql, true);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addScalar(COUNT_COLUMN_NAME, Type.LONG);
+			sqlQuery.addScalar(COUNT_COLUMN_NAME, Type.LONG);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			setClassPKs(qPos, classNameId, classPKs);
+			if (flagValue == AnnouncementsFlagConstants.NOT_HIDDEN) {
+				queryPos.add(userId);
+				queryPos.add(AnnouncementsFlagConstants.HIDDEN);
+			}
+
+			queryPos.add(companyId);
+
+			setClassPKs(queryPos, classNameId, classPKs);
 
 			setDates(
-				qPos, displayDateMonth, displayDateDay, displayDateYear,
+				queryPos, displayDateMonth, displayDateDay, displayDateYear,
 				displayDateHour, displayDateMinute, expirationDateMonth,
 				expirationDateDay, expirationDateYear, expirationDateHour,
 				expirationDateMinute);
 
-			qPos.add(alert);
-			qPos.add(userId);
-			qPos.add(AnnouncementsFlagConstants.HIDDEN);
+			queryPos.add(alert);
 
-			Iterator<Long> itr = q.iterate();
+			if (flagValue != AnnouncementsFlagConstants.NOT_HIDDEN) {
+				queryPos.add(userId);
+				queryPos.add(AnnouncementsFlagConstants.HIDDEN);
+			}
 
-			if (itr.hasNext()) {
-				Long count = itr.next();
+			Iterator<Long> iterator = sqlQuery.iterate();
+
+			if (iterator.hasNext()) {
+				Long count = iterator.next();
 
 				if (count != null) {
 					return count.intValue();
@@ -117,8 +128,8 @@ public class AnnouncementsEntryFinderImpl
 
 			return 0;
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -127,10 +138,10 @@ public class AnnouncementsEntryFinderImpl
 
 	@Override
 	public int countByScopes(
-		long userId, LinkedHashMap<Long, long[]> scopes, int displayDateMonth,
-		int displayDateDay, int displayDateYear, int displayDateHour,
-		int displayDateMinute, int expirationDateMonth, int expirationDateDay,
-		int expirationDateYear, int expirationDateHour,
+		long companyId, long userId, LinkedHashMap<Long, long[]> scopes,
+		int displayDateMonth, int displayDateDay, int displayDateYear,
+		int displayDateHour, int displayDateMinute, int expirationDateMonth,
+		int expirationDateDay, int expirationDateYear, int expirationDateHour,
 		int expirationDateMinute, boolean alert, int flagValue) {
 
 		Session session = null;
@@ -147,28 +158,38 @@ public class AnnouncementsEntryFinderImpl
 			sql = StringUtil.replace(sql, "[$CLASS_PKS$]", getClassPKs(scopes));
 			sql = CustomSQLUtil.replaceAndOperator(sql, true);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addScalar(COUNT_COLUMN_NAME, Type.LONG);
+			sqlQuery.addScalar(COUNT_COLUMN_NAME, Type.LONG);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			setClassPKs(qPos, scopes);
+			if (flagValue == AnnouncementsFlagConstants.NOT_HIDDEN) {
+				queryPos.add(userId);
+				queryPos.add(AnnouncementsFlagConstants.HIDDEN);
+			}
+
+			queryPos.add(companyId);
+
+			setClassPKs(queryPos, scopes);
 
 			setDates(
-				qPos, displayDateMonth, displayDateDay, displayDateYear,
+				queryPos, displayDateMonth, displayDateDay, displayDateYear,
 				displayDateHour, displayDateMinute, expirationDateMonth,
 				expirationDateDay, expirationDateYear, expirationDateHour,
 				expirationDateMinute);
 
-			qPos.add(alert);
-			qPos.add(userId);
-			qPos.add(AnnouncementsFlagConstants.HIDDEN);
+			queryPos.add(alert);
 
-			Iterator<Long> itr = q.iterate();
+			if (flagValue != AnnouncementsFlagConstants.NOT_HIDDEN) {
+				queryPos.add(userId);
+				queryPos.add(AnnouncementsFlagConstants.HIDDEN);
+			}
 
-			if (itr.hasNext()) {
-				Long count = itr.next();
+			Iterator<Long> iterator = sqlQuery.iterate();
+
+			if (iterator.hasNext()) {
+				Long count = iterator.next();
 
 				if (count != null) {
 					return count.intValue();
@@ -177,8 +198,8 @@ public class AnnouncementsEntryFinderImpl
 
 			return 0;
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -199,19 +220,20 @@ public class AnnouncementsEntryFinderImpl
 
 			String sql = CustomSQLUtil.get(FIND_BY_DISPLAY_DATE);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addEntity("AnnouncementsEntry", AnnouncementsEntryImpl.class);
+			sqlQuery.addEntity(
+				"AnnouncementsEntry", AnnouncementsEntryImpl.class);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(displayDateGT_TS);
-			qPos.add(displayDateLT_TS);
+			queryPos.add(displayDateGT_TS);
+			queryPos.add(displayDateLT_TS);
 
-			return q.list(true);
+			return sqlQuery.list(true);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -220,10 +242,10 @@ public class AnnouncementsEntryFinderImpl
 
 	@Override
 	public List<AnnouncementsEntry> findByScope(
-		long userId, long classNameId, long[] classPKs, int displayDateMonth,
-		int displayDateDay, int displayDateYear, int displayDateHour,
-		int displayDateMinute, int expirationDateMonth, int expirationDateDay,
-		int expirationDateYear, int expirationDateHour,
+		long companyId, long userId, long classNameId, long[] classPKs,
+		int displayDateMonth, int displayDateDay, int displayDateYear,
+		int displayDateHour, int displayDateMinute, int expirationDateMonth,
+		int expirationDateDay, int expirationDateYear, int expirationDateHour,
 		int expirationDateMinute, boolean alert, int flagValue, int start,
 		int end) {
 
@@ -242,29 +264,40 @@ public class AnnouncementsEntryFinderImpl
 				sql, "[$CLASS_PKS$]", getClassPKs(classNameId, classPKs));
 			sql = CustomSQLUtil.replaceAndOperator(sql, true);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addEntity("AnnouncementsEntry", AnnouncementsEntryImpl.class);
+			sqlQuery.addEntity(
+				"AnnouncementsEntry", AnnouncementsEntryImpl.class);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			setClassPKs(qPos, classNameId, classPKs);
+			setClassPKs(queryPos, classNameId, classPKs);
+
+			if (flagValue == AnnouncementsFlagConstants.NOT_HIDDEN) {
+				queryPos.add(userId);
+				queryPos.add(AnnouncementsFlagConstants.HIDDEN);
+			}
+
+			queryPos.add(companyId);
 
 			setDates(
-				qPos, displayDateMonth, displayDateDay, displayDateYear,
+				queryPos, displayDateMonth, displayDateDay, displayDateYear,
 				displayDateHour, displayDateMinute, expirationDateMonth,
 				expirationDateDay, expirationDateYear, expirationDateHour,
 				expirationDateMinute);
 
-			qPos.add(alert);
-			qPos.add(userId);
-			qPos.add(AnnouncementsFlagConstants.HIDDEN);
+			queryPos.add(alert);
+
+			if (flagValue != AnnouncementsFlagConstants.NOT_HIDDEN) {
+				queryPos.add(userId);
+				queryPos.add(AnnouncementsFlagConstants.HIDDEN);
+			}
 
 			return (List<AnnouncementsEntry>)QueryUtil.list(
-				q, getDialect(), start, end);
+				sqlQuery, getDialect(), start, end);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -273,10 +306,10 @@ public class AnnouncementsEntryFinderImpl
 
 	@Override
 	public List<AnnouncementsEntry> findByScopes(
-		long userId, LinkedHashMap<Long, long[]> scopes, int displayDateMonth,
-		int displayDateDay, int displayDateYear, int displayDateHour,
-		int displayDateMinute, int expirationDateMonth, int expirationDateDay,
-		int expirationDateYear, int expirationDateHour,
+		long companyId, long userId, LinkedHashMap<Long, long[]> scopes,
+		int displayDateMonth, int displayDateDay, int displayDateYear,
+		int displayDateHour, int displayDateMinute, int expirationDateMonth,
+		int expirationDateDay, int expirationDateYear, int expirationDateHour,
 		int expirationDateMinute, boolean alert, int flagValue, int start,
 		int end) {
 
@@ -294,29 +327,40 @@ public class AnnouncementsEntryFinderImpl
 			sql = StringUtil.replace(sql, "[$CLASS_PKS$]", getClassPKs(scopes));
 			sql = CustomSQLUtil.replaceAndOperator(sql, true);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addEntity("AnnouncementsEntry", AnnouncementsEntryImpl.class);
+			sqlQuery.addEntity(
+				"AnnouncementsEntry", AnnouncementsEntryImpl.class);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			setClassPKs(qPos, scopes);
+			if (flagValue == AnnouncementsFlagConstants.NOT_HIDDEN) {
+				queryPos.add(userId);
+				queryPos.add(AnnouncementsFlagConstants.HIDDEN);
+			}
+
+			queryPos.add(companyId);
+
+			setClassPKs(queryPos, scopes);
 
 			setDates(
-				qPos, displayDateMonth, displayDateDay, displayDateYear,
+				queryPos, displayDateMonth, displayDateDay, displayDateYear,
 				displayDateHour, displayDateMinute, expirationDateMonth,
 				expirationDateDay, expirationDateYear, expirationDateHour,
 				expirationDateMinute);
 
-			qPos.add(alert);
-			qPos.add(userId);
-			qPos.add(AnnouncementsFlagConstants.HIDDEN);
+			queryPos.add(alert);
+
+			if (flagValue != AnnouncementsFlagConstants.NOT_HIDDEN) {
+				queryPos.add(userId);
+				queryPos.add(AnnouncementsFlagConstants.HIDDEN);
+			}
 
 			return (List<AnnouncementsEntry>)QueryUtil.list(
-				q, getDialect(), start, end);
+				sqlQuery, getDialect(), start, end);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -350,7 +394,7 @@ public class AnnouncementsEntryFinderImpl
 			return "(AnnouncementsEntry.classNameId = ?) AND (";
 		}
 
-		StringBundler sb = new StringBundler(classPKs.length * 2 + 1);
+		StringBundler sb = new StringBundler((classPKs.length * 2) + 1);
 
 		sb.append("(AnnouncementsEntry.classNameId = ?) AND (");
 
@@ -369,7 +413,7 @@ public class AnnouncementsEntryFinderImpl
 	}
 
 	protected void setClassPKs(
-		QueryPos qPos, LinkedHashMap<Long, long[]> scopes) {
+		QueryPos queryPos, LinkedHashMap<Long, long[]> scopes) {
 
 		if (scopes == null) {
 			return;
@@ -379,22 +423,22 @@ public class AnnouncementsEntryFinderImpl
 			Long classNameId = entry.getKey();
 			long[] classPKs = entry.getValue();
 
-			setClassPKs(qPos, classNameId.longValue(), classPKs);
+			setClassPKs(queryPos, classNameId.longValue(), classPKs);
 		}
 	}
 
 	protected void setClassPKs(
-		QueryPos qPos, long classNameId, long[] classPKs) {
+		QueryPos queryPos, long classNameId, long[] classPKs) {
 
-		qPos.add(classNameId);
+		queryPos.add(classNameId);
 
-		for (int i = 0; i < classPKs.length; i++) {
-			qPos.add(classPKs[i]);
+		for (long classPK : classPKs) {
+			queryPos.add(classPK);
 		}
 	}
 
 	protected void setDates(
-		QueryPos qPos, int displayDateMonth, int displayDateDay,
+		QueryPos queryPos, int displayDateMonth, int displayDateDay,
 		int displayDateYear, int displayDateHour, int displayDateMinute,
 		int expirationDateMonth, int expirationDateDay, int expirationDateYear,
 		int expirationDateHour, int expirationDateMinute) {
@@ -406,7 +450,13 @@ public class AnnouncementsEntryFinderImpl
 				displayDateMonth, displayDateDay, displayDateYear,
 				displayDateHour, displayDateMinute, null);
 		}
-		catch (PortalException pe) {
+		catch (PortalException portalException) {
+
+			// LPS-52675
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException, portalException);
+			}
 		}
 
 		if (displayDate == null) {
@@ -422,7 +472,13 @@ public class AnnouncementsEntryFinderImpl
 				expirationDateMonth, expirationDateDay, expirationDateYear,
 				expirationDateHour, expirationDateMinute, null);
 		}
-		catch (PortalException pe) {
+		catch (PortalException portalException) {
+
+			// LPS-52675
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException, portalException);
+			}
 		}
 
 		if (expirationDate == null) {
@@ -431,10 +487,13 @@ public class AnnouncementsEntryFinderImpl
 
 		Timestamp expirationDateTS = CalendarUtil.getTimestamp(expirationDate);
 
-		qPos.add(displayDateTS);
-		qPos.add(displayDateTS);
-		qPos.add(expirationDateTS);
-		qPos.add(expirationDateTS);
+		queryPos.add(displayDateTS);
+		queryPos.add(displayDateTS);
+		queryPos.add(expirationDateTS);
+		queryPos.add(expirationDateTS);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AnnouncementsEntryFinderImpl.class);
 
 }

@@ -14,19 +14,18 @@
 
 package com.liferay.portlet.asset.service.persistence.impl;
 
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.service.persistence.AssetVocabularyFinder;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.Type;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.security.permission.InlineSQLHelperUtil;
-import com.liferay.portal.service.persistence.impl.BasePersistenceImpl;
-import com.liferay.portlet.asset.model.AssetVocabulary;
 import com.liferay.portlet.asset.model.impl.AssetVocabularyImpl;
-import com.liferay.portlet.asset.service.persistence.AssetVocabularyFinder;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
 import java.util.Iterator;
@@ -36,8 +35,7 @@ import java.util.List;
  * @author Juan Fernández
  */
 public class AssetVocabularyFinderImpl
-	extends BasePersistenceImpl<AssetVocabulary>
-	implements AssetVocabularyFinder {
+	extends AssetVocabularyFinderBaseImpl implements AssetVocabularyFinder {
 
 	public static final String COUNT_BY_G_N =
 		AssetVocabularyFinder.class.getName() + ".countByG_N";
@@ -58,17 +56,17 @@ public class AssetVocabularyFinderImpl
 	@Override
 	public List<AssetVocabulary> filterFindByG_N(
 		long groupId, String name, int start, int end,
-		OrderByComparator<AssetVocabulary> obc) {
+		OrderByComparator<AssetVocabulary> orderByComparator) {
 
-		return doFindByG_N(groupId, name, start, end, obc, true);
+		return doFindByG_N(groupId, name, start, end, orderByComparator, true);
 	}
 
 	@Override
 	public List<AssetVocabulary> findByG_N(
 		long groupId, String name, int start, int end,
-		OrderByComparator<AssetVocabulary> obc) {
+		OrderByComparator<AssetVocabulary> orderByComparator) {
 
-		return doFindByG_N(groupId, name, start, end, obc, false);
+		return doFindByG_N(groupId, name, start, end, orderByComparator, false);
 	}
 
 	protected int doCountByG_N(
@@ -87,20 +85,20 @@ public class AssetVocabularyFinderImpl
 					"AssetVocabulary.vocabularyId", groupId);
 			}
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addScalar(COUNT_COLUMN_NAME, Type.LONG);
+			sqlQuery.addScalar(COUNT_COLUMN_NAME, Type.LONG);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(groupId);
-			qPos.add(name);
-			qPos.add(name);
+			queryPos.add(groupId);
+			queryPos.add(name);
+			queryPos.add(name);
 
-			Iterator<Long> itr = q.iterate();
+			Iterator<Long> iterator = sqlQuery.iterate();
 
-			if (itr.hasNext()) {
-				Long count = itr.next();
+			if (iterator.hasNext()) {
+				Long count = iterator.next();
 
 				if (count != null) {
 					return count.intValue();
@@ -109,8 +107,8 @@ public class AssetVocabularyFinderImpl
 
 			return 0;
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -119,7 +117,8 @@ public class AssetVocabularyFinderImpl
 
 	protected List<AssetVocabulary> doFindByG_N(
 		long groupId, String name, int start, int end,
-		OrderByComparator<AssetVocabulary> obc, boolean inlineSQLHelper) {
+		OrderByComparator<AssetVocabulary> orderByComparator,
+		boolean inlineSQLHelper) {
 
 		name = StringUtil.toLowerCase(name.trim());
 
@@ -130,7 +129,7 @@ public class AssetVocabularyFinderImpl
 
 			String sql = CustomSQLUtil.get(FIND_BY_G_N);
 
-			sql = CustomSQLUtil.replaceOrderBy(sql, obc);
+			sql = CustomSQLUtil.replaceOrderBy(sql, orderByComparator);
 
 			if (inlineSQLHelper) {
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
@@ -138,21 +137,21 @@ public class AssetVocabularyFinderImpl
 					"AssetVocabulary.vocabularyId", groupId);
 			}
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addEntity("AssetVocabulary", AssetVocabularyImpl.class);
+			sqlQuery.addEntity("AssetVocabulary", AssetVocabularyImpl.class);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(groupId);
-			qPos.add(name);
-			qPos.add(name);
+			queryPos.add(groupId);
+			queryPos.add(name);
+			queryPos.add(name);
 
 			return (List<AssetVocabulary>)QueryUtil.list(
-				q, getDialect(), start, end);
+				sqlQuery, getDialect(), start, end);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);

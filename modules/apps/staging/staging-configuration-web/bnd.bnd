@@ -1,6 +1,3 @@
-Bundle-Name: Staging Configuration
+Bundle-Name: Liferay Staging Configuration Web
 Bundle-SymbolicName: com.liferay.staging.configuration.web
-Bundle-Version: 1.0.0
-Include-Resource:\
-	classes,\
-	META-INF/resources=src/META-INF/resources
+Bundle-Version: 5.0.14

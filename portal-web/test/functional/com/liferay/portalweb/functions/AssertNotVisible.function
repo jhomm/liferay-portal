@@ -1,11 +1,16 @@
-<definition default="assertNotVisible">
-	<command name="assertNotVisible">
-		<execute selenium="waitForNotVisible" />
+@default = "assertNotVisible"
+definition {
 
-		<execute selenium="assertNotVisible" />
+	function assertNotVisible {
+		WaitForSPARefresh();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.waitForNotVisible();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.assertNotVisible();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

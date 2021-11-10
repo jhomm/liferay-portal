@@ -14,19 +14,21 @@
 
 package com.liferay.portlet.documentlibrary.service.impl;
 
+import com.liferay.document.library.kernel.exception.NoSuchFileVersionException;
+import com.liferay.document.library.kernel.model.DLFileEntryConstants;
+import com.liferay.document.library.kernel.model.DLFileVersion;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
+import com.liferay.document.library.kernel.service.DLFolderLocalService;
+import com.liferay.document.library.kernel.util.comparator.DLFileVersionVersionComparator;
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
-import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portlet.documentlibrary.NoSuchFileVersionException;
-import com.liferay.portlet.documentlibrary.model.DLFileEntryConstants;
-import com.liferay.portlet.documentlibrary.model.DLFileVersion;
 import com.liferay.portlet.documentlibrary.service.base.DLFileVersionLocalServiceBaseImpl;
-import com.liferay.portlet.documentlibrary.util.comparator.DLFileVersionVersionComparator;
 
 import java.util.Collections;
 import java.util.List;
@@ -108,6 +110,10 @@ public class DLFileVersionLocalServiceImpl
 
 	@Override
 	public int getFileVersionsCount(long fileEntryId, int status) {
+		if (status == WorkflowConstants.STATUS_ANY) {
+			return dlFileVersionPersistence.countByFileEntryId(fileEntryId);
+		}
+
 		return dlFileVersionPersistence.countByF_S(fileEntryId, status);
 	}
 
@@ -133,8 +139,8 @@ public class DLFileVersionLocalServiceImpl
 
 		boolean excludeWorkingCopy = true;
 
-		if (dlFileEntryLocalService.isFileEntryCheckedOut(fileEntryId)) {
-			excludeWorkingCopy = !dlFileEntryLocalService.hasFileEntryLock(
+		if (_dlFileEntryLocalService.isFileEntryCheckedOut(fileEntryId)) {
+			excludeWorkingCopy = !_dlFileEntryLocalService.hasFileEntryLock(
 				userId, fileEntryId);
 		}
 
@@ -143,11 +149,11 @@ public class DLFileVersionLocalServiceImpl
 
 	@Override
 	public void rebuildTree(long companyId) throws PortalException {
-		dlFolderLocalService.rebuildTree(companyId);
+		_dlFolderLocalService.rebuildTree(companyId);
 	}
 
 	@Override
-	public void setTreePaths(final long folderId, final String treePath)
+	public void setTreePaths(long folderId, String treePath)
 		throws PortalException {
 
 		if (treePath == null) {
@@ -158,41 +164,35 @@ public class DLFileVersionLocalServiceImpl
 			getActionableDynamicQuery();
 
 		actionableDynamicQuery.setAddCriteriaMethod(
-			new ActionableDynamicQuery.AddCriteriaMethod() {
+			dynamicQuery -> {
+				Property folderIdProperty = PropertyFactoryUtil.forName(
+					"folderId");
 
-				@Override
-				public void addCriteria(DynamicQuery dynamicQuery) {
-					Property folderIdProperty = PropertyFactoryUtil.forName(
-						"folderId");
+				dynamicQuery.add(folderIdProperty.eq(folderId));
 
-					dynamicQuery.add(folderIdProperty.eq(folderId));
+				Property treePathProperty = PropertyFactoryUtil.forName(
+					"treePath");
 
-					Property treePathProperty = PropertyFactoryUtil.forName(
-						"treePath");
-
-					dynamicQuery.add(
-						RestrictionsFactoryUtil.or(
-							treePathProperty.isNull(),
-							treePathProperty.ne(treePath)));
-				}
-
+				dynamicQuery.add(
+					RestrictionsFactoryUtil.or(
+						treePathProperty.isNull(),
+						treePathProperty.ne(treePath)));
 			});
 
 		actionableDynamicQuery.setPerformActionMethod(
-			new ActionableDynamicQuery.PerformActionMethod() {
+			(DLFileVersion dlFileVersion) -> {
+				dlFileVersion.setTreePath(treePath);
 
-				@Override
-				public void performAction(Object object) {
-					DLFileVersion dlFileVersion = (DLFileVersion)object;
-
-					dlFileVersion.setTreePath(treePath);
-
-					updateDLFileVersion(dlFileVersion);
-				}
-
+				updateDLFileVersion(dlFileVersion);
 			});
 
 		actionableDynamicQuery.performActions();
 	}
+
+	@BeanReference(type = DLFileEntryLocalService.class)
+	private DLFileEntryLocalService _dlFileEntryLocalService;
+
+	@BeanReference(type = DLFolderLocalService.class)
+	private DLFolderLocalService _dlFolderLocalService;
 
 }

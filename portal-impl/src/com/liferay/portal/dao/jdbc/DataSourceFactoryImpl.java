@@ -14,36 +14,56 @@
 
 package com.liferay.portal.dao.jdbc;
 
+import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.dao.jdbc.pool.metrics.C3P0ConnectionPoolMetrics;
+import com.liferay.portal.dao.jdbc.pool.metrics.DBCPConnectionPoolMetrics;
+import com.liferay.portal.dao.jdbc.pool.metrics.HikariConnectionPoolMetrics;
+import com.liferay.portal.dao.jdbc.pool.metrics.TomcatConnectionPoolMetrics;
 import com.liferay.portal.dao.jdbc.util.DataSourceWrapper;
+import com.liferay.portal.dao.jdbc.util.RetryDataSourceWrapper;
 import com.liferay.portal.kernel.configuration.Filter;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.dao.jdbc.DataSourceFactory;
+import com.liferay.portal.kernel.dao.jdbc.pool.metrics.ConnectionPoolMetrics;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jndi.JNDIUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
-import com.liferay.portal.kernel.util.ClassLoaderUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.util.JavaDetector;
 import com.liferay.portal.kernel.util.PropertiesUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.ServerDetector;
-import com.liferay.portal.kernel.util.SortedProperties;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.spring.hibernate.DialectDetector;
 import com.liferay.portal.util.JarUtil;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.registry.Registry;
-import com.liferay.registry.RegistryUtil;
-import com.liferay.registry.ServiceReference;
-import com.liferay.registry.ServiceTracker;
-import com.liferay.registry.ServiceTrackerCustomizer;
 
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+
+import com.zaxxer.hikari.HikariDataSource;
+
+import java.io.Closeable;
+
+import java.lang.reflect.Field;
 
 import java.net.URL;
 import java.net.URLClassLoader;
 
+import java.nio.file.Paths;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
@@ -54,23 +74,36 @@ import javax.management.ObjectName;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+
 import javax.sql.DataSource;
 
 import jodd.bean.BeanUtil;
 
+import org.apache.commons.dbcp.BasicDataSource;
 import org.apache.commons.dbcp.BasicDataSourceFactory;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.apache.tomcat.jdbc.pool.jmx.ConnectionPool;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * @author Brian Wing Shun Chan
  * @author Shuyang Zhou
  */
-@DoPrivileged
 public class DataSourceFactoryImpl implements DataSourceFactory {
 
 	@Override
 	public void destroyDataSource(DataSource dataSource) throws Exception {
+		if (_serviceRegistration != null) {
+			_serviceRegistration.unregister();
+		}
+
 		while (dataSource instanceof DataSourceWrapper) {
 			DataSourceWrapper dataSourceWrapper = (DataSourceWrapper)dataSource;
 
@@ -93,20 +126,53 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 
 			tomcatDataSource.close();
 		}
+		else if (dataSource instanceof BasicDataSource) {
+			BasicDataSource basicDataSource = (BasicDataSource)dataSource;
+
+			basicDataSource.close();
+		}
+		else if (dataSource instanceof Closeable) {
+			Closeable closeable = (Closeable)dataSource;
+
+			closeable.close();
+		}
 	}
 
 	@Override
 	public DataSource initDataSource(Properties properties) throws Exception {
-		Properties defaultProperties = PropsUtil.getProperties(
-			"jdbc.default.", true);
-
-		PropertiesUtil.merge(defaultProperties, properties);
-
-		properties = defaultProperties;
-
 		String jndiName = properties.getProperty("jndi.name");
+		String driverClassName = properties.getProperty("driverClassName");
+
+		if (JavaDetector.isIBM() &&
+			(Validator.isNotNull(jndiName) ||
+			 driverClassName.startsWith("com.mysql.cj"))) {
+
+			// LPS-120753
+
+			if (Validator.isNull(jndiName)) {
+				testDatabaseClass(driverClassName);
+			}
+
+			try {
+				_populateIBMCipherSuites(
+					Class.forName("com.mysql.cj.protocol.ExportControlled"));
+			}
+			catch (ClassNotFoundException classNotFoundException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(classNotFoundException, classNotFoundException);
+				}
+			}
+		}
 
 		if (Validator.isNotNull(jndiName)) {
+			Thread currentThread = Thread.currentThread();
+
+			ClassLoader classLoader = currentThread.getContextClassLoader();
+
+			Class<?> clazz = classLoader.getClass();
+
+			currentThread.setContextClassLoader(clazz.getClassLoader());
+
 			try {
 				Properties jndiEnvironmentProperties = PropsUtil.getProperties(
 					PropsKeys.JNDI_ENVIRONMENT, true);
@@ -115,21 +181,24 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 
 				return (DataSource)JNDIUtil.lookup(context, jndiName);
 			}
-			catch (Exception e) {
-				_log.error("Unable to lookup " + jndiName, e);
+			catch (Exception exception) {
+				_log.error("Unable to lookup " + jndiName, exception);
 			}
+			finally {
+				currentThread.setContextClassLoader(classLoader);
+			}
+		}
+		else {
+			testDatabaseClass(driverClassName);
+
+			_waitForJDBCConnection(properties);
 		}
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("Data source properties:\n");
 
-			SortedProperties sortedProperties = new SortedProperties(
-				properties);
-
-			_log.debug(PropertiesUtil.toString(sortedProperties));
+			_log.debug(PropertiesUtil.toString(properties));
 		}
-
-		testDatabaseClass(properties);
 
 		DataSource dataSource = null;
 
@@ -171,7 +240,16 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			_log.debug("Created data source " + dataSource.getClass());
 		}
 
-		return _pacl.getDataSource(dataSource);
+		if (PropsValues.RETRY_DATA_SOURCE_MAX_RETRIES > 0) {
+			DBType dbType = DBManagerUtil.getDBType(
+				DialectDetector.getDialect(dataSource));
+
+			if (dbType == DBType.SYBASE) {
+				dataSource = new RetryDataSourceWrapper(dataSource);
+			}
+		}
+
+		return dataSource;
 	}
 
 	@Override
@@ -191,27 +269,32 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 		return initDataSource(properties);
 	}
 
-	public interface PACL {
-
-		public DataSource getDataSource(DataSource dataSource);
-
-	}
-
 	protected DataSource initDataSourceC3PO(Properties properties)
 		throws Exception {
 
 		ComboPooledDataSource comboPooledDataSource =
 			new ComboPooledDataSource();
 
-		String identityToken = StringUtil.randomString();
+		comboPooledDataSource.setIdentityToken(StringUtil.randomString());
 
-		comboPooledDataSource.setIdentityToken(identityToken);
+		String connectionPropertiesString = (String)properties.remove(
+			"connectionProperties");
 
-		Enumeration<String> enu =
+		if (connectionPropertiesString != null) {
+			Properties connectionProperties = PropertiesUtil.load(
+				StringUtil.replace(
+					connectionPropertiesString, CharPool.SEMICOLON,
+					CharPool.NEW_LINE));
+
+			comboPooledDataSource.setProperties(connectionProperties);
+		}
+
+		Enumeration<String> enumeration =
 			(Enumeration<String>)properties.propertyNames();
 
-		while (enu.hasMoreElements()) {
-			String key = enu.nextElement();
+		while (enumeration.hasMoreElements()) {
+			String key = enumeration.nextElement();
+
 			String value = properties.getProperty(key);
 
 			// Map org.apache.commons.dbcp.BasicDataSource to C3PO
@@ -253,15 +336,19 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			// Set C3PO property
 
 			try {
-				BeanUtil.setProperty(comboPooledDataSource, key, value);
+				BeanUtil.pojo.setProperty(comboPooledDataSource, key, value);
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
 				if (_log.isWarnEnabled()) {
 					_log.warn(
-						"Property " + key + " is an invalid C3PO property");
+						"Property " + key + " is an invalid C3PO property",
+						exception);
 				}
 			}
 		}
+
+		registerConnectionPoolMetrics(
+			new C3P0ConnectionPoolMetrics(comboPooledDataSource));
 
 		return comboPooledDataSource;
 	}
@@ -269,26 +356,34 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 	protected DataSource initDataSourceDBCP(Properties properties)
 		throws Exception {
 
-		return BasicDataSourceFactory.createDataSource(properties);
+		DataSource dataSource = BasicDataSourceFactory.createDataSource(
+			properties);
+
+		registerConnectionPoolMetrics(
+			new DBCPConnectionPoolMetrics((BasicDataSource)dataSource));
+
+		return dataSource;
 	}
 
 	protected DataSource initDataSourceHikariCP(Properties properties)
 		throws Exception {
 
-		testLiferayPoolProviderClass(_HIKARICP_DATASOURCE_CLASS_NAME);
+		HikariDataSource hikariDataSource = new HikariDataSource();
 
-		Thread currentThread = Thread.currentThread();
+		String connectionPropertiesString = (String)properties.remove(
+			"connectionProperties");
 
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
+		if (connectionPropertiesString != null) {
+			Properties connectionProperties = PropertiesUtil.load(
+				StringUtil.replace(
+					connectionPropertiesString, CharPool.SEMICOLON,
+					CharPool.NEW_LINE));
 
-		Class<?> hikariDataSourceClazz = contextClassLoader.loadClass(
-			_HIKARICP_DATASOURCE_CLASS_NAME);
-
-		Object hikariDataSource = hikariDataSourceClazz.newInstance();
+			hikariDataSource.setDataSourceProperties(connectionProperties);
+		}
 
 		for (Map.Entry<Object, Object> entry : properties.entrySet()) {
 			String key = (String)entry.getKey();
-			String value = (String)entry.getValue();
 
 			// Map org.apache.commons.dbcp.BasicDataSource to Hikari CP
 
@@ -323,17 +418,22 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			// Set HikariCP property
 
 			try {
-				BeanUtil.setProperty(hikariDataSource, key, value);
+				BeanUtil.pojo.setProperty(
+					hikariDataSource, key, (String)entry.getValue());
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
 				if (_log.isWarnEnabled()) {
 					_log.warn(
-						"Property " + key + " is an invalid HikariCP property");
+						"Property " + key + " is an invalid HikariCP property",
+						exception);
 				}
 			}
 		}
 
-		return (DataSource)hikariDataSource;
+		registerConnectionPoolMetrics(
+			new HikariConnectionPoolMetrics(hikariDataSource));
+
+		return hikariDataSource;
 	}
 
 	protected DataSource initDataSourceTomcat(Properties properties)
@@ -343,7 +443,6 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 
 		for (Map.Entry<Object, Object> entry : properties.entrySet()) {
 			String key = (String)entry.getKey();
-			String value = (String)entry.getValue();
 
 			// Ignore Liferay property
 
@@ -366,13 +465,16 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			// Set Tomcat JDBC property
 
 			try {
-				BeanUtil.setProperty(poolProperties, key, value);
+				BeanUtil.pojo.setProperty(
+					poolProperties, key, (String)entry.getValue());
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
 				if (_log.isWarnEnabled()) {
 					_log.warn(
-						"Property " + key + " is an invalid Tomcat JDBC " +
-							"property");
+						StringBundler.concat(
+							"Property ", key, " is an invalid Tomcat JDBC ",
+							"property"),
+						exception);
 				}
 			}
 		}
@@ -385,14 +487,18 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			new org.apache.tomcat.jdbc.pool.DataSource(poolProperties);
 
 		if (poolProperties.isJmxEnabled()) {
-			Registry registry = RegistryUtil.getRegistry();
+			BundleContext bundleContext = SystemBundleUtil.getBundleContext();
 
-			_serviceTracker = registry.trackServices(
-				MBeanServer.class,
-				new MBeanServerServiceTrackerCustomizer(dataSource, poolName));
+			_serviceTracker = new ServiceTracker<>(
+				bundleContext, MBeanServer.class,
+				new MBeanServerServiceTrackerCustomizer(
+					bundleContext, dataSource, poolName));
 
 			_serviceTracker.open();
 		}
+
+		registerConnectionPoolMetrics(
+			new TomcatConnectionPoolMetrics(dataSource));
 
 		return dataSource;
 	}
@@ -457,10 +563,14 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 
 	protected boolean isPropertyTomcat(String key) {
 		if (StringUtil.equalsIgnoreCase(key, "fairQueue") ||
+			StringUtil.equalsIgnoreCase(key, "initialSize") ||
 			StringUtil.equalsIgnoreCase(key, "jdbcInterceptors") ||
 			StringUtil.equalsIgnoreCase(key, "jmxEnabled") ||
+			StringUtil.equalsIgnoreCase(key, "maxIdle") ||
+			StringUtil.equalsIgnoreCase(key, "testWhileIdle") ||
 			StringUtil.equalsIgnoreCase(key, "timeBetweenEvictionRunsMillis") ||
-			StringUtil.equalsIgnoreCase(key, "useEquals")) {
+			StringUtil.equalsIgnoreCase(key, "useEquals") ||
+			StringUtil.equalsIgnoreCase(key, "validationQuery")) {
 
 			return true;
 		}
@@ -468,15 +578,22 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 		return false;
 	}
 
-	protected void testDatabaseClass(Properties properties) throws Exception {
-		String driverClassName = properties.getProperty("driverClassName");
+	protected void registerConnectionPoolMetrics(
+		ConnectionPoolMetrics connectionPoolMetrics) {
 
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		_serviceRegistration = bundleContext.registerService(
+			ConnectionPoolMetrics.class, connectionPoolMetrics, null);
+	}
+
+	protected void testDatabaseClass(String driverClassName) throws Exception {
 		try {
 			Class.forName(driverClassName);
 		}
-		catch (ClassNotFoundException cnfe) {
-			if (!ServerDetector.isJetty() && !ServerDetector.isTomcat()) {
-				throw cnfe;
+		catch (ClassNotFoundException classNotFoundException) {
+			if (!ServerDetector.isTomcat()) {
+				throw classNotFoundException;
 			}
 
 			String url = PropsUtil.get(
@@ -485,7 +602,7 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 				PropsKeys.SETUP_DATABASE_JAR_NAME, new Filter(driverClassName));
 
 			if (Validator.isNull(url) || Validator.isNull(name)) {
-				throw cnfe;
+				throw classNotFoundException;
 			}
 
 			ClassLoader classLoader = SystemException.class.getClassLoader();
@@ -498,52 +615,126 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 				return;
 			}
 
-			JarUtil.downloadAndInstallJar(
-				new URL(url), PropsValues.LIFERAY_LIB_GLOBAL_DIR, name,
-				(URLClassLoader)classLoader);
+			try {
+				JarUtil.downloadAndInstallJar(
+					new URL(url),
+					Paths.get(PropsValues.LIFERAY_LIB_PORTAL_DIR, name),
+					(URLClassLoader)classLoader);
+			}
+			catch (Exception exception) {
+				_log.error(
+					StringBundler.concat(
+						"Unable to download and install ", name, " to ",
+						PropsValues.LIFERAY_LIB_PORTAL_DIR, " from ", url),
+					exception);
+
+				throw classNotFoundException;
+			}
 		}
 	}
 
-	protected void testLiferayPoolProviderClass(String className)
-		throws Exception {
-
+	private void _populateIBMCipherSuites(Class<?> clazz) {
 		try {
-			Class.forName(className);
-		}
-		catch (ClassNotFoundException cnfe) {
-			if (!ServerDetector.isJetty() && !ServerDetector.isTomcat()) {
-				throw cnfe;
-			}
+			SSLContext sslContext = SSLContext.getDefault();
 
-			String url = PropsUtil.get(
-				PropsKeys.SETUP_LIFERAY_POOL_PROVIDER_JAR_URL,
-				new Filter(PropsValues.JDBC_DEFAULT_LIFERAY_POOL_PROVIDER));
-			String name = PropsUtil.get(
-				PropsKeys.SETUP_LIFERAY_POOL_PROVIDER_JAR_NAME,
-				new Filter(PropsValues.JDBC_DEFAULT_LIFERAY_POOL_PROVIDER));
+			SSLEngine sslEngine = sslContext.createSSLEngine();
 
-			if (Validator.isNull(url) || Validator.isNull(name)) {
-				throw cnfe;
-			}
+			String[] ibmSupportedCipherSuites =
+				sslEngine.getSupportedCipherSuites();
 
-			ClassLoader classLoader = ClassLoaderUtil.getPortalClassLoader();
-
-			if (!(classLoader instanceof URLClassLoader)) {
-				_log.error(
-					"Unable to install JAR because the portal class loader " +
-						"is not an instance of URLClassLoader");
+			if ((ibmSupportedCipherSuites == null) ||
+				(ibmSupportedCipherSuites.length == 0)) {
 
 				return;
 			}
 
-			JarUtil.downloadAndInstallJar(
-				new URL(url), PropsValues.LIFERAY_LIB_PORTAL_DIR, name,
-				(URLClassLoader)classLoader);
+			Field allowedCiphersField = ReflectionUtil.getDeclaredField(
+				clazz, "ALLOWED_CIPHERS");
+
+			List<String> allowedCiphers = (List<String>)allowedCiphersField.get(
+				null);
+
+			for (String ibmSupportedCipherSuite : ibmSupportedCipherSuites) {
+				if (!allowedCiphers.contains(ibmSupportedCipherSuite)) {
+					allowedCiphers.add(ibmSupportedCipherSuite);
+				}
+			}
+		}
+		catch (Exception exception) {
+			_log.error(
+				"Unable to populate IBM JDK TLS cipher suite into MySQL " +
+					"Connector/J's allowed cipher list, consider disabling " +
+						"SSL for the connection",
+				exception);
 		}
 	}
 
-	private static final String _HIKARICP_DATASOURCE_CLASS_NAME =
-		"com.zaxxer.hikari.HikariDataSource";
+	private void _waitForJDBCConnection(Properties properties) {
+		int maxRetries = PropsValues.RETRY_JDBC_ON_STARTUP_MAX_RETRIES;
+
+		if (maxRetries <= 0) {
+			return;
+		}
+
+		int delay = PropsValues.RETRY_JDBC_ON_STARTUP_DELAY;
+
+		if (delay < 0) {
+			delay = 0;
+		}
+
+		String url = properties.getProperty("url");
+		String username = properties.getProperty("username");
+		String password = properties.getProperty("password");
+
+		int count = maxRetries;
+
+		while (count-- > 0) {
+			try (Connection connection = DriverManager.getConnection(
+					url, username, password)) {
+
+				if (connection != null) {
+					if (_log.isInfoEnabled()) {
+						_log.info("Successfully acquired JDBC connection");
+					}
+
+					return;
+				}
+			}
+			catch (SQLException sqlException) {
+				if (_log.isDebugEnabled()) {
+					_log.error(
+						"Unable to acquire JDBC connection", sqlException);
+				}
+			}
+
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					StringBundler.concat(
+						"At attempt ", maxRetries - count, " of ", maxRetries,
+						" in acquiring a JDBC connection after a ", delay,
+						" second ", delay));
+			}
+
+			try {
+				Thread.sleep(delay * Time.SECOND);
+			}
+			catch (InterruptedException interruptedException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						"Interruptted acquiring a JDBC connection",
+						interruptedException);
+				}
+
+				break;
+			}
+		}
+
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Unable to acquire a direct JDBC connection, proceeding to " +
+					"use a data source instead");
+		}
+	}
 
 	private static final String _TOMCAT_JDBC_POOL_OBJECT_NAME_PREFIX =
 		"TomcatJDBCPool:type=ConnectionPool,name=";
@@ -551,28 +742,21 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DataSourceFactoryImpl.class);
 
-	private static final PACL _pacl = new NoPACL();
+	private ServiceRegistration<?> _serviceRegistration;
+	private ServiceTracker<MBeanServer, MBeanServer> _serviceTracker;
 
-	private ServiceTracker <MBeanServer, MBeanServer> _serviceTracker;
-
-	private static class NoPACL implements PACL {
-
-		@Override
-		public DataSource getDataSource(DataSource dataSource) {
-			return dataSource;
-		}
-
-	}
-
-	private class MBeanServerServiceTrackerCustomizer
+	private static class MBeanServerServiceTrackerCustomizer
 		implements ServiceTrackerCustomizer<MBeanServer, MBeanServer> {
 
 		public MBeanServerServiceTrackerCustomizer(
+				BundleContext bundleContext,
 				org.apache.tomcat.jdbc.pool.DataSource dataSource,
 				String poolName)
 			throws MalformedObjectNameException {
 
+			_bundleContext = bundleContext;
 			_dataSource = dataSource;
+
 			_objectName = new ObjectName(
 				_TOMCAT_JDBC_POOL_OBJECT_NAME_PREFIX + poolName);
 		}
@@ -581,9 +765,8 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 		public MBeanServer addingService(
 			ServiceReference<MBeanServer> serviceReference) {
 
-			Registry registry = RegistryUtil.getRegistry();
-
-			MBeanServer mBeanServer = registry.getService(serviceReference);
+			MBeanServer mBeanServer = _bundleContext.getService(
+				serviceReference);
 
 			try {
 				org.apache.tomcat.jdbc.pool.ConnectionPool jdbcConnectionPool =
@@ -594,8 +777,8 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 
 				mBeanServer.registerMBean(jmxConnectionPool, _objectName);
 			}
-			catch (Exception e) {
-				_log.error(e, e);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 			}
 
 			return mBeanServer;
@@ -612,18 +795,17 @@ public class DataSourceFactoryImpl implements DataSourceFactory {
 			ServiceReference<MBeanServer> serviceReference,
 			MBeanServer mBeanServer) {
 
-			Registry registry = RegistryUtil.getRegistry();
-
-			registry.ungetService(serviceReference);
+			_bundleContext.ungetService(serviceReference);
 
 			try {
 				mBeanServer.unregisterMBean(_objectName);
 			}
-			catch (Exception e) {
-				_log.error(e, e);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 			}
 		}
 
+		private final BundleContext _bundleContext;
 		private final org.apache.tomcat.jdbc.pool.DataSource _dataSource;
 		private final ObjectName _objectName;
 

@@ -14,15 +14,18 @@
 
 package com.liferay.portal.fabric.netty.fileserver.handlers;
 
+import com.liferay.petra.concurrent.AsyncBroker;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.fabric.netty.codec.serialization.AnnotatedObjectDecoder;
 import com.liferay.portal.fabric.netty.fileserver.FileResponse;
 import com.liferay.portal.fabric.netty.util.NettyUtil;
-import com.liferay.portal.kernel.concurrent.AsyncBroker;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.test.CaptureHandler;
-import com.liferay.portal.kernel.test.JDKLoggerTestUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
-import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
@@ -36,12 +39,13 @@ import java.nio.file.attribute.FileTime;
 
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -50,8 +54,10 @@ import org.junit.Test;
 public class FileResponseChannelHandlerTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Before
 	public void setUp() {
@@ -72,7 +78,7 @@ public class FileResponseChannelHandlerTest {
 		byte[] data = FileServerTestUtil.createRandomData(1024);
 
 		long lastModified = FileServerTestUtil.getFileSystemTime(
-			System.currentTimeMillis() - Time.DAY);
+			System.currentTimeMillis() - TimeUnit.DAYS.toMillis(1));
 
 		FileResponse fileResponse = new FileResponse(
 			_path, data.length, lastModified, false);
@@ -97,6 +103,7 @@ public class FileResponseChannelHandlerTest {
 		channelHandler = _channelPipeline.first();
 
 		Assert.assertFalse(channelHandler instanceof FileUploadChannelHandler);
+
 		Assert.assertSame(fileResponse, fileUploadChannelHandler.fileResponse);
 		Assert.assertSame(fileResponse, noticeableFuture.get());
 
@@ -107,6 +114,7 @@ public class FileResponseChannelHandlerTest {
 		FileTime fileTime = Files.getLastModifiedTime(localFile);
 
 		Assert.assertEquals(lastModified, fileTime.toMillis());
+
 		Assert.assertArrayEquals(data, Files.readAllBytes(localFile));
 
 		Files.delete(localFile);
@@ -130,24 +138,24 @@ public class FileResponseChannelHandlerTest {
 		FileResponse fileResponse = new FileResponse(
 			_path, FileResponse.FILE_NOT_FOUND, -1, false);
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					FileResponseChannelHandler.class.getName(), Level.SEVERE)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				FileResponseChannelHandler.class.getName(), Level.SEVERE)) {
 
 			_fileResponseChannelHandler.channelRead(
 				_channelHandlerContext, fileResponse, null);
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			LogRecord logRecord = logRecords.get(0);
+			LogEntry logEntry = logEntries.get(0);
 
 			Assert.assertEquals(
-				"Unable to place result " + fileResponse +
-					" because no future exists with ID " +
-						fileResponse.getPath(),
-				logRecord.getMessage());
+				StringBundler.concat(
+					"Unable to place result ", fileResponse,
+					" because no future exists with ID ",
+					fileResponse.getPath()),
+				logEntry.getMessage());
 		}
 	}
 
@@ -169,24 +177,24 @@ public class FileResponseChannelHandlerTest {
 		FileResponse fileResponse = new FileResponse(
 			_path, FileResponse.FILE_NOT_MODIFIED, -1, false);
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					FileResponseChannelHandler.class.getName(), Level.SEVERE)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				FileResponseChannelHandler.class.getName(), Level.SEVERE)) {
 
 			_fileResponseChannelHandler.channelRead(
 				_channelHandlerContext, fileResponse, null);
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			LogRecord logRecord = logRecords.get(0);
+			LogEntry logEntry = logEntries.get(0);
 
 			Assert.assertEquals(
-				"Unable to place result " + fileResponse +
-					" because no future exists with ID " +
-						fileResponse.getPath(),
-				logRecord.getMessage());
+				StringBundler.concat(
+					"Unable to place result ", fileResponse,
+					" because no future exists with ID ",
+					fileResponse.getPath()),
+				logEntry.getMessage());
 		}
 	}
 

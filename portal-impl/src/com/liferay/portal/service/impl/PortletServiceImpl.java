@@ -14,16 +14,18 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceMode;
-import com.liferay.portal.model.Portlet;
-import com.liferay.portal.model.PortletApp;
-import com.liferay.portal.model.RoleConstants;
-import com.liferay.portal.security.auth.PrincipalException;
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.model.PortletApp;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.service.base.PortletServiceBaseImpl;
 
 import java.util.List;
@@ -44,17 +46,23 @@ public class PortletServiceImpl extends PortletServiceBaseImpl {
 			PortletApp portletApp = portlet.getPortletApp();
 
 			if (portletApp.isWARFile()) {
-				JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
-
-				jsonObject.put("portlet_name", portlet.getPortletName());
-				jsonObject.put(
-					"servlet_context_name", portletApp.getServletContextName());
-
-				jsonArray.put(jsonObject);
+				jsonArray.put(
+					JSONUtil.put(
+						"portlet_name", portlet.getPortletName()
+					).put(
+						"servlet_context_name",
+						portletApp.getServletContextName()
+					));
 			}
 		}
 
 		return jsonArray;
+	}
+
+	@JSONWebService
+	@Override
+	public boolean hasPortlet(long companyId, String portletId) {
+		return portletLocalService.hasPortlet(companyId, portletId);
 	}
 
 	@Override
@@ -62,7 +70,7 @@ public class PortletServiceImpl extends PortletServiceBaseImpl {
 			long companyId, String portletId, String roles, boolean active)
 		throws PortalException {
 
-		if (!roleLocalService.hasUserRole(
+		if (!_roleLocalService.hasUserRole(
 				getUserId(), companyId, RoleConstants.ADMINISTRATOR, true)) {
 
 			throw new PrincipalException();
@@ -71,5 +79,8 @@ public class PortletServiceImpl extends PortletServiceBaseImpl {
 		return portletLocalService.updatePortlet(
 			companyId, portletId, roles, active);
 	}
+
+	@BeanReference(type = RoleLocalService.class)
+	private RoleLocalService _roleLocalService;
 
 }

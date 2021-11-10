@@ -15,14 +15,18 @@
 package com.liferay.portal.service.permission;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.Role;
-import com.liferay.portal.model.RoleConstants;
-import com.liferay.portal.security.auth.PrincipalException;
-import com.liferay.portal.security.permission.ActionKeys;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.service.GroupLocalServiceUtil;
-import com.liferay.portal.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
+import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
+import com.liferay.portal.kernel.service.permission.RolePermissionUtil;
+import com.liferay.portal.kernel.service.permission.UserGroupRolePermission;
 
 /**
  * @author Brian Wing Shun Chan
@@ -69,8 +73,7 @@ public class UserGroupRolePermissionImpl implements UserGroupRolePermission {
 
 			String roleName = role.getName();
 
-			if (roleName.equals(
-					RoleConstants.ORGANIZATION_ADMINISTRATOR) ||
+			if (roleName.equals(RoleConstants.ORGANIZATION_ADMINISTRATOR) ||
 				roleName.equals(RoleConstants.ORGANIZATION_OWNER) ||
 				roleName.equals(RoleConstants.SITE_ADMINISTRATOR) ||
 				roleName.equals(RoleConstants.SITE_OWNER)) {
@@ -91,9 +94,8 @@ public class UserGroupRolePermissionImpl implements UserGroupRolePermission {
 
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	@Override
@@ -101,10 +103,9 @@ public class UserGroupRolePermissionImpl implements UserGroupRolePermission {
 			PermissionChecker permissionChecker, long groupId, long roleId)
 		throws PortalException {
 
-		Group group = GroupLocalServiceUtil.getGroup(groupId);
-		Role role = RoleLocalServiceUtil.getRole(roleId);
-
-		return contains(permissionChecker, group, role);
+		return contains(
+			permissionChecker, GroupLocalServiceUtil.getGroup(groupId),
+			RoleLocalServiceUtil.getRole(roleId));
 	}
 
 }

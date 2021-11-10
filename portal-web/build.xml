@@ -1,231 +1,54 @@
 <?xml version="1.0"?>
 
-<project name="portal-web" basedir="." default="war" xmlns:antelope="antlib:ise.antelope.tasks">
+<project basedir="." default="war" name="portal-web" xmlns:antelope="antlib:ise.antelope.tasks" xmlns:if="ant:if">
 	<import file="../build-common-web.xml" />
 
+	<property name="artifact.version" value="5.0.65" />
 	<property name="war.file" value="${ant.project.name}" />
 
-	<property name="alloy.bootstrap.version" value="3.2.0-2" />
-	<property name="alloy.version" value="3.0.1" />
-	<property name="alloy-font-awesome.version" value="2.0" />
-	<property name="frontend.js.web.dir" value="../modules/frontend/frontend-js-web" />
-	<property name="sass.portal.common.dir" value="../modules/frontend/frontend-common-css/tmp/META-INF/resources" />
-
 	<path id="jspc.common.classpath">
+		<path refid="lib.pre.classpath" />
 		<pathelement path="docroot/WEB-INF/classes" />
-		<pathelement location="${project.dir}/modules/core/registry-api/classes" />
 		<pathelement location="${project.dir}/portal-impl/portal-impl.jar" />
-		<pathelement location="${project.dir}/portal-pacl/portal-pacl.jar" />
-		<pathelement location="${project.dir}/portal-service/portal-service.jar" />
+		<pathelement location="${project.dir}/portal-kernel/portal-kernel.jar" />
 		<pathelement location="${project.dir}/util-bridges/util-bridges.jar" />
 		<pathelement location="${project.dir}/util-java/util-java.jar" />
 		<pathelement location="${project.dir}/util-taglib/util-taglib.jar" />
 		<pathelement location="${project.dir}/lib/development/activation.jar" />
+		<pathelement location="${project.dir}/lib/development/jstl-api.jar" />
+		<pathelement location="${project.dir}/lib/development/jstl-impl.jar" />
 		<pathelement location="${project.dir}/lib/development/mail.jar" />
 		<pathelement location="${project.dir}/lib/development/velocity.jar" />
-		<pathelement location="${project.dir}/lib/global/portal-settings-shared.jar" />
-		<pathelement location="${project.dir}/lib/global/portlet.jar" />
 		<pathelement location="${project.dir}/lib/portal/ant.jar" />
-		<pathelement location="${project.dir}/lib/portal/backport-concurrent.jar" />
 		<pathelement location="${project.dir}/lib/portal/commons-collections.jar" />
 		<pathelement location="${project.dir}/lib/portal/commons-fileupload.jar" />
 		<pathelement location="${project.dir}/lib/portal/commons-lang.jar" />
 		<pathelement location="${project.dir}/lib/portal/commons-logging.jar" />
 		<pathelement location="${project.dir}/lib/portal/commons-math.jar" />
-		<pathelement location="${project.dir}/lib/portal/displaytag.jar" />
 		<pathelement location="${project.dir}/lib/portal/dom4j.jar" />
 		<pathelement location="${project.dir}/lib/portal/jabsorb.jar" />
 		<pathelement location="${project.dir}/lib/portal/jcifs.jar" />
 		<pathelement location="${project.dir}/lib/portal/jcommon.jar" />
-		<pathelement location="${project.dir}/lib/portal/jdom.jar" />
 		<pathelement location="${project.dir}/lib/portal/jfreechart.jar" />
-		<pathelement location="${project.dir}/lib/portal/jstl-api.jar" />
-		<pathelement location="${project.dir}/lib/portal/jstl-impl.jar" />
-		<pathelement location="${project.dir}/lib/portal/log4j.jar" />
+		<pathelement location="${project.dir}/lib/portal/liferay-icu4j.jar" />
+		<pathelement location="${project.dir}/lib/portal/log4j-1.2-api.jar" />
+		<pathelement location="${project.dir}/lib/portal/log4j-api.jar" />
+		<pathelement location="${project.dir}/lib/portal/log4j-core.jar" />
 		<pathelement location="${project.dir}/lib/portal/openid4java.jar" />
-		<pathelement location="${project.dir}/lib/portal/rome.jar" />
-		<pathelement location="${project.dir}/lib/portal/struts-core.jar" />
-		<pathelement location="${project.dir}/lib/portal/struts-extras.jar" />
-		<pathelement location="${project.dir}/lib/portal/struts-taglib.jar" />
-		<pathelement location="${project.dir}/lib/portal/struts-tiles.jar" />
+		<pathelement location="${project.dir}/lib/portal/portlet.jar" />
 	</path>
 
-	<extension-point name="build-portal-web-dependencies" depends="build-css,build-dtd" />
-
-	<target name="build-common-css">
-		<property name="bourbon.version" value="3.2.3" />
-
-		<property name="bourbon.deploy" value="${sass.portal.common.dir}/bourbon" />
-
-		<property name="bourbon.file" value="bourbon-${bourbon.version}.zip" />
-
-		<if>
-			<not>
-				<uptodate
-					srcfile="third-party/${bourbon.file}"
-					targetfile="${bourbon.deploy}"
-				/>
-			</not>
-			<then>
-				<gradle-execute dir="../modules/frontend/frontend-css-web" task="buildBourbon" />
-			</then>
-		</if>
-	</target>
-
-	<target name="build-css" depends="build-common-css">
-		<property name="sass.tmp.dir" value="${basedir}/sass_tmp_dir" />
-
-		<mkdir dir="${sass.tmp.dir}" />
-
-		<java
-			classname="com.liferay.css.builder.CSSBuilder"
-			classpathref="portal.tools.classpath"
-			fork="true"
-			newenvironment="true"
-			outputproperty="build-css.output"
-		>
-			<jvmarg value="-Xmx1024m" />
-			<jvmarg value="-Djava.io.tmpdir=${sass.tmp.dir}" />
-			<arg value="sass.compiler.class.name=${sass.compiler.class.name}" />
-			<arg value="sass.dir=/html/portlet" />
-			<arg value="sass.docroot.dir=${basedir}/docroot" />
-			<arg value="sass.portal.common.dir=${sass.portal.common.dir}" />
-		</java>
-
-		<delete dir="${sass.tmp.dir}" />
-
-		<if>
-			<not>
-				<equals arg1="${build-css.output}" arg2="" />
-			</not>
-			<then>
-				<echo>${build-css.output}</echo>
-			</then>
-		</if>
-
-		<if>
-			<contains string="${build-css.output}" substring="Error" />
-			<then>
-				<fail>Sass to CSS Builder generated exceptions.</fail>
-			</then>
-		</if>
-	</target>
-
 	<target name="build-dtd">
-		<copy todir="docroot/dtd">
-			<fileset dir="${project.dir}/definitions" />
+		<copy
+			todir="docroot/dtd"
+		>
+			<fileset
+				dir="${project.dir}/definitions"
+			/>
 		</copy>
 	</target>
 
-	<target name="build-selenium">
-		<if>
-			<not>
-				<equals arg1="${delete.function.generated}" arg2="false" />
-			</not>
-			<then>
-				<delete dir="${basedir.unix}/test/functional-generated" />
-			</then>
-		</if>
-
-		<if>
-			<not>
-				<isset property="selenium.types" />
-			</not>
-			<then>
-				<property name="selenium.types" value="action,function,macro,path,testcase" />
-			</then>
-		</if>
-
-		<java
-			classname="com.liferay.portal.tools.seleniumbuilder.SeleniumBuilder"
-			classpathref="project.classpath"
-			failonerror="true"
-			fork="true"
-			maxmemory="1024m"
-			newenvironment="true"
-		>
-			<jvmarg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
-			<arg value="project.dir=${project.dir}" />
-			<arg value="selenium.base.dir=test/functional" />
-			<arg value="selenium.types=${selenium.types}" />
-			<arg value="test.class=${test.class}" />
-		</java>
-	</target>
-
-	<target name="build-selenium-action">
-		<antcall target="build-selenium">
-			<param name="delete.function.generated" value="false" />
-			<param name="selenium.types" value="action" />
-		</antcall>
-	</target>
-
-	<target name="build-selenium-block">
-		<antcall target="build-selenium">
-			<param name="selenium.types" value="action,function,macro,path" />
-		</antcall>
-	</target>
-
-	<target name="build-selenium-function">
-		<antcall target="build-selenium">
-			<param name="delete.function.generated" value="false" />
-			<param name="selenium.types" value="function" />
-		</antcall>
-	</target>
-
-	<target name="build-selenium-macro">
-		<antcall target="build-selenium">
-			<param name="delete.function.generated" value="false" />
-			<param name="selenium.types" value="macro" />
-		</antcall>
-	</target>
-
-	<target name="build-selenium-path">
-		<antcall target="build-selenium">
-			<param name="delete.function.generated" value="false" />
-			<param name="selenium.types" value="path" />
-		</antcall>
-	</target>
-
-	<target name="build-selenium-test-case">
-		<if>
-			<not>
-				<isset property="test.class" />
-			</not>
-			<then>
-				<fail>Please set "test.class".</fail>
-			</then>
-		</if>
-
-		<antcall target="build-selenium">
-			<param name="delete.function.generated" value="false" />
-			<param name="selenium.types" value="testcase" />
-		</antcall>
-	</target>
-
-	<target name="build-selenium-user-extensions">
-		<property file="${project.dir}/test.${user.name}.properties" />
-		<property file="${project.dir}/test.${env.COMPUTERNAME}.properties" />
-		<property file="${project.dir}/test.${env.HOST}.properties" />
-		<property file="${project.dir}/test.${env.HOSTNAME}.properties" />
-		<property file="${project.dir}/test.properties" />
-
-		<propertyregex
-			property="basedir.double.slash"
-			input="${basedir}"
-			regexp="\\"
-			replace="\\\\\\\\"
-		/>
-
-		<loadfile property="ide.js.content" srcfile="${project.dir}/tools/selenium/extensions/ide.js">
-			<filterchain>
-				<expandproperties />
-			</filterchain>
-		</loadfile>
-
-		<echo file="${project.dir}/tools/selenium/extensions/ide.${user.name}.js">${ide.js.content}</echo>
-	</target>
-
-	<target name="clean" depends="build-common-web.clean,clean-css,clean-tlds">
+	<target depends="build-common-web.clean,clean-tlds" name="clean">
 		<delete dir="classes" />
 		<delete dir="docroot/dtd" />
 		<delete dir="docroot/html/portal/aui" />
@@ -235,15 +58,12 @@
 		<delete dir="test-results" />
 	</target>
 
-	<target name="clean-css">
-		<delete includeemptydirs="true">
-			<fileset dir="docroot/html/portlet" includes="**/.sass-cache/**,**/.sass_cache_*.css,**/_sass_cache_*.css" />
-		</delete>
-	</target>
-
 	<target name="clean-tlds">
 		<delete includeemptydirs="true">
-			<fileset dir="docroot/WEB-INF/tld" includes="liferay*.tld" />
+			<fileset
+				dir="docroot/WEB-INF/tld"
+				includes="liferay*.tld"
+			/>
 		</delete>
 	</target>
 
@@ -277,11 +97,13 @@
 		<java
 			classname="org.apache.jasper.JspC"
 			classpathref="jspc.classpath"
-			fork="true"
+			fork="${fork.mode}"
 			jvm="${jspc.java.home}/bin/java"
 			newenvironment="true"
 			outputproperty="jspc.output"
 		>
+			<jvmarg if:true="${jvm.debug}" line="${jpda.settings}" />
+			<sysproperty key="log4j2.disable.jmx" value="true" />
 			<arg line="${arg.line}" />
 		</java>
 
@@ -308,17 +130,15 @@
 		<if>
 			<equals arg1="${app.server.type}" arg2="tomcat" />
 			<then>
-				<fileset dir="${jspc.classes.dir}" id="oversize.files">
+				<fileset
+					dir="${jspc.classes.dir}"
+					id="oversize.files"
+				>
 					<include name="**/*.java" />
 					<size units="K" value="700" when="more" />
 				</fileset>
 
-				<pathconvert
-					dirsep="/"
-					pathsep="${line.separator}"
-					property="oversize.files.java"
-					refid="oversize.files"
-				/>
+				<pathconvert dirsep="/" pathsep="${line.separator}" property="oversize.files.java" refid="oversize.files" />
 
 				<if>
 					<not>
@@ -326,11 +146,26 @@
 					</not>
 					<then>
 						<antelope:stringutil property="oversize.files.jsp" string="${oversize.files.java}">
-							<replace regex="\.java" replacement="" />
-							<replace regex="${jspc.classes.dir}/org/apache/jsp" replacement="docroot" />
-							<replace regex="_jsp" replacement=".jsp" />
-							<replace regex="_002d" replacement="-" />
-							<replace regex="_005f" replacement="_" />
+							<replace
+								regex="\.java"
+								replacement=""
+							/>
+							<replace
+								regex="${jspc.classes.dir}/org/apache/jsp"
+								replacement="docroot"
+							/>
+							<replace
+								regex="_jsp"
+								replacement=".jsp"
+							/>
+							<replace
+								regex="_002d"
+								replacement="-"
+							/>
+							<replace
+								regex="_005f"
+								replacement="_"
+							/>
 						</antelope:stringutil>
 
 						<fail>
@@ -346,6 +181,7 @@ ${oversize.files.jsp}</fail>
 		<javac
 			classpathref="jspc.classpath"
 			compiler="${javac.compiler}"
+			debug="${javac.debug}"
 			deprecation="${javac.deprecation}"
 			destdir="${jspc.classes.dir}"
 			encoding="${javac.encoding}"
@@ -362,87 +198,6 @@ ${oversize.files.jsp}</fail>
 		>
 			<arg line="${jspc.classes.dir}" />
 		</java>
-	</target>
-
-	<target name="compile-jonas">
-		<property name="jspc.classes.dir" value="classes/${app.server.type}" />
-
-		<path id="jspc.classpath">
-			<pathelement location="${env.JAVA_HOME}/jre/lib/rt.jar" />
-			<path refid="jspc.common.classpath" />
-			<pathelement location="${app.server.dir}/repositories/maven2-internal/org/ow2/jonas/jonas-web-container-tomcat-6.0/${app.server.jonas.version}/jonas-web-container-tomcat-6.0-${app.server.jonas.version}-ipojo.jar" />
-			<pathelement location="${app.server.dir}/repositories/maven2-internal/org/ow2/jonas/osgi/javaee-api/${app.server.jonas.version}/javaee-api-${app.server.jonas.version}.jar" />
-		</path>
-
-		<antcall target="compile-common-jsp" inheritrefs="true">
-			<param name="arg.line" value="-d ${jspc.classes.dir} -webapp ${jsp.precompile.dir}" />
-		</antcall>
-	</target>
-
-	<target name="compile-resin">
-		<if>
-			<not>
-				<isset property="jdk.7.home" />
-			</not>
-			<then>
-				<fail>
-.
-
-Please set the property "jdk.7.home" in build.properties.
-				</fail>
-			</then>
-		</if>
-
-		<property name="jspc.classes.dir" value="classes/${app.server.type}" />
-
-		<path id="jspc.classpath">
-			<pathelement location="${jdk.7.home}/jre/lib/rt.jar" />
-			<pathelement location="${jdk.7.home}/lib/tools.jar" />
-			<path refid="jspc.common.classpath" />
-			<pathelement location="${app.server.dir}/lib/resin.jar" />
-			<pathelement location="${project.dir}/lib/portal/abdera.jar" />
-			<pathelement location="${project.dir}/lib/portal/axis.jar" />
-			<pathelement location="${project.dir}/lib/portal/commons-beanutils.jar" />
-			<pathelement location="${project.dir}/lib/portal/commons-configuration.jar" />
-			<pathelement location="${project.dir}/lib/portal/commons-digester.jar" />
-			<pathelement location="${project.dir}/lib/portal/commons-httpclient.jar" />
-			<pathelement location="${project.dir}/lib/portal/portletbridge-core.jar" />
-			<pathelement location="${project.dir}/lib/portal/portletbridge-portlet.jar" />
-			<pathelement location="${project.dir}/lib/portal/spring-beans.jar" />
-			<pathelement location="${project.dir}/lib/portal/spring-context.jar" />
-			<pathelement location="${project.dir}/lib/portal/spring-core.jar" />
-			<pathelement location="${project.dir}/lib/portal/spring-expression.jar" />
-			<pathelement location="${project.dir}/lib/portal/spring-web.jar" />
-			<pathelement location="${project.dir}/lib/portal/spring-webmvc.jar" />
-			<pathelement location="${project.dir}/lib/portal/struts-el.jar" />
-			<pathelement location="${project.dir}/lib/portal/tika-core.jar" />
-		</path>
-
-		<delete dir="${jspc.classes.dir}" quiet="true" />
-
-		<delete file="jspc_error" />
-
-		<java
-			classname="com.liferay.portal.tools.jspc.resin.BatchJspCompiler"
-			classpathref="jspc.classpath"
-			fork="true"
-			maxmemory="512m"
-			newenvironment="true"
-			jvm="${jdk.7.home}\bin\java"
-		>
-			<arg line="docroot ${jspc.classes.dir}" />
-		</java>
-
-		<if>
-			<available file="jspc_error" />
-			<then>
-				<loadfile property="jspc_error.content" srcfile="jspc_error" />
-
-				<fail>${jspc_error.content}</fail>
-			</then>
-		</if>
-
-		<delete dir="resin-data" quiet="true" />
 	</target>
 
 	<target name="compile-tomcat">
@@ -472,146 +227,70 @@ Please set the property "jdk.7.home" in build.properties.
 			<pathelement location="${app.server.dir}/lib/servlet-api.jar" />
 			<pathelement location="${app.server.dir}/lib/tomcat-api.jar" />
 			<pathelement location="${app.server.dir}/lib/tomcat-util.jar" />
+			<pathelement location="${app.server.dir}/lib/tomcat-util-scan.jar" />
 			<pathelement location="${app.server.bin.dir}/tomcat-juli.jar" />
 		</path>
 
-		<antcall target="compile-common-jsp" inheritrefs="true">
-			<param name="arg.line" value="-d ${jspc.classes.dir} -webapp ${jsp.precompile.dir}" />
+		<antcall inheritrefs="true" target="compile-common-jsp">
+			<param name="arg.line" value="-d ${basedir}/${jspc.classes.dir} -poolingEnabled false -webapp ${basedir}/${jsp.precompile.dir}" />
 		</antcall>
 	</target>
 
-	<target name="deploy" depends="build-portal-web-dependencies">
+	<target depends="build-dtd" name="deploy">
 		<manifest-macro />
 
 		<antcall target="build-common-web.deploy" />
 
 		<if>
-			<equals arg1="${jsp.precompile}" arg2="on" />
-			<then>
-				<if>
-					<equals arg1="${app.server.type}" arg2="jonas" />
-					<then>
-						<antcall target="compile-jonas" />
-
-						<copy todir="${app.server.dir}/work/jonas/localhost/_" preservelastmodified="true">
-							<fileset dir="classes/${app.server.type}">
-								<exclude name="**/*.jspc_error" />
-								<exclude name="**/*.java" />
-							</fileset>
-						</copy>
-					</then>
-					<elseif>
-						<equals arg1="${app.server.type}" arg2="resin" />
-						<then>
-							<antcall target="compile-resin" />
-
-							<copy todir="${app.server.portal.dir}/WEB-INF/work" preservelastmodified="true">
-								<fileset dir="classes/${app.server.type}">
-									<exclude name="**/*.jspc_error" />
-									<exclude name="**/*.java" />
-								</fileset>
-							</copy>
-						</then>
-					</elseif>
-					<elseif>
-						<equals arg1="${app.server.type}" arg2="tomcat" />
-						<then>
-							<antcall target="compile-tomcat" />
-
-							<copy todir="${app.server.dir}/work/Catalina/localhost/_" preservelastmodified="true">
-								<fileset dir="classes/${app.server.type}">
-									<exclude name="**/*.jspc_error" />
-									<exclude name="**/*.java" />
-								</fileset>
-							</copy>
-						</then>
-					</elseif>
-				</if>
-			</then>
-		</if>
-	</target>
-
-	<target name="deploy-fast">
-		<if>
-			<or>
-				<equals arg1="${app.server.type}" arg2="jetty" />
-				<equals arg1="${app.server.type}" arg2="resin" />
+			<and>
+				<equals arg1="${jsp.precompile}" arg2="on" />
 				<equals arg1="${app.server.type}" arg2="tomcat" />
-			</or>
+			</and>
 			<then>
-				<copy todir="${app.server.portal.dir}" preservelastmodified="true">
-					<fileset dir="docroot">
-						<include name="**/*.css" />
-						<include name="**/*.dtd" />
-						<include name="**/*.ftl" />
-						<include name="**/*.gif" />
-						<include name="**/*.jar" />
-						<include name="**/*.jpg" />
-						<include name="**/*.js" />
-						<include name="**/*.jsp" />
-						<include name="**/*.jspf" />
-						<include name="**/*.png" />
-						<include name="**/*.properties" />
-						<include name="**/*.tld" />
-						<include name="**/*.vm" />
-						<include name="**/*.wsdd" />
-						<include name="**/*.xml" />
+				<antcall target="compile-tomcat" />
+
+				<copy
+					preservelastmodified="true"
+					todir="${app.server.dir}/work/Catalina/localhost/ROOT"
+				>
+					<fileset
+						dir="classes/${app.server.type}"
+					>
+						<exclude name="**/*.jspc_error" />
 					</fileset>
-					<filtermapper>
-						<replacestring from=".sass-cache" to="" />
-					</filtermapper>
 				</copy>
 			</then>
 		</if>
 	</target>
 
-	<target name="format-js">
-		<taskdef classname="com.philmander.jshint.JsHintAntTask" classpath="${project.dir}/tools/ant-jshint-2.0.5.jar" name="jshint" />
-
-		<jshint
-			dir="${project.dir}"
-			globals="alert: true, AUI: true, confirm: true, Liferay: true, prompt: true, submitForm: true, themeDisplay: true, YUI: true"
-			options="browser=true,curly=true,devel=false,eqeqeq=false,eqnull=true,evil=true,forin=false,funcscope=true,nonew=false,nonstandard=true,scripturl=true,strict=false,trailing=true,yui=true"
-		>
-			<exclude name="**/aui/**" />
-			<exclude name="**/dynamiccss/dependencies/r2*.js" />
-			<exclude name="**/editors/**" />
-			<exclude name="**/misc/**" />
-			<exclude name="**/selenium/**" />
-			<include name="**/*.js" />
-		</jshint>
+	<target name="update-gradle-cache">
+		<gradle-execute forcedcacheenabled="false" setupbinariescache="false" task="updateGradleCache">
+			<arg value="--build-file=build-test.gradle" />
+			<arg value="-Dmaven.local.ignore=true" />
+		</gradle-execute>
 	</target>
 
-	<target name="node-execute">
-		<ant antfile="build-node.xml" dir="${sdk.dir}" target="node-execute" inheritAll="false" />
-	</target>
-
-	<target name="npm-execute">
-		<ant antfile="build-node.xml" dir="${sdk.dir}" target="npm-execute" inheritAll="false" />
-	</target>
-
-	<target name="war" depends="build-portal-web-dependencies">
+	<target depends="build-dtd" name="war">
 		<manifest-macro />
 
-		<war
-			destfile="${war.file}.war"
-			webxml="docroot/WEB-INF/web.xml"
-		>
-            <fileset dir="docroot">
-                <exclude name="**/css/*.scss" />
-                <exclude name="**/.sass-cache/**" />
-            </fileset>
-
-            <mappedresources>
-                <fileset dir="docroot" includes="**/.sass-cache/*.css" />
-                <filtermapper>
-                    <replacestring from=".sass-cache" to="" />
-                </filtermapper>
-            </mappedresources>
-
-			<metainf dir="${project.dir}/oss-licenses">
-				<exclude name="**/development/**" />
-			</metainf>
-		</war>
+		<if>
+			<istrue value="${build.portal.artifacts.enabled}" />
+			<then>
+				<war
+					destfile="${war.file}.war"
+					webxml="docroot/WEB-INF/web.xml"
+				>
+					<fileset
+						dir="docroot"
+					/>
+					<metainf dir="${project.dir}/oss-licenses">
+						<exclude name="**/development/**" />
+					</metainf>
+				</war>
+			</then>
+			<else>
+				<download-latest-artifact destfile="${war.file}.war" />
+			</else>
+		</if>
 	</target>
 </project>

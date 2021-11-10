@@ -14,10 +14,12 @@
 
 package com.liferay.util.ant;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 
 import java.io.IOException;
 
@@ -46,12 +48,11 @@ public class AntUtil {
 
 				StringBundler sb = new StringBundler();
 
-				try {
-					boolean first = true;
-
-					UnsyncBufferedReader unsyncBufferedReader =
+				try (UnsyncBufferedReader unsyncBufferedReader =
 						new UnsyncBufferedReader(
-							new UnsyncStringReader(buildEvent.getMessage()));
+							new UnsyncStringReader(buildEvent.getMessage()))) {
+
+					boolean first = true;
 
 					String line = unsyncBufferedReader.readLine();
 
@@ -68,7 +69,10 @@ public class AntUtil {
 						line = unsyncBufferedReader.readLine();
 					}
 				}
-				catch (IOException ioe) {
+				catch (IOException ioException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(ioException, ioException);
+					}
 				}
 
 				String message = sb.toString();
@@ -86,12 +90,14 @@ public class AntUtil {
 		};
 
 		buildLogger.setErrorPrintStream(System.err);
-		buildLogger.setMessageOutputLevel(Project.MSG_INFO);
+		buildLogger.setMessageOutputLevel(Project.MSG_WARN);
 		buildLogger.setOutputPrintStream(System.out);
 
 		project.addBuildListener(buildLogger);
 
 		return project;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(AntUtil.class);
 
 }

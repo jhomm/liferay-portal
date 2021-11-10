@@ -20,6 +20,7 @@ import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -29,6 +30,11 @@ import org.junit.Test;
 @NewEnv(type = NewEnv.Type.JVM)
 public class AspectJNewEnvJVMTestRuleTest {
 
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
 	@NewEnv(type = NewEnv.Type.NONE)
 	@Test
 	public void testStaticUtil() {
@@ -36,14 +42,14 @@ public class AspectJNewEnvJVMTestRuleTest {
 		Assert.assertEquals(2, StaticUtil.getValue2());
 	}
 
-	@AdviseWith(adviceClasses = {AdviceClass1.class})
+	@AdviseWith(adviceClasses = AdviceClass1.class)
 	@Test
 	public void testStaticUtilMocking1() {
 		Assert.assertEquals(3, StaticUtil.getValue1());
 		Assert.assertEquals(2, StaticUtil.getValue2());
 	}
 
-	@AdviseWith(adviceClasses = {AdviceClass2.class})
+	@AdviseWith(adviceClasses = AdviceClass2.class)
 	@Test
 	public void testStaticUtilMocking2() {
 		Assert.assertEquals(1, StaticUtil.getValue1());
@@ -57,7 +63,7 @@ public class AspectJNewEnvJVMTestRuleTest {
 		Assert.assertEquals(4, StaticUtil.getValue2());
 	}
 
-	@AdviseWith(adviceClasses = {AdviceClass3.class})
+	@AdviseWith(adviceClasses = AdviceClass3.class)
 	@Test
 	public void testStaticUtilMocking4() {
 		Assert.assertEquals(5, StaticUtil.getValue1());
@@ -67,13 +73,9 @@ public class AspectJNewEnvJVMTestRuleTest {
 
 			Assert.fail();
 		}
-		catch (IllegalStateException ise) {
+		catch (IllegalStateException illegalStateException) {
 		}
 	}
-
-	@Rule
-	public final AspectJNewEnvTestRule aspectJNewEnvTestRule =
-		AspectJNewEnvTestRule.INSTANCE;
 
 	@Aspect
 	private static class AdviceClass1 {

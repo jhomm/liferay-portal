@@ -24,15 +24,19 @@ import javax.servlet.http.HttpServletRequest;
  * @author Julio Camarero
  * @author Jorge Ferrer
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+ *          com.liferay.portal.workflow.taglib.servlet.taglib.WorkflowStatusTag}
  */
+@Deprecated
 public class WorkflowStatusTag extends BaseWorkflowStatusTag {
 
 	@Override
 	protected String getPage() {
-		String view = getView();
+		String markupView = getMarkupView();
 
-		if (Validator.isNotNull(view)) {
-			return "/html/taglib/aui/workflow_status/" + view + "/page.jsp";
+		if (Validator.isNotNull(markupView)) {
+			return "/html/taglib/aui/workflow_status/" + markupView +
+				"/page.jsp";
 		}
 
 		return "/html/taglib/aui/workflow_status/page.jsp";
@@ -44,8 +48,8 @@ public class WorkflowStatusTag extends BaseWorkflowStatusTag {
 	}
 
 	@Override
-	protected void setAttributes(HttpServletRequest request) {
-		super.setAttributes(request);
+	protected void setAttributes(HttpServletRequest httpServletRequest) {
+		super.setAttributes(httpServletRequest);
 
 		Object bean = getBean();
 
@@ -69,15 +73,14 @@ public class WorkflowStatusTag extends BaseWorkflowStatusTag {
 				"aui:model-context:model");
 		}
 
-		setNamespacedAttribute(request, "bean", bean);
-		setNamespacedAttribute(request, "helpMessage", helpMessage);
-		setNamespacedAttribute(request, "model", model);
+		setNamespacedAttribute(httpServletRequest, "bean", bean);
+		setNamespacedAttribute(httpServletRequest, "helpMessage", helpMessage);
+		setNamespacedAttribute(httpServletRequest, "model", model);
 	}
 
 	private static final boolean _CLEAN_UP_SET_ATTRIBUTES = true;
 
 	private static final String _HELP_MESSAGE_DEFAULT =
-		"a-new-version-is-created-automatically-if-this-content-is-" +
-			"modified";
+		"a-new-version-is-created-automatically-if-this-content-is-modified";
 
 }

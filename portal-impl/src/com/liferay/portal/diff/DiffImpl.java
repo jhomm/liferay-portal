@@ -14,10 +14,10 @@
 
 package com.liferay.portal.diff;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.diff.DiffResult;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 
 import java.io.Reader;
 
@@ -95,7 +95,7 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 
 		// Make a a Diff of these lines and iterate over their Differences.
 
-		Diff diff = new Diff(sourceStringList, targetStringList);
+		Diff<String> diff = new Diff(sourceStringList, targetStringList);
 
 		List<Difference> differences = diff.diff();
 
@@ -184,7 +184,7 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 		return results;
 	}
 
-	private static List<String> _addMargins(
+	private List<String> _addMargins(
 		List<String> stringList, int startPos, int margin) {
 
 		List<String> changedLines = new ArrayList<>();
@@ -208,7 +208,7 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 		return changedLines;
 	}
 
-	private static void _addResults(
+	private void _addResults(
 		List<DiffResult> results, List<String> stringList,
 		List<String> changedLines, int start, int end) {
 
@@ -219,7 +219,7 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 		results.add(diffResult);
 	}
 
-	private static int _calculateMargin(
+	private int _calculateMargin(
 		List<DiffResult> sourceResults, List<DiffResult> targetResults,
 		int sourceBeginPos, int targetBeginPos, int margin) {
 
@@ -235,7 +235,7 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 		return targetMargin;
 	}
 
-	private static void _checkCharDiffs(
+	private void _checkCharDiffs(
 		List<DiffResult> sourceResults, List<DiffResult> targetResults,
 		List<String> sourceStringList, List<String> targetStringList,
 		String addedMarkerStart, String addedMarkerEnd,
@@ -297,8 +297,10 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 
 		// Lines are aligned, check for differences of the following lines.
 
-		for (; i <= difference.getDeletedEnd() && j <= difference.getAddedEnd();
-				i++, j++) {
+		for (;
+			 (i <= difference.getDeletedEnd()) &&
+			 (j <= difference.getAddedEnd());
+			 i++, j++) {
 
 			if (!_isMaxLineLengthExceeded(
 					sourceStringList.get(i), targetStringList.get(j))) {
@@ -360,7 +362,7 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 		}
 	}
 
-	private static int _checkOverlapping(
+	private int _checkOverlapping(
 		List<DiffResult> results, int startPos, int margin) {
 
 		if (results.isEmpty() || ((startPos - margin) < 0)) {
@@ -380,10 +382,12 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 
 		int currentChangedLine = startPos - margin;
 
-		if ((changedLines.size() == 1) &&
-			changedLines.get(0).equals(CONTEXT_LINE)) {
+		if (changedLines.size() == 1) {
+			String changedLine = changedLines.get(0);
 
-			currentChangedLine = currentChangedLine + 1;
+			if (changedLine.equals(CONTEXT_LINE)) {
+				currentChangedLine = currentChangedLine + 1;
+			}
 		}
 
 		if (currentChangedLine < lastChangedLine) {
@@ -393,7 +397,7 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 		return margin;
 	}
 
-	private static void _highlightChars(
+	private void _highlightChars(
 		List<String> stringList, String markerStart, String markerEnd,
 		int startPos, int endPos) {
 
@@ -406,7 +410,7 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 		stringList.set(endPos, end);
 	}
 
-	private static void _highlightLines(
+	private void _highlightLines(
 		List<String> stringList, String markerStart, String markerEnd,
 		int startPos, int endPos) {
 
@@ -415,7 +419,7 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 		}
 	}
 
-	private static boolean _isMaxLineLengthExceeded(
+	private boolean _isMaxLineLengthExceeded(
 		String sourceString, String targetString) {
 
 		if ((sourceString.length() > _DIFF_MAX_LINE_LENGTH) ||
@@ -427,7 +431,7 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 		return false;
 	}
 
-	private static boolean _lineDiff(
+	private boolean _lineDiff(
 		List<DiffResult> sourceResults, List<DiffResult> targetResults,
 		List<String> sourceStringList, List<String> targetStringList,
 		String addedMarkerStart, String addedMarkerEnd,
@@ -442,7 +446,7 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 		List<String> sourceList = _toList(source);
 		List<String> targetList = _toList(target);
 
-		Diff diff = new Diff(sourceList, targetList);
+		Diff<String> diff = new Diff<>(sourceList, targetList);
 
 		List<Difference> differences = diff.diff();
 
@@ -456,14 +460,14 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 			for (Difference difference : differences) {
 				if (difference.getDeletedEnd() != Difference.NONE) {
 					deletedChars +=
-						(difference.getDeletedEnd() -
-							difference.getDeletedStart() + 1);
+						difference.getDeletedEnd() -
+							difference.getDeletedStart() + 1;
 				}
 
 				if (difference.getAddedEnd() != Difference.NONE) {
 					addedChars +=
-						(difference.getAddedEnd() - difference.getAddedStart() +
-							1);
+						difference.getAddedEnd() - difference.getAddedStart() +
+							1;
 				}
 			}
 		}
@@ -552,19 +556,17 @@ public class DiffImpl implements com.liferay.portal.kernel.diff.Diff {
 		return true;
 	}
 
-	private static List<String> _toList(String line) {
-		String[] lineParts = line.split(StringPool.BLANK);
+	private List<String> _toList(String line) {
+		List<String> result = new ArrayList<>(line.length());
 
-		List<String> result = new ArrayList<>();
-
-		for (int i = 1; i < lineParts.length; i++) {
-			result.add(lineParts[i]);
+		for (int i = 0; i < line.length(); i++) {
+			result.add(line.substring(i, i + 1));
 		}
 
 		return result;
 	}
 
-	private static String _toString(List<String> line) {
+	private String _toString(List<String> line) {
 		if (line.isEmpty()) {
 			return StringPool.BLANK;
 		}

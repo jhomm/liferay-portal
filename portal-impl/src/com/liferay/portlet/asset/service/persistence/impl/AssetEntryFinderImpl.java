@@ -14,27 +14,28 @@
 
 package com.liferay.portlet.asset.service.persistence.impl;
 
+import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
+import com.liferay.asset.kernel.service.persistence.AssetEntryFinder;
+import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.Type;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CalendarUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portlet.asset.model.AssetCategory;
-import com.liferay.portlet.asset.model.AssetEntry;
 import com.liferay.portlet.asset.model.impl.AssetEntryImpl;
-import com.liferay.portlet.asset.service.persistence.AssetCategoryUtil;
-import com.liferay.portlet.asset.service.persistence.AssetEntryFinder;
-import com.liferay.portlet.asset.service.persistence.AssetEntryQuery;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
 import java.sql.Timestamp;
@@ -51,13 +52,16 @@ import java.util.List;
  * @author Shuyang Zhou
  */
 public class AssetEntryFinderImpl
-	extends BasePersistenceImpl<AssetEntry> implements AssetEntryFinder {
+	extends AssetEntryFinderBaseImpl implements AssetEntryFinder {
 
 	public static final String FIND_BY_AND_CATEGORY_IDS =
 		AssetEntryFinder.class.getName() + ".findByAndCategoryIds";
 
 	public static final String FIND_BY_AND_TAG_IDS =
 		AssetEntryFinder.class.getName() + ".findByAndTagIds";
+
+	public static final String FIND_PRIORITY_BY_C_C =
+		AssetEntryFinder.class.getName() + ".findPriorityByC_C";
 
 	@Override
 	public int countEntries(AssetEntryQuery entryQuery) {
@@ -66,12 +70,12 @@ public class AssetEntryFinderImpl
 		try {
 			session = openSession();
 
-			SQLQuery q = buildAssetQuerySQL(entryQuery, true, session);
+			SQLQuery sqlQuery = buildAssetQuerySQL(entryQuery, true, session);
 
-			Iterator<Long> itr = q.iterate();
+			Iterator<Long> iterator = sqlQuery.iterate();
 
-			if (itr.hasNext()) {
-				Long count = itr.next();
+			if (iterator.hasNext()) {
+				Long count = iterator.next();
 
 				if (count != null) {
 					return count.intValue();
@@ -80,8 +84,8 @@ public class AssetEntryFinderImpl
 
 			return 0;
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -95,13 +99,56 @@ public class AssetEntryFinderImpl
 		try {
 			session = openSession();
 
-			SQLQuery q = buildAssetQuerySQL(entryQuery, false, session);
+			SQLQuery sqlQuery = buildAssetQuerySQL(entryQuery, false, session);
 
 			return (List<AssetEntry>)QueryUtil.list(
-				q, getDialect(), entryQuery.getStart(), entryQuery.getEnd());
+				sqlQuery, getDialect(), entryQuery.getStart(),
+				entryQuery.getEnd());
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
+	 */
+	@Deprecated
+	@Override
+	public double findPriorityByC_C(long classNameId, long classPK) {
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			String sql = CustomSQLUtil.get(FIND_PRIORITY_BY_C_C);
+
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
+
+			sqlQuery.addScalar("priority", Type.DOUBLE);
+
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
+
+			queryPos.add(classNameId);
+			queryPos.add(classPK);
+
+			Iterator<Double> iterator = sqlQuery.iterate();
+
+			if (iterator.hasNext()) {
+				Double priority = iterator.next();
+
+				if (priority != null) {
+					return priority;
+				}
+			}
+
+			return 0;
+		}
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -168,8 +215,6 @@ public class AssetEntryFinderImpl
 	}
 
 	protected void buildAnyCategoriesSQL(long[] categoryIds, StringBundler sb) {
-		String sql = CustomSQLUtil.get(FIND_BY_AND_CATEGORY_IDS);
-
 		String categoryIdsString = null;
 
 		if (PropsValues.ASSET_CATEGORIES_SEARCH_HIERARCHICAL) {
@@ -190,8 +235,12 @@ public class AssetEntryFinderImpl
 		}
 
 		sb.append(" AND (");
+
+		String sql = CustomSQLUtil.get(FIND_BY_AND_CATEGORY_IDS);
+
 		sb.append(
 			StringUtil.replace(sql, "[$CATEGORY_ID$]", categoryIdsString));
+
 		sb.append(StringPool.CLOSE_PARENTHESIS);
 	}
 
@@ -215,16 +264,17 @@ public class AssetEntryFinderImpl
 	protected SQLQuery buildAssetQuerySQL(
 		AssetEntryQuery entryQuery, boolean count, Session session) {
 
-		StringBundler sb = new StringBundler(64);
+		StringBundler sb = new StringBundler(67);
 
 		if (count) {
-			sb.append(
-				"SELECT COUNT(DISTINCT AssetEntry.entryId) AS COUNT_VALUE ");
+			sb.append("SELECT COUNT(DISTINCT AssetEntry.entryId) AS ");
+			sb.append("COUNT_VALUE ");
 		}
 		else {
 			sb.append("SELECT {AssetEntry.*} ");
 
 			boolean selectRatings = false;
+			boolean selectViewCount = false;
 
 			String orderByCol1 = entryQuery.getOrderByCol1();
 			String orderByCol2 = entryQuery.getOrderByCol2();
@@ -234,7 +284,15 @@ public class AssetEntryFinderImpl
 
 				selectRatings = true;
 
-				sb.append(", TEMP_TABLE.averageScore ");
+				sb.append(", TEMP_TABLE_ASSET_ENTRY.averageScore ");
+			}
+
+			if (orderByCol1.equals("viewCount") ||
+				orderByCol2.equals("viewCount")) {
+
+				selectViewCount = true;
+
+				sb.append(", TEMP_TABLE_ASSET_ENTRY.viewCount ");
 			}
 
 			sb.append("FROM (SELECT DISTINCT AssetEntry.entryId ");
@@ -242,35 +300,70 @@ public class AssetEntryFinderImpl
 			if (selectRatings) {
 				sb.append(", RatingsStats.averageScore ");
 			}
+
+			if (selectViewCount) {
+				sb.append(", ViewCountEntry.viewCount ");
+			}
 		}
 
 		sb.append("FROM AssetEntry ");
 
-		if (entryQuery.getAnyTagIds().length > 0) {
-			sb.append("INNER JOIN ");
-			sb.append("AssetEntries_AssetTags ON ");
-			sb.append("(AssetEntries_AssetTags.entryId = ");
-			sb.append("AssetEntry.entryId) ");
-			sb.append("INNER JOIN ");
-			sb.append("AssetTag ON ");
-			sb.append("(AssetTag.tagId = AssetEntries_AssetTags.tagId) ");
+		if (ArrayUtil.isNotEmpty(entryQuery.getAnyTagIds())) {
+			sb.append("INNER JOIN AssetEntries_AssetTags ON ");
+			sb.append("(AssetEntries_AssetTags.entryId = AssetEntry.entryId) ");
+			sb.append("INNER JOIN AssetTag ON (AssetTag.tagId = ");
+			sb.append("AssetEntries_AssetTags.tagId) ");
 		}
 
 		if (entryQuery.getLinkedAssetEntryId() > 0) {
-			sb.append("INNER JOIN ");
-			sb.append("AssetLink ON ");
-			sb.append("(AssetEntry.entryId = AssetLink.entryId1) ");
-			sb.append("OR (AssetEntry.entryId = AssetLink.entryId2)");
+			sb.append("INNER JOIN (SELECT AssetLink.entryId1 AS entryId ");
+			sb.append("FROM AssetLink WHERE AssetLink.entryId2 = ? AND ");
+			sb.append("AssetLink.entryId1 != ? UNION SELECT ");
+			sb.append("AssetLink.entryId2 AS entryId FROM AssetLink WHERE ");
+			sb.append("AssetLink.entryId1 = ? AND AssetLink.entryId2 != ? ) ");
+			sb.append("TEMP_TABLE_ASSET_LINK ON ");
+			sb.append("(TEMP_TABLE_ASSET_LINK.entryId = AssetEntry.entryId) ");
 		}
 
-		if (entryQuery.getOrderByCol1().equals("ratings") ||
-			entryQuery.getOrderByCol2().equals("ratings")) {
+		if (entryQuery.isExcludeZeroViewCount()) {
+			sb.append("INNER JOIN ViewCountEntry ON (");
+			sb.append("ViewCountEntry.companyId = AssetEntry.companyId) AND ");
+			sb.append("(ViewCountEntry.classNameId = ");
+			sb.append(
+				ClassNameLocalServiceUtil.getClassNameId(AssetEntry.class));
+			sb.append(") AND (ViewCountEntry.classPK = AssetEntry.entryId) ");
+			sb.append("AND (ViewCountEntry.viewCount > 0) ");
+		}
 
-			sb.append(" LEFT JOIN ");
-			sb.append("RatingsStats ON ");
-			sb.append("(RatingsStats.classNameId = ");
-			sb.append("AssetEntry.classNameId) AND ");
-			sb.append("(RatingsStats.classPK = AssetEntry.classPK)");
+		String orderByCol1 = AssetEntryQuery.ORDER_BY_COLUMNS[2];
+		String orderByCol2 = AssetEntryQuery.ORDER_BY_COLUMNS[2];
+
+		for (String orderByColumn : AssetEntryQuery.ORDER_BY_COLUMNS) {
+			if (orderByColumn.equals(entryQuery.getOrderByCol1())) {
+				orderByCol1 = orderByColumn;
+			}
+
+			if (orderByColumn.equals(entryQuery.getOrderByCol2())) {
+				orderByCol2 = orderByColumn;
+			}
+		}
+
+		if (orderByCol1.equals("ratings") || orderByCol2.equals("ratings")) {
+			sb.append(" LEFT JOIN RatingsStats ON (RatingsStats.classNameId ");
+			sb.append("= AssetEntry.classNameId) AND (RatingsStats.classPK = ");
+			sb.append("AssetEntry.classPK)");
+		}
+
+		if (!entryQuery.isExcludeZeroViewCount() &&
+			(orderByCol1.equals("viewCount") ||
+			 orderByCol2.equals("viewCount"))) {
+
+			sb.append(" LEFT JOIN ViewCountEntry ON ");
+			sb.append("(ViewCountEntry.companyId = AssetEntry.companyId) AND ");
+			sb.append("(ViewCountEntry.classNameId = ");
+			sb.append(
+				ClassNameLocalServiceUtil.getClassNameId(AssetEntry.class));
+			sb.append(") AND (ViewCountEntry.classPK = AssetEntry.entryId) ");
 		}
 
 		sb.append("WHERE ");
@@ -278,8 +371,6 @@ public class AssetEntryFinderImpl
 		int whereIndex = sb.index();
 
 		if (entryQuery.getLinkedAssetEntryId() > 0) {
-			sb.append(" AND ((AssetLink.entryId1 = ?) OR ");
-			sb.append("(AssetLink.entryId2 = ?))");
 			sb.append(" AND (AssetEntry.entryId != ?)");
 		}
 
@@ -291,16 +382,12 @@ public class AssetEntryFinderImpl
 			sb.append(" AND (visible = ?)");
 		}
 
-		if (entryQuery.isExcludeZeroViewCount()) {
-			sb.append(" AND (AssetEntry.viewCount > 0)");
-		}
-
 		// Keywords
 
 		if (Validator.isNotNull(entryQuery.getKeywords())) {
-			sb.append(" AND ((AssetEntry.userName LIKE ?) OR");
-			sb.append(" (AssetEntry.title LIKE ?) OR");
-			sb.append(" (AssetEntry.description LIKE ?))");
+			sb.append(" AND ((AssetEntry.userName LIKE ?) OR ");
+			sb.append("(AssetEntry.title LIKE ?) OR (AssetEntry.description ");
+			sb.append("LIKE ?))");
 		}
 		else if (Validator.isNotNull(entryQuery.getUserName()) ||
 				 Validator.isNotNull(entryQuery.getTitle()) ||
@@ -347,43 +434,43 @@ public class AssetEntryFinderImpl
 
 		// Category conditions
 
-		if (entryQuery.getAllCategoryIds().length > 0) {
+		if (ArrayUtil.isNotEmpty(entryQuery.getAllCategoryIds())) {
 			buildAllCategoriesSQL(entryQuery.getAllCategoryIds(), sb);
 		}
 
-		if (entryQuery.getAnyCategoryIds().length > 0) {
+		if (ArrayUtil.isNotEmpty(entryQuery.getAnyCategoryIds())) {
 			buildAnyCategoriesSQL(entryQuery.getAnyCategoryIds(), sb);
 		}
 
-		if (entryQuery.getNotAllCategoryIds().length > 0) {
+		if (ArrayUtil.isNotEmpty(entryQuery.getNotAllCategoryIds())) {
 			buildNotAllCategoriesSQL(entryQuery.getNotAllCategoryIds(), sb);
 		}
 
-		if (entryQuery.getNotAnyCategoryIds().length > 0) {
+		if (ArrayUtil.isNotEmpty(entryQuery.getNotAnyCategoryIds())) {
 			buildNotAnyCategoriesSQL(entryQuery.getNotAnyCategoryIds(), sb);
 		}
 
 		// Asset entry subtypes
 
-		if (entryQuery.getClassTypeIds().length > 0) {
+		if (ArrayUtil.isNotEmpty(entryQuery.getClassTypeIds())) {
 			buildClassTypeIdsSQL(entryQuery.getClassTypeIds(), sb);
 		}
 
 		// Tag conditions
 
-		if (entryQuery.getAllTagIds().length > 0) {
+		if (ArrayUtil.isNotEmpty(entryQuery.getAllTagIds())) {
 			buildAllTagsSQL(entryQuery.getAllTagIdsArray(), sb);
 		}
 
-		if (entryQuery.getAnyTagIds().length > 0) {
+		if (ArrayUtil.isNotEmpty(entryQuery.getAnyTagIds())) {
 			buildAnyTagsSQL(entryQuery.getAnyTagIds(), sb);
 		}
 
-		if (entryQuery.getNotAllTagIds().length > 0) {
+		if (ArrayUtil.isNotEmpty(entryQuery.getNotAllTagIds())) {
 			buildNotAllTagsSQL(entryQuery.getNotAllTagIdsArray(), sb);
 		}
 
-		if (entryQuery.getNotAnyTagIds().length > 0) {
+		if (ArrayUtil.isNotEmpty(entryQuery.getNotAnyTagIds())) {
 			buildNotAnyTagsSQL(entryQuery.getNotAnyTagIds(), sb);
 		}
 
@@ -396,34 +483,47 @@ public class AssetEntryFinderImpl
 		sb.append(getClassNameIds(entryQuery.getClassNameIds()));
 
 		if (!count) {
-			sb.append(") TEMP_TABLE ");
-			sb.append("INNER JOIN ");
+			sb.append(") TEMP_TABLE_ASSET_ENTRY INNER JOIN ");
 			sb.append("AssetEntry AssetEntry ON ");
-			sb.append("TEMP_TABLE.entryId = AssetEntry.entryId");
+			sb.append("TEMP_TABLE_ASSET_ENTRY.entryId = ");
+			sb.append("AssetEntry.entryId ORDER BY ");
 
-			sb.append(" ORDER BY ");
-
-			if (entryQuery.getOrderByCol1().equals("ratings")) {
-				sb.append("TEMP_TABLE.averageScore");
+			if (orderByCol1.equals("ratings")) {
+				sb.append("CASE WHEN TEMP_TABLE_ASSET_ENTRY.averageScore ");
+				sb.append("IS NULL THEN 0 ");
+				sb.append("ELSE TEMP_TABLE_ASSET_ENTRY.averageScore END");
+			}
+			else if (orderByCol1.equals("viewCount")) {
+				sb.append("CASE WHEN TEMP_TABLE_ASSET_ENTRY.viewCount ");
+				sb.append("IS NULL THEN 0 ");
+				sb.append("ELSE TEMP_TABLE_ASSET_ENTRY.viewCount END");
 			}
 			else {
 				sb.append("AssetEntry.");
-				sb.append(entryQuery.getOrderByCol1());
+				sb.append(orderByCol1);
 			}
 
 			sb.append(StringPool.SPACE);
 			sb.append(entryQuery.getOrderByType1());
 
-			if (Validator.isNotNull(entryQuery.getOrderByCol2()) &&
-				!entryQuery.getOrderByCol1().equals(
-					entryQuery.getOrderByCol2())) {
+			if (Validator.isNotNull(orderByCol2) &&
+				!orderByCol1.equals(orderByCol2)) {
 
-				if (entryQuery.getOrderByCol2().equals("ratings")) {
-					sb.append(", TEMP_TABLE.averageScore");
+				if (orderByCol2.equals("ratings")) {
+					sb.append(", CASE WHEN ");
+					sb.append("TEMP_TABLE_ASSET_ENTRY.averageScore IS NULL ");
+					sb.append("THEN 0 ELSE ");
+					sb.append("TEMP_TABLE_ASSET_ENTRY.averageScore END");
+				}
+				else if (orderByCol2.equals("viewCount")) {
+					sb.append(", CASE WHEN ");
+					sb.append("TEMP_TABLE_ASSET_ENTRY.viewCount IS NULL ");
+					sb.append("THEN 0 ELSE ");
+					sb.append("TEMP_TABLE_ASSET_ENTRY.viewCount END");
 				}
 				else {
 					sb.append(", AssetEntry.");
-					sb.append(entryQuery.getOrderByCol2());
+					sb.append(orderByCol2);
 				}
 
 				sb.append(StringPool.SPACE);
@@ -441,70 +541,73 @@ public class AssetEntryFinderImpl
 
 		String sql = sb.toString();
 
-		SQLQuery q = session.createSynchronizedSQLQuery(sql);
+		SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
 		if (count) {
-			q.addScalar(COUNT_COLUMN_NAME, Type.LONG);
+			sqlQuery.addScalar(COUNT_COLUMN_NAME, Type.LONG);
 		}
 		else {
-			q.addEntity("AssetEntry", AssetEntryImpl.class);
+			sqlQuery.addEntity("AssetEntry", AssetEntryImpl.class);
 		}
 
-		QueryPos qPos = QueryPos.getInstance(q);
+		QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
 		if (entryQuery.getLinkedAssetEntryId() > 0) {
-			qPos.add(entryQuery.getLinkedAssetEntryId());
-			qPos.add(entryQuery.getLinkedAssetEntryId());
-			qPos.add(entryQuery.getLinkedAssetEntryId());
+			queryPos.add(entryQuery.getLinkedAssetEntryId());
+			queryPos.add(entryQuery.getLinkedAssetEntryId());
+			queryPos.add(entryQuery.getLinkedAssetEntryId());
+			queryPos.add(entryQuery.getLinkedAssetEntryId());
+			queryPos.add(entryQuery.getLinkedAssetEntryId());
 		}
 
 		if (entryQuery.isListable() != null) {
-			qPos.add(entryQuery.isListable());
+			queryPos.add(entryQuery.isListable());
 		}
 
 		if (entryQuery.isVisible() != null) {
-			qPos.add(entryQuery.isVisible());
+			queryPos.add(entryQuery.isVisible());
 		}
 
 		if (Validator.isNotNull(entryQuery.getKeywords())) {
-			qPos.add(
+			queryPos.add(
 				StringUtil.quote(entryQuery.getKeywords(), StringPool.PERCENT));
-			qPos.add(
+			queryPos.add(
 				StringUtil.quote(entryQuery.getKeywords(), StringPool.PERCENT));
-			qPos.add(
+			queryPos.add(
 				StringUtil.quote(entryQuery.getKeywords(), StringPool.PERCENT));
 		}
 		else {
 			if (Validator.isNotNull(entryQuery.getUserName())) {
-				qPos.add(
+				queryPos.add(
 					StringUtil.quote(
 						entryQuery.getUserName(), StringPool.PERCENT));
 			}
 
 			if (Validator.isNotNull(entryQuery.getTitle())) {
-				qPos.add(
+				queryPos.add(
 					StringUtil.quote(
 						entryQuery.getTitle(), StringPool.PERCENT));
 			}
 
 			if (Validator.isNotNull(entryQuery.getDescription())) {
-				qPos.add(
+				queryPos.add(
 					StringUtil.quote(
 						entryQuery.getDescription(), StringPool.PERCENT));
 			}
 		}
 
 		if (layout != null) {
-			qPos.add(layout.getUuid());
+			queryPos.add(layout.getUuid());
 		}
 
 		setDates(
-			qPos, entryQuery.getPublishDate(), entryQuery.getExpirationDate());
+			queryPos, entryQuery.getPublishDate(),
+			entryQuery.getExpirationDate());
 
-		qPos.add(entryQuery.getGroupIds());
-		qPos.add(entryQuery.getClassNameIds());
+		queryPos.add(entryQuery.getGroupIds());
+		queryPos.add(entryQuery.getClassNameIds());
 
-		return q;
+		return sqlQuery;
 	}
 
 	protected void buildClassTypeIdsSQL(long[] classTypeIds, StringBundler sb) {
@@ -573,6 +676,7 @@ public class AssetEntryFinderImpl
 			sql = StringUtil.replace(sql, "[$TAG_ID$]", getTagIds(tagIds[i]));
 
 			sb.append(sql);
+
 			sb.append(StringPool.CLOSE_PARENTHESIS);
 
 			if (((i + 1) < tagIds.length) && (tagIds[i + 1].length > 0)) {
@@ -621,6 +725,7 @@ public class AssetEntryFinderImpl
 			sql = StringUtil.replace(sql, "[$TAG_ID$]", getTagIds(notTagIds));
 
 			sb.append(sql);
+
 			sb.append(StringPool.CLOSE_PARENTHESIS);
 
 			if ((i + 1) < notTagIds.length) {
@@ -686,15 +791,16 @@ public class AssetEntryFinderImpl
 	}
 
 	protected List<Long> getSubcategoryIds(long parentCategoryId) {
-		AssetCategory parentAssetCategory = AssetCategoryUtil.fetchByPrimaryKey(
-			parentCategoryId);
+		AssetCategory parentAssetCategory =
+			AssetCategoryLocalServiceUtil.fetchAssetCategory(parentCategoryId);
 
 		if (parentAssetCategory == null) {
 			return Collections.emptyList();
 		}
 
 		return ListUtil.toList(
-			AssetCategoryUtil.getDescendants(parentAssetCategory),
+			AssetCategoryLocalServiceUtil.getDescendantCategories(
+				parentAssetCategory),
 			AssetCategory.CATEGORY_ID_ACCESSOR);
 	}
 
@@ -714,19 +820,19 @@ public class AssetEntryFinderImpl
 	}
 
 	protected void setDates(
-		QueryPos qPos, Date publishDate, Date expirationDate) {
+		QueryPos queryPos, Date publishDate, Date expirationDate) {
 
 		if (publishDate != null) {
 			Timestamp publishDate_TS = CalendarUtil.getTimestamp(publishDate);
 
-			qPos.add(publishDate_TS);
+			queryPos.add(publishDate_TS);
 		}
 
 		if (expirationDate != null) {
 			Timestamp expirationDate_TS = CalendarUtil.getTimestamp(
 				expirationDate);
 
-			qPos.add(expirationDate_TS);
+			queryPos.add(expirationDate_TS);
 		}
 	}
 

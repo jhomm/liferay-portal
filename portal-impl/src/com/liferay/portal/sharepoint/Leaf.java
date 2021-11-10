@@ -14,8 +14,8 @@
 
 package com.liferay.portal.sharepoint;
 
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 
 /**
  * @author Bruno Farache
@@ -43,7 +43,7 @@ public class Leaf implements ResponseElement {
 
 	@Override
 	public String parse() {
-		StringBundler sb = new StringBundler(7);
+		StringBundler sb = new StringBundler(6);
 
 		if (_useEqualSymbol) {
 			sb.append(OPEN_LI);

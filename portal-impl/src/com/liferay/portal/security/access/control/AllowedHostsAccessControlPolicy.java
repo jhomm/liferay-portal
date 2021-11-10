@@ -17,13 +17,14 @@ package com.liferay.portal.security.access.control;
 import com.liferay.portal.kernel.security.access.control.AccessControlUtil;
 import com.liferay.portal.kernel.security.access.control.AccessControlled;
 import com.liferay.portal.kernel.security.access.control.BaseAccessControlPolicy;
+import com.liferay.portal.kernel.security.auth.AccessControlContext;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.security.auth.AccessControlContext;
 
 import java.lang.reflect.Method;
 
+import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -53,7 +54,17 @@ public class AllowedHostsAccessControlPolicy extends BaseAccessControlPolicy {
 			return;
 		}
 
-		HttpServletRequest request = accessControlContext.getRequest();
+		Map<String, Object> settings = accessControlContext.getSettings();
+
+		int serviceDepth = (Integer)settings.get(
+			AccessControlContext.Settings.SERVICE_DEPTH.toString());
+
+		if (serviceDepth > 1) {
+			return;
+		}
+
+		HttpServletRequest httpServletRequest =
+			accessControlContext.getRequest();
 
 		String hostsAllowedString = MapUtil.getString(
 			accessControlContext.getSettings(), "hosts.allowed");
@@ -62,9 +73,11 @@ public class AllowedHostsAccessControlPolicy extends BaseAccessControlPolicy {
 
 		Set<String> hostsAllowedSet = SetUtil.fromArray(hostsAllowed);
 
-		if (!AccessControlUtil.isAccessAllowed(request, hostsAllowedSet)) {
+		if (!AccessControlUtil.isAccessAllowed(
+				httpServletRequest, hostsAllowedSet)) {
+
 			throw new SecurityException(
-				"Access denied for " + request.getRemoteAddr());
+				"Access denied for " + httpServletRequest.getRemoteAddr());
 		}
 	}
 

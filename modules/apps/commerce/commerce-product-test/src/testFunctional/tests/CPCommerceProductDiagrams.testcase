@@ -1,0 +1,311 @@
+@component-name = "portal-commerce"
+definition {
+
+	property portal.release = "quarantine";
+	property portal.upstream = "quarantine";
+	property testray.main.component.name = "Product Info Management";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		Navigator.openURL();
+
+		if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
+			User.logoutPG();
+		}
+
+		User.firstLoginPG();
+
+		CommerceConfiguration.commerceAdminTearDown();
+
+		CommerceConfiguration.commerceInitializersTearDown();
+	}
+
+	@description = "This is a test for COMMERCE-7025. AddANewPin"
+	@priority = "3"
+	test AddANewPin {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Diagram T-Shirt",
+			productType = "Diagram");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Diagram");
+
+		CommerceProductImages.addDiagramImages(
+			imageTitles = "Black",
+			productType = "Diagram");
+
+		Button.clickPublish();
+
+		Alert.viewSuccessMessage();
+
+		DoubleClick(
+			key_image = "Commerce_Black",
+			locator1 = "CommerceEntry#VERIFY_IMAGE");
+
+		AssertElementPresent(
+			key_color = "transparent",
+			locator1 = "CommerceEntry#VERIFY_PIN");
+
+		AssertElementPresent(
+			key_strokeColor = "#ffa500",
+			locator1 = "CommerceEntry#VERIFY_PIN_COLOR_STROKE");
+
+		Refresh();
+
+		Click(locator1 = "CommerceEntry#DIAGRAM_ADD_BUTTON");
+
+		AssertElementPresent(
+			key_color = "transparent",
+			locator1 = "CommerceEntry#VERIFY_PIN");
+
+		AssertElementPresent(
+			key_strokeColor = "#0B5FFF",
+			locator1 = "CommerceEntry#VERIFY_PIN_COLOR_STROKE");
+	}
+
+	@description = "This is a test for COMMERCE-7019. AddDiagramProduct"
+	@priority = "3"
+	test AddDiagramProduct {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Diagram T-Shirt",
+			productType = "Diagram");
+
+		CommerceEntry.viewProductsEntry(
+			productFullDescription = "Diagram T-Shirt Full Description",
+			productName = "Diagram T-Shirt",
+			productShortDescription = "Diagram T-Shirt Short Description");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Diagram");
+
+		Click(locator1 = "Icon#BACK");
+
+		CommerceNavigator.searchEntry(entryName = "Diagram T-Shirt");
+
+		AssertElementPresent(
+			key_entryName = "Diagram T-Shirt",
+			locator1 = "CommerceNavigation#ENTRY_NAME",
+			value1 = "Diagram T-Shirt");
+
+		CommerceNavigator.gotoEntry(entryName = "Diagram T-Shirt");
+	}
+
+	@description = "This is a test for COMMERCE-7023. EditTheDefaultSettingForPinsCreation"
+	@priority = "3"
+	test EditTheDefaultSettingForPinsCreation {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Diagram T-Shirt",
+			productType = "Diagram");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Diagram");
+
+		CommerceProductImages.addDiagramImages(
+			imageTitles = "Black",
+			productType = "Diagram");
+
+		Button.clickPublish();
+
+		Alert.viewSuccessMessage();
+
+		DoubleClick(
+			key_image = "Commerce_Black",
+			locator1 = "CommerceEntry#VERIFY_IMAGE");
+
+		Click(
+			key_text = "Default Diameter",
+			locator1 = "Button#ANY");
+
+		AssertElementPresent(
+			key_radius = "10",
+			locator1 = "CommerceEntry#VERIFY_PIN_RADIUS");
+
+		CommerceEntry.verifyCostumRadiusWithCostumValue(key_list = "1,2,3,4,5");
+
+		AssertElementPresent(
+			key_radius = "15",
+			locator1 = "CommerceEntry#VERIFY_PIN_RADIUS");
+
+		CommerceEntry.verifyCostumRadiusWithDefaultValue();
+
+		CommerceEntry.changePinColor(color = "#FF0000");
+
+		AssertElementPresent(
+			key_strokeColor = "#FF0000",
+			locator1 = "CommerceEntry#VERIFY_PIN_COLOR_STROKE");
+
+		Button.clickPublish();
+	}
+
+	@description = "This is a test for COMMERCE-7126. RemoveDiagramProduct"
+	@priority = "3"
+	test RemoveDiagramProduct {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Diagram T-Shirt",
+			productType = "Diagram");
+
+		CommerceEntry.viewProductsEntry(
+			productFullDescription = "Diagram T-Shirt Full Description",
+			productName = "Diagram T-Shirt",
+			productShortDescription = "Diagram T-Shirt Short Description");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Diagram");
+
+		Click(locator1 = "Icon#BACK");
+
+		CommerceNavigator.searchEntry(entryName = "Diagram T-Shirt");
+
+		ClickNoError(
+			key_value = "Diagram T-Shirt",
+			locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+
+		CommerceEntry.clickNoError(menuItem = "Delete");
+
+		AssertElementNotPresent(
+			key_entryName = "Diagram T-Shirt",
+			locator1 = "CommerceNavigation#ENTRY_NAME",
+			value1 = "Diagram T-Shirt");
+
+		if (IsElementNotPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER")) {
+			fail("Something went wrong after removing the product the page is not loading correctly");
+		}
+
+		if (IsElementPresent(locator1 = "Message#ERROR")) {
+			fail("Something went wrong after removing the product an error message is present");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-7020. UploadANotMappedNewImage"
+	@priority = "3"
+	test UploadANotMappedNewImage {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Diagram T-Shirt",
+			productType = "Diagram");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Diagram");
+
+		CommerceProductImages.addDiagramImages(
+			imageTitles = "Black",
+			productType = "Diagram");
+
+		Button.clickPublish();
+
+		Alert.viewSuccessMessage();
+
+		AssertElementPresent(
+			key_image = "Commerce_Black.jpg",
+			locator1 = "CommerceEntry#VERIFY_IMAGE");
+
+		AssertElementNotPresent(
+			key_color = "#ffffff",
+			locator1 = "CommerceEntry#VERIFY_PIN");
+
+		Refresh();
+
+		AssertElementPresent(
+			key_image = "Commerce_Black.jpg",
+			locator1 = "CommerceEntry#VERIFY_IMAGE");
+	}
+
+	@description = "This is a test for COMMERCE-7036. UseDragForPin"
+	@priority = "3"
+	test UseDragForPin {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Diagram T-Shirt",
+			productType = "Diagram");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Diagram");
+
+		CommerceProductImages.addDiagramImages(
+			imageTitles = "Black",
+			productType = "Diagram");
+
+		Button.clickPublish();
+
+		Alert.viewSuccessMessage();
+
+		DoubleClick(
+			key_image = "Commerce_Black",
+			locator1 = "CommerceEntry#VERIFY_IMAGE");
+
+		CommerceDiagram.useDragOnPin(
+			image_name = "Commerce_Black",
+			position = "300,0");
+	}
+
+	@description = "This is a test for COMMERCE-7035. UseZoomAndDragBackground"
+	@priority = "3"
+	test UseZoomAndDragBackground {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Diagram T-Shirt",
+			productType = "Diagram");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Diagram");
+
+		CommerceProductImages.addDiagramImages(
+			imageTitles = "Black",
+			productType = "Diagram");
+
+		Button.clickPublish();
+
+		Alert.viewSuccessMessage();
+
+		CommerceDiagram.usePreDefinedZoom(key_list = "50%,75%,100%,125%,150%,175%,200%");
+
+		CommerceDiagram.useDragOnBackground(
+			image_name = "Commerce_Black",
+			position = "300,0");
+	}
+
+}

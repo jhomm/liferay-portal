@@ -18,21 +18,53 @@ import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.model.UserGroupRole;
+import com.liferay.portal.kernel.model.UserGroupRole;
+import com.liferay.portal.kernel.service.persistence.UserGroupRoleFinder;
 import com.liferay.portal.model.impl.UserGroupRoleImpl;
-import com.liferay.portal.service.persistence.UserGroupRoleFinder;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
 import java.util.List;
 
 /**
  * @author Brian Wing Shun Chan
+ * @author Drew Brokke
  */
 public class UserGroupRoleFinderImpl
-	extends BasePersistenceImpl<UserGroupRole> implements UserGroupRoleFinder {
+	extends UserGroupRoleFinderBaseImpl implements UserGroupRoleFinder {
+
+	public static final String FIND_BY_GROUP_ROLE_TYPE =
+		UserGroupRoleFinder.class.getName() + ".findByGroupRoleType";
 
 	public static final String FIND_BY_USER_USER_GROUP_GROUP_ROLE =
 		UserGroupRoleFinder.class.getName() + ".findByUserUserGroupGroupRole";
+
+	@Override
+	public List<UserGroupRole> findByGroupRoleType(long groupId, int roleType) {
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			String sql = CustomSQLUtil.get(FIND_BY_GROUP_ROLE_TYPE);
+
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
+
+			sqlQuery.addEntity("UserGroupRole", UserGroupRoleImpl.class);
+
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
+
+			queryPos.add(groupId);
+			queryPos.add(roleType);
+
+			return sqlQuery.list(true);
+		}
+		catch (Exception exception) {
+			throw new SystemException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
 
 	@Override
 	public List<UserGroupRole> findByUserUserGroupGroupRole(
@@ -45,19 +77,19 @@ public class UserGroupRoleFinderImpl
 
 			String sql = CustomSQLUtil.get(FIND_BY_USER_USER_GROUP_GROUP_ROLE);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addEntity("UserGroupRole", UserGroupRoleImpl.class);
+			sqlQuery.addEntity("UserGroupRole", UserGroupRoleImpl.class);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(userId);
-			qPos.add(groupId);
+			queryPos.add(userId);
+			queryPos.add(groupId);
 
-			return q.list(true);
+			return sqlQuery.list(true);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);

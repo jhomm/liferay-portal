@@ -2,25 +2,17 @@
 <head>
 <title>SiteSettingsSiteTemplate</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">SiteSettingsSiteTemplate</td></tr>
 </thead>
+
 <tbody>
 <tr>
-	<td>SITE_NOT_CLONED_FROM_TEMPLATE_MESSAGE</td>
-	<td>//div[@id='_165_siteTemplate']/div</td>
-	<td></td>
-</tr>
-<tr>
-	<td>SITE_CLONED_FROM_TEMPLATE_MESSAGE</td>
-	<td>//div[@id='_165_siteTemplate']//div//div</td>
-	<td></td>
-</tr>
-<tr>
-	<td>SITE_TEMPLATE_SITE_CLONED_FROM</td>
-	<td>//div[@id='_165_siteTemplate']//div//div/em</td>
+	<td>CONTENT_CONTAINER</td>
+	<td>//div[contains(@class,'content-container')]</td>
 	<td></td>
 </tr>
 </tbody>

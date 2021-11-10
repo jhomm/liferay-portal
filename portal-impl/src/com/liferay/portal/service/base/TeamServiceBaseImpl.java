@@ -15,24 +15,23 @@
 package com.liferay.portal.service.base;
 
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.bean.IdentifiableBean;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.model.Team;
-import com.liferay.portal.service.BaseServiceImpl;
-import com.liferay.portal.service.TeamService;
-import com.liferay.portal.service.persistence.RoleFinder;
-import com.liferay.portal.service.persistence.RolePersistence;
-import com.liferay.portal.service.persistence.TeamFinder;
-import com.liferay.portal.service.persistence.TeamPersistence;
-import com.liferay.portal.service.persistence.UserFinder;
-import com.liferay.portal.service.persistence.UserGroupFinder;
-import com.liferay.portal.service.persistence.UserGroupPersistence;
-import com.liferay.portal.service.persistence.UserPersistence;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.model.Team;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
+import com.liferay.portal.kernel.service.BaseServiceImpl;
+import com.liferay.portal.kernel.service.TeamService;
+import com.liferay.portal.kernel.service.TeamServiceUtil;
+import com.liferay.portal.kernel.service.persistence.TeamFinder;
+import com.liferay.portal.kernel.service.persistence.TeamPersistence;
+import com.liferay.portal.kernel.service.persistence.UserGroupPersistence;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
+import com.liferay.portal.kernel.util.PortalUtil;
+
+import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -45,15 +44,15 @@ import javax.sql.DataSource;
  *
  * @author Brian Wing Shun Chan
  * @see com.liferay.portal.service.impl.TeamServiceImpl
- * @see com.liferay.portal.service.TeamServiceUtil
  * @generated
  */
-public abstract class TeamServiceBaseImpl extends BaseServiceImpl
-	implements TeamService, IdentifiableBean {
+public abstract class TeamServiceBaseImpl
+	extends BaseServiceImpl implements IdentifiableOSGiService, TeamService {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Always use {@link com.liferay.portal.service.TeamServiceUtil} to access the team remote service.
+	 * Never modify or reference this class directly. Use <code>TeamService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>TeamServiceUtil</code>.
 	 */
 
 	/**
@@ -61,7 +60,9 @@ public abstract class TeamServiceBaseImpl extends BaseServiceImpl
 	 *
 	 * @return the team local service
 	 */
-	public com.liferay.portal.service.TeamLocalService getTeamLocalService() {
+	public com.liferay.portal.kernel.service.TeamLocalService
+		getTeamLocalService() {
+
 		return teamLocalService;
 	}
 
@@ -71,7 +72,8 @@ public abstract class TeamServiceBaseImpl extends BaseServiceImpl
 	 * @param teamLocalService the team local service
 	 */
 	public void setTeamLocalService(
-		com.liferay.portal.service.TeamLocalService teamLocalService) {
+		com.liferay.portal.kernel.service.TeamLocalService teamLocalService) {
+
 		this.teamLocalService = teamLocalService;
 	}
 
@@ -134,7 +136,9 @@ public abstract class TeamServiceBaseImpl extends BaseServiceImpl
 	 *
 	 * @return the counter local service
 	 */
-	public com.liferay.counter.service.CounterLocalService getCounterLocalService() {
+	public com.liferay.counter.kernel.service.CounterLocalService
+		getCounterLocalService() {
+
 		return counterLocalService;
 	}
 
@@ -144,276 +148,28 @@ public abstract class TeamServiceBaseImpl extends BaseServiceImpl
 	 * @param counterLocalService the counter local service
 	 */
 	public void setCounterLocalService(
-		com.liferay.counter.service.CounterLocalService counterLocalService) {
+		com.liferay.counter.kernel.service.CounterLocalService
+			counterLocalService) {
+
 		this.counterLocalService = counterLocalService;
 	}
 
-	/**
-	 * Returns the resource local service.
-	 *
-	 * @return the resource local service
-	 */
-	public com.liferay.portal.service.ResourceLocalService getResourceLocalService() {
-		return resourceLocalService;
-	}
-
-	/**
-	 * Sets the resource local service.
-	 *
-	 * @param resourceLocalService the resource local service
-	 */
-	public void setResourceLocalService(
-		com.liferay.portal.service.ResourceLocalService resourceLocalService) {
-		this.resourceLocalService = resourceLocalService;
-	}
-
-	/**
-	 * Returns the role local service.
-	 *
-	 * @return the role local service
-	 */
-	public com.liferay.portal.service.RoleLocalService getRoleLocalService() {
-		return roleLocalService;
-	}
-
-	/**
-	 * Sets the role local service.
-	 *
-	 * @param roleLocalService the role local service
-	 */
-	public void setRoleLocalService(
-		com.liferay.portal.service.RoleLocalService roleLocalService) {
-		this.roleLocalService = roleLocalService;
-	}
-
-	/**
-	 * Returns the role remote service.
-	 *
-	 * @return the role remote service
-	 */
-	public com.liferay.portal.service.RoleService getRoleService() {
-		return roleService;
-	}
-
-	/**
-	 * Sets the role remote service.
-	 *
-	 * @param roleService the role remote service
-	 */
-	public void setRoleService(
-		com.liferay.portal.service.RoleService roleService) {
-		this.roleService = roleService;
-	}
-
-	/**
-	 * Returns the role persistence.
-	 *
-	 * @return the role persistence
-	 */
-	public RolePersistence getRolePersistence() {
-		return rolePersistence;
-	}
-
-	/**
-	 * Sets the role persistence.
-	 *
-	 * @param rolePersistence the role persistence
-	 */
-	public void setRolePersistence(RolePersistence rolePersistence) {
-		this.rolePersistence = rolePersistence;
-	}
-
-	/**
-	 * Returns the role finder.
-	 *
-	 * @return the role finder
-	 */
-	public RoleFinder getRoleFinder() {
-		return roleFinder;
-	}
-
-	/**
-	 * Sets the role finder.
-	 *
-	 * @param roleFinder the role finder
-	 */
-	public void setRoleFinder(RoleFinder roleFinder) {
-		this.roleFinder = roleFinder;
-	}
-
-	/**
-	 * Returns the user local service.
-	 *
-	 * @return the user local service
-	 */
-	public com.liferay.portal.service.UserLocalService getUserLocalService() {
-		return userLocalService;
-	}
-
-	/**
-	 * Sets the user local service.
-	 *
-	 * @param userLocalService the user local service
-	 */
-	public void setUserLocalService(
-		com.liferay.portal.service.UserLocalService userLocalService) {
-		this.userLocalService = userLocalService;
-	}
-
-	/**
-	 * Returns the user remote service.
-	 *
-	 * @return the user remote service
-	 */
-	public com.liferay.portal.service.UserService getUserService() {
-		return userService;
-	}
-
-	/**
-	 * Sets the user remote service.
-	 *
-	 * @param userService the user remote service
-	 */
-	public void setUserService(
-		com.liferay.portal.service.UserService userService) {
-		this.userService = userService;
-	}
-
-	/**
-	 * Returns the user persistence.
-	 *
-	 * @return the user persistence
-	 */
-	public UserPersistence getUserPersistence() {
-		return userPersistence;
-	}
-
-	/**
-	 * Sets the user persistence.
-	 *
-	 * @param userPersistence the user persistence
-	 */
-	public void setUserPersistence(UserPersistence userPersistence) {
-		this.userPersistence = userPersistence;
-	}
-
-	/**
-	 * Returns the user finder.
-	 *
-	 * @return the user finder
-	 */
-	public UserFinder getUserFinder() {
-		return userFinder;
-	}
-
-	/**
-	 * Sets the user finder.
-	 *
-	 * @param userFinder the user finder
-	 */
-	public void setUserFinder(UserFinder userFinder) {
-		this.userFinder = userFinder;
-	}
-
-	/**
-	 * Returns the user group local service.
-	 *
-	 * @return the user group local service
-	 */
-	public com.liferay.portal.service.UserGroupLocalService getUserGroupLocalService() {
-		return userGroupLocalService;
-	}
-
-	/**
-	 * Sets the user group local service.
-	 *
-	 * @param userGroupLocalService the user group local service
-	 */
-	public void setUserGroupLocalService(
-		com.liferay.portal.service.UserGroupLocalService userGroupLocalService) {
-		this.userGroupLocalService = userGroupLocalService;
-	}
-
-	/**
-	 * Returns the user group remote service.
-	 *
-	 * @return the user group remote service
-	 */
-	public com.liferay.portal.service.UserGroupService getUserGroupService() {
-		return userGroupService;
-	}
-
-	/**
-	 * Sets the user group remote service.
-	 *
-	 * @param userGroupService the user group remote service
-	 */
-	public void setUserGroupService(
-		com.liferay.portal.service.UserGroupService userGroupService) {
-		this.userGroupService = userGroupService;
-	}
-
-	/**
-	 * Returns the user group persistence.
-	 *
-	 * @return the user group persistence
-	 */
-	public UserGroupPersistence getUserGroupPersistence() {
-		return userGroupPersistence;
-	}
-
-	/**
-	 * Sets the user group persistence.
-	 *
-	 * @param userGroupPersistence the user group persistence
-	 */
-	public void setUserGroupPersistence(
-		UserGroupPersistence userGroupPersistence) {
-		this.userGroupPersistence = userGroupPersistence;
-	}
-
-	/**
-	 * Returns the user group finder.
-	 *
-	 * @return the user group finder
-	 */
-	public UserGroupFinder getUserGroupFinder() {
-		return userGroupFinder;
-	}
-
-	/**
-	 * Sets the user group finder.
-	 *
-	 * @param userGroupFinder the user group finder
-	 */
-	public void setUserGroupFinder(UserGroupFinder userGroupFinder) {
-		this.userGroupFinder = userGroupFinder;
-	}
-
 	public void afterPropertiesSet() {
+		_setServiceUtilService(teamService);
 	}
 
 	public void destroy() {
+		_setServiceUtilService(null);
 	}
 
 	/**
-	 * Returns the Spring bean ID for this bean.
+	 * Returns the OSGi service identifier.
 	 *
-	 * @return the Spring bean ID for this bean
+	 * @return the OSGi service identifier
 	 */
 	@Override
-	public String getBeanIdentifier() {
-		return _beanIdentifier;
-	}
-
-	/**
-	 * Sets the Spring bean ID for this bean.
-	 *
-	 * @param beanIdentifier the Spring bean ID for this bean
-	 */
-	@Override
-	public void setBeanIdentifier(String beanIdentifier) {
-		_beanIdentifier = beanIdentifier;
+	public String getOSGiServiceIdentifier() {
+		return TeamService.class.getName();
 	}
 
 	protected Class<?> getModelClass() {
@@ -433,56 +189,59 @@ public abstract class TeamServiceBaseImpl extends BaseServiceImpl
 		try {
 			DataSource dataSource = teamPersistence.getDataSource();
 
-			DB db = DBFactoryUtil.getDB();
+			DB db = DBManagerUtil.getDB();
 
 			sql = db.buildSQL(sql);
 			sql = PortalUtil.transformSQL(sql);
 
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(dataSource,
-					sql, new int[0]);
+			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
+				dataSource, sql);
 
 			sqlUpdate.update();
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 	}
 
-	@BeanReference(type = com.liferay.portal.service.TeamLocalService.class)
-	protected com.liferay.portal.service.TeamLocalService teamLocalService;
-	@BeanReference(type = com.liferay.portal.service.TeamService.class)
+	private void _setServiceUtilService(TeamService teamService) {
+		try {
+			Field field = TeamServiceUtil.class.getDeclaredField("_service");
+
+			field.setAccessible(true);
+
+			field.set(null, teamService);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new RuntimeException(reflectiveOperationException);
+		}
+	}
+
+	@BeanReference(
+		type = com.liferay.portal.kernel.service.TeamLocalService.class
+	)
+	protected com.liferay.portal.kernel.service.TeamLocalService
+		teamLocalService;
+
+	@BeanReference(type = TeamService.class)
 	protected TeamService teamService;
+
 	@BeanReference(type = TeamPersistence.class)
 	protected TeamPersistence teamPersistence;
+
 	@BeanReference(type = TeamFinder.class)
 	protected TeamFinder teamFinder;
-	@BeanReference(type = com.liferay.counter.service.CounterLocalService.class)
-	protected com.liferay.counter.service.CounterLocalService counterLocalService;
-	@BeanReference(type = com.liferay.portal.service.ResourceLocalService.class)
-	protected com.liferay.portal.service.ResourceLocalService resourceLocalService;
-	@BeanReference(type = com.liferay.portal.service.RoleLocalService.class)
-	protected com.liferay.portal.service.RoleLocalService roleLocalService;
-	@BeanReference(type = com.liferay.portal.service.RoleService.class)
-	protected com.liferay.portal.service.RoleService roleService;
-	@BeanReference(type = RolePersistence.class)
-	protected RolePersistence rolePersistence;
-	@BeanReference(type = RoleFinder.class)
-	protected RoleFinder roleFinder;
-	@BeanReference(type = com.liferay.portal.service.UserLocalService.class)
-	protected com.liferay.portal.service.UserLocalService userLocalService;
-	@BeanReference(type = com.liferay.portal.service.UserService.class)
-	protected com.liferay.portal.service.UserService userService;
+
+	@BeanReference(
+		type = com.liferay.counter.kernel.service.CounterLocalService.class
+	)
+	protected com.liferay.counter.kernel.service.CounterLocalService
+		counterLocalService;
+
 	@BeanReference(type = UserPersistence.class)
 	protected UserPersistence userPersistence;
-	@BeanReference(type = UserFinder.class)
-	protected UserFinder userFinder;
-	@BeanReference(type = com.liferay.portal.service.UserGroupLocalService.class)
-	protected com.liferay.portal.service.UserGroupLocalService userGroupLocalService;
-	@BeanReference(type = com.liferay.portal.service.UserGroupService.class)
-	protected com.liferay.portal.service.UserGroupService userGroupService;
+
 	@BeanReference(type = UserGroupPersistence.class)
 	protected UserGroupPersistence userGroupPersistence;
-	@BeanReference(type = UserGroupFinder.class)
-	protected UserGroupFinder userGroupFinder;
-	private String _beanIdentifier;
+
 }

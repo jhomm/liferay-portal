@@ -31,23 +31,21 @@ public class NamespaceTag extends TagSupport {
 	@Override
 	public int doStartTag() throws JspException {
 		try {
-			HttpServletRequest request =
+			HttpServletRequest httpServletRequest =
 				(HttpServletRequest)pageContext.getRequest();
 
 			PortletResponse portletResponse =
-				(PortletResponse)request.getAttribute(
+				(PortletResponse)httpServletRequest.getAttribute(
 					JavaConstants.JAVAX_PORTLET_RESPONSE);
 
 			if (portletResponse != null) {
-				String namespace = portletResponse.getNamespace();
-
 				JspWriter jspWriter = pageContext.getOut();
 
-				jspWriter.write(namespace);
+				jspWriter.write(portletResponse.getNamespace());
 			}
 		}
-		catch (Exception e) {
-			throw new JspException(e);
+		catch (Exception exception) {
+			throw new JspException(exception);
 		}
 
 		return SKIP_BODY;

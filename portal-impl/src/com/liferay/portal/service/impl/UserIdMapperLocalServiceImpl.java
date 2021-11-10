@@ -15,7 +15,7 @@
 package com.liferay.portal.service.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.UserIdMapper;
+import com.liferay.portal.kernel.model.UserIdMapper;
 import com.liferay.portal.service.base.UserIdMapperLocalServiceBaseImpl;
 
 import java.util.List;
@@ -69,9 +69,7 @@ public class UserIdMapperLocalServiceImpl
 		userIdMapper.setDescription(description);
 		userIdMapper.setExternalUserId(externalUserId);
 
-		userIdMapperPersistence.update(userIdMapper);
-
-		return userIdMapper;
+		return userIdMapperPersistence.update(userIdMapper);
 	}
 
 }

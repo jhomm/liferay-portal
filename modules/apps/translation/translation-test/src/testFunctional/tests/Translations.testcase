@@ -1,0 +1,209 @@
+@component-name = "portal-collaboration"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Translations Management";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			User.logoutPG();
+		}
+	}
+
+	@description = "This ensures that the user can see translation options after move all available languages to current."
+	@priority = "4"
+	@refactorneeded
+	test ViewOptionsWithAllLanguages {
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		NavItem.gotoTemplates();
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateFieldNames = "Text",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			structureName = "WC Structure Name",
+			templateName = "WC Template Name",
+			webContentText = "Text",
+			webContentTitle = "Web Content Title");
+
+		PortletEntry.publish();
+
+		Site.openSiteSettingsAdmin(siteURLKey = "guest");
+
+		Site.configureCurrentLanguagesCP(
+			currentSiteLanguages = "Spanish (Spain)",
+			defaultSiteLanguage = "Spanish (Spain)");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		Translations.viewTranslationOptions(
+			noOptions = "true",
+			webContentTitle = "Web Content Title");
+
+		Site.openSiteSettingsAdmin(siteURLKey = "guest");
+
+		Site.configureCurrentLanguagesCP(
+			currentSiteLanguages = "English (United States),Spanish (Spain),Arabic (Saudi Arabia),Catalan (Spain),Chinese (China),Dutch (Netherlands),Finnish (Finland),French (France),German (Germany),Hungarian (Hungary),Japanese (Japan),Portuguese (Brazil),Swedish (Sweden)",
+			defaultSiteLanguage = "Spanish (Spain)");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		Translations.viewTranslationOptions(webContentTitle = "Web Content Title");
+	}
+
+	@description = "This ensures that the user can see translation options after move one more available language to current."
+	@priority = "5"
+	@refactorneeded
+	test ViewOptionsWithOneMoreLanguage {
+		JSONWebcontent.addWebContent(
+			content = "Web Content Content",
+			groupName = "Guest",
+			title = "Web Content Title");
+
+		Site.openSiteSettingsAdmin(siteURLKey = "guest");
+
+		Site.configureCurrentLanguagesCP(
+			currentSiteLanguages = "English (United States)",
+			defaultSiteLanguage = "English (United States)");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		Translations.viewTranslationOptions(
+			noOptions = "true",
+			webContentTitle = "Web Content Title");
+
+		Site.openSiteSettingsAdmin(siteURLKey = "guest");
+
+		Site.configureCurrentLanguagesCP(
+			currentSiteLanguages = "English (United States),Spanish (Spain)",
+			defaultSiteLanguage = "English (United States)");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		Translations.viewTranslationOptions(webContentTitle = "Web Content Title");
+	}
+
+	@description = "This test covers LPS-128546. It ensures that the translated field content can be displayed correctly after editing by different translation ways."
+	@priority = "4"
+	@refactorneeded
+	test ViewTranslatedFieldContentAfterEditing {
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addFields(fieldNameList = "Rich Text,Text");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			description = "WC WebContent Description EN",
+			structureName = "WC Structure Name",
+			webContentRichText = "Rich Text EN",
+			webContentText = "Text EN",
+			webContentTitle = "WC WebContent Title EN");
+
+		PortletEntry.publish();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		WebContent.editWithStructureCP(
+			locale = "pt-BR",
+			webContentRichText = "Rich Text PT",
+			webContentText = "Text PT",
+			webContentTitle = "WC WebContent Title EN",
+			webContentTitleEdit = "WC WebContent Title PT");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		Translations.gotoTranslate(webContentTitle = "WC WebContent Title EN");
+
+		Translations.changeTargetLocale(
+			currentTargetLocale = "ar-SA",
+			newTargetLocale = "pt-BR");
+
+		Translations.viewTargetFields(
+			webContentHTML = "Rich Text PT",
+			webContentText = "Text PT",
+			webContentTitle = "WC WebContent Title PT");
+
+		Translations.translateFields(
+			webContentSourceHTML = "Rich Text PT Edit",
+			webContentText = "Text PT Edit",
+			webContentTitle = "WC WebContent Title PT Edit");
+
+		PortletEntry.publish();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		WebContent.viewWithStructureCP(
+			webContentLocaleFieldLabel = "pt-BR",
+			webContentRichText = "Rich Text PT Edit",
+			webContentText = "Text PT Edit",
+			webContentTitle = "WC WebContent Title EN",
+			webContentTitleTranslated = "WC WebContent Title PT Edit");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		WebContent.editWithStructureCP(
+			locale = "pt-BR",
+			webContentRichText = "Rich Text PT Edit Again",
+			webContentText = "Text PT Again",
+			webContentTitle = "WC WebContent Title EN",
+			webContentTitleEdit = "WC WebContent Title PT Again");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		Translations.gotoTranslate(webContentTitle = "WC WebContent Title EN");
+
+		Translations.changeTargetLocale(
+			currentTargetLocale = "ar-SA",
+			newTargetLocale = "pt-BR");
+
+		Translations.viewTargetFields(
+			webContentHTML = "Rich Text PT Edit Again",
+			webContentText = "Text PT Again",
+			webContentTitle = "WC WebContent Title PT Again");
+	}
+
+}

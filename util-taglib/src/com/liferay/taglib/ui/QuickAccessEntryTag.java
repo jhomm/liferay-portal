@@ -16,10 +16,10 @@ package com.liferay.taglib.ui;
 
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.servlet.taglib.ui.QuickAccessEntry;
-import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.BaseBodyTagSupport;
+import com.liferay.taglib.util.TagResourceBundleUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,20 +38,19 @@ public class QuickAccessEntryTag extends BaseBodyTagSupport implements BodyTag {
 		try {
 			return processEndTag();
 		}
-		catch (Exception e) {
-			throw new JspException(e);
+		catch (Exception exception) {
+			throw new JspException(exception);
 		}
 		finally {
-			if (!ServerDetector.isResin()) {
-				_label = null;
-				_onClick = null;
-				_url = null;
-			}
+			_label = null;
+			_onClick = null;
+			_url = null;
 		}
 	}
 
 	public void setLabel(String label) {
-		_label = LanguageUtil.get(getRequest(), label);
+		_label = LanguageUtil.get(
+			TagResourceBundleUtil.getResourceBundle(pageContext), label);
 	}
 
 	public void setOnClick(String onClick) {
@@ -71,17 +70,17 @@ public class QuickAccessEntryTag extends BaseBodyTagSupport implements BodyTag {
 	}
 
 	protected int processEndTag() throws Exception {
-		HttpServletRequest request =
+		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)pageContext.getRequest();
 
 		List<QuickAccessEntry> quickAccessEntries =
-			(List<QuickAccessEntry>)request.getAttribute(
+			(List<QuickAccessEntry>)httpServletRequest.getAttribute(
 				WebKeys.PORTLET_QUICK_ACCESS_ENTRIES);
 
 		if (quickAccessEntries == null) {
 			quickAccessEntries = new ArrayList<>();
 
-			request.setAttribute(
+			httpServletRequest.setAttribute(
 				WebKeys.PORTLET_QUICK_ACCESS_ENTRIES, quickAccessEntries);
 		}
 

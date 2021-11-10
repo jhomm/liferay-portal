@@ -14,6 +14,17 @@
 
 package com.liferay.portal.fabric.netty.handlers;
 
+import com.liferay.petra.concurrent.BaseFutureListener;
+import com.liferay.petra.concurrent.FutureListener;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.concurrent.NoticeableFutureConverter;
+import com.liferay.petra.process.ClassPathUtil;
+import com.liferay.petra.process.PathHolder;
+import com.liferay.petra.process.ProcessCallable;
+import com.liferay.petra.process.ProcessConfig;
+import com.liferay.petra.process.ProcessException;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.fabric.agent.FabricAgent;
 import com.liferay.portal.fabric.netty.agent.NettyFabricAgentStub;
 import com.liferay.portal.fabric.netty.fileserver.FileHelperUtil;
@@ -25,20 +36,9 @@ import com.liferay.portal.fabric.netty.worker.NettyFabricWorkerConfig;
 import com.liferay.portal.fabric.netty.worker.NettyFabricWorkerStub;
 import com.liferay.portal.fabric.repository.Repository;
 import com.liferay.portal.fabric.worker.FabricWorker;
-import com.liferay.portal.kernel.concurrent.BaseFutureListener;
-import com.liferay.portal.kernel.concurrent.FutureListener;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.concurrent.NoticeableFutureConverter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.process.ClassPathUtil;
-import com.liferay.portal.kernel.process.ProcessCallable;
-import com.liferay.portal.kernel.process.ProcessConfig;
-import com.liferay.portal.kernel.process.ProcessConfig.Builder;
-import com.liferay.portal.kernel.process.ProcessException;
-import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -53,12 +53,14 @@ import java.io.IOException;
 import java.io.Serializable;
 
 import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLClassLoader;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -130,33 +132,35 @@ public class NettyFabricWorkerExecutionChannelHandler
 		Channel channel,
 		NettyFabricWorkerConfig<Serializable> nettyFabricWorkerConfig) {
 
-		Map<Path, Path> mergedPaths = new HashMap<>();
-
 		ProcessConfig processConfig =
 			nettyFabricWorkerConfig.getProcessConfig();
 
 		final Map<Path, Path> bootstrapPaths = new LinkedHashMap<>();
 
-		for (String pathString :
-				processConfig.getBootstrapClassPathElements()) {
+		for (PathHolder pathHolder :
+				processConfig.getBootstrapClassPathHolders()) {
 
-			bootstrapPaths.put(Paths.get(pathString), null);
+			bootstrapPaths.put(Paths.get(pathHolder.toString()), null);
 		}
-
-		mergedPaths.putAll(bootstrapPaths);
 
 		final Map<Path, Path> runtimePaths = new LinkedHashMap<>();
 
-		for (String pathString : processConfig.getRuntimeClassPathElements()) {
-			runtimePaths.put(Paths.get(pathString), null);
-		}
+		for (PathHolder pathHolder :
+				processConfig.getRuntimeClassPathHolders()) {
 
-		mergedPaths.putAll(runtimePaths);
+			runtimePaths.put(Paths.get(pathHolder.toString()), null);
+		}
 
 		final Map<Path, Path> inputPaths =
 			nettyFabricWorkerConfig.getInputPathMap();
 
-		mergedPaths.putAll(inputPaths);
+		Map<Path, Path> mergedPaths = HashMapBuilder.<Path, Path>putAll(
+			bootstrapPaths
+		).putAll(
+			runtimePaths
+		).putAll(
+			inputPaths
+		).build();
 
 		return new NoticeableFutureConverter<LoadedPaths, Map<Path, Path>>(
 			_repository.getFiles(channel, mergedPaths, false)) {
@@ -232,17 +236,18 @@ public class NettyFabricWorkerExecutionChannelHandler
 					StringUtil.merge(loadedBootstrapPaths, File.pathSeparator),
 					StringUtil.merge(loadedRuntimePaths, File.pathSeparator));
 			}
+
 		};
 	}
 
 	protected void sendResult(
 		Channel channel, long fabricWorkerId, Serializable result,
-		Throwable t) {
+		Throwable throwable) {
 
 		final FabricWorkerResultProcessCallable
 			fabricWorkerResultProcessCallable =
 				new FabricWorkerResultProcessCallable(
-					fabricWorkerId, result, t);
+					fabricWorkerId, result, throwable);
 
 		NoticeableFuture<Serializable> noticeableFuture = RPCUtil.execute(
 			channel,
@@ -319,8 +324,9 @@ public class NettyFabricWorkerExecutionChannelHandler
 
 			if (nettyStubFabricWorker == null) {
 				throw new ProcessException(
-					"Unable to locate fabric worker on channel " + channel +
-						", with fabric worker id " + _id);
+					StringBundler.concat(
+						"Unable to locate fabric worker on channel ", channel,
+						", with fabric worker id ", _id));
 			}
 
 			if (_throwable != null) {
@@ -335,17 +341,9 @@ public class NettyFabricWorkerExecutionChannelHandler
 
 		@Override
 		public String toString() {
-			StringBundler sb = new StringBundler(7);
-
-			sb.append("{id=");
-			sb.append(_id);
-			sb.append(", result=");
-			sb.append(_result);
-			sb.append(", throwable=");
-			sb.append(_throwable);
-			sb.append("}");
-
-			return sb.toString();
+			return StringBundler.concat(
+				"{id=", _id, ", result=", _result, ", throwable=", _throwable,
+				"}");
 		}
 
 		protected FabricWorkerResultProcessCallable(
@@ -382,7 +380,7 @@ public class NettyFabricWorkerExecutionChannelHandler
 		public ProcessConfig toProcessConfig(ProcessConfig processConfig)
 			throws ProcessException {
 
-			Builder builder = new Builder();
+			ProcessConfig.Builder builder = new ProcessConfig.Builder();
 
 			builder.setArguments(processConfig.getArguments());
 			builder.setBootstrapClassPath(_bootstrapClassPath);
@@ -390,15 +388,19 @@ public class NettyFabricWorkerExecutionChannelHandler
 			builder.setRuntimeClassPath(_runtimeClassPath);
 
 			try {
+				List<URL> urls = new ArrayList<>();
+
+				Collections.addAll(
+					urls, ClassPathUtil.getClassPathURLs(_bootstrapClassPath));
+
+				Collections.addAll(
+					urls, ClassPathUtil.getClassPathURLs(_runtimeClassPath));
+
 				builder.setReactClassLoader(
-					new URLClassLoader(
-						ArrayUtil.append(
-							ClassPathUtil.getClassPathURLs(_bootstrapClassPath),
-							ClassPathUtil.getClassPathURLs(
-								_runtimeClassPath))));
+					new URLClassLoader(urls.toArray(new URL[0])));
 			}
-			catch (MalformedURLException murle) {
-				throw new ProcessException(murle);
+			catch (MalformedURLException malformedURLException) {
+				throw new ProcessException(malformedURLException);
 			}
 
 			return builder.build();
@@ -508,12 +510,14 @@ public class NettyFabricWorkerExecutionChannelHandler
 					_channel, _nettyFabricWorkerConfig.getId(), future.get(),
 					null);
 			}
-			catch (Throwable t) {
-				if (t instanceof ExecutionException) {
-					t = t.getCause();
+			catch (Throwable throwable) {
+				if (throwable instanceof ExecutionException) {
+					throwable = throwable.getCause();
 				}
 
-				sendResult(_channel, _nettyFabricWorkerConfig.getId(), null, t);
+				sendResult(
+					_channel, _nettyFabricWorkerConfig.getId(), null,
+					throwable);
 			}
 		}
 
@@ -559,11 +563,10 @@ public class NettyFabricWorkerExecutionChannelHandler
 						public FabricWorker<Serializable> call()
 							throws ProcessException {
 
-							ProcessConfig processConfig =
-								_nettyFabricWorkerConfig.getProcessConfig();
-
 							return _fabricAgent.execute(
-								loadedPaths.toProcessConfig(processConfig),
+								loadedPaths.toProcessConfig(
+									_nettyFabricWorkerConfig.
+										getProcessConfig()),
 								_nettyFabricWorkerConfig.getProcessCallable());
 						}
 

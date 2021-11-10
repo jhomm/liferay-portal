@@ -1,0 +1,440 @@
+@component-name = "data-engine"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Data Engine";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			DMDocument.tearDownCP();
+
+			DMMetadataSet.tearDownCP();
+
+			User.logoutPG();
+		}
+	}
+
+	@description = "Verify if user can clear the uploaded image from form by clicking on Clear button"
+	@priority = "4"
+	test ClearUploadedImage {
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMNavigator.gotoDocumentType();
+
+		DMDocumentType.add(
+			dmDocumentTypeDescription = "DM Document Type Description",
+			dmDocumentTypeFieldNames = "Image",
+			dmDocumentTypeName = "DM Document Type Name");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Document Title",
+			dmDocumentTypeName = "DM Document Type Name",
+			imageField = "Document_1.jpg",
+			navTab = "Documents and Media");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "DM Document Title");
+
+		Click(
+			key_buttonName = "Clear",
+			key_fieldFieldLabel = "Image",
+			locator1 = "DocumentsAndMediaDocument#CUSTOM_FIELD_BUTTON");
+
+		PortletEntry.publish();
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "DM Document Title");
+
+		AssertElementNotPresent(
+			key_fieldFieldLabel = "Image",
+			key_image = "Document_1.jpg",
+			locator1 = "DocumentsAndMediaDocument#CUSTOM_FIELD_IMAGE_PREVIEW");
+	}
+
+	@description = "Verify if user can drag and drop image field into form builder"
+	@priority = "5"
+	test DragAndDropImageFieldToBuilder {
+		DMDocument.addImageField();
+
+		DDLDataDefinition.save();
+
+		LexiconEntry.openEntryMenu(rowEntry = "DM Document Type Name");
+
+		MenuItem.click(menuItem = "Edit");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Image",
+			fieldName = "Image");
+	}
+
+	@description = "Verify if user can duplicate the image field"
+	@priority = "4"
+	test DuplicateImageField {
+		DMDocument.addImageField();
+
+		DataEngine.duplicate(fieldFieldLabel = "Image");
+
+		DDLDataDefinition.save();
+
+		LexiconEntry.openEntryMenu(rowEntry = "DM Document Type Name");
+
+		MenuItem.click(menuItem = "Edit");
+
+		for (var fieldFieldLabel : list "Image,Copy of Image") {
+			DataEngine.viewField(
+				fieldFieldLabel = "${fieldFieldLabel}",
+				fieldName = "Image");
+		}
+	}
+
+	@description = "Verify if label and field name of image field can be translated"
+	@priority = "5"
+	test LocalizationOfImageFieldtPersists {
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMNavigator.gotoDocumentType();
+
+		DMDocumentType.add(
+			dmDocumentTypeDescription = "DM Document Type Description",
+			dmDocumentTypeFieldNames = "Image",
+			dmDocumentTypeName = "DM Document Type Name");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMNavigator.gotoDocumentType();
+
+		DMDocumentType.edit(
+			dmDocumentTypeName = "DM Document Type Name",
+			dmDocumentTypeNameEdit = "DM Document Type Name Spain",
+			fieldFieldLabel = "Image",
+			fieldFieldLabelEdit = "Imagen",
+			locale = "es-ES");
+
+		LexiconEntry.openEntryMenu(rowEntry = "DM Document Type Name Spain");
+
+		MenuItem.click(menuItem = "Editar");
+
+		PortletEntry.changeLocale(locale = "es-ES");
+
+		if (IsElementNotPresent(key_tabName = "Generador", locator1 = "Sidebar#ACTIVE_TAB")) {
+			Navigator.gotoSidebarTab(tabName = "Generador");
+		}
+
+		AssertClick.assertPartialTextClickAt(
+			key_fieldFieldLabel = "Imagen",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER",
+			value1 = "Imagen");
+
+		AssertTextEquals(
+			index = "1",
+			key_fieldName = "Imagen",
+			locator1 = "DataEngineBuilder#FIELD_NAME_INDEXED",
+			value1 = "Imagen");
+
+		AssertTextEquals(
+			key_fieldFieldLabel = "Imagen",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL",
+			value1 = "Imagen");
+	}
+
+	@description = "Verify if user is required to define a description for an uploaded image"
+	@priority = "3"
+	test SaveUploadedImageWithoutDescription {
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMNavigator.gotoDocumentType();
+
+		DMDocumentType.add(
+			dmDocumentTypeDescription = "DM Document Type Description",
+			dmDocumentTypeFieldNames = "Image",
+			dmDocumentTypeName = "DM Document Type Name");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Document Title",
+			dmDocumentTypeName = "DM Document Type Name",
+			imageField = "Document_1.jpg",
+			navTab = "Documents and Media");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "DM Document Title");
+
+		AssertElementPresent(
+			key_fieldFieldLabel = "Image",
+			key_image = "Document_1.jpg",
+			locator1 = "DocumentsAndMediaDocument#CUSTOM_FIELD_IMAGE_PREVIEW");
+
+		AssertTextEquals.assertValue(
+			locator1 = "TextInput#IMAGE_DESCRIPTION",
+			value1 = "");
+	}
+
+	@description = "Verify if user can define a field Reference"
+	@priority = "4"
+	test SetFieldReferenceOfImageField {
+		DMDocument.addImageField();
+
+		DDLDataDefinition.save();
+
+		LexiconEntry.openEntryMenu(rowEntry = "DM Document Type Name");
+
+		MenuItem.click(menuItem = "Edit");
+
+		DMDocumentType.gotoEditField(fieldName = "Image");
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertTextEquals.assertValue(
+			key_fieldLabel = "Field Reference",
+			key_fieldName = "fieldReference",
+			locator1 = "Sidebar#TEXT_INPUT",
+			value1 = "Image");
+	}
+
+	@description = "Verify if user can define a help text"
+	@priority = "4"
+	test SetHelpTextOfImageField {
+		DMDocument.addImageField();
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Image",
+			fieldHelp = "You can select an image.");
+
+		DDLDataDefinition.save();
+
+		LexiconEntry.openEntryMenu(rowEntry = "DM Document Type Name");
+
+		MenuItem.click(menuItem = "Edit");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Image",
+			fieldHelp = "You can select an image.",
+			fieldName = "Image");
+	}
+
+	@description = "Verify if user can define a description for the uploaded image"
+	@priority = "4"
+	test SetImageDescriptionOnDM {
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMNavigator.gotoDocumentType();
+
+		DMDocumentType.add(
+			dmDocumentTypeDescription = "DM Document Type Description",
+			dmDocumentTypeFieldNames = "Image",
+			dmDocumentTypeName = "DM Document Type Name");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Document Title",
+			dmDocumentTypeName = "DM Document Type Name",
+			imageDescription = "This is an image.",
+			imageField = "Document_1.jpg",
+			navTab = "Documents and Media");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "DM Document Title");
+
+		AssertElementPresent(
+			key_fieldFieldLabel = "Image",
+			key_image = "Document_1.jpg",
+			locator1 = "DocumentsAndMediaDocument#CUSTOM_FIELD_IMAGE_PREVIEW");
+
+		AssertTextEquals.assertValue(
+			locator1 = "TextInput#IMAGE_DESCRIPTION",
+			value1 = "This is an image.");
+	}
+
+	@description = "Verify if user can set the image field as repeatable"
+	@priority = "4"
+	test SetImageFieldAsRepeatable {
+		DMDocument.addImageField();
+
+		DataEngine.toggleFieldRepeatable(fieldFieldLabel = "Image");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "DM Document Type Name");
+
+		Click(locator1 = "FormFields#FIELD_ADD_DUPLICATE");
+
+		AssertVisible(
+			key_fieldName = "Image",
+			key_repeatableFieldNumber = "2",
+			locator1 = "FormFields#FIELD_ADD_SPECIFIC");
+
+		Click(locator1 = "FormFields#FIELD_ADD_REMOVE");
+
+		AssertElementNotPresent(
+			key_fieldName = "Image",
+			key_repeatableFieldNumber = "2",
+			locator1 = "FormFields#FIELD_ADD_SPECIFIC");
+	}
+
+	@description = "Verify if user can add a field label"
+	@priority = "5"
+	test SetLabelOfImageField {
+		DMDocument.addImageField();
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Image",
+			label = "New Image");
+
+		DDLDataDefinition.save();
+
+		LexiconEntry.openEntryMenu(rowEntry = "DM Document Type Name");
+
+		MenuItem.click(menuItem = "Edit");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "New Image",
+			fieldName = "Image");
+	}
+
+	@description = "Verify if user can show/hide label"
+	@priority = "4"
+	test ShowAndHideImageFieldLabel {
+		DMDocument.addImageField();
+
+		DataEngine.toggleShowLabel(fieldLabel = "Image");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "DM Document Type Name");
+
+		AssertElementNotPresent(
+			key_fieldFieldLabel = "Image",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+	}
+
+	@description = "Verify if user can upload an image from Liferay Documents and Media"
+	@priority = "5"
+	test UploadImageFromDocumentsAndMedia {
+		JSONDocument.addFileWithUploadedFile(
+			dmDocumentTitle = "Document_1.jpg",
+			groupName = "Guest",
+			mimeType = "image/jpeg",
+			sourceFileName = "Document_1.jpg");
+
+		DMDocument.addImageField();
+
+		DDLDataDefinition.save();
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Document Title",
+			dmDocumentTypeName = "DM Document Type Name",
+			imageField = "Document_1.jpg",
+			imageFileName = "true",
+			navTab = "Documents and Media");
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
+
+		DMDocument.viewDocumentTypePG(imageName = "Document_1.jpg");
+	}
+
+	@description = "Verify if user can upload an image from local storage"
+	@priority = "5"
+	test UploadImageFromLocalStorage {
+		DMDocument.addImageField();
+
+		DDLDataDefinition.save();
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Document Title",
+			dmDocumentTypeName = "DM Document Type Name",
+			fieldFieldLabel = "Image",
+			imageField = "Document_1.jpg",
+			navTab = "Documents and Media");
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
+
+		DMDocument.viewDocumentTypePG(imageName = "Document_1.jpg");
+	}
+
+	@description = "Verify if user is not allowed to upload a file that is not an image"
+	@priority = "4"
+	test UploadInvalidFile {
+		DMDocument.addImageField();
+
+		DDLDataDefinition.save();
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Document Title",
+			dmDocumentTypeName = "DM Document Type Name",
+			imageField = "Document_1.doc",
+			invalidFileValidation = "Please enter a file with a valid extension (.bmp,.gif,.jpeg,.jpg,.png,.svg,.tiff).",
+			navTab = "Documents and Media");
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
+
+		DMDocument.expandInfo();
+
+		AssertElementNotPresent(
+			key_imageName = "Document_1.doc",
+			locator1 = "DocumentsAndMediaDocument#METADATA_PANEL_IMAGE");
+	}
+
+	@description = "Verify if user can set the field as required or not"
+	@priority = "4"
+	test VerifyRequiredPropertyOfImageField {
+		DMDocument.addImageField();
+
+		DataEngine.editFieldRequired(fieldFieldLabel = "Image");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Document Title",
+			dmDocumentTypeName = "DM Document Type Name",
+			fieldFieldLabel = "Image",
+			requiredFieldValidation = "true");
+	}
+
+}

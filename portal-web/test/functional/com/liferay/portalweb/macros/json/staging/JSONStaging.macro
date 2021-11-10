@@ -1,0 +1,69 @@
+definition {
+
+	@summary = "Assign user to staging site"
+	macro assignUserToStagingGroup {
+		Variables.assertDefined(parameterList = "${groupKey},${userEmailAddress}");
+
+		var groupId = JSONStagingSetter.setGroupId(groupKey = "${groupKey}", site = "${site}");
+
+		var userId = JSONUserAPI._getUserIdByEmailAddress(userEmailAddress = "${userEmailAddress}");
+
+		JSONGroupAPI._assignUserToGroup(
+			groupId = "${groupId}",
+			userId = "${userId}");
+	}
+
+	@summary = "Activate local staging with or without page versioning with all content or unchecked content"
+	macro enableLocalStaging {
+		Variables.assertDefined(parameterList = "${groupName}");
+
+		if (!(isSet(site))) {
+			var site = "true";
+		}
+
+		var groupId = JSONGroupAPI._getGroupIdByName(groupName = "${groupName}", parentGroupName = "${parentGroupName}", grandParentGroupName = "${grandParentGroupName}", site = "${site}");
+
+		if (!(isSet(branchingPrivate))) {
+			var branchingPrivate = "false";
+		}
+
+		if (!(isSet(branchingPublic))) {
+			var branchingPublic = "false";
+		}
+
+		JSONStagingAPI._enableLocalStaging(
+			branchingPrivate = "${branchingPrivate}",
+			branchingPublic = "${branchingPublic}",
+			groupId = "${groupId}",
+			unCheckedContent = "${unCheckedContent}");
+
+		Pause(locator1 = "3000");
+	}
+
+	@summary = "Activate remote staging with or without page versioning with all content"
+	macro enableRemoteStaging {
+		Variables.assertDefined(parameterList = "${groupName},${remoteGroupId}");
+
+		if (!(isSet(site))) {
+			var site = "true";
+		}
+
+		var groupId = JSONGroupAPI._getGroupIdByName(groupName = "${groupName}", parentGroupName = "${parentGroupName}", grandParentGroupName = "${grandParentGroupName}", site = "${site}");
+
+		if (!(isSet(branchingPrivate))) {
+			var branchingPrivate = "false";
+		}
+
+		if (!(isSet(branchingPublic))) {
+			var branchingPublic = "false";
+		}
+
+		JSONStagingAPI._enableRemoteStaging(
+			branchingPrivate = "${branchingPrivate}",
+			branchingPublic = "${branchingPublic}",
+			groupId = "${groupId}",
+			remoteGroupId = "${remoteGroupId}",
+			remotePort = "${remotePort}");
+	}
+
+}

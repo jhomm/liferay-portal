@@ -14,11 +14,11 @@
 
 package com.liferay.portlet.asset.service.permission;
 
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.service.AssetVocabularyLocalServiceUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.security.auth.PrincipalException;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portlet.asset.model.AssetVocabulary;
-import com.liferay.portlet.asset.service.AssetVocabularyLocalServiceUtil;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 
 /**
  * @author Eduardo Lundgren
@@ -72,10 +72,10 @@ public class AssetVocabularyPermission {
 			String actionId)
 		throws PortalException {
 
-		AssetVocabulary vocabulary =
-			AssetVocabularyLocalServiceUtil.getVocabulary(vocabularyId);
-
-		return contains(permissionChecker, vocabulary, actionId);
+		return contains(
+			permissionChecker,
+			AssetVocabularyLocalServiceUtil.getVocabulary(vocabularyId),
+			actionId);
 	}
 
 }

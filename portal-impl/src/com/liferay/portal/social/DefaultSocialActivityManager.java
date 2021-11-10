@@ -15,16 +15,17 @@
 package com.liferay.portal.social;
 
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.model.ClassedModel;
+import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.social.BaseSocialActivityManager;
-import com.liferay.portal.model.ClassedModel;
-import com.liferay.portal.model.GroupedModel;
-import com.liferay.portlet.social.service.SocialActivityLocalService;
+import com.liferay.social.kernel.service.SocialActivityLocalService;
 
 /**
- * @author Adolfo Pérez
+ * @author     Adolfo Pérez
+ * @deprecated As of Athanasius (7.3.x), with no direct replacement
  */
-public class DefaultSocialActivityManager
-		<T extends ClassedModel & GroupedModel>
+@Deprecated
+public class DefaultSocialActivityManager<T extends ClassedModel & GroupedModel>
 	extends BaseSocialActivityManager<T> {
 
 	@Override

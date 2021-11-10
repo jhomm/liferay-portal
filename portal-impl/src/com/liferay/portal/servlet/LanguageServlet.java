@@ -14,25 +14,27 @@
 
 package com.liferay.portal.servlet;
 
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.auth.AuthTokenUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.security.auth.AuthTokenUtil;
 
 import java.io.IOException;
 
 import java.util.Locale;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,10 +46,11 @@ public class LanguageServlet extends HttpServlet {
 
 	@Override
 	public void service(
-			HttpServletRequest request, HttpServletResponse response)
-		throws IOException {
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
+		throws IOException, ServletException {
 
-		String path = request.getPathInfo();
+		String path = httpServletRequest.getPathInfo();
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("Path " + path);
@@ -55,10 +58,15 @@ public class LanguageServlet extends HttpServlet {
 
 		try {
 			AuthTokenUtil.checkCSRFToken(
-				request, LanguageServlet.class.getName());
+				httpServletRequest, LanguageServlet.class.getName());
 		}
-		catch (PortalException pe) {
-			_log.error("Invalid authentication token received");
+		catch (PortalException portalException) {
+			_log.error(
+				"Invalid authentication token received", portalException);
+
+			PortalUtil.sendError(
+				HttpServletResponse.SC_UNAUTHORIZED, portalException,
+				httpServletRequest, httpServletResponse);
 
 			return;
 		}
@@ -72,11 +80,19 @@ public class LanguageServlet extends HttpServlet {
 		if (pathArray.length == 0) {
 			_log.error("Language id is not specified");
 
+			httpServletResponse.sendError(
+				HttpServletResponse.SC_NOT_FOUND,
+				httpServletRequest.getRequestURI());
+
 			return;
 		}
 
 		if (pathArray.length == 1) {
 			_log.error("Language key is not specified");
+
+			httpServletResponse.sendError(
+				HttpServletResponse.SC_NOT_FOUND,
+				httpServletRequest.getRequestURI());
 
 			return;
 		}
@@ -102,26 +118,27 @@ public class LanguageServlet extends HttpServlet {
 				value = LanguageUtil.format(locale, key, arguments);
 			}
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
+				_log.warn(exception, exception);
 			}
 		}
 
 		if (!LanguageUtil.isValidLanguageKey(locale, key)) {
-			response.setDateHeader(HttpHeaders.EXPIRES, 0);
-			response.setHeader(
+			httpServletResponse.setDateHeader(HttpHeaders.EXPIRES, 0);
+			httpServletResponse.setHeader(
 				HttpHeaders.CACHE_CONTROL,
 				HttpHeaders.CACHE_CONTROL_NO_CACHE_VALUE);
-			response.setHeader(
+			httpServletResponse.setHeader(
 				HttpHeaders.PRAGMA, HttpHeaders.PRAGMA_NO_CACHE_VALUE);
 		}
 
-		response.setContentType(ContentTypes.TEXT_PLAIN_UTF8);
-		response.setHeader(
+		httpServletResponse.setContentType(ContentTypes.TEXT_PLAIN_UTF8);
+		httpServletResponse.setHeader(
 			HttpHeaders.CONTENT_DISPOSITION, _CONTENT_DISPOSITION);
 
-		ServletResponseUtil.write(response, value.getBytes(StringPool.UTF8));
+		ServletResponseUtil.write(
+			httpServletResponse, value.getBytes(StringPool.UTF8));
 	}
 
 	private static final String _CONTENT_DISPOSITION =

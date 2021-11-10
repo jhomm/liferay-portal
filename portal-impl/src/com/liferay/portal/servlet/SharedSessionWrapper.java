@@ -28,6 +28,7 @@ import java.util.Map;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
+import javax.servlet.http.HttpSessionContext;
 
 /**
  * @author Brian Wing Shun Chan
@@ -35,103 +36,103 @@ import javax.servlet.http.HttpSession;
 public class SharedSessionWrapper implements HttpSession {
 
 	public SharedSessionWrapper(
-		HttpSession portalSession, HttpSession portletSession) {
+		HttpSession portalHttpSession, HttpSession portletHttpSession) {
 
-		if (portalSession == null) {
-			_portalSession = new NullSession();
+		if (portalHttpSession == null) {
+			_portalHttpSession = new NullSession();
 
 			if (_log.isWarnEnabled()) {
 				_log.warn("Wrapped portal session is null");
 			}
 		}
 		else {
-			_portalSession = portalSession;
+			_portalHttpSession = portalHttpSession;
 		}
 
-		_portletSession = portletSession;
+		_portletHttpSession = portletHttpSession;
 	}
 
 	@Override
 	public Object getAttribute(String name) {
-		HttpSession session = getSessionDelegate(name);
+		HttpSession httpSession = getSessionDelegate(name);
 
-		return session.getAttribute(name);
+		return httpSession.getAttribute(name);
 	}
 
 	@Override
 	public Enumeration<String> getAttributeNames() {
-		HttpSession session = getSessionDelegate();
+		HttpSession httpSession = getSessionDelegate();
 
-		Enumeration<String> namesEnu = session.getAttributeNames();
+		Enumeration<String> namesEnumeration = httpSession.getAttributeNames();
 
-		if (session == _portletSession) {
-			List<String> namesList = Collections.list(namesEnu);
+		if (httpSession == _portletHttpSession) {
+			List<String> namesList = Collections.list(namesEnumeration);
 
-			Enumeration<String> portalSessionNamesEnu =
-				_portalSession.getAttributeNames();
+			Enumeration<String> portalHttpSessionNamesEnumeration =
+				_portalHttpSession.getAttributeNames();
 
-			while (portalSessionNamesEnu.hasMoreElements()) {
-				String name = portalSessionNamesEnu.nextElement();
+			while (portalHttpSessionNamesEnumeration.hasMoreElements()) {
+				String name = portalHttpSessionNamesEnumeration.nextElement();
 
 				if (containsSharedAttribute(name)) {
 					namesList.add(name);
 				}
 			}
 
-			namesEnu = Collections.enumeration(namesList);
+			namesEnumeration = Collections.enumeration(namesList);
 		}
 
-		return namesEnu;
+		return namesEnumeration;
 	}
 
 	@Override
 	public long getCreationTime() {
-		HttpSession session = getSessionDelegate();
+		HttpSession httpSession = getSessionDelegate();
 
-		return session.getCreationTime();
+		return httpSession.getCreationTime();
 	}
 
 	@Override
 	public String getId() {
-		HttpSession session = getSessionDelegate();
+		HttpSession httpSession = getSessionDelegate();
 
-		return session.getId();
+		return httpSession.getId();
 	}
 
 	@Override
 	public long getLastAccessedTime() {
-		HttpSession session = getSessionDelegate();
+		HttpSession httpSession = getSessionDelegate();
 
-		return session.getLastAccessedTime();
+		return httpSession.getLastAccessedTime();
 	}
 
 	@Override
 	public int getMaxInactiveInterval() {
-		HttpSession session = getSessionDelegate();
+		HttpSession httpSession = getSessionDelegate();
 
-		return session.getMaxInactiveInterval();
+		return httpSession.getMaxInactiveInterval();
 	}
 
 	@Override
 	public ServletContext getServletContext() {
-		HttpSession session = getSessionDelegate();
+		HttpSession httpSession = getSessionDelegate();
 
-		return session.getServletContext();
+		return httpSession.getServletContext();
 	}
 
 	/**
-	 * @deprecated As of 6.1.0
+	 * @deprecated As of Paton (6.1.x)
 	 */
 	@Deprecated
 	@Override
-	public javax.servlet.http.HttpSessionContext getSessionContext() {
-		HttpSession session = getSessionDelegate();
+	public HttpSessionContext getSessionContext() {
+		HttpSession httpSession = getSessionDelegate();
 
-		return session.getSessionContext();
+		return httpSession.getSessionContext();
 	}
 
 	/**
-	 * @deprecated As of 7.0.0
+	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
 	@Override
@@ -140,32 +141,32 @@ public class SharedSessionWrapper implements HttpSession {
 	}
 
 	/**
-	 * @deprecated As of 7.0.0
+	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
 	@Override
 	public String[] getValueNames() {
 		List<String> names = ListUtil.fromEnumeration(getAttributeNames());
 
-		return names.toArray(new String[names.size()]);
+		return names.toArray(new String[0]);
 	}
 
 	@Override
 	public void invalidate() {
-		HttpSession session = getSessionDelegate();
+		HttpSession httpSession = getSessionDelegate();
 
-		session.invalidate();
+		httpSession.invalidate();
 	}
 
 	@Override
 	public boolean isNew() {
-		HttpSession session = getSessionDelegate();
+		HttpSession httpSession = getSessionDelegate();
 
-		return session.isNew();
+		return httpSession.isNew();
 	}
 
 	/**
-	 * @deprecated As of 7.0.0
+	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
 	@Override
@@ -175,13 +176,13 @@ public class SharedSessionWrapper implements HttpSession {
 
 	@Override
 	public void removeAttribute(String name) {
-		HttpSession session = getSessionDelegate(name);
+		HttpSession httpSession = getSessionDelegate(name);
 
-		session.removeAttribute(name);
+		httpSession.removeAttribute(name);
 	}
 
 	/**
-	 * @deprecated As of 7.0.0
+	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
 	@Override
@@ -191,16 +192,16 @@ public class SharedSessionWrapper implements HttpSession {
 
 	@Override
 	public void setAttribute(String name, Object value) {
-		HttpSession session = getSessionDelegate(name);
+		HttpSession httpSession = getSessionDelegate(name);
 
-		session.setAttribute(name, value);
+		httpSession.setAttribute(name, value);
 	}
 
 	@Override
 	public void setMaxInactiveInterval(int maxInactiveInterval) {
-		HttpSession session = getSessionDelegate();
+		HttpSession httpSession = getSessionDelegate();
 
-		session.setMaxInactiveInterval(maxInactiveInterval);
+		httpSession.setMaxInactiveInterval(maxInactiveInterval);
 	}
 
 	protected boolean containsSharedAttribute(String name) {
@@ -214,44 +215,43 @@ public class SharedSessionWrapper implements HttpSession {
 	}
 
 	protected HttpSession getSessionDelegate() {
-		if (_portletSession != null) {
-			return _portletSession;
+		if (_portletHttpSession != null) {
+			return _portletHttpSession;
 		}
-		else {
-			return _portalSession;
-		}
+
+		return _portalHttpSession;
 	}
 
 	protected HttpSession getSessionDelegate(String name) {
-		if (_portletSession == null) {
-			return _portalSession;
+		if (_portletHttpSession == null) {
+			return _portalHttpSession;
 		}
 
 		if (_sharedSessionAttributesExcludes.containsKey(name)) {
-			return _portletSession;
+			return _portletHttpSession;
 		}
 		else if (containsSharedAttribute(name)) {
-			return _portalSession;
+			return _portalHttpSession;
 		}
-		else {
-			return _portletSession;
-		}
+
+		return _portletHttpSession;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SharedSessionWrapper.class);
 
-	private static final Map<String, String> _sharedSessionAttributesExcludes;
+	private static final Map<String, String> _sharedSessionAttributesExcludes =
+		new HashMap<String, String>() {
+			{
+				for (String name :
+						PropsValues.SESSION_SHARED_ATTRIBUTES_EXCLUDES) {
 
-	static {
-		_sharedSessionAttributesExcludes = new HashMap<>();
+					put(name, name);
+				}
+			}
+		};
 
-		for (String name : PropsValues.SESSION_SHARED_ATTRIBUTES_EXCLUDES) {
-			_sharedSessionAttributesExcludes.put(name, name);
-		}
-	}
-
-	private final HttpSession _portalSession;
-	private HttpSession _portletSession;
+	private final HttpSession _portalHttpSession;
+	private HttpSession _portletHttpSession;
 
 }

@@ -14,27 +14,29 @@
 
 package com.liferay.portlet.expando.util;
 
+import com.liferay.expando.kernel.model.ExpandoBridge;
+import com.liferay.expando.kernel.model.ExpandoColumn;
+import com.liferay.expando.kernel.model.ExpandoColumnConstants;
+import com.liferay.expando.kernel.model.ExpandoTableConstants;
+import com.liferay.expando.kernel.model.ExpandoValue;
+import com.liferay.expando.kernel.service.ExpandoColumnLocalServiceUtil;
+import com.liferay.expando.kernel.service.ExpandoValueLocalServiceUtil;
+import com.liferay.expando.kernel.util.ExpandoBridgeIndexer;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.Document;
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.portlet.expando.model.ExpandoBridge;
-import com.liferay.portlet.expando.model.ExpandoColumn;
-import com.liferay.portlet.expando.model.ExpandoColumnConstants;
-import com.liferay.portlet.expando.model.ExpandoTableConstants;
-import com.liferay.portlet.expando.model.ExpandoValue;
 import com.liferay.portlet.expando.model.impl.ExpandoValueImpl;
-import com.liferay.portlet.expando.service.ExpandoColumnLocalServiceUtil;
-import com.liferay.portlet.expando.service.ExpandoValueLocalServiceUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +44,6 @@ import java.util.List;
 /**
  * @author Raymond Augé
  */
-@DoPrivileged
 public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 
 	@Override
@@ -54,17 +55,22 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 		try {
 			doAddAttributes(document, expandoBridge);
 		}
-		catch (SystemException se) {
-			_log.error(se, se);
+		catch (SystemException systemException) {
+			_log.error(systemException, systemException);
 		}
 	}
 
 	@Override
-	public String encodeFieldName(String columnName) {
-		StringBundler sb = new StringBundler(3);
+	public String encodeFieldName(String columnName, int indexType) {
+		StringBundler sb = new StringBundler(6);
 
 		sb.append(FIELD_NAMESPACE);
 		sb.append(StringPool.DOUBLE_UNDERLINE);
+
+		if (indexType == ExpandoColumnConstants.INDEX_TYPE_KEYWORD) {
+			sb.append("keyword__");
+		}
+
 		sb.append(
 			StringUtil.toLowerCase(ExpandoTableConstants.DEFAULT_TABLE_NAME));
 		sb.append(StringPool.DOUBLE_UNDERLINE);
@@ -78,7 +84,13 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 			List<ExpandoValue> expandoValues)
 		throws PortalException {
 
-		String fieldName = encodeFieldName(expandoColumn.getName());
+		UnicodeProperties unicodeProperties =
+			expandoColumn.getTypeSettingsProperties();
+
+		int indexType = GetterUtil.getInteger(
+			unicodeProperties.getProperty(ExpandoColumnConstants.INDEX_TYPE));
+
+		String fieldName = encodeFieldName(expandoColumn.getName(), indexType);
 
 		ExpandoValue expandoValue = new ExpandoValueImpl();
 
@@ -96,13 +108,6 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 				break;
 			}
 		}
-
-		UnicodeProperties typeSettingsProperties =
-			expandoColumn.getTypeSettingsProperties();
-
-		int indexType = GetterUtil.getInteger(
-			typeSettingsProperties.getProperty(
-				ExpandoColumnConstants.INDEX_TYPE));
 
 		int type = expandoColumn.getType();
 
@@ -142,6 +147,15 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 				document.addKeyword(fieldName, new float[0]);
 			}
 		}
+		else if (type == ExpandoColumnConstants.GEOLOCATION) {
+			JSONObject jsonObject = expandoValue.getGeolocationJSONObject();
+
+			double latitude = jsonObject.getDouble("latitude");
+			double longitude = jsonObject.getDouble("longitude");
+
+			document.addGeoLocation(
+				fieldName.concat("_geolocation"), latitude, longitude);
+		}
 		else if (type == ExpandoColumnConstants.INTEGER) {
 			document.addKeyword(fieldName, expandoValue.getInteger());
 		}
@@ -165,7 +179,8 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 			}
 		}
 		else if (type == ExpandoColumnConstants.NUMBER) {
-			document.addKeyword(fieldName, expandoValue.getNumber().toString());
+			document.addKeyword(
+				fieldName, String.valueOf(expandoValue.getNumber()));
 		}
 		else if (type == ExpandoColumnConstants.NUMBER_ARRAY) {
 			if (!defaultValue) {
@@ -239,18 +254,18 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 			ExpandoColumnLocalServiceUtil.getDefaultTableColumns(
 				expandoBridge.getCompanyId(), expandoBridge.getClassName());
 
-		if ((expandoColumns == null) || expandoColumns.isEmpty()) {
+		if (ListUtil.isEmpty(expandoColumns)) {
 			return;
 		}
 
 		List<ExpandoColumn> indexedColumns = new ArrayList<>();
 
 		for (ExpandoColumn expandoColumn : expandoColumns) {
-			UnicodeProperties properties =
+			UnicodeProperties unicodeProperties =
 				expandoColumn.getTypeSettingsProperties();
 
 			int indexType = GetterUtil.getInteger(
-				properties.get(ExpandoColumnConstants.INDEX_TYPE));
+				unicodeProperties.get(ExpandoColumnConstants.INDEX_TYPE));
 
 			if (indexType != ExpandoColumnConstants.INDEX_TYPE_NONE) {
 				indexedColumns.add(expandoColumn);
@@ -272,8 +287,8 @@ public class ExpandoBridgeIndexerImpl implements ExpandoBridgeIndexer {
 			try {
 				addAttribute(document, expandoColumn, expandoValues);
 			}
-			catch (Exception e) {
-				_log.error("Indexing " + expandoColumn.getName(), e);
+			catch (Exception exception) {
+				_log.error("Indexing " + expandoColumn.getName(), exception);
 			}
 		}
 	}

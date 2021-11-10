@@ -16,48 +16,33 @@
 
 <%@ include file="/html/portal/init.jsp" %>
 
-<style>
-	<%@ include file="/html/portal/setup_wizard_css.jspf" %>
-</style>
-
-<div id="wrapper">
-	<header id="banner" role="banner">
-		<div id="heading">
-			<h1 class="site-title">
-				<span class="logo" title="<liferay-ui:message key="welcome-to-liferay" />">
+<div class="pt-0" id="wrapper">
+	<header class="mb-4" id="banner">
+		<div class="mb-4 navbar navbar-classic navbar-top py-3">
+			<div class="container">
+				<div class="align-items-center d-inline-flex logo">
 
 					<%
 					Group group = layout.getGroup();
 					%>
 
-					<img alt="<%= HtmlUtil.escapeAttribute(group.getDescriptiveName(locale)) %>" height="<%= themeDisplay.getCompanyLogoHeight() %>" src="<%= HtmlUtil.escape(themeDisplay.getCompanyLogo()) %>" width="<%= themeDisplay.getCompanyLogoWidth() %>" />
+					<img alt="<%= HtmlUtil.escapeAttribute(group.getDescriptiveName(locale)) %>" height="56" src="<%= HtmlUtil.escape(themeDisplay.getCompanyLogo()) %>" />
 
-					<span class="site-name">
+					<h1 class="font-weight-bold h2 mb-0 text-dark">
 						<%= PropsValues.COMPANY_DEFAULT_NAME %>
-					</span>
-				</span>
-
-				<span class="configuration-title" title="<liferay-ui:message key="basic-configuration" />">
-					<i class="icon-cog"></i>
-
-					<liferay-ui:message key="basic-configuration" />
-				</span>
-			</h1>
+					</h1>
+				</div>
+			</div>
 		</div>
 	</header>
 
-	<div id="content">
-		<div id="main-content">
+	<div class="container" id="content">
+		<div class="pl-4 position-relative pr-4 pt-4 sheet sheet-lg" id="main-content">
+			<h2 class="sheet-title" title="<liferay-ui:message key="basic-configuration" />">
+				<liferay-ui:message key="basic-configuration" />
+			</h2>
 
 			<%
-			String defaultEmailAddress = PropsValues.DEFAULT_ADMIN_EMAIL_ADDRESS_PREFIX + StringPool.AT + company.getMx();
-
-			long emailAddressId = ParamUtil.getLong(request, "emailAddressId");
-
-			EmailAddress emailAddresModel = EmailAddressServiceUtil.fetchEmailAddress(emailAddressId);
-
-			String emailAddress = (emailAddresModel == null) ? defaultEmailAddress : emailAddresModel.getAddress();
-
 			UnicodeProperties unicodeProperties = (UnicodeProperties)session.getAttribute(WebKeys.SETUP_WIZARD_PROPERTIES);
 			%>
 
@@ -72,34 +57,50 @@
 						<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
 
 						<div class="row">
-							<aui:fieldset cssClass="col-md-6" label="portal">
-								<aui:input helpTextCssClass="help-inline" label="portal-name" name="companyName" suffix='<%= LanguageUtil.format(request, "for-example-x", "Liferay", false) %>' value="<%= PropsValues.COMPANY_DEFAULT_NAME %>" />
+							<aui:fieldset cssClass="col-md-6">
+								<h3 class="sheet-subtitle">
+									<liferay-ui:message key="portal" />
+								</h3>
 
-								<aui:select inlineField="<%= true %>" label="default-language" name="companyLocale">
+								<aui:input label="portal-name" name="companyName" value="<%= PropsValues.COMPANY_DEFAULT_NAME %>">
+									<aui:validator name="required" />
+								</aui:input>
 
-									<%
-									String languageId = GetterUtil.getString((String)session.getAttribute(WebKeys.SETUP_WIZARD_DEFAULT_LOCALE), SetupWizardUtil.getDefaultLanguageId());
+								<aui:field-wrapper label="default-language" name="companyLocale">
+									<div class="form-group-autofit">
+										<div class="form-group-item">
+											<aui:select label="" name="companyLocale">
 
-									for (Locale curLocale : LanguageUtil.getAvailableLocales()) {
-									%>
+												<%
+												String languageId = GetterUtil.getString((String)session.getAttribute(WebKeys.SETUP_WIZARD_DEFAULT_LOCALE), SetupWizardUtil.getDefaultLanguageId());
 
-										<aui:option label="<%= curLocale.getDisplayName(curLocale) %>" selected="<%= languageId.equals(LocaleUtil.toLanguageId(curLocale)) %>" value="<%= LocaleUtil.toLanguageId(curLocale) %>" />
+												for (Locale curLocale : LanguageUtil.getAvailableLocales()) {
+												%>
 
-									<%
-									}
-									%>
+													<aui:option label="<%= curLocale.getDisplayName(curLocale) %>" selected="<%= languageId.equals(LocaleUtil.toLanguageId(curLocale)) %>" value="<%= LocaleUtil.toLanguageId(curLocale) %>" />
 
-								</aui:select>
+												<%
+												}
+												%>
 
-								<aui:button cssClass="change-language" name="changeLanguageButton" value="change" />
+											</aui:select>
+										</div>
 
-								<aui:input label="add-sample-data" name='<%= "properties--" + PropsKeys.SETUP_WIZARD_ADD_SAMPLE_DATA + "--" %>' type="checkbox" value="<%= true %>" />
+										<aui:button name="changeLanguageButton" value="change" />
+									</div>
+								</aui:field-wrapper>
+
+								<aui:input label="time-zone" name="companyTimeZoneId" type="timeZone" value="<%= SetupWizardUtil.getDefaultTimeZoneId() %>" />
 							</aui:fieldset>
 
-							<aui:fieldset cssClass="col-md-6 column-last" label="administrator-user">
+							<aui:fieldset cssClass="col-md-6">
+								<h3 class="sheet-subtitle">
+									<liferay-ui:message key="administrator-user" />
+								</h3>
+
 								<%@ include file="/html/portal/setup_wizard_user_name.jspf" %>
 
-								<aui:input label="email" name="adminEmailAddress" value="<%= emailAddress %>">
+								<aui:input label="email" name="adminEmailAddress">
 									<aui:validator name="email" />
 									<aui:validator name="required" />
 								</aui:input>
@@ -107,7 +108,11 @@
 						</div>
 
 						<div class="row">
-							<aui:fieldset cssClass="col-md-12" label="database">
+							<aui:fieldset cssClass="col-md-12">
+								<h3 class="sheet-subtitle">
+									<liferay-ui:message key="database" />
+								</h3>
+
 								<aui:input name="defaultDatabase" type="hidden" value="<%= defaultDatabase %>" />
 
 								<div id="defaultDatabaseOptions">
@@ -120,9 +125,9 @@
 											<liferay-ui:message key="this-database-is-useful-for-development-and-demo'ing-purposes" />
 										</c:when>
 										<c:otherwise>
-											<p>
-												<strong><liferay-ui:message key="configured-database" /></strong>
-											</p>
+											<h4>
+												<liferay-ui:message key="configured-database" />
+											</h4>
 
 											<dl class="database-values dl-horizontal">
 												<c:choose>
@@ -175,28 +180,33 @@
 								<div class="hide" id="customDatabaseOptions">
 									<div class="connection-messages" id="connectionMessages"></div>
 
-									<a class="database-options" href="<%= HttpUtil.addParameter(themeDisplay.getPathMain() + "/portal/setup_wizard", "defaultDatabase", true) %>" id="defaultDatabaseOptionsLink">
+									<a class="d-inline-block database-options mb-3" href="<%= HttpUtil.addParameter(themeDisplay.getPathMain() + "/portal/setup_wizard", "defaultDatabase", true) %>" id="defaultDatabaseOptionsLink">
 										&laquo; <liferay-ui:message key='<%= defaultDatabase ? "use-default-database" : "use-configured-database" %>' />
 									</a>
 
 									<aui:select cssClass="database-type" name="databaseType">
 
 										<%
-										for (int i = 0; i < PropsValues.SETUP_DATABASE_TYPES.length; i++) {
-											String databaseType = PropsValues.SETUP_DATABASE_TYPES[i];
+										for (DBType dbType : DBManagerUtil.getDBTypes()) {
+											String dbTypeString = dbType.toString();
 
-											Map<String, Object> data = new HashMap<String, Object>();
+											String driverClassName = PropsUtil.get(PropsKeys.SETUP_DATABASE_DRIVER_CLASS_NAME, new Filter(dbTypeString));
 
-											String driverClassName = PropsUtil.get(PropsKeys.SETUP_DATABASE_DRIVER_CLASS_NAME, new Filter(databaseType));
-
-											data.put("driverClassName", driverClassName);
-
-											String url = PropsUtil.get(PropsKeys.SETUP_DATABASE_URL, new Filter(databaseType));
-
-											data.put("url", url);
+											String url = PropsUtil.get(PropsKeys.SETUP_DATABASE_URL, new Filter(dbTypeString));
 										%>
 
-											<aui:option data="<%= data %>" label='<%= "database." + databaseType %>' selected="<%= PropsValues.JDBC_DEFAULT_URL.contains(databaseType) %>" value="<%= databaseType %>" />
+											<aui:option
+												data='<%=
+													HashMapBuilder.<String, Object>put(
+														"driverClassName", driverClassName
+													).put(
+														"url", url
+													).build()
+												%>'
+												label='<%= "database." + dbTypeString %>'
+												selected="<%= PropsValues.JDBC_DEFAULT_URL.contains(dbTypeString) %>"
+												value="<%= dbTypeString %>"
+											/>
 
 										<%
 										}
@@ -219,12 +229,46 @@
 							</aui:fieldset>
 						</div>
 
+						<div class="hide row" id="sampleData">
+							<aui:fieldset cssClass="col-md-12">
+								<h3 class="sheet-subtitle">
+									<liferay-ui:message key="sample-data" />
+								</h3>
+
+								<aui:input disabled="<%= true %>" helpMessage="add-sample-data-help" id="addSampleData" label="add-sample-data" name='<%= "properties--" + PropsKeys.SETUP_WIZARD_ADD_SAMPLE_DATA + "--" %>' type="checkbox" value="<%= PropsValues.SETUP_WIZARD_ADD_SAMPLE_DATA %>" />
+							</aui:fieldset>
+						</div>
+
 						<aui:button-row>
 							<aui:button name="finishButton" type="submit" value="finish-configuration" />
+
+							<div class="btn float-right" id="basicConfiguration">
+
+								<%
+								request.setAttribute("liferay-learn:message:key", "setup-wizard-basic-configuration");
+								request.setAttribute("liferay-learn:message:resource", "portal-web");
+								%>
+
+								<liferay-util:dynamic-include key="/html/portal/setup_wizard.jsp#help_link" />
+							</div>
+
+							<div class="btn float-right hide" id="databaseConfiguration">
+
+								<%
+								request.setAttribute("liferay-learn:message:key", "setup-wizard-database-configuration");
+								request.setAttribute("liferay-learn:message:resource", "portal-web");
+								%>
+
+								<liferay-util:dynamic-include key="/html/portal/setup_wizard.jsp#help_link" />
+							</div>
 						</aui:button-row>
 					</aui:form>
 
-					<aui:script use="aui-base,aui-io-request,aui-loading-mask-deprecated">
+					<aui:script use="aui-base,aui-loading-mask-deprecated,io">
+						var adminEmailAddress = A.one('#<portlet:namespace />adminEmailAddress');
+						var adminFirstName = A.one('#<portlet:namespace />adminFirstName');
+						var adminLastName = A.one('#<portlet:namespace />adminLastName');
+						var companyName = A.one('#<portlet:namespace />companyName');
 						var customDatabaseOptions = A.one('#customDatabaseOptions');
 						var customDatabaseOptionsLink = A.one('#customDatabaseOptionsLink');
 						var databaseSelector = A.one('#databaseType');
@@ -232,13 +276,18 @@
 						var defaultDatabaseOptions = A.one('#defaultDatabaseOptions');
 						var defaultDatabaseOptionsLink = A.one('#defaultDatabaseOptionsLink');
 
-						var jdbcDefaultURL = A.one('#jdbcDefaultURL');
 						var jdbcDefaultDriverClassName = A.one('#jdbcDefaultDriverName');
+						var jdbcDefaultURL = A.one('#jdbcDefaultURL');
 						var jdbcDefaultUserName = A.one('#jdbcDefaultUserName');
-						var jdbcDefaultPassword = A.one('#jdbcDefaultPassword');
 
-						var setupForm = A.one('#fm');
+						var sampleData = A.one('#sampleData');
+						var addSampleData = A.one('#addSampleData');
+
+						var basicConfiguration = A.one('#basicConfiguration');
+						var databaseConfiguration = A.one('#databaseConfiguration');
+
 						var command = A.one('#<%= Constants.CMD %>');
+						var setupForm = A.one('#fm');
 
 						var connectionMessages = A.one('#connectionMessages');
 
@@ -251,8 +300,35 @@
 
 							customDatabaseOptions.toggle(!showDefault);
 
+							sampleData.toggle(!showDefault);
+
 							defaultDatabase.val(showDefault);
+
+							databaseConfiguration.toggle(!showDefault);
+
+							basicConfiguration.toggle(showDefault);
 						};
+
+						databaseSelector.on(
+							'focus',
+							function() {
+								addSampleData.removeAttribute('disabled');
+							}
+						);
+
+						jdbcDefaultURL.on(
+							'focus',
+							function() {
+								addSampleData.removeAttribute('disabled');
+							}
+						);
+
+						jdbcDefaultUserName.on(
+							'focus',
+							function() {
+								addSampleData.removeAttribute('disabled');
+							}
+						);
 
 						if (customDatabaseOptionsLink) {
 							customDatabaseOptionsLink.on('click', A.bind(toggleDatabaseOptions, null, false));
@@ -263,17 +339,15 @@
 						}
 
 						var onChangeDatabaseSelector = function() {
-							var value = databaseSelector.val();
-
 							var index = databaseSelector.get('selectedIndex');
 
 							var selectedOption = databaseSelector.get('options').item(index);
 
-							var driverClassName = selectedOption.attr('data-driverClassName');
 							var databaseURL = selectedOption.attr('data-url');
+							var driverClassName = selectedOption.attr('data-driverClassName');
 
-							jdbcDefaultURL.val(databaseURL);
 							jdbcDefaultDriverClassName.val(driverClassName);
+							jdbcDefaultURL.val(databaseURL);
 						};
 
 						databaseSelector.on('change', onChangeDatabaseSelector);
@@ -290,12 +364,12 @@
 						var loadingMask = new A.LoadingMask(
 							{
 								'strings.loading': '<%= UnicodeLanguageUtil.get(request, "liferay-is-being-installed") %>',
-								target: A.getBody()
+								target: A.one('#main-content')
 							}
 						);
 
-						var updateMessage = function(message, type) {
-							connectionMessages.html('<span class="alert alert-' + type + '">' + message + '</span>');
+						var updateMessage = function(message) {
+							connectionMessages.html('<div class="alert alert-danger"><span class="alert-indicator"><svg aria-hidden="true" class="lexicon-icon lexicon-icon-exclamation-full"><use xlink:href="<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg#exclamation-full"></use></svg></span><strong class="lead"><liferay-ui:message key="error-colon" /></strong>' + message + '</div>');
 						};
 
 						var startInstall = function() {
@@ -307,64 +381,68 @@
 						A.one('#fm').on(
 							'submit',
 							function(event) {
-								if (defaultDatabase.val() == 'true') {
-									startInstall();
+								var form = document.fm;
 
-									command.val('<%= Constants.UPDATE %>');
+								if ((adminEmailAddress && (adminEmailAddress.val() != '')) && (adminFirstName && (adminFirstName.val() != '')) && (adminLastName && (adminLastName.val() != '')) && (companyName && (companyName.val() != '')) && (jdbcDefaultDriverClassName && (jdbcDefaultDriverClassName.val() != '')) && (jdbcDefaultURL && (jdbcDefaultURL.val() != ''))) {
+									if (defaultDatabase.val() == 'true') {
+										startInstall();
 
-									submitForm(document.fm);
-								}
-								else {
-									command.val('<%= Constants.TEST %>');
+										command.val('<%= Constants.UPDATE %>');
 
-									A.io.request(
-										setupForm.get('action'),
-										{
-											after: {
-												failure: function(event, id, obj) {
-													loadingMask.hide();
+										submitForm(form);
+									}
+									else {
+										command.val('<%= Constants.TEST %>');
 
-													updateMessage('<%= UnicodeLanguageUtil.get(request, "an-unexpected-error-occurred-while-connecting-to-the-database") %>', 'error');
-												},
-												success: function(event, id, obj) {
-													command.val('<%= Constants.UPDATE %>');
+										startInstall();
 
-													var responseData = this.get('responseData');
-
-													if (!responseData.success) {
-														updateMessage(responseData.message, 'error');
-
-														loadingMask.hide();
-													}
-													else {
-														submitForm(document.fm);
-													}
-												}
-											},
-											dataType: 'JSON',
-											form: {
-												id: document.fm
-											},
-											on: {
-												start: startInstall
+										Liferay.Util.fetch(
+											form.action,
+											{
+												body: new FormData(form),
+												method: 'POST'
 											}
-										}
-									);
+										).then(
+											function(response) {
+												return response.json();
+											}
+										).then(
+											function(responseData) {
+												command.val('<%= Constants.UPDATE %>');
+
+												if (!responseData.success) {
+													updateMessage(responseData.message);
+
+													loadingMask.hide();
+												}
+												else {
+													submitForm(form);
+												}
+											}
+										).catch(
+											function() {
+												loadingMask.hide();
+
+												updateMessage('<%= UnicodeLanguageUtil.get(request, "an-unexpected-error-occurred-while-connecting-to-the-database") %>');
+											}
+										);
+									}
 								}
 							}
 						);
 					</aui:script>
 				</c:when>
 				<c:otherwise>
-
-					<%
-					boolean propertiesFileCreated = GetterUtil.getBoolean((Boolean)session.getAttribute(WebKeys.SETUP_WIZARD_PROPERTIES_FILE_CREATED));
-					%>
-
 					<c:choose>
-						<c:when test="<%= propertiesFileCreated %>">
+						<c:when test="<%= GetterUtil.getBoolean((Boolean)session.getAttribute(WebKeys.SETUP_WIZARD_PROPERTIES_FILE_CREATED)) %>">
 							<div class="alert alert-success">
-								<liferay-ui:message key="your-configuration-was-saved-sucessfully" />
+								<span class="alert-indicator">
+									<svg aria-hidden="true" class="lexicon-icon lexicon-icon-check-circle-full">
+										<use xlink:href="<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg#check-circle-full"></use>
+									</svg>
+								</span>
+
+								<strong class="lead"><liferay-ui:message key="success-colon" /></strong><liferay-ui:message key="your-configuration-was-saved-successfully" />
 							</div>
 
 							<p class="lfr-setup-notice">
@@ -387,18 +465,29 @@
 							</c:if>
 
 							<div class="alert alert-info">
-								<liferay-ui:message key="changes-will-take-effect-once-the-portal-is-restarted-please-restart-the-portal-now" />
+								<span class="alert-indicator">
+									<svg aria-hidden="true" class="lexicon-icon lexicon-icon-info-circle">
+										<use xlink:href="<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg#info-circle"></use>
+									</svg>
+								</span>
+
+								<strong class="lead"><liferay-ui:message key="info" />:</strong><liferay-ui:message key="changes-will-take-effect-once-the-portal-is-restarted-please-restart-the-portal-now" />
 							</div>
 						</c:when>
 						<c:otherwise>
 							<p>
 								<div class="alert alert-warning">
+									<span class="alert-indicator">
+										<svg aria-hidden="true" class="lexicon-icon lexicon-icon-warning-full">
+											<use xlink:href="<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg#warning-full"></use>
+										</svg>
+									</span>
 
 									<%
 									String taglibArguments = "<span class=\"lfr-inline-code\">" + PropsValues.LIFERAY_HOME + "</span>";
 									%>
 
-									<liferay-ui:message arguments="<%= taglibArguments %>" key="sorry,-we-were-not-able-to-save-the-configuration-file-in-x" translateArguments="<%= false %>" />
+									<strong class="lead"><liferay-ui:message key="warning-colon" /></strong><liferay-ui:message arguments="<%= taglibArguments %>" key="sorry,-we-were-not-able-to-save-the-configuration-file-in-x" translateArguments="<%= false %>" />
 								</div>
 							</p>
 
@@ -411,8 +500,18 @@
 	</div>
 
 	<footer id="footer" role="contentinfo">
-		<p class="powered-by">
-			<liferay-ui:message key="powered-by" /> <a href="http://www.liferay.com" rel="external">Liferay</a>
-		</p>
+		<div class="container">
+			<div class="row">
+				<div class="col-md-12 text-center text-md-left">
+					<liferay-util:buffer
+						var="poweredByLiferay"
+					>
+						<a class="text-white" href="http://www.liferay.com" rel="external">Liferay</a>
+					</liferay-util:buffer>
+
+					<liferay-ui:message arguments="<%= poweredByLiferay %>" key="powered-by-x" />
+				</div>
+			</div>
+		</div>
 	</footer>
 </div>

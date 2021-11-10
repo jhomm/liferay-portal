@@ -14,7 +14,7 @@
 
 package com.liferay.portal.model.impl;
 
-import com.liferay.portal.model.Permission;
+import com.liferay.portal.kernel.model.Permission;
 
 import java.io.Serializable;
 
@@ -22,9 +22,6 @@ import java.io.Serializable;
  * @author Brian Wing Shun Chan
  */
 public class PermissionImpl implements Permission, Serializable {
-
-	public PermissionImpl() {
-	}
 
 	@Override
 	public String getActionId() {

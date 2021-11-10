@@ -1,0 +1,26 @@
+@default = "assertConfirmation"
+@summary = "Assert that the confirmation window equals the value '${value1}'"
+definition {
+
+	function assertConfirmation {
+		selenium.assertConfirmation();
+	}
+
+	function assertConfirmationNoWait {
+		selenium.assertConfirmation();
+	}
+
+	function assertPartialConfirmation {
+		selenium.assertPartialConfirmation();
+	}
+
+	@summary = "Assert that the confirmation window equals the value '${locator1}' and enter '${value1}' for input"
+	function assertPrompt {
+		selenium.assertPrompt();
+	}
+
+	function waitForConfirmation {
+		selenium.waitForConfirmation();
+	}
+
+}

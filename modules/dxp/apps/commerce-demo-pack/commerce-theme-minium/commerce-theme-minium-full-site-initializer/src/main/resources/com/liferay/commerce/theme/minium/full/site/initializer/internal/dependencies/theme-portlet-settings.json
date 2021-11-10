@@ -1,0 +1,52 @@
+[
+	{
+		"instanceId": "minium",
+		"portletName": "com_liferay_blogs_web_portlet_BlogsPortlet",
+		"portletPreferences": {
+			"displayStyle": {
+				"fileName": "MINIUM_NEWS.ftl",
+				"name": "Minium News",
+				"portletClassName": "com.liferay.blogs.model.BlogsEntry"
+			},
+			"portletSetupUseCustomTitle": "true"
+		}
+	},
+	{
+		"instanceId": "siteNavigationMenuPortlet_main",
+		"portletName": "com_liferay_site_navigation_menu_web_portlet_SiteNavigationMenuPortlet",
+		"portletPreferences": {
+			"displayDepth": "0",
+			"displayStyle": {
+				"fileName": "MINIUM_SITE_NAVIGATION.ftl",
+				"name": "Minium Site Navigation",
+				"portletClassName": "com.liferay.portal.kernel.theme.NavItem"
+			},
+			"displayStyleGroupId": "",
+			"includedLayouts": "auto",
+			"portletSetupCss": "",
+			"portletSetupPortletDecoratorId": "barebone",
+			"portletSetupUseCustomTitle": "false",
+			"rootMenuItemLevel": "0",
+			"rootMenuItemType": "select"
+		}
+	},
+	{
+		"instanceId": "siteNavigationMenuPortlet_sub_navigation",
+		"portletName": "com_liferay_site_navigation_menu_web_portlet_SiteNavigationMenuPortlet",
+		"portletPreferences": {
+			"displayDepth": "0",
+			"displayStyle": {
+				"fileName": "MINIUM_SUB_SITE_NAVIGATION.ftl",
+				"name": "Minium Sub Site Navigation",
+				"portletClassName": "com.liferay.portal.kernel.theme.NavItem"
+			},
+			"displayStyleGroupId": "",
+			"includedLayouts": "auto",
+			"portletSetupCss": "",
+			"portletSetupPortletDecoratorId": "barebone",
+			"portletSetupUseCustomTitle": "false",
+			"rootMenuItemLevel": "1",
+			"rootMenuItemType": "relative"
+		}
+	}
+]

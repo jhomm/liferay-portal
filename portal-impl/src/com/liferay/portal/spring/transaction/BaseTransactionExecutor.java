@@ -14,73 +14,37 @@
 
 package com.liferay.portal.spring.transaction;
 
-import com.liferay.portal.kernel.transaction.Isolation;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionAttribute;
-import com.liferay.portal.kernel.transaction.TransactionAttribute.Builder;
-import com.liferay.portal.kernel.transaction.TransactionLifecycleManager;
-import com.liferay.portal.kernel.transaction.TransactionStatus;
+import com.liferay.petra.function.UnsafeSupplier;
 
 /**
- * @author Michael C. Han
- * @author Shuyang Zhou
+ * @author Preston Crary
  */
-public abstract class BaseTransactionExecutor implements TransactionExecutor {
+public abstract class BaseTransactionExecutor
+	implements TransactionExecutor, TransactionHandler {
 
-	protected TransactionAttribute createTransactionAttribute(
-		org.springframework.transaction.interceptor.TransactionAttribute
-			transactionAttribute) {
+	@Override
+	public <T> T execute(
+			TransactionAttributeAdapter transactionAttributeAdapter,
+			UnsafeSupplier<T, Throwable> unsafeSupplier)
+		throws Throwable {
 
-		Builder builder = new Builder();
+		TransactionStatusAdapter transactionStatusAdapter = start(
+			transactionAttributeAdapter);
 
-		builder.setIsolation(
-			Isolation.getIsolation(transactionAttribute.getIsolationLevel()));
-		builder.setPropagation(
-			Propagation.getPropagation(
-				transactionAttribute.getPropagationBehavior()));
-		builder.setReadOnly(transactionAttribute.isReadOnly());
+		T returnValue = null;
 
-		return builder.build();
-	}
+		try {
+			returnValue = unsafeSupplier.get();
+		}
+		catch (Throwable throwable) {
+			rollback(
+				throwable, transactionAttributeAdapter,
+				transactionStatusAdapter);
+		}
 
-	protected TransactionStatus createTransactionStatus(
-		org.springframework.transaction.TransactionStatus transactionStatus) {
+		commit(transactionAttributeAdapter, transactionStatusAdapter);
 
-		return new TransactionStatus(
-			transactionStatus.isNewTransaction(),
-			transactionStatus.isRollbackOnly(),
-			transactionStatus.isCompleted());
-	}
-
-	protected void fireTransactionCommittedEvent(
-		org.springframework.transaction.interceptor.TransactionAttribute
-			transactionAttribute,
-		org.springframework.transaction.TransactionStatus transactionStatus) {
-
-		TransactionLifecycleManager.fireTransactionCommittedEvent(
-			createTransactionAttribute(transactionAttribute),
-			createTransactionStatus(transactionStatus));
-	}
-
-	protected void fireTransactionCreatedEvent(
-		org.springframework.transaction.interceptor.TransactionAttribute
-			transactionAttribute,
-		org.springframework.transaction.TransactionStatus transactionStatus) {
-
-		TransactionLifecycleManager.fireTransactionCreatedEvent(
-			createTransactionAttribute(transactionAttribute),
-			createTransactionStatus(transactionStatus));
-	}
-
-	protected void fireTransactionRollbackedEvent(
-		org.springframework.transaction.interceptor.TransactionAttribute
-			transactionAttribute,
-		org.springframework.transaction.TransactionStatus transactionStatus,
-		Throwable throwable) {
-
-		TransactionLifecycleManager.fireTransactionRollbackedEvent(
-			createTransactionAttribute(transactionAttribute),
-			createTransactionStatus(transactionStatus), throwable);
+		return returnValue;
 	}
 
 }

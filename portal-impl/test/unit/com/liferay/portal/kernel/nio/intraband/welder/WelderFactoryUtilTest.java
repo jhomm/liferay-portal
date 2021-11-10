@@ -23,7 +23,7 @@ import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.kernel.test.rule.NewEnv;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.test.rule.AdviseWith;
-import com.liferay.portal.test.rule.AspectJNewEnvTestRule;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -43,7 +43,7 @@ public class WelderFactoryUtilTest {
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new AggregateTestRule(
-			CodeCoverageAssertor.INSTANCE, AspectJNewEnvTestRule.INSTANCE);
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@NewEnv(type = NewEnv.Type.NONE)
 	@Test
@@ -77,8 +77,9 @@ public class WelderFactoryUtilTest {
 
 			Assert.fail();
 		}
-		catch (RuntimeException re) {
-			Assert.assertTrue(re.getCause() instanceof IllegalAccessException);
+		catch (RuntimeException runtimeException) {
+			Assert.assertTrue(
+				runtimeException.getCause() instanceof IllegalAccessException);
 		}
 		finally {
 			System.clearProperty(PropsKeys.INTRABAND_WELDER_IMPL);
@@ -94,8 +95,9 @@ public class WelderFactoryUtilTest {
 
 			Assert.fail();
 		}
-		catch (RuntimeException re) {
-			Assert.assertTrue(re.getCause() instanceof ClassNotFoundException);
+		catch (RuntimeException runtimeException) {
+			Assert.assertTrue(
+				runtimeException.getCause() instanceof ClassNotFoundException);
 		}
 		finally {
 			System.clearProperty(PropsKeys.INTRABAND_WELDER_IMPL);
@@ -118,7 +120,7 @@ public class WelderFactoryUtilTest {
 
 	@AdviseWith(adviceClasses = {FIFOUtilAdvice.class, OSDetectorAdvice.class})
 	@Test
-	public void testGetWelderClassOnNonWindowsWithFIFO() {
+	public void testGetWelderClassOnNonwindowsWithFIFO() {
 		FIFOUtilAdvice._fifoSupported = true;
 		OSDetectorAdvice._windows = false;
 
@@ -127,7 +129,7 @@ public class WelderFactoryUtilTest {
 
 	@AdviseWith(adviceClasses = {FIFOUtilAdvice.class, OSDetectorAdvice.class})
 	@Test
-	public void testGetWelderClassOnNonWindowsWithoutFIFO() {
+	public void testGetWelderClassOnnonWindowsWithoutFIFO() {
 		FIFOUtilAdvice._fifoSupported = false;
 		OSDetectorAdvice._windows = false;
 
@@ -135,7 +137,7 @@ public class WelderFactoryUtilTest {
 			SocketWelder.class, WelderFactoryUtil.getWelderClass());
 	}
 
-	@AdviseWith(adviceClasses = {OSDetectorAdvice.class})
+	@AdviseWith(adviceClasses = OSDetectorAdvice.class)
 	@Test
 	public void testGetWelderClassOnWindows() {
 		OSDetectorAdvice._windows = true;
@@ -148,8 +150,8 @@ public class WelderFactoryUtilTest {
 	public static class FIFOUtilAdvice {
 
 		@Around(
-			"execution(public static boolean com.liferay.portal.kernel." +
-				"nio.intraband.welder.fifo.FIFOUtil.isFIFOSupported())"
+			"execution(public static boolean com.liferay.portal.kernel.nio." +
+				"intraband.welder.fifo.FIFOUtil.isFIFOSupported())"
 		)
 		public boolean isFIFOSupported() {
 			return _fifoSupported;

@@ -14,9 +14,11 @@
 
 package com.liferay.portal.fabric.netty.fileserver;
 
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,6 +26,7 @@ import java.nio.file.Paths;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -32,8 +35,10 @@ import org.junit.Test;
 public class FileRequestTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Before
 	public void setUp() {
@@ -48,7 +53,7 @@ public class FileRequestTest {
 
 			Assert.fail();
 		}
-		catch (NullPointerException npe) {
+		catch (NullPointerException nullPointerException) {
 		}
 
 		Assert.assertEquals(_path, _fileRequest.getPath());
@@ -93,17 +98,12 @@ public class FileRequestTest {
 
 	@Test
 	public void testToString() {
-		StringBundler sb = new StringBundler(7);
-
-		sb.append("{deleteAfterFetch=");
-		sb.append(_DELETE_AFTER_FETCH);
-		sb.append(", lastModifiedTime=");
-		sb.append(_LAST_MODIFIED_TIME);
-		sb.append(", pathHolder=");
-		sb.append(_path);
-		sb.append("}");
-
-		Assert.assertEquals(sb.toString(), _fileRequest.toString());
+		Assert.assertEquals(
+			StringBundler.concat(
+				"{deleteAfterFetch=", _DELETE_AFTER_FETCH,
+				", lastModifiedTime=", _LAST_MODIFIED_TIME, ", pathHolder=",
+				_path, "}"),
+			_fileRequest.toString());
 	}
 
 	private static final boolean _DELETE_AFTER_FETCH = true;

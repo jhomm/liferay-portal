@@ -14,29 +14,28 @@
 
 package com.liferay.portal.service.http;
 
-import aQute.bnd.annotation.ProviderType;
-
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.service.RepositoryServiceUtil;
+import com.liferay.portal.kernel.service.RepositoryServiceUtil;
 
 import java.rmi.RemoteException;
 
 /**
  * Provides the SOAP utility for the
- * {@link RepositoryServiceUtil} service utility. The
- * static methods of this class calls the same methods of the service utility.
- * However, the signatures are different because it is difficult for SOAP to
- * support certain types.
+ * <code>RepositoryServiceUtil</code> service
+ * utility. The static methods of this class call the same methods of the
+ * service utility. However, the signatures are different because it is
+ * difficult for SOAP to support certain types.
  *
  * <p>
  * ServiceBuilder follows certain rules in translating the methods. For example,
- * if the method in the service utility returns a {@link java.util.List}, that
- * is translated to an array of {@link com.liferay.portal.model.RepositorySoap}.
- * If the method in the service utility returns a
- * {@link com.liferay.portal.model.Repository}, that is translated to a
- * {@link com.liferay.portal.model.RepositorySoap}. Methods that SOAP cannot
- * safely wire are skipped.
+ * if the method in the service utility returns a <code>java.util.List</code>,
+ * that is translated to an array of
+ * <code>com.liferay.portal.kernel.model.RepositorySoap</code>. If the method in the
+ * service utility returns a
+ * <code>com.liferay.portal.kernel.model.Repository</code>, that is translated to a
+ * <code>com.liferay.portal.kernel.model.RepositorySoap</code>. Methods that SOAP
+ * cannot safely wire are skipped.
  * </p>
  *
  * <p>
@@ -58,127 +57,107 @@ import java.rmi.RemoteException;
  *
  * @author Brian Wing Shun Chan
  * @see RepositoryServiceHttp
- * @see com.liferay.portal.model.RepositorySoap
- * @see RepositoryServiceUtil
+ * @deprecated As of Athanasius (7.3.x), with no direct replacement
  * @generated
  */
-@ProviderType
+@Deprecated
 public class RepositoryServiceSoap {
+
 	public static void checkRepository(long repositoryId)
 		throws RemoteException {
+
 		try {
 			RepositoryServiceUtil.checkRepository(repositoryId);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
 	public static void deleteRepository(long repositoryId)
 		throws RemoteException {
+
 		try {
 			RepositoryServiceUtil.deleteRepository(repositoryId);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	public static com.liferay.portal.model.RepositorySoap getRepository(
-		long repositoryId) throws RemoteException {
-		try {
-			com.liferay.portal.model.Repository returnValue = RepositoryServiceUtil.getRepository(repositoryId);
-
-			return com.liferay.portal.model.RepositorySoap.toSoapModel(returnValue);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-
-			throw new RemoteException(e.getMessage());
-		}
-	}
-
-	public static java.lang.String[] getSupportedConfigurations(
-		long classNameId) throws RemoteException {
-		try {
-			java.lang.String[] returnValue = RepositoryServiceUtil.getSupportedConfigurations(classNameId);
-
-			return returnValue;
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-
-			throw new RemoteException(e.getMessage());
-		}
-	}
-
-	/**
-	* @deprecated As of 7.0.0, replaced by {@link
-	#getSupportedParameters(String, String)}
-	*/
-	@Deprecated
-	public static java.lang.String[] getSupportedParameters(long classNameId,
-		java.lang.String configuration) throws RemoteException {
-		try {
-			java.lang.String[] returnValue = RepositoryServiceUtil.getSupportedParameters(classNameId,
-					configuration);
-
-			return returnValue;
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-
-			throw new RemoteException(e.getMessage());
-		}
-	}
-
-	public static java.lang.String[] getSupportedParameters(
-		java.lang.String className, java.lang.String configuration)
+	public static com.liferay.portal.kernel.model.RepositorySoap getRepository(
+			long repositoryId)
 		throws RemoteException {
+
 		try {
-			java.lang.String[] returnValue = RepositoryServiceUtil.getSupportedParameters(className,
-					configuration);
+			com.liferay.portal.kernel.model.Repository returnValue =
+				RepositoryServiceUtil.getRepository(repositoryId);
 
-			return returnValue;
+			return com.liferay.portal.kernel.model.RepositorySoap.toSoapModel(
+				returnValue);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	public static com.liferay.portal.kernel.util.UnicodeProperties getTypeSettingsProperties(
-		long repositoryId) throws RemoteException {
-		try {
-			com.liferay.portal.kernel.util.UnicodeProperties returnValue = RepositoryServiceUtil.getTypeSettingsProperties(repositoryId);
-
-			return returnValue;
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-
-			throw new RemoteException(e.getMessage());
-		}
-	}
-
-	public static void updateRepository(long repositoryId,
-		java.lang.String name, java.lang.String description)
+	public static com.liferay.portal.kernel.model.RepositorySoap getRepository(
+			long groupId, String portletId)
 		throws RemoteException {
-		try {
-			RepositoryServiceUtil.updateRepository(repositoryId, name,
-				description);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
 
-			throw new RemoteException(e.getMessage());
+		try {
+			com.liferay.portal.kernel.model.Repository returnValue =
+				RepositoryServiceUtil.getRepository(groupId, portletId);
+
+			return com.liferay.portal.kernel.model.RepositorySoap.toSoapModel(
+				returnValue);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(RepositoryServiceSoap.class);
+	public static com.liferay.portal.kernel.util.UnicodeProperties
+			getTypeSettingsProperties(long repositoryId)
+		throws RemoteException {
+
+		try {
+			com.liferay.portal.kernel.util.UnicodeProperties returnValue =
+				RepositoryServiceUtil.getTypeSettingsProperties(repositoryId);
+
+			return returnValue;
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
+		}
+	}
+
+	public static void updateRepository(
+			long repositoryId, String name, String description)
+		throws RemoteException {
+
+		try {
+			RepositoryServiceUtil.updateRepository(
+				repositoryId, name, description);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
+		}
+	}
+
+	private static Log _log = LogFactoryUtil.getLog(
+		RepositoryServiceSoap.class);
+
 }

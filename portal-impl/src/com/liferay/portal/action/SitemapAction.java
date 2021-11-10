@@ -14,54 +14,55 @@
 
 package com.liferay.portal.action;
 
-import com.liferay.portal.NoSuchLayoutSetException;
+import com.liferay.layout.admin.kernel.util.SitemapUtil;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.NoSuchLayoutSetException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.model.VirtualHost;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
+import com.liferay.portal.kernel.service.VirtualHostLocalServiceUtil;
+import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.GroupConstants;
-import com.liferay.portal.model.LayoutSet;
-import com.liferay.portal.model.VirtualHost;
-import com.liferay.portal.service.GroupLocalServiceUtil;
-import com.liferay.portal.service.LayoutSetLocalServiceUtil;
-import com.liferay.portal.service.VirtualHostLocalServiceUtil;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.struts.Action;
+import com.liferay.portal.struts.model.ActionForward;
+import com.liferay.portal.struts.model.ActionMapping;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portal.util.WebKeys;
-import com.liferay.portlet.layoutsadmin.util.SitemapUtil;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.struts.action.Action;
-import org.apache.struts.action.ActionForm;
-import org.apache.struts.action.ActionForward;
-import org.apache.struts.action.ActionMapping;
-
 /**
  * @author Jorge Ferrer
  */
-public class SitemapAction extends Action {
+public class SitemapAction implements Action {
 
 	@Override
 	public ActionForward execute(
-			ActionMapping actionMapping, ActionForm actionForm,
-			HttpServletRequest request, HttpServletResponse response)
+			ActionMapping actionMapping, HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws Exception {
 
 		try {
-			ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-				WebKeys.THEME_DISPLAY);
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
 
-			long groupId = ParamUtil.getLong(request, "groupId");
-			boolean privateLayout = ParamUtil.getBoolean(
-				request, "privateLayout");
+			String layoutUuid = ParamUtil.getString(
+				httpServletRequest, "layoutUuid");
+			long groupId = ParamUtil.getLong(httpServletRequest, "groupId");
 
 			LayoutSet layoutSet = null;
 
@@ -72,21 +73,34 @@ public class SitemapAction extends Action {
 					groupId = group.getLiveGroupId();
 				}
 
+				boolean privateLayout = ParamUtil.getBoolean(
+					httpServletRequest, "privateLayout");
+
 				layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
 					groupId, privateLayout);
 			}
 			else {
-				String host = PortalUtil.getHost(request);
+				String host = PortalUtil.getHost(httpServletRequest);
 
 				host = StringUtil.toLowerCase(host);
 				host = host.trim();
 
 				VirtualHost virtualHost =
-					VirtualHostLocalServiceUtil.getVirtualHost(host);
+					VirtualHostLocalServiceUtil.fetchVirtualHost(host);
 
-				if (virtualHost.getLayoutSetId() != 0) {
+				if ((virtualHost != null) &&
+					(virtualHost.getLayoutSetId() != 0)) {
+
 					layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
 						virtualHost.getLayoutSetId());
+
+					Group group = layoutSet.getGroup();
+
+					if (group.isStagingGroup()) {
+						GroupPermissionUtil.check(
+							themeDisplay.getPermissionChecker(),
+							group.getGroupId(), ActionKeys.VIEW_STAGING);
+					}
 				}
 				else {
 					String groupName =
@@ -105,25 +119,26 @@ public class SitemapAction extends Action {
 			}
 
 			String sitemap = SitemapUtil.getSitemap(
-				layoutSet.getGroupId(), layoutSet.isPrivateLayout(),
+				layoutUuid, layoutSet.getGroupId(), layoutSet.isPrivateLayout(),
 				themeDisplay);
 
 			ServletResponseUtil.sendFile(
-				request, response, null, sitemap.getBytes(StringPool.UTF8),
-				ContentTypes.TEXT_XML_UTF8);
+				httpServletRequest, httpServletResponse, null,
+				sitemap.getBytes(StringPool.UTF8), ContentTypes.TEXT_XML_UTF8);
 		}
-		catch (NoSuchLayoutSetException nslse) {
+		catch (NoSuchLayoutSetException noSuchLayoutSetException) {
 			PortalUtil.sendError(
-				HttpServletResponse.SC_NOT_FOUND, nslse, request, response);
+				HttpServletResponse.SC_NOT_FOUND, noSuchLayoutSetException,
+				httpServletRequest, httpServletResponse);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
+				_log.warn(exception, exception);
 			}
 
 			PortalUtil.sendError(
-				HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e, request,
-				response);
+				HttpServletResponse.SC_INTERNAL_SERVER_ERROR, exception,
+				httpServletRequest, httpServletResponse);
 		}
 
 		return null;

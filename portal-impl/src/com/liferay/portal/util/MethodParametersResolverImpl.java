@@ -14,8 +14,8 @@
 
 package com.liferay.portal.util;
 
-import com.liferay.portal.kernel.concurrent.ConcurrentReferenceKeyHashMap;
-import com.liferay.portal.kernel.memory.FinalizeManager;
+import com.liferay.petra.concurrent.ConcurrentReferenceKeyHashMap;
+import com.liferay.petra.memory.FinalizeManager;
 import com.liferay.portal.kernel.util.MethodParameter;
 import com.liferay.portal.kernel.util.MethodParametersResolver;
 
@@ -39,28 +39,31 @@ public class MethodParametersResolverImpl implements MethodParametersResolver {
 			return methodParameters;
 		}
 
-			Class<?>[] methodParameterTypes = method.getParameterTypes();
+		Class<?> clazz = method.getDeclaringClass();
 
-			jodd.paramo.MethodParameter[] joddMethodParameters =
-				Paramo.resolveParameters(method);
+		ClassLoader classLoader = clazz.getClassLoader();
 
-			methodParameters = new MethodParameter[joddMethodParameters.length];
+		Class<?>[] methodParameterTypes = method.getParameterTypes();
 
-			for (int i = 0; i < joddMethodParameters.length; i++) {
-				methodParameters[i] = new MethodParameter(
-					joddMethodParameters[i].getName(),
-					joddMethodParameters[i].getSignature(),
-					methodParameterTypes[i], true);
-			}
+		jodd.paramo.MethodParameter[] joddMethodParameters =
+			Paramo.resolveParameters(method);
+
+		methodParameters = new MethodParameter[joddMethodParameters.length];
+
+		for (int i = 0; i < joddMethodParameters.length; i++) {
+			methodParameters[i] = new MethodParameter(
+				classLoader, joddMethodParameters[i].getName(),
+				joddMethodParameters[i].getSignature(),
+				methodParameterTypes[i]);
+		}
 
 		_methodParameters.put(method, methodParameters);
 
 		return methodParameters;
 	}
 
-	private static final ConcurrentMap
-		<AccessibleObject, MethodParameter[]> _methodParameters =
-			new ConcurrentReferenceKeyHashMap<>(
-				FinalizeManager.WEAK_REFERENCE_FACTORY);
+	private static final ConcurrentMap<AccessibleObject, MethodParameter[]>
+		_methodParameters = new ConcurrentReferenceKeyHashMap<>(
+			FinalizeManager.WEAK_REFERENCE_FACTORY);
 
 }

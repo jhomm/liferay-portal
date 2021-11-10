@@ -16,18 +16,16 @@
 
 <%@ include file="/html/taglib/init.jsp" %>
 
-<%@ page import="com.liferay.portal.ContactNameException" %><%@
-page import="com.liferay.portal.kernel.util.CamelCaseUtil" %><%@
-page import="com.liferay.portal.security.auth.FullNameDefinition" %><%@
-page import="com.liferay.portal.security.auth.FullNameDefinitionFactory" %><%@
-page import="com.liferay.portal.security.auth.FullNameField" %>
+<%@ page import="com.liferay.portal.kernel.exception.ContactNameException" %><%@
+page import="com.liferay.portal.kernel.security.auth.FullNameDefinition" %><%@
+page import="com.liferay.portal.kernel.security.auth.FullNameDefinitionFactory" %><%@
+page import="com.liferay.portal.kernel.security.auth.FullNameField" %><%@
+page import="com.liferay.portal.kernel.util.CamelCaseUtil" %>
 
 <%
 Object bean = request.getAttribute("liferay-ui:user-name-fields:bean");
 Contact selContact = (Contact)request.getAttribute("liferay-ui:user-name-fields:contact");
 User selUser = (User)request.getAttribute("liferay-ui:user-name-fields:user");
-
-Locale userLocale = null;
 
 String languageId = request.getParameter("languageId");
 
@@ -36,11 +34,9 @@ if (Validator.isNull(languageId)) {
 		languageId = selUser.getLanguageId();
 	}
 	else {
-		User defaultUser = company.getDefaultUser();
-
-		languageId = defaultUser.getLanguageId();
+		languageId = themeDisplay.getLanguageId();
 	}
 }
 
-userLocale = LocaleUtil.fromLanguageId(languageId);
+Locale userLocale = LocaleUtil.fromLanguageId(languageId);
 %>

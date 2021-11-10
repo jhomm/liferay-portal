@@ -14,8 +14,8 @@
 
 package com.liferay.portal.sharepoint.dws;
 
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.model.User;
 
 /**
  * @author Bruno Farache
@@ -23,12 +23,13 @@ import com.liferay.portal.model.User;
 public class MemberResponseElement implements ResponseElement {
 
 	public MemberResponseElement(User user, boolean member) {
+		_member = member;
+
 		_id = user.getScreenName();
 		_name = user.getFullName();
 		_loginName = user.getScreenName();
 		_email = user.getEmailAddress();
 		_domainGroup = false;
-		_member = member;
 		_siteAdmin = false;
 	}
 
@@ -40,14 +41,31 @@ public class MemberResponseElement implements ResponseElement {
 			user = "Member";
 		}
 
-		Element el = rootEl.addElement(user);
+		Element userEl = rootEl.addElement(user);
 
-		el.addElement("ID").setText(_id);
-		el.addElement("Name").setText(_name);
-		el.addElement("LoginName").setText(_loginName);
-		el.addElement("Email").setText(_email);
-		el.addElement("IsDomainGroup").setText(String.valueOf(_domainGroup));
-		el.addElement("IsSiteAdmin").setText(String.valueOf(_siteAdmin));
+		Element idEl = userEl.addElement("ID");
+
+		idEl.setText(_id);
+
+		Element nameEl = userEl.addElement("Name");
+
+		nameEl.setText(_name);
+
+		Element loginNameEl = userEl.addElement("LoginName");
+
+		loginNameEl.setText(_loginName);
+
+		Element emailEl = userEl.addElement("Email");
+
+		emailEl.setText(_email);
+
+		Element isDomainGroupEl = userEl.addElement("IsDomainGroup");
+
+		isDomainGroupEl.setText(String.valueOf(_domainGroup));
+
+		Element isSiteAdminEl = userEl.addElement("IsSiteAdmin");
+
+		isSiteAdminEl.setText(String.valueOf(_siteAdmin));
 	}
 
 	private final boolean _domainGroup;

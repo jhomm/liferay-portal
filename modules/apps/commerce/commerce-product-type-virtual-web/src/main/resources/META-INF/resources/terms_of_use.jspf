@@ -1,0 +1,134 @@
+<%--
+/**
+ * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 2.1 of the License, or (at your option)
+ * any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
+ * details.
+ */
+--%>
+
+<liferay-ui:error-marker
+	key="<%= WebKeys.ERROR_SECTION %>"
+	value="terms-of-use"
+/>
+
+<aui:model-context bean="<%= cpDefinitionVirtualSetting %>" model="<%= CPDefinitionVirtualSetting.class %>" />
+
+<liferay-ui:error exception="<%= CPDefinitionVirtualSettingTermsOfUseArticleResourcePKException.class %>" message="please-select-an-existing-web-content" />
+<liferay-ui:error exception="<%= CPDefinitionVirtualSettingTermsOfUseContentException.class %>" message="please-enter-terms-of-use-content" />
+<liferay-ui:error exception="<%= CPDefinitionVirtualSettingTermsOfUseException.class %>" message="please-select-an-existing-web-content-or-enter-terms-of-use-content" />
+
+<aui:fieldset>
+	<aui:input inlineLabel="right" label="enable-terms-of-use" labelCssClass="simple-toggle-switch" name="termsOfUseRequired" type="toggle-switch" value='<%= BeanParamUtil.getBoolean(cpDefinitionVirtualSetting, request, "termsOfUseRequired") %>' />
+</aui:fieldset>
+
+<div class="row" id="<portlet:namespace />termsOfUseSettings">
+	<div class="col-md-3">
+		<h4 class="text-default"><liferay-ui:message key="select-existing-content-or-add-terms-of-use-in-the-space-below" /></h4>
+	</div>
+
+	<div class="col-md-9">
+		<aui:fieldset>
+			<p class="text-default">
+				<span class="<%= (termsOfUseJournalArticleResourcePrimKey > 0) ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />journalArticleRemove" role="button">
+					<aui:icon cssClass="icon-monospaced" image="times" markupView="lexicon" />
+				</span>
+				<span id="<portlet:namespace />journalArticleNameInput">
+					<c:choose>
+						<c:when test="<%= journalArticle != null %>">
+							<%= HtmlUtil.escape(journalArticle.getTitle()) %>
+						</c:when>
+						<c:otherwise>
+							<span class="text-muted"><liferay-ui:message key="none" /></span>
+						</c:otherwise>
+					</c:choose>
+				</span>
+			</p>
+
+			<aui:button name="selectArticle" value="select-web-content" />
+
+			<aui:field-wrapper cssClass="lfr-definition-virtual-setting-content">
+				<h4 class="text-default"><liferay-ui:message key="or" /></h4>
+
+				<div class="entry-content form-group">
+					<liferay-ui:input-localized
+						cssClass="form-control"
+						disabled="<%= useTermsOfUseJournal %>"
+						name="termsOfUseContent"
+						type="editor"
+						xml='<%= BeanPropertiesUtil.getString(cpDefinitionVirtualSetting, "termsOfUseContent") %>'
+					/>
+				</div>
+			</aui:field-wrapper>
+		</aui:fieldset>
+	</div>
+</div>
+
+<aui:script sandbox="<%= true %>">
+	Liferay.Util.toggleBoxes(
+		'<portlet:namespace />termsOfUseRequired',
+		'<portlet:namespace />termsOfUseSettings'
+	);
+
+	const journalArticleNameInput = document.getElementById(
+		'<portlet:namespace />journalArticleNameInput'
+	);
+
+	const journalArticleRemove = document.getElementById(
+		'<portlet:namespace />journalArticleRemove'
+	);
+
+	const selectArticle = document.getElementById(
+		'<portlet:namespace />selectArticle'
+	);
+
+	if (journalArticleNameInput && journalArticleRemove && selectArticle) {
+		selectArticle.addEventListener('click', (event) => {
+			event.preventDefault();
+
+			Liferay.Util.openSelectionModal({
+				onSelect: (selectedItem) => {
+					const termsOfUseJournalArticleResourcePrimKey = document.getElementById(
+						'<portlet:namespace />termsOfUseJournalArticleResourcePrimKey'
+					);
+
+					if (termsOfUseJournalArticleResourcePrimKey) {
+						termsOfUseJournalArticleResourcePrimKey.value =
+							selectedItem.assetclasspk;
+					}
+
+					journalArticleRemove.classList.remove('hide');
+
+					journalArticleNameInput.innerText = selectedItem.assettitle;
+				},
+				selectEventName: 'selectJournalArticle',
+				title: '<liferay-ui:message key="select-web-content" />',
+				url:
+					'<%= cpDefinitionVirtualSettingDisplayContext.getTermsOfUseJournalArticleBrowserURL() %>',
+			});
+		});
+
+		journalArticleRemove.addEventListener('click', (event) => {
+			event.preventDefault();
+
+			const termsOfUseJournalArticleResourcePrimKey = document.getElementById(
+				'<portlet:namespace />termsOfUseJournalArticleResourcePrimKey'
+			);
+
+			if (termsOfUseJournalArticleResourcePrimKey) {
+				termsOfUseJournalArticleResourcePrimKey.value = 0;
+			}
+
+			journalArticleNameInput.innerText = '<liferay-ui:message key="none" />';
+
+			journalArticleRemove.classList.add('hide');
+		});
+	}
+</aui:script>

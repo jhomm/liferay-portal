@@ -1,0 +1,33 @@
+@default = "open"
+@summary = "Open browser to '${locator1}'"
+definition {
+
+	function open {
+		selenium.selectWindow("null");
+
+		selenium.selectFrame("relative=top");
+
+		selenium.open();
+	}
+
+	function openNoError {
+		selenium.selectWindow("null");
+
+		selenium.selectFrame("relative=top");
+
+		selenium.open();
+	}
+
+	function openWindow {
+		selenium.selectWindow("null");
+
+		selenium.selectFrame("relative=top");
+
+		selenium.openWindow("${locator1}", "windowName");
+
+		selenium.waitForPopUp("windowName", "windowName");
+
+		selenium.selectWindow("windowName");
+	}
+
+}

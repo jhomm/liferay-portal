@@ -14,14 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.ResourcePermission;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.ResourcePermission;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -32,26 +29,28 @@ import java.io.ObjectOutput;
  * The cache model class for representing ResourcePermission in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see ResourcePermission
  * @generated
  */
-@ProviderType
-public class ResourcePermissionCacheModel implements CacheModel<ResourcePermission>,
-	Externalizable, MVCCModel {
+public class ResourcePermissionCacheModel
+	implements CacheModel<ResourcePermission>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof ResourcePermissionCacheModel)) {
+		if (!(object instanceof ResourcePermissionCacheModel)) {
 			return false;
 		}
 
-		ResourcePermissionCacheModel resourcePermissionCacheModel = (ResourcePermissionCacheModel)obj;
+		ResourcePermissionCacheModel resourcePermissionCacheModel =
+			(ResourcePermissionCacheModel)object;
 
-		if ((resourcePermissionId == resourcePermissionCacheModel.resourcePermissionId) &&
-				(mvccVersion == resourcePermissionCacheModel.mvccVersion)) {
+		if ((resourcePermissionId ==
+				resourcePermissionCacheModel.resourcePermissionId) &&
+			(mvccVersion == resourcePermissionCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -77,10 +76,12 @@ public class ResourcePermissionCacheModel implements CacheModel<ResourcePermissi
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(23);
+		StringBundler sb = new StringBundler(25);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
 		sb.append(", resourcePermissionId=");
 		sb.append(resourcePermissionId);
 		sb.append(", companyId=");
@@ -108,14 +109,16 @@ public class ResourcePermissionCacheModel implements CacheModel<ResourcePermissi
 
 	@Override
 	public ResourcePermission toEntityModel() {
-		ResourcePermissionImpl resourcePermissionImpl = new ResourcePermissionImpl();
+		ResourcePermissionImpl resourcePermissionImpl =
+			new ResourcePermissionImpl();
 
 		resourcePermissionImpl.setMvccVersion(mvccVersion);
+		resourcePermissionImpl.setCtCollectionId(ctCollectionId);
 		resourcePermissionImpl.setResourcePermissionId(resourcePermissionId);
 		resourcePermissionImpl.setCompanyId(companyId);
 
 		if (name == null) {
-			resourcePermissionImpl.setName(StringPool.BLANK);
+			resourcePermissionImpl.setName("");
 		}
 		else {
 			resourcePermissionImpl.setName(name);
@@ -124,7 +127,7 @@ public class ResourcePermissionCacheModel implements CacheModel<ResourcePermissi
 		resourcePermissionImpl.setScope(scope);
 
 		if (primKey == null) {
-			resourcePermissionImpl.setPrimKey(StringPool.BLANK);
+			resourcePermissionImpl.setPrimKey("");
 		}
 		else {
 			resourcePermissionImpl.setPrimKey(primKey);
@@ -144,27 +147,40 @@ public class ResourcePermissionCacheModel implements CacheModel<ResourcePermissi
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
+
 		resourcePermissionId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
 		name = objectInput.readUTF();
+
 		scope = objectInput.readInt();
 		primKey = objectInput.readUTF();
+
 		primKeyId = objectInput.readLong();
+
 		roleId = objectInput.readLong();
+
 		ownerId = objectInput.readLong();
+
 		actionIds = objectInput.readLong();
+
 		viewActionId = objectInput.readBoolean();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
+
 		objectOutput.writeLong(resourcePermissionId);
+
 		objectOutput.writeLong(companyId);
 
 		if (name == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(name);
@@ -173,20 +189,25 @@ public class ResourcePermissionCacheModel implements CacheModel<ResourcePermissi
 		objectOutput.writeInt(scope);
 
 		if (primKey == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(primKey);
 		}
 
 		objectOutput.writeLong(primKeyId);
+
 		objectOutput.writeLong(roleId);
+
 		objectOutput.writeLong(ownerId);
+
 		objectOutput.writeLong(actionIds);
+
 		objectOutput.writeBoolean(viewActionId);
 	}
 
 	public long mvccVersion;
+	public long ctCollectionId;
 	public long resourcePermissionId;
 	public long companyId;
 	public String name;
@@ -197,4 +218,5 @@ public class ResourcePermissionCacheModel implements CacheModel<ResourcePermissi
 	public long ownerId;
 	public long actionIds;
 	public boolean viewActionId;
+
 }

@@ -1,0 +1,51 @@
+@component-name = "portal-frontend-infrastructure"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "AMD Loader";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+	}
+
+	@description = "Verify user can configure AMD loader log level"
+	@priority = "5"
+	@refactordone
+	test LogLevelCanBeConfigured {
+		property test.name.skip.portal.instance = "AMDLoader#LogLevelCanBeConfigured";
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Control Panel",
+			portlet = "System Settings");
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Infrastructure",
+			configurationName = "JavaScript Loader",
+			configurationScope = "System Scope");
+
+		FormFields.viewSelectOption(
+			fieldName = "Log Level",
+			selectOption = "Warn");
+
+		for (var logLevelOptionName : list "Off,Error,Info,Debug,Warn") {
+			var logLevelOption = "${logLevelOptionName}";
+
+			AMDLoader.setLogLevelOption(selectOption = "${logLevelOption}");
+
+			AMDLoader.confirmLogLevelOptionSetCorrectly(selectOption = "${logLevelOption}");
+		}
+	}
+
+}

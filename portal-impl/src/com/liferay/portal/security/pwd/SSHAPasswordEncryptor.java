@@ -14,9 +14,11 @@
 
 package com.liferay.portal.security.pwd;
 
-import com.liferay.portal.PwdEncryptorException;
+import com.liferay.portal.kernel.exception.PwdEncryptorException;
 import com.liferay.portal.kernel.io.BigEndianCodec;
 import com.liferay.portal.kernel.security.SecureRandomUtil;
+import com.liferay.portal.kernel.security.pwd.PasswordEncryptor;
+import com.liferay.portal.kernel.security.pwd.PasswordEncryptorUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.Digester;
@@ -35,12 +37,7 @@ public class SSHAPasswordEncryptor
 	extends BasePasswordEncryptor implements PasswordEncryptor {
 
 	@Override
-	public String[] getSupportedAlgorithmTypes() {
-		return new String[] {PasswordEncryptorUtil.TYPE_SSHA};
-	}
-
-	@Override
-	protected String doEncrypt(
+	public String encrypt(
 			String algorithm, String plainTextPassword,
 			String encryptedPassword)
 		throws PwdEncryptorException {
@@ -59,12 +56,21 @@ public class SSHAPasswordEncryptor
 			return Base64.encode(
 				ArrayUtil.append(messageDigestBytes, saltBytes));
 		}
-		catch (NoSuchAlgorithmException nsae) {
-			throw new PwdEncryptorException(nsae.getMessage(), nsae);
+		catch (NoSuchAlgorithmException noSuchAlgorithmException) {
+			throw new PwdEncryptorException(
+				noSuchAlgorithmException.getMessage(),
+				noSuchAlgorithmException);
 		}
-		catch (UnsupportedEncodingException uee) {
-			throw new PwdEncryptorException(uee.getMessage(), uee);
+		catch (UnsupportedEncodingException unsupportedEncodingException) {
+			throw new PwdEncryptorException(
+				unsupportedEncodingException.getMessage(),
+				unsupportedEncodingException);
 		}
+	}
+
+	@Override
+	public String[] getSupportedAlgorithmTypes() {
+		return new String[] {PasswordEncryptorUtil.TYPE_SSHA};
 	}
 
 	protected byte[] getSaltBytes(String encryptedPassword)
@@ -84,11 +90,11 @@ public class SSHAPasswordEncryptor
 					encryptedPasswordBytes, encryptedPasswordBytes.length - 8,
 					saltBytes, 0, saltBytes.length);
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
 				throw new PwdEncryptorException(
 					"Unable to extract salt from encrypted password " +
-						e.getMessage(),
-					e);
+						exception.getMessage(),
+					exception);
 			}
 		}
 

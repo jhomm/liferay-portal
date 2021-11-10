@@ -14,11 +14,13 @@
 
 package com.liferay.portal.fabric.netty.codec.serialization;
 
+import com.liferay.petra.io.AnnotatedObjectOutputStream;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.fabric.netty.util.NettyUtil;
-import com.liferay.portal.kernel.io.AnnotatedObjectOutputStream;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -26,7 +28,6 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ import java.util.UUID;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -47,8 +49,10 @@ import org.junit.Test;
 public class AnnotatedObjectDecoderTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Before
 	public void setUp() {
@@ -138,7 +142,7 @@ public class AnnotatedObjectDecoderTest {
 
 			Assert.fail();
 		}
-		catch (NoSuchElementException nsee) {
+		catch (NoSuchElementException noSuchElementException) {
 		}
 
 		_assertChannelPipeline(_dateChannelHandler);
@@ -150,7 +154,7 @@ public class AnnotatedObjectDecoderTest {
 
 			Assert.fail();
 		}
-		catch (NoSuchElementException nsee) {
+		catch (NoSuchElementException noSuchElementException) {
 		}
 
 		_assertChannelPipeline();
@@ -196,7 +200,7 @@ public class AnnotatedObjectDecoderTest {
 
 			Assert.fail();
 		}
-		catch (NoSuchElementException nsee) {
+		catch (NoSuchElementException noSuchElementException) {
 		}
 
 		_assertChannelPipeline(_dateChannelHandler);
@@ -210,7 +214,7 @@ public class AnnotatedObjectDecoderTest {
 
 			Assert.fail();
 		}
-		catch (NoSuchElementException nsee) {
+		catch (NoSuchElementException noSuchElementException) {
 		}
 
 		_assertChannelPipeline();
@@ -255,13 +259,13 @@ public class AnnotatedObjectDecoderTest {
 	private void _assertChannelPipeline(ChannelHandler... channelHandlers) {
 		Map<String, ChannelHandler> map = _innerChannelPipeline.toMap();
 
-		Assert.assertEquals(channelHandlers.length, map.size());
+		Assert.assertEquals(map.toString(), channelHandlers.length, map.size());
 		Assert.assertEquals(
 			Arrays.asList(channelHandlers),
 			new ArrayList<ChannelHandler>(map.values()));
 	}
 
-	private ByteBuf _toByteBuf(Serializable serializable) throws IOException {
+	private ByteBuf _toByteBuf(Serializable serializable) throws Exception {
 		UnsyncByteArrayOutputStream unsyncByteArrayOutputStream =
 			new UnsyncByteArrayOutputStream();
 

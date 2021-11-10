@@ -1,0 +1,19 @@
+definition {
+
+	@description = "Add Apache DS server and test the connection between it and Liferay DXP"
+	macro addLDAPServerAndTestConnection {
+		PortalSettings.addLDAPServer(LDAPServerName = "${LDAPServerName}");
+
+		PortalSettings.editLDAPServer(LDAPServerName = "${LDAPServerName}");
+
+		PortalSettings.testLDAPConnection();
+	}
+
+	@description = "Enable various LDAP related settings"
+	macro enableLDAPSettings {
+		PortalSettings.configureLDAPSetting(enableSettingList = "${enableSettingList}");
+
+		PortalSettings.viewEnabledLDAPSetting(enableSettingList = "${enableSettingList}");
+	}
+
+}

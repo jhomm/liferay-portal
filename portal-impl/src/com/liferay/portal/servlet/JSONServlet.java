@@ -18,8 +18,8 @@ import com.liferay.portal.action.JSONServiceAction;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.access.control.AccessControlThreadLocal;
+import com.liferay.portal.kernel.servlet.PluginContextListener;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
-import com.liferay.portal.kernel.util.ClassLoaderUtil;
 import com.liferay.portal.struts.JSONAction;
 
 import java.io.IOException;
@@ -37,17 +37,21 @@ import javax.servlet.http.HttpServletResponse;
 public class JSONServlet extends HttpServlet {
 
 	@Override
-	public void init(ServletConfig servletConfig) {
+	public void init(ServletConfig servletConfig) throws ServletException {
+		super.init(servletConfig);
+
 		ServletContext servletContext = servletConfig.getServletContext();
 
-		_pluginClassLoader = servletContext.getClassLoader();
+		_pluginClassLoader = (ClassLoader)servletContext.getAttribute(
+			PluginContextListener.PLUGIN_CLASS_LOADER);
 
 		_jsonAction = getJSONAction(servletContext);
 	}
 
 	@Override
 	public void service(
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws IOException, ServletException {
 
 		boolean remoteAccess = AccessControlThreadLocal.isRemoteAccess();
@@ -55,33 +59,37 @@ public class JSONServlet extends HttpServlet {
 		try {
 			AccessControlThreadLocal.setRemoteAccess(true);
 
-			if (_pluginClassLoader == ClassLoaderUtil.getPortalClassLoader()) {
-				_jsonAction.execute(null, null, request, response);
+			if (_pluginClassLoader == null) {
+				_jsonAction.execute(
+					null, httpServletRequest, httpServletResponse);
 			}
 			else {
+				Thread currentThread = Thread.currentThread();
+
 				ClassLoader contextClassLoader =
-					ClassLoaderUtil.getContextClassLoader();
+					currentThread.getContextClassLoader();
 
 				try {
-					ClassLoaderUtil.setContextClassLoader(_pluginClassLoader);
+					currentThread.setContextClassLoader(_pluginClassLoader);
 
-					_jsonAction.execute(null, null, request, response);
+					_jsonAction.execute(
+						null, httpServletRequest, httpServletResponse);
 				}
 				finally {
-					ClassLoaderUtil.setContextClassLoader(contextClassLoader);
+					currentThread.setContextClassLoader(contextClassLoader);
 				}
 			}
 		}
-		catch (IOException ioe) {
-			if (!ServletResponseUtil.isClientAbortException(ioe)) {
-				throw ioe;
+		catch (IOException ioException) {
+			if (!ServletResponseUtil.isClientAbortException(ioException)) {
+				throw ioException;
 			}
 		}
-		catch (SecurityException se) {
-			throw new ServletException(se);
+		catch (SecurityException securityException) {
+			throw new ServletException(securityException);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 		finally {
 			AccessControlThreadLocal.setRemoteAccess(remoteAccess);

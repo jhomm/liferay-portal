@@ -1,0 +1,9 @@
+@mixin color-variant($class-suffix, $color) {
+	.bg-#{$class-suffix} {
+		background-color: $color !important;
+	}
+
+	.text-#{$class-suffix} {
+		color: $color !important;
+	}
+}

@@ -14,7 +14,7 @@
 
 package com.liferay.taglib.util;
 
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import javax.servlet.jsp.JspException;
@@ -34,8 +34,8 @@ public class WhitespaceRemoverTag extends BodyTagSupport {
 
 			jspWriter.write(getBodyContentString());
 		}
-		catch (Exception e) {
-			throw new JspException(e);
+		catch (Exception exception) {
+			throw new JspException(exception);
 		}
 
 		return EVAL_PAGE;
@@ -51,12 +51,8 @@ public class WhitespaceRemoverTag extends BodyTagSupport {
 
 		String bodyContentString = StringUtil.trim(bodyContent.getString());
 
-		bodyContentString = StringUtil.replace(
-			bodyContentString,
-			new String[] {StringPool.NEW_LINE, StringPool.TAB},
-			new String[] {StringPool.BLANK, StringPool.BLANK});
-
-		return bodyContentString;
+		return StringUtil.removeChars(
+			bodyContentString, CharPool.NEW_LINE, CharPool.TAB);
 	}
 
 }

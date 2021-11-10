@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<Configuration strict="true">
+	<Loggers>
+		<Logger level="WARN" name="com.liferay.portal.osgi.web.wab.generator.internal.WabGenerator" />
+		<Logger level="WARN" name="com.liferay.portal.osgi.web.wab.generator.internal.processor.WabProcessor" />
+	</Loggers>
+</Configuration>

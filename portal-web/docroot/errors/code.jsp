@@ -14,21 +14,7 @@
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-
-<%@ page contentType="text/html; charset=UTF-8" %>
-<%@ page isErrorPage="true" %>
-
-<%@ page import="com.liferay.portal.kernel.language.LanguageUtil" %>
-<%@ page import="com.liferay.portal.kernel.log.Log" %>
-<%@ page import="com.liferay.portal.kernel.log.LogFactoryUtil" %>
-<%@ page import="com.liferay.portal.kernel.servlet.HttpHeaders" %>
-<%@ page import="com.liferay.portal.kernel.util.HtmlUtil" %>
-<%@ page import="com.liferay.portal.kernel.util.JavaConstants" %>
-<%@ page import="com.liferay.portal.kernel.util.StringUtil" %>
-<%@ page import="com.liferay.portal.model.LayoutSet" %>
-<%@ page import="com.liferay.portal.util.PortalUtil" %>
-<%@ page import="com.liferay.portal.util.WebKeys" %>
+<%@ include file="/errors/init.jsp" %>
 
 <%
 
@@ -44,6 +30,7 @@
 ErrorData errorData = pageContext.getErrorData();
 
 int code = errorData.getStatusCode();
+
 String msg = String.valueOf(request.getAttribute(JavaConstants.JAVAX_SERVLET_ERROR_MESSAGE));
 String uri = errorData.getRequestURI();
 
@@ -51,73 +38,79 @@ if (_log.isWarnEnabled()) {
 	_log.warn("{code=\"" + code + "\", msg=\"" + msg + "\", uri=" + uri + "}", exception);
 }
 
+String dynamicIncludeKey = DynamicIncludeKeyUtil.getDynamicIncludeKey(request.getHeader("Accept"));
 String xRequestWith = request.getHeader(HttpHeaders.X_REQUESTED_WITH);
 %>
 
-<html>
-
 <c:choose>
+	<c:when test="<%= !Validator.isBlank(dynamicIncludeKey) %>">
+		<liferay-util:dynamic-include key="<%= dynamicIncludeKey %>" />
+	</c:when>
 	<c:when test="<%= !StringUtil.equalsIgnoreCase(HttpHeaders.XML_HTTP_REQUEST, xRequestWith) %>">
+		<%@ page contentType="text/html; charset=UTF-8" %>
 
-		<%
-		String redirect = null;
+		<html>
 
-		LayoutSet layoutSet = (LayoutSet)request.getAttribute(WebKeys.VIRTUAL_HOST_LAYOUT_SET);
+			<%
+			String redirect = null;
 
-		if (layoutSet != null) {
-			redirect = PortalUtil.getPathMain();
-		}
-		else {
-			String validPortalDomain = PortalUtil.getValidPortalDomain(PortalUtil.getDefaultCompanyId(), request.getServerName());
+			LayoutSet layoutSet = (LayoutSet)request.getAttribute(WebKeys.VIRTUAL_HOST_LAYOUT_SET);
 
-			redirect = PortalUtil.getPortalURL(validPortalDomain, request.getServerPort(), request.isSecure()) + PortalUtil.getPathContext() + PortalUtil.getRelativeHomeURL(request);
-		}
+			if (layoutSet != null) {
+				redirect = PortalUtil.getPathMain();
+			}
+			else {
+				redirect = PortalUtil.getPortalURL(PortalUtil.getValidPortalDomain(PortalUtil.getDefaultCompanyId(), request.getServerName()), request.getServerPort(), request.isSecure()) + PortalUtil.getPathContext() + PortalUtil.getRelativeHomeURL(request);
+			}
 
-		if (!request.isRequestedSessionIdFromCookie()) {
-			redirect = PortalUtil.getURLWithSessionId(redirect, session.getId());
-		}
-		%>
+			if (!request.isRequestedSessionIdFromCookie()) {
+				redirect = PortalUtil.getURLWithSessionId(redirect, session.getId());
+			}
+			%>
 
-		<head>
-			<title></title>
-			<meta content="1; url=<%= redirect %>" http-equiv="refresh" />
-		</head>
+			<head>
+				<title></title>
 
-		<body onload="javascript:location.replace('<%= redirect %>')">
+				<meta content="1; url=<%= HtmlUtil.escapeAttribute(redirect) %>" http-equiv="refresh" />
+			</head>
 
-		<!--
-		The numbers below are used to fill up space so that this works properly in IE.
-		See http://support.microsoft.com/default.aspx?scid=kb;en-us;Q294807 for more
-		information on why this is necessary.
+			<body onload="javascript:location.replace('<%= HtmlUtil.escapeJS(redirect) %>')">
 
-		12345678901234567890123456789012345678901234567890123456789012345678901234567890
-		12345678901234567890123456789012345678901234567890123456789012345678901234567890
-		12345678901234567890123456789012345678901234567890123456789012345678901234567890
-		-->
+				<!--
+				The numbers below are used to fill up space so that this works properly in IE.
+				See http://support.microsoft.com/default.aspx?scid=kb;en-us;Q294807 for more
+				information on why this is necessary.
 
-		</body>
+				12345678901234567890123456789012345678901234567890123456789012345678901234567890
+				12345678901234567890123456789012345678901234567890123456789012345678901234567890
+				12345678901234567890123456789012345678901234567890123456789012345678901234567890
+				-->
+			</body>
+		</html>
 	</c:when>
 	<c:otherwise>
-		<head>
-			<title>Http Status <%= code %> - <%= LanguageUtil.get(request, "http-status-code[" + code + "]") %></title>
-		</head>
+		<%@ page contentType="text/html; charset=UTF-8" %>
 
-		<body>
-			<h1>Http Status <%= code %> - <%= LanguageUtil.get(request, "http-status-code[" + code + "]") %></h1>
+		<html>
+			<head>
+				<title>Http Status <%= code %> - <%= LanguageUtil.get(request, "http-status-code[" + code + "]") %></title>
+			</head>
 
-			<p>
-				<%= LanguageUtil.get(request, "message") %>: <%= HtmlUtil.escape(msg) %>
-			</p>
+			<body>
+				<h1>Http Status <%= code %> - <%= LanguageUtil.get(request, "http-status-code[" + code + "]") %></h1>
 
-			<p>
-				<%= LanguageUtil.get(request, "resource") %>: <%= HtmlUtil.escape(uri) %>
-			</p>
-		</body>
+				<p>
+					<liferay-ui:message key="message" />: <%= HtmlUtil.escape(msg) %>
+				</p>
+
+				<p>
+					<liferay-ui:message key="resource" />: <%= HtmlUtil.escape(uri) %>
+				</p>
+			</body>
+		</html>
 	</c:otherwise>
 </c:choose>
 
-</html>
-
 <%!
-private static Log _log = LogFactoryUtil.getLog("portal-web.docroot.errors.code_jsp");
+private static final Log _log = LogFactoryUtil.getLog("portal_web.docroot.errors.code_jsp");
 %>

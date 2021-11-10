@@ -1,11 +1,16 @@
-<definition default="sikuliClick">
-	<command name="sikuliClick">
-		<execute selenium="sikuliClick" />
+@default = "sikuliClick"
+definition {
 
-		<execute argument1="2000" selenium="pause" />
+	function sikuliClick {
+		WaitForSPARefresh();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.sikuliClick();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.pause("2000");
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

@@ -14,17 +14,20 @@
 
 package com.liferay.portal.fabric.netty.rpc;
 
+import com.liferay.petra.concurrent.AsyncBroker;
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.process.ProcessException;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.fabric.netty.handlers.NettyChannelAttributes;
 import com.liferay.portal.fabric.netty.rpc.handlers.NettyRPCChannelHandler;
-import com.liferay.portal.kernel.concurrent.AsyncBroker;
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.process.ProcessException;
-import com.liferay.portal.kernel.test.CaptureHandler;
-import com.liferay.portal.kernel.test.JDKLoggerTestUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -43,10 +46,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -55,16 +58,19 @@ import org.junit.Test;
 public class RPCUtilTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		new CodeCoverageAssertor() {
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new CodeCoverageAssertor() {
 
-			@Override
-			public void appendAssertClasses(List<Class<?>> assertClasses) {
-				assertClasses.add(RPCSerializable.class);
-				assertClasses.add(NettyRPCChannelHandler.class);
-			}
+				@Override
+				public void appendAssertClasses(List<Class<?>> assertClasses) {
+					assertClasses.add(RPCSerializable.class);
+					assertClasses.add(NettyRPCChannelHandler.class);
+				}
 
-		};
+			},
+			LiferayUnitTestRule.INSTANCE);
 
 	@Test
 	public void testConstructor() {
@@ -99,23 +105,23 @@ public class RPCUtilTest {
 
 		// RPCResponse with exception
 
-		ProcessException testException = new ProcessException("message");
+		ProcessException processException = new ProcessException("message");
 
 		Future<Serializable> future = RPCUtil.execute(
-			_embeddedChannel, new ExceptionRPCCallable(testException));
+			_embeddedChannel, new ExceptionRPCCallable(processException));
 
-		_embeddedChannel.writeInbound(_embeddedChannel.readOutbound());
-		_embeddedChannel.writeInbound(_embeddedChannel.readOutbound());
+		_embeddedChannel.writeOneInbound(_embeddedChannel.readOutbound());
+		_embeddedChannel.writeOneInbound(_embeddedChannel.readOutbound());
 
 		try {
 			future.get();
 
 			Assert.fail();
 		}
-		catch (ExecutionException ee) {
-			Throwable throwable = ee.getCause();
+		catch (ExecutionException executionException) {
+			Throwable throwable = executionException.getCause();
 
-			Assert.assertSame(testException, throwable);
+			Assert.assertSame(processException, throwable);
 		}
 
 		// Channel closed failure, set back exception
@@ -130,11 +136,13 @@ public class RPCUtilTest {
 
 			Assert.fail();
 		}
-		catch (ExecutionException ee) {
-			Throwable throwable = ee.getCause();
+		catch (ExecutionException executionException) {
+			Throwable throwable = executionException.getCause();
+
+			Class<?> clazz = throwable.getClass();
 
 			Assert.assertSame(
-				ClosedChannelException.class, throwable.getClass());
+				ClosedChannelException.class, clazz.getSuperclass());
 		}
 
 		// Channel closed failure, no match key
@@ -158,28 +166,29 @@ public class RPCUtilTest {
 
 			});
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					RPCUtil.class.getName(), Level.SEVERE)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				RPCUtil.class.getName(), Level.SEVERE)) {
 
 			RPCUtil.execute(
 				_embeddedChannel, new ResultRPCCallable(StringPool.BLANK));
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			LogRecord logRecord = logRecords.get(0);
+			LogEntry logEntry = logEntries.get(0);
 
 			Assert.assertEquals(
 				"Unable to place exception because no future exists with ID " +
 					keyRef.get(),
-				logRecord.getMessage());
+				logEntry.getMessage());
 
-			Throwable throwable = logRecord.getThrown();
+			Throwable throwable = logEntry.getThrowable();
+
+			Class<?> clazz = throwable.getClass();
 
 			Assert.assertSame(
-				ClosedChannelException.class, throwable.getClass());
+				ClosedChannelException.class, clazz.getSuperclass());
 		}
 	}
 
@@ -190,8 +199,8 @@ public class RPCUtilTest {
 		Future<String> future = RPCUtil.execute(
 			_embeddedChannel, new ResultRPCCallable(result));
 
-		_embeddedChannel.writeInbound(_embeddedChannel.readOutbound());
-		_embeddedChannel.writeInbound(_embeddedChannel.readOutbound());
+		_embeddedChannel.writeOneInbound(_embeddedChannel.readOutbound());
+		_embeddedChannel.writeOneInbound(_embeddedChannel.readOutbound());
 
 		Assert.assertEquals(result, future.get());
 	}

@@ -1,75 +1,148 @@
-<definition>
-	<command name="addCP">
-		<var name="key_resourceName" value="${resourceName}" />
+definition {
 
-		<execute function="AssertClick" locator1="CustomFields#RESOURCE_TABLE_RESOURCE_LINK" value1="${resourceName}" />
+	macro addCP {
+		var key_resourceName = "${resourceName}";
 
-		<execute function="AssertClick" locator1="Button#ADD_CUSTOM_FIELD" value1="Add Custom Field" />
+		if (isSet(modelResource)) {
+			CustomFields.openToAddResourceCustomField(modelResource = "${modelResource}");
+		}
+		else {
+			AssertClick(
+				locator1 = "CustomFields#RESOURCE_TABLE_RESOURCE_LINK",
+				value1 = "${resourceName}");
 
-		<var method="StringUtil#lowerCase('${customFieldName}')" name="customFieldKey" />
+			LexiconEntry.gotoAdd();
+		}
 
-		<execute function="Type" locator1="TextInput#NAME" value1="${customFieldKey}" />
-		<execute function="Select" locator1="Select#TYPE" value1="${customFieldType}" />
+		var key_customFieldType = "${customFieldType}";
 
-		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
+		Click(locator1 = "CustomFields#CUSTOM_FIELD_TYPE");
 
-		<var name="key_customFieldName" value="${customFieldName}" />
+		var customFieldKey = StringUtil.lowerCase("${customFieldName}");
 
-		<execute function="AssertTextEquals" locator1="CustomFieldsEditResource#CUSTOM_FIELDS_TABLE_NAME" value1="${customFieldName}" />
-	</command>
+		PortletEntry.inputName(name = "${customFieldKey}");
 
-	<command name="editCP">
-		<var name="key_resourceName" value="${resourceName}" />
+		if ("${customFieldType}" == "Input Field") {
+			var key_customInputDataType = "${customInputDataType}";
 
-		<execute function="AssertClick" locator1="CustomFields#RESOURCE_TABLE_RESOURCE_LINK" value1="${resourceName}" />
+			Select(
+				locator1 = "CustomFields#CUSTOM_INPUT_FIELD_DATA_TYPE",
+				value1 = "${customInputDataType}");
 
-		<var name="key_customFieldName" value="${customFieldName}" />
+			if (isSet(startingValue)) {
+				Type(
+					key_fieldLabel = "Starting Value",
+					locator1 = "CustomFields#CUSTOM_INPUT_FIELD",
+					value1 = "${startingValue}");
+			}
+		}
 
-		<execute function="Click" locator1="CustomFieldsEditResource#CUSTOM_FIELDS_TABLE_ACTIONS" />
+		if (("${customFieldType}" == "Dropdown") || ("${customFieldType}" == "Checkbox") || ("${customFieldType}" == "Radio")) {
+			PortletEntry.inputTextArea(
+				fieldId = "Value",
+				text = "${customFieldType}");
+		}
 
-		<execute function="AssertClick" locator1="MenuItem#EDIT" value1="Edit" />
+		if ("${localization}" == "true") {
+			Check(
+				checkboxName = "Make Field Localizable",
+				locator1 = "Checkbox#ANY_CHECKBOX");
+		}
 
-		<if>
-			<isset var="defaultValue" />
-			<then>
-				<if>
-					<equals arg1="${customFieldType}" arg2="True/False" />
-					<then>
-						<execute function="Select" locator1="CPCustomfieldsResourceAddcustomfield#DEFAULT_VALUE_SELECT" value1="${defaultValue}" />
-					</then>
-				</if>
-			</then>
-		</if>
+		if ("${searchable}" == "true") {
+			Check.checkToggleSwitch(
+				key_toggleSwitchLabel = "Searchable",
+				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+		}
 
-		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
+		Button.clickSave();
 
-		<execute function="AssertTextEquals" locator1="Comments#SUCCESS_MESSAGE" value1="Your request completed successfully." />
-	</command>
+		var key_customFieldName = "${customFieldName}";
 
-	<command name="tearDownCP">
-		<execute macro="Page#gotoCP">
-			<var name="portletName" value="Custom Fields" />
-		</execute>
+		AssertTextEquals(
+			locator1 = "CustomFieldsEditResource#CUSTOM_FIELDS_TABLE_NAME",
+			value1 = "${customFieldName}");
+	}
 
-		<while>
-			<condition function="IsElementPresent" locator1="CustomFields#RESOURCE_TABLE_CUSTOM_FIELDS_LINK_GENERIC" />
-			<then>
-				<execute function="Click" locator1="CustomFields#RESOURCE_TABLE_CUSTOM_FIELDS_LINK_GENERIC" />
+	macro deleteCP {
+		var key_resourceName = "${resourceName}";
 
-				<while>
-					<condition function="IsElementPresent" locator1="CustomFieldsEditResource#CUSTOM_FIELDS_TABLE_ACTIONS_GENERIC" />
-					<then>
-						<execute function="AssertClick" locator1="CustomFieldsEditResource#CUSTOM_FIELDS_TABLE_ACTIONS_GENERIC" value1="Actions" />
-						<execute function="AssertClickNoError" locator1="MenuItem#DELETE" value1="Delete" />
-						<execute function="Confirm" value1="Are you sure you want to delete this? It will be deleted immediately." />
-						<execute function="AssertTextEquals" locator1="Comments#SUCCESS_MESSAGE" value1="Your request completed successfully." />
-					</then>
-				</while>
+		AssertClick(
+			locator1 = "CustomFields#RESOURCE_TABLE_RESOURCE_LINK",
+			value1 = "${resourceName}");
 
-				<execute macro="Page#gotoCP">
-					<var name="portletName" value="Custom Fields" />
-				</execute>
-			</then>
-		</while>
-	</command>
-</definition>
+		var key_customFieldName = "${customFieldName}";
+
+		AssertVisible(locator1 = "CustomFieldsEditResource#CUSTOM_FIELDS_TABLE_NAME");
+
+		Pause(locator1 = "3000");
+
+		LexiconEntry.openEntryMenu(rowEntry = "${customFieldName}");
+
+		MenuItem.clickNoError(menuItem = "Delete");
+
+		AssertConfirm(value1 = "Are you sure you want to delete this? It will be deleted immediately.");
+
+		VerifyElementPresent(locator1 = "Message#SUCCESS");
+
+		AssertElementNotPresent(locator1 = "CustomFieldsEditResource#CUSTOM_FIELDS_TABLE_NAME");
+	}
+
+	macro editCP {
+		var key_resourceName = "${resourceName}";
+
+		AssertClick(
+			locator1 = "CustomFields#RESOURCE_TABLE_RESOURCE_LINK",
+			value1 = "${resourceName}");
+
+		var key_customFieldName = "${customFieldName}";
+
+		AssertVisible(locator1 = "CustomFieldsEditResource#CUSTOM_FIELDS_TABLE_NAME");
+
+		Pause(locator1 = "3000");
+
+		LexiconEntry.openEntryMenu(rowEntry = "${customFieldName}");
+
+		MenuItem.click(menuItem = "Edit");
+
+		if (isSet(startingValue)) {
+			if ("${customFieldType}" == "Text Field") {
+				Type(
+					key_fieldLabel = "Starting Value",
+					locator1 = "CustomFields#CUSTOM_INPUT_FIELD",
+					value1 = "${startingValue}");
+			}
+		}
+
+		PortletEntry.save();
+	}
+
+	macro openToAddResourceCustomField {
+		Navigator.openWithAppendToBaseURL(
+			baseURL = "${baseURL}",
+			urlAppend = "group/control_panel/manage?p_p_id=com_liferay_expando_web_portlet_ExpandoPortlet&_com_liferay_expando_web_portlet_ExpandoPortlet_mvcPath=%2Fedit%2Fselect_field_type.jsp&_com_liferay_expando_web_portlet_ExpandoPortlet_modelResource=${modelResource}");
+	}
+
+	macro tearDownCP {
+		for (var resourceName : list "Blogs Entry,Calendar Event,Document,Documents Folder,Knowledge Base Article,Knowledge Base Folder,Message Boards Category,Message Boards Message,Organization,Page,Role,Site,User,User Group,Web Content Article,Web Content Folder,Wiki Page") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Configuration",
+				panel = "Control Panel",
+				portlet = "Custom Fields");
+
+			AssertClick(
+				key_resourceName = "${resourceName}",
+				locator1 = "CustomFields#RESOURCE_TABLE_RESOURCE_LINK",
+				value1 = "${resourceName}");
+
+			if (IsElementNotPresent(locator1 = "Message#EMPTY_INFO")) {
+				PortletEntry.selectAll();
+
+				Click(locator1 = "Icon#DELETE");
+			}
+
+			AssertElementPresent(locator1 = "Message#EMPTY_INFO");
+		}
+	}
+
+}

@@ -37,6 +37,7 @@ public class DeploymentProgressListener implements ProgressListener {
 
 		_deploymentHandler = deploymentHandler;
 		_warContext = warContext;
+
 		_deploymentManager = _deploymentHandler.getDeploymentManager();
 	}
 
@@ -94,8 +95,8 @@ public class DeploymentProgressListener implements ProgressListener {
 					}
 				}
 			}
-			catch (Exception e) {
-				_log.error(e, e);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 
 				_deploymentHandler.setError(true);
 				_deploymentHandler.setStarted(false);

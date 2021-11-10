@@ -1,29 +1,76 @@
-<definition default="selectFrame">
-	<command name="selectFrame">
-		<if>
-			<contains string="${locator1}" substring="/iframe" />
-			<then>
-				<execute selenium="waitForVisible" />
+@default = "selectFrame"
+definition {
 
-				<execute selenium="mouseOver" />
+	function selectFrame {
+		if (contains("${locator1}", "/iframe")) {
+			WaitForLiferayEvent(
+				attributeName = "src",
+				attributeValue = "dialog-iframe-popup",
+				eventName = "modalIframeLoaded");
 
-				<execute selenium="selectFrame" />
+			selenium.waitForVisible();
 
-				<execute selenium="assertJavaScriptErrors" />
+			selenium.mouseOver();
 
-				<execute selenium="assertLiferayErrors" />
-			</then>
-			<else>
-				<execute function="SelectFrame#selectFrameTop" />
-			</else>
-		</if>
-	</command>
+			selenium.selectFrame();
 
-	<command name="selectFrameTop">
-		<execute argument1="relative=top" selenium="selectFrame" />
+			selenium.assertJavaScriptErrors();
 
-		<execute selenium="assertJavaScriptErrors" />
+			selenium.assertLiferayErrors();
+		}
+		else {
+			SelectFrame.selectFrameTop();
+		}
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		WaitForSPARefresh();
+	}
+
+	function selectFrameNoLoading {
+		if (contains("${locator1}", "/iframe")) {
+			selenium.waitForVisible();
+
+			selenium.mouseOver();
+
+			selenium.selectFrame();
+
+			selenium.assertJavaScriptErrors();
+
+			selenium.assertLiferayErrors();
+		}
+		else {
+			SelectFrame.selectFrameTop();
+		}
+
+		WaitForSPARefresh();
+	}
+
+	function selectFrameTop {
+		selenium.selectFrame("relative=top");
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+
+		WaitForSPARefresh();
+	}
+
+	function selectSecondFrame {
+		if (contains("${locator1}", "/iframe")) {
+			selenium.waitForVisible();
+
+			selenium.mouseOver();
+
+			selenium.selectFrame();
+
+			selenium.assertJavaScriptErrors();
+
+			selenium.assertLiferayErrors();
+		}
+		else {
+			SelectFrame.selectFrameTop();
+		}
+
+		WaitForSPARefresh();
+	}
+
+}

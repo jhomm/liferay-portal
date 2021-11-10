@@ -2,37 +2,28 @@
 <head>
 <title>ControlMenuAddPanel</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">ControlMenuAddPanel</td></tr>
 </thead>
+
 <tbody>
 <tr>
 	<td>ADD_NEW_DROPDOWN</td>
-	<td>//a[contains(.,'Add New')]/span</td>
+	<td>//button[contains(@class,'dropdown-toggle')][normalize-space()='Add New']</td>
 	<td></td>
 </tr>
 <tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--CONTENT-->
-<tr>
-	<td>CONTENT_TITLE</td>
-	<td>//div[contains(@class,'add-content-details')]/div[contains(.,'${key_assetTitle}')]</td>
+	<td>CLOSE_ADD_PANEL</td>
+	<td>//div[contains(@class,'lfr-add-panel')]//a[contains(@class,'sidenav-close')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>ADD_NEW_MENULIST</td>
-	<td>//ul[@class='dropdown-menu']/li/a[contains(.,'${key_assetType}')]/span</td>
-	<td></td>
-</tr>
-<tr>
-	<td>POPOVER_CONTENT_TITLE</td>
-	<td>//div[contains(@class,'popover-content')]/div/div/div[contains(.,'${key_assetTitle}')]</td>
-	<td></td>
+<td>SIDEBAR_HEADER</td>
+<td>//div[contains(@class,'sidebar-header')]/*[normalize-space(text())='Add']</td>
+<td></td>
 </tr>
 <tr>
 	<td></td>
@@ -41,14 +32,20 @@
 </tr>
 <!--APPLICATIONS-->
 <tr>
-	<td>COLLAPSED_CATEGORY</td>
-	<td>//div[contains(@class,'toggler-header-collapsed')]/div</td>
-	<td></td>
+<td>ADD_PORTLET_LINK</td>
+<td>//div[contains(@class,'item-body')]//*[normalize-space(text())='${key_portletName}']/../../..//button[contains(@class,'item-add')]</td>
+<td></td>
 </tr>
 <tr>
-	<td>ADD_PORTLET_LINK</td>
-	<td>//span[contains(@data-search,'-${portletName}') and contains(@class,'add-content-item')]</td>
+	<td>ASSET_ITEM</td>
+	<td>//div[contains(@class,'open') or contains(@class,'show')]//*[normalize-space(text())='${key_assetItem}']/..</td>
 	<td></td>
+</tr>
+<!--CONTENT-->
+<tr>
+<td>ASSET_ENTRY</td>
+<td>//div[contains(@class,'item-body') and contains(.,'${key_entryTitle}')]</td>
+<td></td>
 </tr>
 </tbody>
 </table>

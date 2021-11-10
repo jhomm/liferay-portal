@@ -1,0 +1,26 @@
+@component-name = "portal-upgrades"
+definition {
+
+	property app.server.types = "jboss,tomcat,weblogic,websphere,wildfly";
+	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Upgrades Publications";
+
+	setUp {
+		SignIn.signIn();
+
+		SearchAdministration.executeReindex();
+	}
+
+	@priority = "5"
+	test ViewOutOfDatePublicationsArchive7310 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+		property portal.version = "7.3.10";
+		property test.run.environment = "EE";
+
+		Upgrade.viewOutOfDatePublications();
+	}
+
+}

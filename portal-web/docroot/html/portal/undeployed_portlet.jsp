@@ -14,12 +14,14 @@
  */
 --%>
 
-<%@ include file="/html/portlet/init.jsp" %>
+<%@ include file="/html/portal/init.jsp" %>
+
+<portlet:defineObjects />
 
 <%
 renderRequest.setAttribute(WebKeys.PORTLET_CONFIGURATOR_VISIBILITY, Boolean.TRUE);
 %>
 
 <div class="alert alert-info">
-	<liferay-ui:message key="this-portlet-has-been-undeployed.-please-redeploy-it-or-remove-it-from-the-page" />
+	<liferay-ui:message key="this-portlet-could-not-be-found.-please-redeploy-it-or-remove-it-from-the-page" />
 </div>

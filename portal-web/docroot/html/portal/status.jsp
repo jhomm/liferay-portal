@@ -31,7 +31,7 @@ if (Validator.isNull(url)) {
 	url = PortalUtil.getCurrentURL(request);
 }
 
-url = themeDisplay.getPortalURL() + url;
+url = HttpUtil.decodeURL(themeDisplay.getPortalURL() + url);
 
 boolean noSuchResourceException = false;
 
@@ -43,7 +43,10 @@ for (String key : SessionErrors.keySet(request)) {
 	}
 }
 
-if (Validator.isNotNull(exception)) {
+if (GetterUtil.getBoolean(request.getAttribute(NoSuchLayoutException.class.getName()))) {
+	noSuchResourceException = true;
+}
+else if (Validator.isNotNull(exception)) {
 	exception = exception.substring(exception.lastIndexOf(StringPool.PERIOD) + 1);
 
 	if (exception.startsWith("NoSuch") && exception.endsWith("Exception")) {
@@ -93,7 +96,7 @@ if (Validator.isNotNull(exception)) {
 		%>
 
 		<div>
-			<%= StringUtil.replace(te.getMessage(), new String[] {"<", "\n"}, new String[] {"&lt;", "<br />\n"}) %>
+			<%= StringUtil.replace(te.getMessage(), new char[] {'<', '\n'}, new String[] {"&lt;", "<br />\n"}) %>
 		</div>
 	</c:when>
 	<c:when test="<%= noSuchResourceException %>">
@@ -142,5 +145,5 @@ if (Validator.isNotNull(exception)) {
 <a href="javascript:history.go(-1);">&laquo; <liferay-ui:message key="back" /></a>
 
 <%!
-private static Log _log = LogFactoryUtil.getLog("portal-web.docroot.html.portal.status_jsp");
+private static final Log _log = LogFactoryUtil.getLog("portal_web.docroot.html.portal.status_jsp");
 %>

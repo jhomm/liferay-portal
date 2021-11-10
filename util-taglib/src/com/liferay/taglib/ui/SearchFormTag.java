@@ -24,6 +24,14 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class SearchFormTag<R> extends IncludeTag {
 
+	public SearchContainer<?> getSearchContainer() {
+		return _searchContainer;
+	}
+
+	public boolean isShowAddButton() {
+		return _showAddButton;
+	}
+
 	public void setSearchContainer(SearchContainer<?> searchContainer) {
 		_searchContainer = searchContainer;
 	}
@@ -34,23 +42,30 @@ public class SearchFormTag<R> extends IncludeTag {
 
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
 		_searchContainer = null;
 		_showAddButton = false;
 	}
 
 	@Override
-	protected void setAttributes(HttpServletRequest request) {
+	protected void setAttributes(HttpServletRequest httpServletRequest) {
 		SearchContainerTag<R> searchContainerTag =
 			(SearchContainerTag<R>)findAncestorWithClass(
 				this, SearchContainerTag.class);
 
 		if (searchContainerTag != null) {
 			_searchContainer = searchContainerTag.getSearchContainer();
+
+			httpServletRequest.setAttribute(
+				"liferay-ui:search:compactEmptyResultsMessage",
+				String.valueOf(
+					searchContainerTag.isCompactEmptyResultsMessage()));
 		}
 
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			"liferay-ui:search:searchContainer", _searchContainer);
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			"liferay-ui:search:showAddButton", String.valueOf(_showAddButton));
 	}
 

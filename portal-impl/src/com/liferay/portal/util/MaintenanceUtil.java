@@ -14,9 +14,12 @@
 
 package com.liferay.portal.util;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.PortalSessionContext;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Time;
 
 import java.util.Collection;
@@ -29,49 +32,21 @@ import javax.servlet.http.HttpSession;
 public class MaintenanceUtil {
 
 	public static void appendStatus(String status) {
-		_instance._appendStatus(status);
-	}
-
-	public static void cancel() {
-		_instance._cancel();
-	}
-
-	public static String getClassName() {
-		return _instance._getClassName();
-	}
-
-	public static String getSessionId() {
-		return _instance._getSessionId();
-	}
-
-	public static String getStatus() {
-		return _instance._getStatus();
-	}
-
-	public static boolean isMaintaining() {
-		return _instance._isMaintaining();
-	}
-
-	public static void maintain(String sessionId, String className) {
-		_instance._maintain(sessionId, className);
-	}
-
-	private MaintenanceUtil() {
-	}
-
-	private void _appendStatus(String status) {
 		if (_log.isDebugEnabled()) {
 			_log.debug(status);
 		}
 
-		_status.append(Time.getRFC822() + " " + status + "<br />");
+		_status = _status.concat(
+			StringBundler.concat(
+				Time.getRFC822(), StringPool.SPACE, HtmlUtil.escape(status),
+				"<br />"));
 	}
 
-	private void _cancel() {
-		HttpSession session = PortalSessionContext.get(_sessionId);
+	public static void cancel() {
+		HttpSession httpSession = PortalSessionContext.get(_sessionId);
 
-		if (session != null) {
-			session.invalidate();
+		if (httpSession != null) {
+			httpSession.invalidate();
 		}
 		else {
 			if (_log.isWarnEnabled()) {
@@ -82,51 +57,56 @@ public class MaintenanceUtil {
 		_maintaining = false;
 	}
 
-	private String _getClassName() {
+	public static String getClassName() {
 		return _className;
 	}
 
-	private String _getSessionId() {
+	public static String getSessionId() {
 		return _sessionId;
 	}
 
-	private String _getStatus() {
-		return _status.toString();
+	public static String getStatus() {
+		return _status;
 	}
 
-	private boolean _isMaintaining() {
+	public static boolean isMaintaining() {
 		return _maintaining;
 	}
 
-	private void _maintain(String sessionId, String className) {
+	public static void maintain(String sessionId, String className) {
 		_sessionId = sessionId;
 		_className = className;
 		_maintaining = true;
-		_status = new StringBuffer();
+		_status = StringPool.BLANK;
 
-		_appendStatus("Executing " + _className);
+		appendStatus("Executing " + _className);
 
-		Collection<HttpSession> sessions = PortalSessionContext.values();
+		Collection<HttpSession> httpSessions = PortalSessionContext.values();
 
-		for (HttpSession session : sessions) {
-			if (!sessionId.equals(session.getId())) {
+		for (HttpSession httpSession : httpSessions) {
+			if (!sessionId.equals(httpSession.getId())) {
 				try {
-					session.invalidate();
+					httpSession.invalidate();
 				}
-				catch (IllegalStateException ise) {
+				catch (IllegalStateException illegalStateException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(
+							illegalStateException, illegalStateException);
+					}
 				}
 			}
 		}
 	}
 
+	private MaintenanceUtil() {
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		MaintenanceUtil.class);
 
-	private static final MaintenanceUtil _instance = new MaintenanceUtil();
-
-	private String _className;
-	private boolean _maintaining = false;
-	private String _sessionId;
-	private StringBuffer _status = new StringBuffer();
+	private static volatile String _className;
+	private static volatile boolean _maintaining;
+	private static volatile String _sessionId;
+	private static volatile String _status = StringPool.BLANK;
 
 }

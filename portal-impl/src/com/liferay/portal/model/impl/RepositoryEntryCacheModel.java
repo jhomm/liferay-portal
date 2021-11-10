@@ -14,14 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.RepositoryEntry;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.RepositoryEntry;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -34,26 +31,28 @@ import java.util.Date;
  * The cache model class for representing RepositoryEntry in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see RepositoryEntry
  * @generated
  */
-@ProviderType
-public class RepositoryEntryCacheModel implements CacheModel<RepositoryEntry>,
-	Externalizable, MVCCModel {
+public class RepositoryEntryCacheModel
+	implements CacheModel<RepositoryEntry>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof RepositoryEntryCacheModel)) {
+		if (!(object instanceof RepositoryEntryCacheModel)) {
 			return false;
 		}
 
-		RepositoryEntryCacheModel repositoryEntryCacheModel = (RepositoryEntryCacheModel)obj;
+		RepositoryEntryCacheModel repositoryEntryCacheModel =
+			(RepositoryEntryCacheModel)object;
 
-		if ((repositoryEntryId == repositoryEntryCacheModel.repositoryEntryId) &&
-				(mvccVersion == repositoryEntryCacheModel.mvccVersion)) {
+		if ((repositoryEntryId ==
+				repositoryEntryCacheModel.repositoryEntryId) &&
+			(mvccVersion == repositoryEntryCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -119,7 +118,7 @@ public class RepositoryEntryCacheModel implements CacheModel<RepositoryEntry>,
 		repositoryEntryImpl.setMvccVersion(mvccVersion);
 
 		if (uuid == null) {
-			repositoryEntryImpl.setUuid(StringPool.BLANK);
+			repositoryEntryImpl.setUuid("");
 		}
 		else {
 			repositoryEntryImpl.setUuid(uuid);
@@ -131,7 +130,7 @@ public class RepositoryEntryCacheModel implements CacheModel<RepositoryEntry>,
 		repositoryEntryImpl.setUserId(userId);
 
 		if (userName == null) {
-			repositoryEntryImpl.setUserName(StringPool.BLANK);
+			repositoryEntryImpl.setUserName("");
 		}
 		else {
 			repositoryEntryImpl.setUserName(userName);
@@ -154,7 +153,7 @@ public class RepositoryEntryCacheModel implements CacheModel<RepositoryEntry>,
 		repositoryEntryImpl.setRepositoryId(repositoryId);
 
 		if (mappedId == null) {
-			repositoryEntryImpl.setMappedId(StringPool.BLANK);
+			repositoryEntryImpl.setMappedId("");
 		}
 		else {
 			repositoryEntryImpl.setMappedId(mappedId);
@@ -178,38 +177,46 @@ public class RepositoryEntryCacheModel implements CacheModel<RepositoryEntry>,
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
+
 		repositoryEntryId = objectInput.readLong();
+
 		groupId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
+
 		userId = objectInput.readLong();
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
+
 		repositoryId = objectInput.readLong();
 		mappedId = objectInput.readUTF();
+
 		manualCheckInRequired = objectInput.readBoolean();
 		lastPublishDate = objectInput.readLong();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
 
 		if (uuid == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(uuid);
 		}
 
 		objectOutput.writeLong(repositoryEntryId);
+
 		objectOutput.writeLong(groupId);
+
 		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(userId);
 
 		if (userName == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(userName);
@@ -217,10 +224,11 @@ public class RepositoryEntryCacheModel implements CacheModel<RepositoryEntry>,
 
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
+
 		objectOutput.writeLong(repositoryId);
 
 		if (mappedId == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(mappedId);
@@ -243,4 +251,5 @@ public class RepositoryEntryCacheModel implements CacheModel<RepositoryEntry>,
 	public String mappedId;
 	public boolean manualCheckInRequired;
 	public long lastPublishDate;
+
 }

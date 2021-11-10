@@ -14,10 +14,8 @@
 
 package com.liferay.portlet.social.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portlet.social.model.SocialActivity;
-import com.liferay.portlet.social.service.SocialActivityLocalServiceUtil;
+import com.liferay.social.kernel.model.SocialActivity;
+import com.liferay.social.kernel.service.SocialActivityLocalServiceUtil;
 
 /**
  * The extended model base implementation for the SocialActivity service. Represents a row in the &quot;SocialActivity&quot; database table, with each column mapped to a property of this class.
@@ -31,13 +29,13 @@ import com.liferay.portlet.social.service.SocialActivityLocalServiceUtil;
  * @see SocialActivity
  * @generated
  */
-@ProviderType
-public abstract class SocialActivityBaseImpl extends SocialActivityModelImpl
-	implements SocialActivity {
+public abstract class SocialActivityBaseImpl
+	extends SocialActivityModelImpl implements SocialActivity {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. All methods that expect a social activity model instance should use the {@link SocialActivity} interface instead.
+	 * Never modify or reference this class directly. All methods that expect a social activity model instance should use the <code>SocialActivity</code> interface instead.
 	 */
 	@Override
 	public void persist() {
@@ -48,4 +46,5 @@ public abstract class SocialActivityBaseImpl extends SocialActivityModelImpl
 			SocialActivityLocalServiceUtil.updateSocialActivity(this);
 		}
 	}
+
 }

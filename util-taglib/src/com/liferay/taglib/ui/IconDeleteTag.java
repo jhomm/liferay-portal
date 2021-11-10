@@ -14,14 +14,18 @@
 
 package com.liferay.taglib.ui;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.language.UnicodeLanguageUtil;
+import com.liferay.portal.kernel.servlet.FileAvailabilityUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Http;
-import com.liferay.portal.kernel.util.HttpUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.taglib.FileAvailabilityUtil;
+import com.liferay.taglib.util.TagResourceBundleUtil;
+
+import java.util.ResourceBundle;
 
 /**
  * @author Brian Wing Shun Chan
@@ -29,8 +33,24 @@ import com.liferay.taglib.FileAvailabilityUtil;
  */
 public class IconDeleteTag extends IconTag {
 
+	public String getConfirmation() {
+		return _confirmation;
+	}
+
+	public boolean isShowIcon() {
+		return _showIcon;
+	}
+
+	public boolean isTrash() {
+		return _trash;
+	}
+
 	public void setConfirmation(String confirmation) {
 		_confirmation = confirmation;
+	}
+
+	public void setShowIcon(boolean showIcon) {
+		_showIcon = showIcon;
 	}
 
 	public void setTrash(boolean trash) {
@@ -38,8 +58,18 @@ public class IconDeleteTag extends IconTag {
 	}
 
 	@Override
+	protected void cleanUp() {
+		super.cleanUp();
+
+		_confirmation = null;
+		_resourceBundle = null;
+		_showIcon = false;
+		_trash = false;
+	}
+
+	@Override
 	protected String getPage() {
-		if (FileAvailabilityUtil.isAvailable(servletContext, _PAGE)) {
+		if (FileAvailabilityUtil.isAvailable(getServletContext(), _PAGE)) {
 			return _PAGE;
 		}
 
@@ -47,21 +77,38 @@ public class IconDeleteTag extends IconTag {
 
 		setCssClass(cssClass.concat(" item-remove"));
 
-		if (Validator.isNull(getImage())) {
-			if (_trash) {
-				setIconCssClass("icon-trash");
-			}
-			else {
-				setIconCssClass("icon-remove");
+		String icon = StringPool.BLANK;
 
-				if (Validator.isNull(getMessage())) {
-					setMessage("delete");
+		if (_showIcon) {
+			icon = getIcon();
+
+			if (Validator.isNull(icon)) {
+				if (_trash) {
+					icon = "trash";
 				}
+				else {
+					icon = "times-circle";
+				}
+			}
+
+			if (!isLabel()) {
+				setLinkCssClass("component-action");
 			}
 		}
 
-		if (_trash && Validator.isNull(getMessage())) {
-			setMessage("move-to-the-recycle-bin");
+		setIcon(icon);
+
+		setMarkupView("lexicon");
+
+		if (Validator.isNull(getMessage())) {
+			if (_trash) {
+				setMessage(
+					LanguageUtil.get(
+						_getResourceBundle(), "move-to-recycle-bin"));
+			}
+			else {
+				setMessage(LanguageUtil.get(_getResourceBundle(), "delete"));
+			}
 		}
 
 		String url = getUrl();
@@ -77,15 +124,8 @@ public class IconDeleteTag extends IconTag {
 		if (url.startsWith(Http.HTTP_WITH_SLASH) ||
 			url.startsWith(Http.HTTPS_WITH_SLASH)) {
 
-			url = "submitForm(document.hrefFm, '".concat(
-				HttpUtil.encodeURL(url)).concat("');");
-		}
-
-		if (url.startsWith("wsrp_rewrite?")) {
-			url = StringUtil.replace(
-				url, "/wsrp_rewrite",
-				"&wsrp-extensions=encodeURL/wsrp_rewrite");
-			url = "submitForm(document.hrefFm, '".concat(url).concat("');");
+			url = StringBundler.concat(
+				"submitForm(document.hrefFm, '", HtmlUtil.escapeJS(url), "');");
 		}
 
 		if (!_trash) {
@@ -94,12 +134,16 @@ public class IconDeleteTag extends IconTag {
 			sb.append("javascript:if (confirm('");
 
 			if (Validator.isNotNull(_confirmation)) {
-				sb.append(UnicodeLanguageUtil.get(request, _confirmation));
+				sb.append(
+					UnicodeLanguageUtil.get(
+						_getResourceBundle(), _confirmation));
 			}
 			else {
 				String confirmation = "are-you-sure-you-want-to-delete-this";
 
-				sb.append(UnicodeLanguageUtil.get(request, confirmation));
+				sb.append(
+					UnicodeLanguageUtil.get(
+						_getResourceBundle(), confirmation));
 			}
 
 			sb.append("')) { ");
@@ -117,9 +161,20 @@ public class IconDeleteTag extends IconTag {
 		return super.getPage();
 	}
 
+	private ResourceBundle _getResourceBundle() {
+		if (_resourceBundle == null) {
+			_resourceBundle = TagResourceBundleUtil.getResourceBundle(
+				pageContext);
+		}
+
+		return _resourceBundle;
+	}
+
 	private static final String _PAGE = "/html/taglib/ui/icon_delete/page.jsp";
 
 	private String _confirmation;
+	private ResourceBundle _resourceBundle;
+	private boolean _showIcon;
 	private boolean _trash;
 
 }

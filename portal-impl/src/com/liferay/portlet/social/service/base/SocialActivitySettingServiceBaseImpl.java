@@ -15,21 +15,20 @@
 package com.liferay.portlet.social.service.base;
 
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.bean.IdentifiableBean;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.service.BaseServiceImpl;
-import com.liferay.portal.service.persistence.ClassNamePersistence;
-import com.liferay.portal.service.persistence.GroupFinder;
-import com.liferay.portal.service.persistence.GroupPersistence;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
+import com.liferay.portal.kernel.service.BaseServiceImpl;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.social.kernel.model.SocialActivitySetting;
+import com.liferay.social.kernel.service.SocialActivitySettingService;
+import com.liferay.social.kernel.service.SocialActivitySettingServiceUtil;
+import com.liferay.social.kernel.service.persistence.SocialActivitySettingPersistence;
 
-import com.liferay.portlet.social.model.SocialActivitySetting;
-import com.liferay.portlet.social.service.SocialActivitySettingService;
-import com.liferay.portlet.social.service.persistence.SocialActivitySettingPersistence;
+import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -42,16 +41,16 @@ import javax.sql.DataSource;
  *
  * @author Brian Wing Shun Chan
  * @see com.liferay.portlet.social.service.impl.SocialActivitySettingServiceImpl
- * @see com.liferay.portlet.social.service.SocialActivitySettingServiceUtil
  * @generated
  */
 public abstract class SocialActivitySettingServiceBaseImpl
-	extends BaseServiceImpl implements SocialActivitySettingService,
-		IdentifiableBean {
+	extends BaseServiceImpl
+	implements IdentifiableOSGiService, SocialActivitySettingService {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Always use {@link com.liferay.portlet.social.service.SocialActivitySettingServiceUtil} to access the social activity setting remote service.
+	 * Never modify or reference this class directly. Use <code>SocialActivitySettingService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>SocialActivitySettingServiceUtil</code>.
 	 */
 
 	/**
@@ -59,7 +58,9 @@ public abstract class SocialActivitySettingServiceBaseImpl
 	 *
 	 * @return the social activity setting local service
 	 */
-	public com.liferay.portlet.social.service.SocialActivitySettingLocalService getSocialActivitySettingLocalService() {
+	public com.liferay.social.kernel.service.SocialActivitySettingLocalService
+		getSocialActivitySettingLocalService() {
+
 		return socialActivitySettingLocalService;
 	}
 
@@ -69,8 +70,11 @@ public abstract class SocialActivitySettingServiceBaseImpl
 	 * @param socialActivitySettingLocalService the social activity setting local service
 	 */
 	public void setSocialActivitySettingLocalService(
-		com.liferay.portlet.social.service.SocialActivitySettingLocalService socialActivitySettingLocalService) {
-		this.socialActivitySettingLocalService = socialActivitySettingLocalService;
+		com.liferay.social.kernel.service.SocialActivitySettingLocalService
+			socialActivitySettingLocalService) {
+
+		this.socialActivitySettingLocalService =
+			socialActivitySettingLocalService;
 	}
 
 	/**
@@ -89,6 +93,7 @@ public abstract class SocialActivitySettingServiceBaseImpl
 	 */
 	public void setSocialActivitySettingService(
 		SocialActivitySettingService socialActivitySettingService) {
+
 		this.socialActivitySettingService = socialActivitySettingService;
 	}
 
@@ -97,7 +102,9 @@ public abstract class SocialActivitySettingServiceBaseImpl
 	 *
 	 * @return the social activity setting persistence
 	 */
-	public SocialActivitySettingPersistence getSocialActivitySettingPersistence() {
+	public SocialActivitySettingPersistence
+		getSocialActivitySettingPersistence() {
+
 		return socialActivitySettingPersistence;
 	}
 
@@ -108,7 +115,9 @@ public abstract class SocialActivitySettingServiceBaseImpl
 	 */
 	public void setSocialActivitySettingPersistence(
 		SocialActivitySettingPersistence socialActivitySettingPersistence) {
-		this.socialActivitySettingPersistence = socialActivitySettingPersistence;
+
+		this.socialActivitySettingPersistence =
+			socialActivitySettingPersistence;
 	}
 
 	/**
@@ -116,7 +125,9 @@ public abstract class SocialActivitySettingServiceBaseImpl
 	 *
 	 * @return the counter local service
 	 */
-	public com.liferay.counter.service.CounterLocalService getCounterLocalService() {
+	public com.liferay.counter.kernel.service.CounterLocalService
+		getCounterLocalService() {
+
 		return counterLocalService;
 	}
 
@@ -126,165 +137,28 @@ public abstract class SocialActivitySettingServiceBaseImpl
 	 * @param counterLocalService the counter local service
 	 */
 	public void setCounterLocalService(
-		com.liferay.counter.service.CounterLocalService counterLocalService) {
+		com.liferay.counter.kernel.service.CounterLocalService
+			counterLocalService) {
+
 		this.counterLocalService = counterLocalService;
 	}
 
-	/**
-	 * Returns the class name local service.
-	 *
-	 * @return the class name local service
-	 */
-	public com.liferay.portal.service.ClassNameLocalService getClassNameLocalService() {
-		return classNameLocalService;
-	}
-
-	/**
-	 * Sets the class name local service.
-	 *
-	 * @param classNameLocalService the class name local service
-	 */
-	public void setClassNameLocalService(
-		com.liferay.portal.service.ClassNameLocalService classNameLocalService) {
-		this.classNameLocalService = classNameLocalService;
-	}
-
-	/**
-	 * Returns the class name remote service.
-	 *
-	 * @return the class name remote service
-	 */
-	public com.liferay.portal.service.ClassNameService getClassNameService() {
-		return classNameService;
-	}
-
-	/**
-	 * Sets the class name remote service.
-	 *
-	 * @param classNameService the class name remote service
-	 */
-	public void setClassNameService(
-		com.liferay.portal.service.ClassNameService classNameService) {
-		this.classNameService = classNameService;
-	}
-
-	/**
-	 * Returns the class name persistence.
-	 *
-	 * @return the class name persistence
-	 */
-	public ClassNamePersistence getClassNamePersistence() {
-		return classNamePersistence;
-	}
-
-	/**
-	 * Sets the class name persistence.
-	 *
-	 * @param classNamePersistence the class name persistence
-	 */
-	public void setClassNamePersistence(
-		ClassNamePersistence classNamePersistence) {
-		this.classNamePersistence = classNamePersistence;
-	}
-
-	/**
-	 * Returns the group local service.
-	 *
-	 * @return the group local service
-	 */
-	public com.liferay.portal.service.GroupLocalService getGroupLocalService() {
-		return groupLocalService;
-	}
-
-	/**
-	 * Sets the group local service.
-	 *
-	 * @param groupLocalService the group local service
-	 */
-	public void setGroupLocalService(
-		com.liferay.portal.service.GroupLocalService groupLocalService) {
-		this.groupLocalService = groupLocalService;
-	}
-
-	/**
-	 * Returns the group remote service.
-	 *
-	 * @return the group remote service
-	 */
-	public com.liferay.portal.service.GroupService getGroupService() {
-		return groupService;
-	}
-
-	/**
-	 * Sets the group remote service.
-	 *
-	 * @param groupService the group remote service
-	 */
-	public void setGroupService(
-		com.liferay.portal.service.GroupService groupService) {
-		this.groupService = groupService;
-	}
-
-	/**
-	 * Returns the group persistence.
-	 *
-	 * @return the group persistence
-	 */
-	public GroupPersistence getGroupPersistence() {
-		return groupPersistence;
-	}
-
-	/**
-	 * Sets the group persistence.
-	 *
-	 * @param groupPersistence the group persistence
-	 */
-	public void setGroupPersistence(GroupPersistence groupPersistence) {
-		this.groupPersistence = groupPersistence;
-	}
-
-	/**
-	 * Returns the group finder.
-	 *
-	 * @return the group finder
-	 */
-	public GroupFinder getGroupFinder() {
-		return groupFinder;
-	}
-
-	/**
-	 * Sets the group finder.
-	 *
-	 * @param groupFinder the group finder
-	 */
-	public void setGroupFinder(GroupFinder groupFinder) {
-		this.groupFinder = groupFinder;
-	}
-
 	public void afterPropertiesSet() {
+		_setServiceUtilService(socialActivitySettingService);
 	}
 
 	public void destroy() {
+		_setServiceUtilService(null);
 	}
 
 	/**
-	 * Returns the Spring bean ID for this bean.
+	 * Returns the OSGi service identifier.
 	 *
-	 * @return the Spring bean ID for this bean
+	 * @return the OSGi service identifier
 	 */
 	@Override
-	public String getBeanIdentifier() {
-		return _beanIdentifier;
-	}
-
-	/**
-	 * Sets the Spring bean ID for this bean.
-	 *
-	 * @param beanIdentifier the Spring bean ID for this bean
-	 */
-	@Override
-	public void setBeanIdentifier(String beanIdentifier) {
-		_beanIdentifier = beanIdentifier;
+	public String getOSGiServiceIdentifier() {
+		return SocialActivitySettingService.class.getName();
 	}
 
 	protected Class<?> getModelClass() {
@@ -302,44 +176,58 @@ public abstract class SocialActivitySettingServiceBaseImpl
 	 */
 	protected void runSQL(String sql) {
 		try {
-			DataSource dataSource = socialActivitySettingPersistence.getDataSource();
+			DataSource dataSource =
+				socialActivitySettingPersistence.getDataSource();
 
-			DB db = DBFactoryUtil.getDB();
+			DB db = DBManagerUtil.getDB();
 
 			sql = db.buildSQL(sql);
 			sql = PortalUtil.transformSQL(sql);
 
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(dataSource,
-					sql, new int[0]);
+			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
+				dataSource, sql);
 
 			sqlUpdate.update();
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 	}
 
-	@BeanReference(type = com.liferay.portlet.social.service.SocialActivitySettingLocalService.class)
-	protected com.liferay.portlet.social.service.SocialActivitySettingLocalService socialActivitySettingLocalService;
-	@BeanReference(type = com.liferay.portlet.social.service.SocialActivitySettingService.class)
+	private void _setServiceUtilService(
+		SocialActivitySettingService socialActivitySettingService) {
+
+		try {
+			Field field =
+				SocialActivitySettingServiceUtil.class.getDeclaredField(
+					"_service");
+
+			field.setAccessible(true);
+
+			field.set(null, socialActivitySettingService);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new RuntimeException(reflectiveOperationException);
+		}
+	}
+
+	@BeanReference(
+		type = com.liferay.social.kernel.service.SocialActivitySettingLocalService.class
+	)
+	protected
+		com.liferay.social.kernel.service.SocialActivitySettingLocalService
+			socialActivitySettingLocalService;
+
+	@BeanReference(type = SocialActivitySettingService.class)
 	protected SocialActivitySettingService socialActivitySettingService;
+
 	@BeanReference(type = SocialActivitySettingPersistence.class)
 	protected SocialActivitySettingPersistence socialActivitySettingPersistence;
-	@BeanReference(type = com.liferay.counter.service.CounterLocalService.class)
-	protected com.liferay.counter.service.CounterLocalService counterLocalService;
-	@BeanReference(type = com.liferay.portal.service.ClassNameLocalService.class)
-	protected com.liferay.portal.service.ClassNameLocalService classNameLocalService;
-	@BeanReference(type = com.liferay.portal.service.ClassNameService.class)
-	protected com.liferay.portal.service.ClassNameService classNameService;
-	@BeanReference(type = ClassNamePersistence.class)
-	protected ClassNamePersistence classNamePersistence;
-	@BeanReference(type = com.liferay.portal.service.GroupLocalService.class)
-	protected com.liferay.portal.service.GroupLocalService groupLocalService;
-	@BeanReference(type = com.liferay.portal.service.GroupService.class)
-	protected com.liferay.portal.service.GroupService groupService;
-	@BeanReference(type = GroupPersistence.class)
-	protected GroupPersistence groupPersistence;
-	@BeanReference(type = GroupFinder.class)
-	protected GroupFinder groupFinder;
-	private String _beanIdentifier;
+
+	@BeanReference(
+		type = com.liferay.counter.kernel.service.CounterLocalService.class
+	)
+	protected com.liferay.counter.kernel.service.CounterLocalService
+		counterLocalService;
+
 }

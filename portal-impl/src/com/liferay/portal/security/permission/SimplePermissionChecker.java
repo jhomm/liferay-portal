@@ -14,6 +14,10 @@
 
 package com.liferay.portal.security.permission;
 
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.UserBag;
+
 /**
  * @author Brian Wing Shun Chan
  */
@@ -25,14 +29,7 @@ public class SimplePermissionChecker extends BasePermissionChecker {
 	}
 
 	@Override
-	public PermissionCheckerBag getGuestUserBag() throws Exception {
-		return null;
-	}
-
-	@Override
-	public PermissionCheckerBag getUserBag(long userId, long groupId)
-		throws Exception {
-
+	public UserBag getUserBag() {
 		return null;
 	}
 
@@ -46,15 +43,7 @@ public class SimplePermissionChecker extends BasePermissionChecker {
 
 	@Override
 	public boolean hasPermission(
-		long groupId, String name, String primKey, String actionId) {
-
-		return hasPermission(actionId);
-	}
-
-	@Override
-	public boolean hasUserPermission(
-		long groupId, String name, String primKey, String actionId,
-		boolean checkAdmin) {
+		Group group, String name, String primKey, String actionId) {
 
 		return hasPermission(actionId);
 	}
@@ -100,16 +89,11 @@ public class SimplePermissionChecker extends BasePermissionChecker {
 	}
 
 	protected boolean hasPermission(String actionId) {
-		if (signedIn) {
+		if (signedIn || actionId.equals(ActionKeys.VIEW)) {
 			return true;
 		}
 
-		if (actionId.equals(ActionKeys.VIEW)) {
-			return true;
-		}
-		else {
-			return false;
-		}
+		return false;
 	}
 
 }

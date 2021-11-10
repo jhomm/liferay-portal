@@ -14,8 +14,10 @@
 
 package com.liferay.portal.kernel.test.util;
 
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.Collections;
@@ -29,44 +31,43 @@ import java.util.Properties;
 public class TestPropsUtil {
 
 	public static String get(String key) {
-		return _instance._get(key);
+		return _testPropsUtil._get(key);
 	}
 
 	public static Properties getProperties() {
-		return _instance._props;
+		return _testPropsUtil._props;
 	}
 
 	public static void printProperties() {
-		_instance._printProperties(true);
+		_testPropsUtil._printProperties(true);
 	}
 
 	public static void set(String key, String value) {
-		_instance._set(key, value);
+		_testPropsUtil._set(key, value);
 	}
 
 	private TestPropsUtil() {
-		try {
-			Thread currentThread = Thread.currentThread();
+		try (InputStream inputStream = TestPropsUtil.class.getResourceAsStream(
+				"/test-portal-impl.properties")) {
 
-			ClassLoader classLoader = currentThread.getContextClassLoader();
+			_props.load(inputStream);
+		}
+		catch (IOException ioException) {
+			ReflectionUtil.throwException(ioException);
+		}
 
-			InputStream is = classLoader.getResourceAsStream(
-				"test-portal-impl.properties");
+		try (InputStream inputStream = TestPropsUtil.class.getResourceAsStream(
+				"/test-portal-impl-ext.properties")) {
 
-			_props.load(is);
-
-			is = classLoader.getResourceAsStream(
-				"test-portal-impl-ext.properties");
-
-			if (is != null) {
-				_props.load(is);
+			if (inputStream != null) {
+				_props.load(inputStream);
 			}
+		}
+		catch (IOException ioException) {
+			ReflectionUtil.throwException(ioException);
+		}
 
-			_printProperties(false);
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
+		_printProperties(false);
 	}
 
 	private String _get(String key) {
@@ -97,7 +98,7 @@ public class TestPropsUtil {
 		_props.setProperty(key, value);
 	}
 
-	private static final TestPropsUtil _instance = new TestPropsUtil();
+	private static final TestPropsUtil _testPropsUtil = new TestPropsUtil();
 
 	private final Properties _props = new Properties();
 

@@ -16,22 +16,18 @@
 
 <%@ include file="/html/taglib/ui/drop_here_info/init.jsp" %>
 
-<%
-String message = GetterUtil.getString((String)request.getAttribute("liferay-ui:drop-here-info:message"));
-%>
-
 <div class="drop-here-info">
 	<div class="drop-here-indicator">
 		<div class="drop-icons">
-			<span aria-hidden="true" class="glyphicon glyphicon-picture"></span>
+			<aui:icon cssClass="drop-icon" image="picture" markupView="lexicon" />
 
-			<span aria-hidden="true" class="glyphicon glyphicon-picture"></span>
+			<aui:icon cssClass="drop-icon" image="picture" markupView="lexicon" />
 
-			<span aria-hidden="true" class="glyphicon glyphicon-picture"></span>
+			<aui:icon cssClass="drop-icon" image="picture" markupView="lexicon" />
 		</div>
 
 		<div class="drop-text">
-			<liferay-ui:message key="<%= message %>" />
+			<liferay-ui:message key='<%= GetterUtil.getString((String)request.getAttribute("liferay-ui:drop-here-info:message")) %>' />
 		</div>
 	</div>
 </div>

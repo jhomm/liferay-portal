@@ -1,0 +1,66 @@
+[
+	{
+		"name": "Bonaire",
+		"regionCode": "BQ1"
+	},
+	{
+		"name": "Curacao",
+		"regionCode": "CW"
+	},
+	{
+		"name": "Drenthe",
+		"regionCode": "DR"
+	},
+	{
+		"name": "Flevoland",
+		"regionCode": "FL"
+	},
+	{
+		"name": "Fryslan",
+		"regionCode": "FR"
+	},
+	{
+		"name": "Gelderland",
+		"regionCode": "GE"
+	},
+	{
+		"name": "Groningen",
+		"regionCode": "GR"
+	},
+	{
+		"name": "Limburg",
+		"regionCode": "LI"
+	},
+	{
+		"name": "Noord-Brabant",
+		"regionCode": "NB"
+	},
+	{
+		"name": "Noord-Holland",
+		"regionCode": "NH"
+	},
+	{
+		"name": "Overijssel",
+		"regionCode": "OV"
+	},
+	{
+		"name": "Saba",
+		"regionCode": "BQ2"
+	},
+	{
+		"name": "Sint Eustatuis",
+		"regionCode": "BQ3"
+	},
+	{
+		"name": "Utrecht",
+		"regionCode": "UT"
+	},
+	{
+		"name": "Zeeland",
+		"regionCode": "ZE"
+	},
+	{
+		"name": "Zuid-Holland",
+		"regionCode": "ZH"
+	}
+]

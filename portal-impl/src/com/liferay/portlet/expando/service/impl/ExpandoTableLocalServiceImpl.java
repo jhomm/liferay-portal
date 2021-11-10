@@ -14,13 +14,12 @@
 
 package com.liferay.portlet.expando.service.impl;
 
+import com.liferay.expando.kernel.exception.DuplicateTableNameException;
+import com.liferay.expando.kernel.exception.TableNameException;
+import com.liferay.expando.kernel.model.ExpandoTable;
+import com.liferay.expando.kernel.model.ExpandoTableConstants;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.security.auth.CompanyThreadLocal;
-import com.liferay.portlet.expando.DuplicateTableNameException;
-import com.liferay.portlet.expando.TableNameException;
-import com.liferay.portlet.expando.model.ExpandoTable;
-import com.liferay.portlet.expando.model.ExpandoTableConstants;
 import com.liferay.portlet.expando.service.base.ExpandoTableLocalServiceBaseImpl;
 
 import java.util.List;
@@ -52,6 +51,13 @@ public class ExpandoTableLocalServiceImpl
 	public ExpandoTable addTable(long companyId, long classNameId, String name)
 		throws PortalException {
 
+		ExpandoTable expandoTable = expandoTablePersistence.fetchByC_C_N(
+			companyId, classNameId, name);
+
+		if (expandoTable != null) {
+			return expandoTable;
+		}
+
 		validate(companyId, 0, classNameId, name);
 
 		long tableId = counterLocalService.increment();
@@ -62,46 +68,22 @@ public class ExpandoTableLocalServiceImpl
 		table.setClassNameId(classNameId);
 		table.setName(name);
 
-		expandoTablePersistence.update(table);
-
-		return table;
-	}
-
-	/**
-	 * @deprecated As of 6.1.0, replaced by {@link #addTable(long, long,
-	 *             String)}
-	 */
-	@Deprecated
-	@Override
-	public ExpandoTable addTable(long classNameId, String name)
-		throws PortalException {
-
-		long companyId = CompanyThreadLocal.getCompanyId();
-
-		return addTable(companyId, classNameId, name);
+		return expandoTablePersistence.update(table);
 	}
 
 	@Override
 	public ExpandoTable addTable(long companyId, String className, String name)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		return addTable(companyId, classNameId, name);
+		return addTable(
+			companyId, classNameLocalService.getClassNameId(className), name);
 	}
 
-	/**
-	 * @deprecated As of 6.1.0, replaced by {@link #addTable(long, String,
-	 *             String)}
-	 */
-	@Deprecated
 	@Override
-	public ExpandoTable addTable(String className, String name)
-		throws PortalException {
+	public ExpandoTable deleteExpandoTable(ExpandoTable expandoTable) {
+		deleteTable(expandoTable);
 
-		long companyId = CompanyThreadLocal.getCompanyId();
-
-		return addTable(companyId, className, name);
+		return expandoTable;
 	}
 
 	@Override
@@ -113,23 +95,15 @@ public class ExpandoTableLocalServiceImpl
 
 		// Columns
 
-		runSQL(
-			"delete from ExpandoColumn where tableId = " + table.getTableId());
-
-		expandoColumnPersistence.clearCache();
+		expandoColumnPersistence.removeByTableId(table.getTableId());
 
 		// Rows
 
-		runSQL("delete from ExpandoRow where tableId = " + table.getTableId());
-
-		expandoRowPersistence.clearCache();
+		expandoRowPersistence.removeByTableId(table.getTableId());
 
 		// Values
 
-		runSQL(
-			"delete from ExpandoValue where tableId = " + table.getTableId());
-
-		expandoValuePersistence.clearCache();
+		expandoValuePersistence.removeByTableId(table.getTableId());
 	}
 
 	@Override
@@ -153,9 +127,8 @@ public class ExpandoTableLocalServiceImpl
 	public void deleteTable(long companyId, String className, String name)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		deleteTable(companyId, classNameId, name);
+		deleteTable(
+			companyId, classNameLocalService.getClassNameId(className), name);
 	}
 
 	@Override
@@ -170,9 +143,8 @@ public class ExpandoTableLocalServiceImpl
 
 	@Override
 	public void deleteTables(long companyId, String className) {
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		deleteTables(companyId, classNameId);
+		deleteTables(
+			companyId, classNameLocalService.getClassNameId(className));
 	}
 
 	@Override
@@ -183,10 +155,9 @@ public class ExpandoTableLocalServiceImpl
 
 	@Override
 	public ExpandoTable fetchDefaultTable(long companyId, String className) {
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		return fetchTable(
-			companyId, classNameId, ExpandoTableConstants.DEFAULT_TABLE_NAME);
+			companyId, classNameLocalService.getClassNameId(className),
+			ExpandoTableConstants.DEFAULT_TABLE_NAME);
 	}
 
 	@Override
@@ -209,10 +180,9 @@ public class ExpandoTableLocalServiceImpl
 	public ExpandoTable getDefaultTable(long companyId, String className)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		return getTable(
-			companyId, classNameId, ExpandoTableConstants.DEFAULT_TABLE_NAME);
+			companyId, classNameLocalService.getClassNameId(className),
+			ExpandoTableConstants.DEFAULT_TABLE_NAME);
 	}
 
 	@Override
@@ -228,41 +198,12 @@ public class ExpandoTableLocalServiceImpl
 			companyId, classNameId, name);
 	}
 
-	/**
-	 * @deprecated As of 6.1.0, replaced by {@link #getTable(long, long,
-	 *             String)}
-	 */
-	@Deprecated
-	@Override
-	public ExpandoTable getTable(long classNameId, String name)
-		throws PortalException {
-
-		long companyId = CompanyThreadLocal.getCompanyId();
-
-		return getTable(companyId, classNameId, name);
-	}
-
 	@Override
 	public ExpandoTable getTable(long companyId, String className, String name)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		return getTable(companyId, classNameId, name);
-	}
-
-	/**
-	 * @deprecated As of 6.1.0, replaced by {@link #getTable(long, String,
-	 *             String)}
-	 */
-	@Deprecated
-	@Override
-	public ExpandoTable getTable(String className, String name)
-		throws PortalException {
-
-		long companyId = CompanyThreadLocal.getCompanyId();
-
-		return getTable(companyId, className, name);
+		return getTable(
+			companyId, classNameLocalService.getClassNameId(className), name);
 	}
 
 	@Override
@@ -272,9 +213,8 @@ public class ExpandoTableLocalServiceImpl
 
 	@Override
 	public List<ExpandoTable> getTables(long companyId, String className) {
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		return getTables(companyId, classNameId);
+		return getTables(
+			companyId, classNameLocalService.getClassNameId(className));
 	}
 
 	@Override
@@ -283,7 +223,9 @@ public class ExpandoTableLocalServiceImpl
 
 		ExpandoTable table = expandoTablePersistence.findByPrimaryKey(tableId);
 
-		if (table.getName().equals(ExpandoTableConstants.DEFAULT_TABLE_NAME)) {
+		String tableName = table.getName();
+
+		if (tableName.equals(ExpandoTableConstants.DEFAULT_TABLE_NAME)) {
 			throw new TableNameException(
 				"Cannot rename " + ExpandoTableConstants.DEFAULT_TABLE_NAME);
 		}
@@ -300,7 +242,7 @@ public class ExpandoTableLocalServiceImpl
 		throws PortalException {
 
 		if (Validator.isNull(name)) {
-			throw new TableNameException();
+			throw new TableNameException("Name is null");
 		}
 
 		ExpandoTable table = expandoTablePersistence.fetchByC_C_N(

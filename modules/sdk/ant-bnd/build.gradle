@@ -1,32 +1,23 @@
-dependencies {
-	compile group: "biz.aQute.bnd", name: "biz.aQute.bnd", version: "2.4.1"
-	compile group: "org.apache.ant", name: "ant", transitive: false, version: "1.9.4"
+clean {
+	ext {
+		cleanDeployed = false
+	}
+}
 
-	testCompile group: "org.jboss.shrinkwrap", name: "shrinkwrap-depchain", version: "1.2.2"
+dependencies {
+	compile group: "biz.aQute.bnd", name: "biz.aQute.bnd", version: "4.3.0"
+
+	compileOnly group: "com.liferay.portal", name: "com.liferay.portal.impl", version: "default"
+	compileOnly group: "org.apache.ant", name: "ant", transitive: false, version: "1.10.11"
+
+	testCompile project(":core:petra:petra-io")
+	testCompile project(":core:petra:petra-string")
 }
 
 liferay {
-	deployDir = file("../../../tools/sdk/dependencies/${bundle.instructions['Bundle-SymbolicName']}/lib")
+	deployDir = file("../../../lib/development")
 }
 
-sourceCompatibility = "1.6"
-targetCompatibility = "1.6"
-
-task deployJar(type: Copy)
-
-deploy {
-	finalizedBy deployJar
-}
-
-deployJar {
-	ext {
-		autoClean = false
-	}
-
-	from jar
-	into "../../../lib/development"
-
-	rename {
-		project.name + ".jar"
-	}
+updateFileVersions {
+	match(/com\.liferay\.ant\.bnd=com\.liferay:com\.liferay\.ant\.bnd:(\d.+)/, "../../../lib/development/dependencies.properties")
 }

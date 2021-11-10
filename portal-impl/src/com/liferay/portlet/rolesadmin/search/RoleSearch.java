@@ -17,19 +17,20 @@ package com.liferay.portlet.rolesadmin.search;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.portlet.PortalPreferences;
+import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Role;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portlet.PortalPreferences;
-import com.liferay.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
+import com.liferay.users.admin.kernel.util.UsersAdminUtil;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -43,26 +44,29 @@ public class RoleSearch extends SearchContainer<Role> {
 
 	public static final String EMPTY_RESULTS_MESSAGE = "no-roles-were-found";
 
-	public static List<String> headerNames = new ArrayList<>();
-	public static Map<String, String> orderableHeaders = new HashMap<>();
+	public static List<String> headerNames = new ArrayList<String>() {
+		{
+			add("title");
+			add("type");
 
-	static {
-		headerNames.add("title");
-		headerNames.add("type");
+			if ((PropsValues.ROLES_ORGANIZATION_SUBTYPES.length > 0) ||
+				(PropsValues.ROLES_REGULAR_SUBTYPES.length > 0) ||
+				(PropsValues.ROLES_SITE_SUBTYPES.length > 0)) {
 
-		if ((PropsValues.ROLES_ORGANIZATION_SUBTYPES.length > 0) ||
-			(PropsValues.ROLES_REGULAR_SUBTYPES.length > 0) ||
-			(PropsValues.ROLES_SITE_SUBTYPES.length > 0)) {
+				add("subtype");
+			}
 
-			headerNames.add("subtype");
+			add("description");
 		}
+	};
 
-		headerNames.add("description");
-
-		orderableHeaders.put("title", "title");
-		orderableHeaders.put("type", "type");
-		orderableHeaders.put("description", "description");
-	}
+	public static Map<String, String> orderableHeaders = HashMapBuilder.put(
+		"description", "description"
+	).put(
+		"title", "title"
+	).put(
+		"type", "type"
+	).build();
 
 	public RoleSearch(PortletRequest portletRequest, PortletURL iteratorURL) {
 		super(
@@ -71,6 +75,14 @@ public class RoleSearch extends SearchContainer<Role> {
 			DEFAULT_DELTA, iteratorURL, headerNames, EMPTY_RESULTS_MESSAGE);
 
 		RoleDisplayTerms displayTerms = (RoleDisplayTerms)getDisplayTerms();
+
+		if (ParamUtil.getInteger(portletRequest, "type") == 0) {
+			displayTerms.setType(RoleConstants.TYPE_REGULAR);
+
+			RoleSearchTerms searchTerms = (RoleSearchTerms)getSearchTerms();
+
+			searchTerms.setType(RoleConstants.TYPE_REGULAR);
+		}
 
 		iteratorURL.setParameter(
 			RoleDisplayTerms.DESCRIPTION, displayTerms.getDescription());
@@ -115,8 +127,8 @@ public class RoleSearch extends SearchContainer<Role> {
 			setOrderByType(orderByType);
 			setOrderByComparator(orderByComparator);
 		}
-		catch (Exception e) {
-			_log.error(e);
+		catch (Exception exception) {
+			_log.error("Unable to initialize role search", exception);
 		}
 	}
 

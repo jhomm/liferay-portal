@@ -14,29 +14,13 @@
 
 package com.liferay.taglib.aui;
 
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.taglib.TagSupport;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
+import com.liferay.taglib.aui.base.BaseSpacerTag;
 
 /**
  * @author Eduardo Lundgren
+ * @author Bruno Basto
+ * @author Nathan Cavanaugh
+ * @author Julio Camarero
  */
-public class SpacerTag extends TagSupport {
-
-	@Override
-	public int doStartTag() throws JspException {
-		try {
-			JspWriter jspWriter = pageContext.getOut();
-
-			jspWriter.write(StringPool.SPACE);
-		}
-		catch (Exception e) {
-			throw new JspException(e);
-		}
-
-		return super.doStartTag();
-	}
-
+public class SpacerTag extends BaseSpacerTag {
 }

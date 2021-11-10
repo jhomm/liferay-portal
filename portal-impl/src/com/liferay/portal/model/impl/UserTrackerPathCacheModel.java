@@ -14,14 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.UserTrackerPath;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.UserTrackerPath;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -34,26 +31,28 @@ import java.util.Date;
  * The cache model class for representing UserTrackerPath in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see UserTrackerPath
  * @generated
  */
-@ProviderType
-public class UserTrackerPathCacheModel implements CacheModel<UserTrackerPath>,
-	Externalizable, MVCCModel {
+public class UserTrackerPathCacheModel
+	implements CacheModel<UserTrackerPath>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof UserTrackerPathCacheModel)) {
+		if (!(object instanceof UserTrackerPathCacheModel)) {
 			return false;
 		}
 
-		UserTrackerPathCacheModel userTrackerPathCacheModel = (UserTrackerPathCacheModel)obj;
+		UserTrackerPathCacheModel userTrackerPathCacheModel =
+			(UserTrackerPathCacheModel)object;
 
-		if ((userTrackerPathId == userTrackerPathCacheModel.userTrackerPathId) &&
-				(mvccVersion == userTrackerPathCacheModel.mvccVersion)) {
+		if ((userTrackerPathId ==
+				userTrackerPathCacheModel.userTrackerPathId) &&
+			(mvccVersion == userTrackerPathCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -79,12 +78,14 @@ public class UserTrackerPathCacheModel implements CacheModel<UserTrackerPath>,
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(11);
+		StringBundler sb = new StringBundler(13);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
 		sb.append(", userTrackerPathId=");
 		sb.append(userTrackerPathId);
+		sb.append(", companyId=");
+		sb.append(companyId);
 		sb.append(", userTrackerId=");
 		sb.append(userTrackerId);
 		sb.append(", path=");
@@ -102,10 +103,11 @@ public class UserTrackerPathCacheModel implements CacheModel<UserTrackerPath>,
 
 		userTrackerPathImpl.setMvccVersion(mvccVersion);
 		userTrackerPathImpl.setUserTrackerPathId(userTrackerPathId);
+		userTrackerPathImpl.setCompanyId(companyId);
 		userTrackerPathImpl.setUserTrackerId(userTrackerId);
 
 		if (path == null) {
-			userTrackerPathImpl.setPath(StringPool.BLANK);
+			userTrackerPathImpl.setPath("");
 		}
 		else {
 			userTrackerPathImpl.setPath(path);
@@ -126,21 +128,28 @@ public class UserTrackerPathCacheModel implements CacheModel<UserTrackerPath>,
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
 		userTrackerPathId = objectInput.readLong();
+
+		companyId = objectInput.readLong();
+
 		userTrackerId = objectInput.readLong();
 		path = objectInput.readUTF();
 		pathDate = objectInput.readLong();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
 		objectOutput.writeLong(userTrackerPathId);
+
+		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(userTrackerId);
 
 		if (path == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(path);
@@ -151,7 +160,9 @@ public class UserTrackerPathCacheModel implements CacheModel<UserTrackerPath>,
 
 	public long mvccVersion;
 	public long userTrackerPathId;
+	public long companyId;
 	public long userTrackerId;
 	public String path;
 	public long pathDate;
+
 }

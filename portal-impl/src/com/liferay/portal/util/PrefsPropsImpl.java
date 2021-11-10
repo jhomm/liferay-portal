@@ -14,7 +14,6 @@
 
 package com.liferay.portal.util;
 
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
 import com.liferay.portal.kernel.util.PrefsProps;
 
 import java.util.Properties;
@@ -24,7 +23,6 @@ import javax.portlet.PortletPreferences;
 /**
  * @author Brian Wing Shun Chan
  */
-@DoPrivileged
 public class PrefsPropsImpl implements PrefsProps {
 
 	@Override
@@ -40,19 +38,15 @@ public class PrefsPropsImpl implements PrefsProps {
 	}
 
 	@Override
-	public boolean getBoolean(
-		PortletPreferences preferences, long companyId, String name) {
-
-		return PrefsPropsUtil.getBoolean(preferences, companyId, name);
+	public boolean getBoolean(PortletPreferences preferences, String name) {
+		return PrefsPropsUtil.getBoolean(preferences, name);
 	}
 
 	@Override
 	public boolean getBoolean(
-		PortletPreferences preferences, long companyId, String name,
-		boolean defaultValue) {
+		PortletPreferences preferences, String name, boolean defaultValue) {
 
-		return PrefsPropsUtil.getBoolean(
-			preferences, companyId, name, defaultValue);
+		return PrefsPropsUtil.getBoolean(preferences, name, defaultValue);
 	}
 
 	@Override
@@ -71,10 +65,8 @@ public class PrefsPropsImpl implements PrefsProps {
 	}
 
 	@Override
-	public String getContent(
-		PortletPreferences preferences, long companyId, String name) {
-
-		return PrefsPropsUtil.getContent(preferences, companyId, name);
+	public String getContent(PortletPreferences preferences, String name) {
+		return PrefsPropsUtil.getContent(preferences, name);
 	}
 
 	@Override
@@ -93,19 +85,15 @@ public class PrefsPropsImpl implements PrefsProps {
 	}
 
 	@Override
-	public double getDouble(
-		PortletPreferences preferences, long companyId, String name) {
-
-		return PrefsPropsUtil.getDouble(preferences, companyId, name);
+	public double getDouble(PortletPreferences preferences, String name) {
+		return PrefsPropsUtil.getDouble(preferences, name);
 	}
 
 	@Override
 	public double getDouble(
-		PortletPreferences preferences, long companyId, String name,
-		double defaultValue) {
+		PortletPreferences preferences, String name, double defaultValue) {
 
-		return PrefsPropsUtil.getDouble(
-			preferences, companyId, name, defaultValue);
+		return PrefsPropsUtil.getDouble(preferences, name, defaultValue);
 	}
 
 	@Override
@@ -129,19 +117,15 @@ public class PrefsPropsImpl implements PrefsProps {
 	}
 
 	@Override
-	public int getInteger(
-		PortletPreferences preferences, long companyId, String name) {
-
-		return PrefsPropsUtil.getInteger(preferences, companyId, name);
+	public int getInteger(PortletPreferences preferences, String name) {
+		return PrefsPropsUtil.getInteger(preferences, name);
 	}
 
 	@Override
 	public int getInteger(
-		PortletPreferences preferences, long companyId, String name,
-		int defaultValue) {
+		PortletPreferences preferences, String name, int defaultValue) {
 
-		return PrefsPropsUtil.getInteger(
-			preferences, companyId, name, defaultValue);
+		return PrefsPropsUtil.getInteger(preferences, name, defaultValue);
 	}
 
 	@Override
@@ -165,19 +149,15 @@ public class PrefsPropsImpl implements PrefsProps {
 	}
 
 	@Override
-	public long getLong(
-		PortletPreferences preferences, long companyId, String name) {
-
-		return PrefsPropsUtil.getLong(preferences, companyId, name);
+	public long getLong(PortletPreferences preferences, String name) {
+		return PrefsPropsUtil.getLong(preferences, name);
 	}
 
 	@Override
 	public long getLong(
-		PortletPreferences preferences, long companyId, String name,
-		long defaultValue) {
+		PortletPreferences preferences, String name, long defaultValue) {
 
-		return PrefsPropsUtil.getLong(
-			preferences, companyId, name, defaultValue);
+		return PrefsPropsUtil.getLong(preferences, name, defaultValue);
 	}
 
 	@Override
@@ -212,11 +192,9 @@ public class PrefsPropsImpl implements PrefsProps {
 
 	@Override
 	public Properties getProperties(
-		PortletPreferences preferences, long companyId, String prefix,
-		boolean removePrefix) {
+		PortletPreferences preferences, String prefix, boolean removePrefix) {
 
-		return PrefsPropsUtil.getProperties(
-			preferences, companyId, prefix, removePrefix);
+		return PrefsPropsUtil.getProperties(preferences, prefix, removePrefix);
 	}
 
 	@Override
@@ -235,19 +213,15 @@ public class PrefsPropsImpl implements PrefsProps {
 	}
 
 	@Override
-	public short getShort(
-		PortletPreferences preferences, long companyId, String name) {
-
-		return PrefsPropsUtil.getShort(preferences, companyId, name);
+	public short getShort(PortletPreferences preferences, String name) {
+		return PrefsPropsUtil.getShort(preferences, name);
 	}
 
 	@Override
 	public short getShort(
-		PortletPreferences preferences, long companyId, String name,
-		short defaultValue) {
+		PortletPreferences preferences, String name, short defaultValue) {
 
-		return PrefsPropsUtil.getShort(
-			preferences, companyId, name, defaultValue);
+		return PrefsPropsUtil.getShort(preferences, name, defaultValue);
 	}
 
 	@Override
@@ -271,64 +245,50 @@ public class PrefsPropsImpl implements PrefsProps {
 	}
 
 	@Override
-	public String getString(
-		PortletPreferences preferences, long companyId, String name) {
-
-		return PrefsPropsUtil.getString(preferences, companyId, name);
+	public String getString(PortletPreferences preferences, String name) {
+		return PrefsPropsUtil.getString(preferences, name);
 	}
 
 	@Override
 	public String getString(
-		PortletPreferences preferences, long companyId, String name,
-		boolean defaultValue) {
+		PortletPreferences preferences, String name, boolean defaultValue) {
 
-		return PrefsPropsUtil.getString(
-			preferences, companyId, name, defaultValue);
+		return PrefsPropsUtil.getString(preferences, name, defaultValue);
 	}
 
 	@Override
 	public String getString(
-		PortletPreferences preferences, long companyId, String name,
-		double defaultValue) {
+		PortletPreferences preferences, String name, double defaultValue) {
 
-		return PrefsPropsUtil.getString(
-			preferences, companyId, name, defaultValue);
+		return PrefsPropsUtil.getString(preferences, name, defaultValue);
 	}
 
 	@Override
 	public String getString(
-		PortletPreferences preferences, long companyId, String name,
-		int defaultValue) {
+		PortletPreferences preferences, String name, int defaultValue) {
 
-		return PrefsPropsUtil.getString(
-			preferences, companyId, name, defaultValue);
+		return PrefsPropsUtil.getString(preferences, name, defaultValue);
 	}
 
 	@Override
 	public String getString(
-		PortletPreferences preferences, long companyId, String name,
-		long defaultValue) {
+		PortletPreferences preferences, String name, long defaultValue) {
 
-		return PrefsPropsUtil.getString(
-			preferences, companyId, name, defaultValue);
+		return PrefsPropsUtil.getString(preferences, name, defaultValue);
 	}
 
 	@Override
 	public String getString(
-		PortletPreferences preferences, long companyId, String name,
-		short defaultValue) {
+		PortletPreferences preferences, String name, short defaultValue) {
 
-		return PrefsPropsUtil.getString(
-			preferences, companyId, name, defaultValue);
+		return PrefsPropsUtil.getString(preferences, name, defaultValue);
 	}
 
 	@Override
 	public String getString(
-		PortletPreferences preferences, long companyId, String name,
-		String defaultValue) {
+		PortletPreferences preferences, String name, String defaultValue) {
 
-		return PrefsPropsUtil.getString(
-			preferences, companyId, name, defaultValue);
+		return PrefsPropsUtil.getString(preferences, name, defaultValue);
 	}
 
 	@Override
@@ -358,20 +318,18 @@ public class PrefsPropsImpl implements PrefsProps {
 
 	@Override
 	public String[] getStringArray(
-		PortletPreferences preferences, long companyId, String name,
-		String delimiter) {
+		PortletPreferences preferences, String name, String delimiter) {
 
-		return PrefsPropsUtil.getStringArray(
-			preferences, companyId, name, delimiter);
+		return PrefsPropsUtil.getStringArray(preferences, name, delimiter);
 	}
 
 	@Override
 	public String[] getStringArray(
-		PortletPreferences preferences, long companyId, String name,
-		String delimiter, String[] defaultValue) {
+		PortletPreferences preferences, String name, String delimiter,
+		String[] defaultValue) {
 
 		return PrefsPropsUtil.getStringArray(
-			preferences, companyId, name, delimiter, defaultValue);
+			preferences, name, delimiter, defaultValue);
 	}
 
 	@Override

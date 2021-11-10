@@ -1,0 +1,105 @@
+{
+	"availableLanguageIds": [
+		"en_US",
+		"pt_BR"
+	],
+	"dataDefinitionFields": [
+		{
+			"customProperties": {
+				"autocomplete": false,
+				"dataSourceType": "manual",
+				"dataType": "string",
+				"ddmDataProviderInstanceId": [
+				],
+				"ddmDataProviderInstanceOutput": [
+				],
+				"displayStyle": "singleline",
+				"fieldNamespace": "",
+				"fieldReference": "Text4Test",
+				"labelAtStructureLevel": true,
+				"nativeField": false,
+				"options": {
+					"en_US": [
+						{
+							"label": "Option",
+							"reference": "",
+							"value": ""
+						}
+					]
+				},
+				"placeholder": {
+					"en_US": ""
+				},
+				"tooltip": {
+					"en_US": "",
+					"pt_BR": ""
+				},
+				"validation": {
+					"errorMessage": {
+					},
+					"expression": {
+					},
+					"parameter": {
+					}
+				},
+				"visibilityExpression": ""
+			},
+			"defaultValue": {
+				"en_US": "",
+				"pt_BR": ""
+			},
+			"fieldType": "text",
+			"indexType": "keyword",
+			"label": {
+				"en_US": "Text4Test Label",
+				"pt_BR": "Rótulo Text4Test"
+			},
+			"localizable": true,
+			"name": "Text4Test",
+			"nestedDataDefinitionFields": [
+			],
+			"readOnly": false,
+			"repeatable": false,
+			"required": false,
+			"showLabel": true,
+			"tip": {
+				"en_US": ""
+			}
+		}
+	],
+	"defaultDataLayout": {
+		"dataLayoutPages": [
+			{
+				"dataLayoutRows": [
+					{
+						"dataLayoutColumns": [
+							{
+								"columnSize": 12,
+								"fieldNames": [
+									"Text4Test"
+								]
+							}
+						]
+					}
+				],
+				"description": {
+					"en_US": "",
+					"pt_BR": ""
+				},
+				"title": {
+					"en_US": "",
+					"pt_BR": ""
+				}
+			}
+		],
+		"name": {
+			"en_US": "Text4Test Fieldset Name",
+			"pt_BR": "Node do Text4Test do Fieldset"
+		}
+	},
+	"defaultLanguageId": "en_US",
+	"name": {
+		"en_US": "Text4Test Fieldset Name",
+		"pt_BR": "Node do Text4Test do Fieldset"
+	}
+}

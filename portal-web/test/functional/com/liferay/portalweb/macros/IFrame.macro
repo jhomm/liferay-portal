@@ -1,24 +1,63 @@
-<definition>
-	<command name="addCP">
-		<execute function="SelectFrame" locator1="IFrame#CONFIGURATION" />
-		<execute function="Type" locator1="TextInput#SOURCE_URL" value1="${sourceURL}" />
-		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="You have successfully updated the setup." />
-		<execute function="SelectFrame" value1="relative=top" />
-	</command>
+definition {
 
-	<command name="saveConfiguration">
-		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
+	macro addCP {
+		SelectFrame(locator1 = "IFrame#CONFIGURATION");
 
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="You have successfully updated the setup." />
-		<execute function="SelectFrame" value1="relative=top" />
-	</command>
+		Type(
+			locator1 = "TextInput#SOURCE_URL",
+			value1 = "${sourceURL}");
 
-	<command name="selectConfigurationFrame">
-		<execute function="SelectFrame" locator1="Configuration#CONFIGURATION_IFRAME" />
-	</command>
+		PortletEntry.save();
 
-	<command name="selectTopFrame">
-		<execute function="SelectFrame" value1="relative=top" />
-	</command>
-</definition>
+		SelectFrame(value1 = "relative=top");
+	}
+
+	macro closeFrame {
+		SelectFrame(value1 = "relative=top");
+
+		Click.mouseDownMouseUp(locator1 = "Modal#CLOSE_BUTTON");
+	}
+
+	macro saveConfiguration {
+		PortletEntry.save();
+
+		SelectFrame(value1 = "relative=top");
+	}
+
+	macro selectCategoryFrame {
+		SelectFrame(locator1 = "IFrame#SELECT_CATEGORY");
+	}
+
+	macro selectConfigurationFrame {
+		if (IsElementPresent(locator1 = "IFrame#MODAL_BODY")) {
+			echo("Selecting configuration iframe");
+
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+		}
+	}
+
+	macro selectEditAssetFrame {
+		SelectFrame(locator1 = "IFrame#EDIT_ASSET");
+	}
+
+	macro selectModalFrame {
+		SelectFrame(locator1 = "IFrame#MODAL_IFRAME");
+	}
+
+	macro selectPermissionsFrame {
+		SelectFrame(
+			key_title = "Permissions",
+			locator1 = "IFrame#MODAL_ANY");
+	}
+
+	macro selectTagFrame {
+		SelectFrame(
+			key_title = "Tags",
+			locator1 = "IFrame#MODAL_ANY");
+	}
+
+	macro selectTopFrame {
+		SelectFrame(value1 = "relative=top");
+	}
+
+}

@@ -14,12 +14,14 @@
 
 package com.liferay.portlet.social.service.impl;
 
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.User;
-import com.liferay.portlet.social.RelationUserIdException;
-import com.liferay.portlet.social.model.SocialRelation;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portlet.social.service.base.SocialRelationLocalServiceBaseImpl;
-import com.liferay.portlet.social.util.SocialRelationTypesUtil;
+import com.liferay.social.kernel.exception.RelationUserIdException;
+import com.liferay.social.kernel.model.SocialRelation;
+import com.liferay.social.kernel.util.SocialRelationTypesUtil;
 
 import java.util.List;
 
@@ -63,9 +65,6 @@ public class SocialRelationLocalServiceImpl
 	 * @param  userId2 the user at the other end of the relation
 	 * @param  type the type of the relation
 	 * @return the social relation
-	 * @throws PortalException if the users could not be found, if the users
-	 *         were not from the same company, or if either of the users was the
-	 *         default user
 	 */
 	@Override
 	public SocialRelation addRelation(long userId1, long userId2, int type)
@@ -75,8 +74,8 @@ public class SocialRelationLocalServiceImpl
 			throw new RelationUserIdException();
 		}
 
-		User user1 = userPersistence.findByPrimaryKey(userId1);
-		User user2 = userPersistence.findByPrimaryKey(userId2);
+		User user1 = _userPersistence.findByPrimaryKey(userId1);
+		User user2 = _userPersistence.findByPrimaryKey(userId2);
 
 		if (user1.getCompanyId() != user2.getCompanyId()) {
 			throw new RelationUserIdException();
@@ -96,7 +95,7 @@ public class SocialRelationLocalServiceImpl
 			relation.setUserId2(userId2);
 			relation.setType(type);
 
-			socialRelationPersistence.update(relation);
+			relation = socialRelationPersistence.update(relation);
 		}
 
 		if (SocialRelationTypesUtil.isTypeBi(type)) {
@@ -126,8 +125,7 @@ public class SocialRelationLocalServiceImpl
 	 * Removes the relation (and its inverse in case of a bidirectional
 	 * relation) from the database.
 	 *
-	 * @param  relationId the primary key of the relation
-	 * @throws PortalException if the relation could not be found
+	 * @param relationId the primary key of the relation
 	 */
 	@Override
 	public void deleteRelation(long relationId) throws PortalException {
@@ -141,11 +139,9 @@ public class SocialRelationLocalServiceImpl
 	 * Removes the matching relation (and its inverse in case of a bidirectional
 	 * relation) from the database.
 	 *
-	 * @param  userId1 the user that is the subject of the relation
-	 * @param  userId2 the user at the other end of the relation
-	 * @param  type the relation's type
-	 * @throws PortalException if the relation or its inverse relation (if
-	 *         applicable) could not be found
+	 * @param userId1 the user that is the subject of the relation
+	 * @param userId2 the user at the other end of the relation
+	 * @param type the relation's type
 	 */
 	@Override
 	public void deleteRelation(long userId1, long userId2, int type)
@@ -161,9 +157,7 @@ public class SocialRelationLocalServiceImpl
 	 * Removes the relation (and its inverse in case of a bidirectional
 	 * relation) from the database.
 	 *
-	 * @param  relation the relation to be removed
-	 * @throws PortalException if the relation is bidirectional and its inverse
-	 *         relation could not be found
+	 * @param relation the relation to be removed
 	 */
 	@Override
 	public void deleteRelation(SocialRelation relation) throws PortalException {
@@ -192,9 +186,8 @@ public class SocialRelationLocalServiceImpl
 	/**
 	 * Removes all relations between User1 and User2.
 	 *
-	 * @param  userId1 the user that is the subject of the relation
-	 * @param  userId2 the user at the other end of the relation
-	 * @throws PortalException if the inverse relation could not be found
+	 * @param userId1 the user that is the subject of the relation
+	 * @param userId2 the user at the other end of the relation
 	 */
 	@Override
 	public void deleteRelations(long userId1, long userId2)
@@ -253,7 +246,6 @@ public class SocialRelationLocalServiceImpl
 	 *
 	 * @param  relationId the primary key of the relation
 	 * @return Returns the relation
-	 * @throws PortalException if the relation could not be found
 	 */
 	@Override
 	public SocialRelation getRelation(long relationId) throws PortalException {
@@ -267,7 +259,6 @@ public class SocialRelationLocalServiceImpl
 	 * @param  userId2 the user at the other end of the relation
 	 * @param  type the relation's type
 	 * @return Returns the relation
-	 * @throws PortalException if the relation could not be found
 	 */
 	@Override
 	public SocialRelation getRelation(long userId1, long userId2, int type)
@@ -375,9 +366,8 @@ public class SocialRelationLocalServiceImpl
 		if (relation == null) {
 			return false;
 		}
-		else {
-			return true;
-		}
+
+		return true;
 	}
 
 	/**
@@ -404,13 +394,13 @@ public class SocialRelationLocalServiceImpl
 			return false;
 		}
 
-		User user1 = userPersistence.fetchByPrimaryKey(userId1);
+		User user1 = _userPersistence.fetchByPrimaryKey(userId1);
 
 		if ((user1 == null) || user1.isDefaultUser()) {
 			return false;
 		}
 
-		User user2 = userPersistence.fetchByPrimaryKey(userId2);
+		User user2 = _userPersistence.fetchByPrimaryKey(userId2);
 
 		if ((user2 == null) || user2.isDefaultUser()) {
 			return false;
@@ -418,5 +408,8 @@ public class SocialRelationLocalServiceImpl
 
 		return !hasRelation(userId1, userId2, type);
 	}
+
+	@BeanReference(type = UserPersistence.class)
+	private UserPersistence _userPersistence;
 
 }

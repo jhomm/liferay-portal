@@ -14,22 +14,22 @@
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.model.DLFileEntryType;
+import com.liferay.document.library.kernel.model.DLFolder;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFolderLocalServiceUtil;
+import com.liferay.document.library.kernel.util.DLUtil;
+import com.liferay.dynamic.data.mapping.kernel.DDMStructure;
+import com.liferay.expando.kernel.model.ExpandoBridge;
+import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.portlet.documentlibrary.model.DLFileEntry;
-import com.liferay.portlet.documentlibrary.model.DLFileEntryType;
-import com.liferay.portlet.documentlibrary.model.DLFolder;
-import com.liferay.portlet.documentlibrary.model.DLFolderConstants;
-import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLFileEntryTypeLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLFolderLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.util.DLUtil;
-import com.liferay.portlet.dynamicdatamapping.DDMStructure;
-import com.liferay.portlet.expando.model.ExpandoBridge;
-import com.liferay.portlet.expando.util.ExpandoBridgeFactoryUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -88,28 +88,27 @@ public class DLFileVersionImpl extends DLFileVersionBaseImpl {
 
 	@Override
 	public String getExtraSettings() {
-		if (_extraSettingsProperties == null) {
+		if (_extraSettingsUnicodeProperties == null) {
 			return super.getExtraSettings();
 		}
-		else {
-			return _extraSettingsProperties.toString();
-		}
+
+		return _extraSettingsUnicodeProperties.toString();
 	}
 
 	@Override
 	public UnicodeProperties getExtraSettingsProperties() {
-		if (_extraSettingsProperties == null) {
-			_extraSettingsProperties = new UnicodeProperties(true);
+		if (_extraSettingsUnicodeProperties == null) {
+			_extraSettingsUnicodeProperties = new UnicodeProperties(true);
 
 			try {
-				_extraSettingsProperties.load(super.getExtraSettings());
+				_extraSettingsUnicodeProperties.load(super.getExtraSettings());
 			}
-			catch (IOException ioe) {
-				_log.error(ioe, ioe);
+			catch (IOException ioException) {
+				_log.error(ioException, ioException);
 			}
 		}
 
-		return _extraSettingsProperties;
+		return _extraSettingsUnicodeProperties;
 	}
 
 	@Override
@@ -133,24 +132,24 @@ public class DLFileVersionImpl extends DLFileVersionBaseImpl {
 
 	@Override
 	public void setExtraSettings(String extraSettings) {
-		_extraSettingsProperties = null;
+		_extraSettingsUnicodeProperties = null;
 
 		super.setExtraSettings(extraSettings);
 	}
 
 	@Override
 	public void setExtraSettingsProperties(
-		UnicodeProperties extraSettingsProperties) {
+		UnicodeProperties extraSettingsUnicodeProperties) {
 
-		_extraSettingsProperties = extraSettingsProperties;
+		_extraSettingsUnicodeProperties = extraSettingsUnicodeProperties;
 
-		super.setExtraSettings(_extraSettingsProperties.toString());
+		super.setExtraSettings(_extraSettingsUnicodeProperties.toString());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DLFileVersionImpl.class);
 
 	private transient ExpandoBridge _expandoBridge;
-	private UnicodeProperties _extraSettingsProperties;
+	private UnicodeProperties _extraSettingsUnicodeProperties;
 
 }

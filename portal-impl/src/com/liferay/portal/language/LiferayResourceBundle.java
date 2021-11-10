@@ -21,8 +21,6 @@ import java.io.InputStream;
 
 import java.util.Collections;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
@@ -46,24 +44,33 @@ public class LiferayResourceBundle extends ResourceBundle {
 
 		setParent(parentResourceBundle);
 
-		_map = new HashMap<>();
-
-		Properties properties = PropertiesUtil.load(inputStream, charsetName);
-
-		LanguageResources.fixValues(_map, properties);
+		_properties = PropertiesUtil.load(inputStream, charsetName);
 	}
 
 	public LiferayResourceBundle(String string) throws IOException {
-		_map = new HashMap<>();
+		_properties = PropertiesUtil.load(string);
+	}
 
-		Properties properties = PropertiesUtil.load(string);
+	@Override
+	public boolean containsKey(String key) {
+		if (key == null) {
+			throw new NullPointerException();
+		}
 
-		LanguageResources.fixValues(_map, properties);
+		if (_properties.containsKey(key)) {
+			return true;
+		}
+
+		if (parent != null) {
+			return parent.containsKey(key);
+		}
+
+		return false;
 	}
 
 	@Override
 	public Enumeration<String> getKeys() {
-		Set<String> keys = _map.keySet();
+		Set<String> keys = _properties.stringPropertyNames();
 
 		if (parent == null) {
 			return Collections.enumeration(keys);
@@ -78,14 +85,14 @@ public class LiferayResourceBundle extends ResourceBundle {
 			throw new NullPointerException();
 		}
 
-		return _map.get(key);
+		return _properties.get(key);
 	}
 
 	@Override
 	protected Set<String> handleKeySet() {
-		return _map.keySet();
+		return _properties.stringPropertyNames();
 	}
 
-	private final Map<String, String> _map;
+	private final Properties _properties;
 
 }

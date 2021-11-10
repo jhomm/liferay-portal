@@ -17,12 +17,12 @@ package com.liferay.util.bean;
 import com.liferay.portal.kernel.bean.BeanLocator;
 import com.liferay.portal.kernel.bean.BeanLocatorException;
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
-import com.liferay.portal.kernel.test.CaptureHandler;
-import com.liferay.portal.kernel.test.JDKLoggerTestUtil;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
 
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -48,26 +48,28 @@ public class PortalBeanLocatorUtilTest extends PowerMockito {
 
 	@Test
 	public void testBeanLocatorHasNotBeenSet() {
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					PortalBeanLocatorUtil.class.getName(), Level.SEVERE)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				PortalBeanLocatorUtil.class.getName(), Level.SEVERE)) {
 
 			try {
 				PortalBeanLocatorUtil.locate("beanName");
 
 				Assert.fail();
 			}
-			catch (BeanLocatorException ble) {
-				Assert.assertEquals("BeanLocator is not set", ble.getMessage());
+			catch (BeanLocatorException beanLocatorException) {
+				Assert.assertEquals(
+					"BeanLocator is not set",
+					beanLocatorException.getMessage());
 
-				List<LogRecord> logRecords = captureHandler.getLogRecords();
-
-				Assert.assertEquals(1, logRecords.size());
-
-				LogRecord logRecord = logRecords.get(0);
+				List<LogEntry> logEntries = logCapture.getLogEntries();
 
 				Assert.assertEquals(
-					"BeanLocator is null", logRecord.getMessage());
+					logEntries.toString(), 1, logEntries.size());
+
+				LogEntry logEntry = logEntries.get(0);
+
+				Assert.assertEquals(
+					"BeanLocator is null", logEntry.getMessage());
 			}
 		}
 	}
@@ -91,7 +93,7 @@ public class PortalBeanLocatorUtilTest extends PowerMockito {
 	}
 
 	@Test
-	public void testLocateNonExistingBean() {
+	public void testLocateNonexistingBean() {
 		when(
 			_beanLocator.locate("nonExistingBean")
 		).thenReturn(

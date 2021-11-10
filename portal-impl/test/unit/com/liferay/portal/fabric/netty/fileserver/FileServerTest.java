@@ -14,13 +14,15 @@
 
 package com.liferay.portal.fabric.netty.fileserver;
 
+import com.liferay.petra.concurrent.AsyncBroker;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.fabric.netty.codec.serialization.AnnotatedObjectDecoder;
 import com.liferay.portal.fabric.netty.codec.serialization.AnnotatedObjectEncoder;
 import com.liferay.portal.fabric.netty.fileserver.handlers.FileRequestChannelHandler;
 import com.liferay.portal.fabric.netty.fileserver.handlers.FileResponseChannelHandler;
 import com.liferay.portal.fabric.netty.fileserver.handlers.FileServerTestUtil;
-import com.liferay.portal.kernel.concurrent.AsyncBroker;
-import com.liferay.portal.kernel.util.NamedThreadFactory;
+import com.liferay.portal.fabric.netty.util.NamedThreadFactory;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -48,12 +50,19 @@ import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
  * @author Shuyang Zhou
  */
 public class FileServerTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Before
 	public void setUp() throws Exception {
@@ -143,6 +152,7 @@ public class FileServerTest {
 		FileTime destFileTime = Files.getLastModifiedTime(_destFile);
 
 		Assert.assertEquals(sourceFileTime.toMillis(), destFileTime.toMillis());
+
 		Assert.assertArrayEquals(data, Files.readAllBytes(_destFile));
 	}
 
@@ -178,7 +188,7 @@ public class FileServerTest {
 		}
 	}
 
-	private void _connectClient() throws InterruptedException {
+	private void _connectClient() throws Exception {
 		Bootstrap bootstrap = new Bootstrap();
 
 		bootstrap.group(_nioEventLoopGroup);
@@ -208,7 +218,7 @@ public class FileServerTest {
 		_clientChannel = channelFuture.channel();
 	}
 
-	private void _disconnectClient() throws InterruptedException {
+	private void _disconnectClient() throws Exception {
 		ChannelFuture channelFuture = _clientChannel.close();
 
 		channelFuture.sync();
@@ -252,20 +262,21 @@ public class FileServerTest {
 
 				return port;
 			}
-			catch (Exception e) {
-				if (!(e instanceof BindException)) {
-					throw e;
+			catch (Exception exception) {
+				if (!(exception instanceof BindException)) {
+					throw exception;
 				}
 
 				System.err.println(
-					"Unable to bind to " + (port++) + ", trying " + port);
+					StringBundler.concat(
+						"Unable to bind to ", port++, ", trying ", port));
 			}
 		}
 
 		throw new IllegalStateException("Unable to start server");
 	}
 
-	private void _stopServer() throws InterruptedException {
+	private void _stopServer() throws Exception {
 		try {
 			ChannelFuture channelFuture = _serverChannel.close();
 
@@ -287,15 +298,9 @@ public class FileServerTest {
 	private Path _destFile;
 	private final EventExecutorGroup _fileServerEventExecutorGroup =
 		new NioEventLoopGroup(
-			1,
-			new NamedThreadFactory(
-				"FileServer-EventLoop", Thread.MAX_PRIORITY,
-				FileServerTest.class.getClassLoader()));
+			1, new NamedThreadFactory("FileServer-EventLoop"));
 	private final EventLoopGroup _nioEventLoopGroup = new NioEventLoopGroup(
-		1,
-		new NamedThreadFactory(
-			"IO-EventLoop", Thread.MAX_PRIORITY,
-			FileServerTest.class.getClassLoader()));
+		1, new NamedThreadFactory("IO-EventLoop"));
 	private int _port;
 	private Channel _serverChannel;
 	private Path _sourceFilePath;

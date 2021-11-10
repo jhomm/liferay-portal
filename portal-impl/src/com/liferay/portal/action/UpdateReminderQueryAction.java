@@ -14,88 +14,94 @@
 
 package com.liferay.portal.action;
 
-import com.liferay.portal.NoSuchUserException;
-import com.liferay.portal.UserReminderQueryException;
+import com.liferay.portal.kernel.exception.NoSuchUserException;
+import com.liferay.portal.kernel.exception.UserReminderQueryException;
+import com.liferay.portal.kernel.security.auth.AuthTokenUtil;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.service.UserServiceUtil;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.security.auth.AuthTokenUtil;
-import com.liferay.portal.security.auth.PrincipalException;
-import com.liferay.portal.service.UserServiceUtil;
-import com.liferay.portal.struts.ActionConstants;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.usersadmin.util.UsersAdmin;
+import com.liferay.portal.struts.Action;
+import com.liferay.portal.struts.constants.ActionConstants;
+import com.liferay.portal.struts.model.ActionForward;
+import com.liferay.portal.struts.model.ActionMapping;
+import com.liferay.users.admin.kernel.util.UsersAdmin;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.struts.action.Action;
-import org.apache.struts.action.ActionForm;
-import org.apache.struts.action.ActionForward;
-import org.apache.struts.action.ActionMapping;
-
 /**
  * @author Brian Wing Shun Chan
  */
-public class UpdateReminderQueryAction extends Action {
+public class UpdateReminderQueryAction implements Action {
 
 	@Override
 	public ActionForward execute(
-			ActionMapping actionMapping, ActionForm actionForm,
-			HttpServletRequest request, HttpServletResponse response)
+			ActionMapping actionMapping, HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws Exception {
 
-		String cmd = ParamUtil.getString(request, Constants.CMD);
+		String cmd = ParamUtil.getString(httpServletRequest, Constants.CMD);
 
 		if (Validator.isNull(cmd)) {
-			return actionMapping.findForward("portal.update_reminder_query");
+			return actionMapping.getActionForward(
+				"portal.update_reminder_query");
 		}
 
 		try {
-			updateReminderQuery(request, response);
+			updateReminderQuery(httpServletRequest, httpServletResponse);
 
-			return actionMapping.findForward(
+			return actionMapping.getActionForward(
 				ActionConstants.COMMON_REFERER_JSP);
 		}
-		catch (Exception e) {
-			if (e instanceof UserReminderQueryException) {
-				SessionErrors.add(request, e.getClass());
+		catch (Exception exception) {
+			if (exception instanceof UserReminderQueryException) {
+				SessionErrors.add(httpServletRequest, exception.getClass());
 
-				return actionMapping.findForward(
+				return actionMapping.getActionForward(
 					"portal.update_reminder_query");
 			}
-			else if (e instanceof NoSuchUserException ||
-					 e instanceof PrincipalException) {
+			else if (exception instanceof NoSuchUserException ||
+					 exception instanceof PrincipalException) {
 
-				SessionErrors.add(request, e.getClass());
+				SessionErrors.add(httpServletRequest, exception.getClass());
 
-				return actionMapping.findForward("portal.error");
+				return actionMapping.getActionForward("portal.error");
 			}
 
-			PortalUtil.sendError(e, request, response);
+			PortalUtil.sendError(
+				exception, httpServletRequest, httpServletResponse);
 
 			return null;
 		}
 	}
 
 	protected void updateReminderQuery(
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws Exception {
 
 		AuthTokenUtil.checkCSRFToken(
-			request, UpdateReminderQueryAction.class.getName());
+			httpServletRequest, UpdateReminderQueryAction.class.getName());
 
-		long userId = PortalUtil.getUserId(request);
-		String question = ParamUtil.getString(request, "reminderQueryQuestion");
-		String answer = ParamUtil.getString(request, "reminderQueryAnswer");
+		String question = ParamUtil.getString(
+			httpServletRequest, "reminderQueryQuestion");
+		String answer = ParamUtil.getString(
+			httpServletRequest, "reminderQueryAnswer");
 
 		if (question.equals(UsersAdmin.CUSTOM_QUESTION)) {
 			question = ParamUtil.getString(
-				request, "reminderQueryCustomQuestion");
+				httpServletRequest, "reminderQueryCustomQuestion");
 		}
 
-		UserServiceUtil.updateReminderQuery(userId, question, answer);
+		if (!answer.equals(Portal.TEMP_OBFUSCATION_VALUE)) {
+			UserServiceUtil.updateReminderQuery(
+				PortalUtil.getUserId(httpServletRequest), question, answer);
+		}
 	}
 
 }

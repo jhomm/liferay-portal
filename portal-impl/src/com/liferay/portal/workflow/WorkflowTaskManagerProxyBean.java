@@ -15,6 +15,8 @@
 package com.liferay.portal.workflow;
 
 import com.liferay.portal.kernel.messaging.proxy.BaseProxyBean;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.WorkflowTask;
 import com.liferay.portal.kernel.workflow.WorkflowTaskManager;
@@ -31,6 +33,9 @@ import java.util.Map;
  * @author Brian Wing Shun Chan
  * @author Marcellus Tavares
  */
+@OSGiBeanProperties(
+	property = "proxy.bean=true", service = WorkflowTaskManager.class
+)
 public class WorkflowTaskManagerProxyBean
 	extends BaseProxyBean implements WorkflowTaskManager {
 
@@ -66,14 +71,14 @@ public class WorkflowTaskManagerProxyBean
 	}
 
 	@Override
-	public List<String> getNextTransitionNames(
-		long companyId, long userId, long workflowTaskId) {
-
+	public List<User> getAssignableUsers(long companyId, long workflowTaskId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public long[] getPooledActorsIds(long companyId, long workflowTaskId) {
+	public List<String> getNextTransitionNames(
+		long companyId, long userId, long workflowTaskId) {
+
 		throw new UnsupportedOperationException();
 	}
 
@@ -111,6 +116,14 @@ public class WorkflowTaskManagerProxyBean
 	@Override
 	public int getWorkflowTaskCountByUserRoles(
 		long companyId, long userId, Boolean completed) {
+
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public int getWorkflowTaskCountByUserRoles(
+		long companyId, long userId, long workflowInstanceId,
+		Boolean completed) {
 
 		throw new UnsupportedOperationException();
 	}
@@ -172,28 +185,17 @@ public class WorkflowTaskManagerProxyBean
 	}
 
 	@Override
-	public List<WorkflowTask> search(
-		long companyId, long userId, String keywords, Boolean completed,
-		Boolean searchByUserRoles, int start, int end,
-		OrderByComparator<WorkflowTask> orderByComparator) {
-
+	public boolean hasAssignableUsers(long companyId, long workflowTaskId) {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public List<WorkflowTask> search(
-		long companyId, long userId, String taskName, String assetType,
-		Long[] assetPrimaryKey, Date dueDateGT, Date dueDateLT,
-		Boolean completed, Boolean searchByUserRoles, boolean andOperator,
-		int start, int end, OrderByComparator<WorkflowTask> orderByComparator) {
-
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public List<WorkflowTask> search(
-		long companyId, long userId, String keywords, String[] assetTypes,
-		Boolean completed, Boolean searchByUserRoles, int start, int end,
+		long companyId, long userId, String assetTitle, String[] taskNames,
+		String[] assetTypes, Long[] assetPrimaryKeys, String assigneeClassName,
+		Long[] assigneeIds, Date dueDateGT, Date dueDateLT, Boolean completed,
+		Boolean searchByUserRoles, Long workflowDefinitionId,
+		Long[] workflowInstanceIds, Boolean andOperator, int start, int end,
 		OrderByComparator<WorkflowTask> orderByComparator) {
 
 		throw new UnsupportedOperationException();
@@ -201,25 +203,11 @@ public class WorkflowTaskManagerProxyBean
 
 	@Override
 	public int searchCount(
-		long companyId, long userId, String keywords, Boolean completed,
-		Boolean searchByUserRoles) {
-
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public int searchCount(
-		long companyId, long userId, String taskName, String assetType,
-		Long[] assetPrimaryKey, Date dueDateGT, Date dueDateLT,
-		Boolean completed, Boolean searchByUserRoles, boolean andOperator) {
-
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public int searchCount(
-		long companyId, long userId, String keywords, String[] assetTypes,
-		Boolean completed, Boolean searchByUserRoles) {
+		long companyId, long userId, String assetTitle, String[] taskNames,
+		String[] assetTypes, Long[] assetPrimaryKeys, String assigneeClassName,
+		Long[] assigneeIds, Date dueDateGT, Date dueDateLT, Boolean completed,
+		Boolean searchByUserRoles, Long workflowDefinitionId,
+		Long[] workflowInstanceIds, Boolean andOperator) {
 
 		throw new UnsupportedOperationException();
 	}

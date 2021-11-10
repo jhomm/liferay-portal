@@ -1,0 +1,349 @@
+@component-name = "data-engine"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Data Engine";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONGroup.addGroup(groupName = "Test Site Name");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "test-site-name");
+
+		DMNavigator.gotoDocumentType();
+
+		DMDocumentType.addWithoutSave(
+			dmDocumentTypeFieldNames = "Text",
+			dmDocumentTypeName = "DM Document Type Name");
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
+
+			User.logoutPG();
+		}
+	}
+
+	@description = "This test ensures data on a field group persists for a new Document Type."
+	@priority = "3"
+	test CheckIfFieldGroupDataPersists {
+		property portal.acceptance = "false";
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DDLDataDefinition.save();
+
+		Navigator.gotoNavItem(navItem = "Files");
+
+		DMDocument.addCP(
+			dmDocumentTitle = "DM Title",
+			dmDocumentTypeName = "DM Document Type Name",
+			numericField = "123",
+			textField = "Test Text");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "DM Title");
+
+		AssertTextEquals.assertValue(
+			locator1 = "TextInput#TEXT_SPECIFIC",
+			value1 = "Test Text");
+
+		AssertTextEquals.assertValue(
+			key_fieldLabel = "Numeric",
+			locator1 = "TextInput#NUMERIC",
+			value1 = "123");
+	}
+
+	@description = "This test ensures its possible to delete a field group inside another field group."
+	@priority = "5"
+	test DeleteNestedFieldGroupOnDocumentType {
+		property portal.acceptance = "false";
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Fields Group",
+			fieldFieldLabelEdit = "Fields Group Edit");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Color",
+			fieldName = "Color",
+			targetFieldLabel = "Numeric");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoEditDocumentType(dmDocumentTypeName = "DM Document Type Name");
+
+		DataEngine.delete(fieldsGroupLabel = "Fields Group");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoEditDocumentType(dmDocumentTypeName = "DM Document Type Name");
+
+		AssertElementNotPresent(
+			index = "1",
+			key_fieldLabel = "Fields Group",
+			locator1 = "DataEngineBuilder#FIELD_LABEL_INDEXED");
+	}
+
+	@description = "This test ensures it's possible to duplicate a field group."
+	@priority = "5"
+	test DuplicateAFieldGroup {
+		property portal.acceptance = "false";
+
+		var formGroupLabel = "Copy of Fields Group";
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DataEngine.duplicate(fieldsGroupLabel = "Fields Group");
+
+		Button.clickSave();
+
+		DMNavigator.gotoEditDocumentType(dmDocumentTypeName = "DM Document Type Name");
+
+		AssertTextEquals(
+			key_fieldFieldLabel = "${formGroupLabel}",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL",
+			value1 = "${formGroupLabel}");
+	}
+
+	@description = "This test ensures its possible to duplicate a field group that is inside another field group."
+	@priority = "5"
+	test DuplicateANestedFieldGroup {
+		property portal.acceptance = "false";
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Date",
+			fieldName = "Date",
+			targetFieldLabel = "Text");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Fields Group",
+			fieldFieldLabelEdit = "Fields Group Edit");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Date");
+
+		DataEngine.duplicate(fieldsGroupLabel = "Fields Group");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DEBuilder.assertFieldsGroup(
+			fieldGroupDepth = "2",
+			fieldGroupLabel = "Copy of Fields Group",
+			fieldsLabelList = "Copy of Date,Copy of Numeric");
+	}
+
+	@description = "This test ensure user can edit the field group label."
+	@priority = "4"
+	test EditFieldGroupLabel {
+		property portal.acceptance = "false";
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Fields Group",
+			fieldFieldLabelEdit = "Fields Group Edited");
+
+		DDLDataDefinition.save();
+
+		LexiconEntry.gotoEntry(rowEntry = "DM Document Type Name");
+
+		DEBuilder.assertFieldsGroup(
+			fieldGroupDepth = "1",
+			fieldGroupLabel = "Fields Group Edited",
+			fieldsLabelList = "Text,Numeric");
+	}
+
+	@description = "This test ensures it's possible to edit a field's property for a field inside a field group."
+	@priority = "3"
+	test EditFieldOnDuplicatedFieldGroup {
+		var dmDocumentTypeName = "DM Document Type Name";
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DataEngine.duplicate(fieldsGroupLabel = "Fields Group");
+
+		for (var fieldName : list "Text,Numeric") {
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Copy of ${fieldName}",
+				fieldFieldLabelEdit = "Duplicated ${fieldName}");
+		}
+
+		Button.clickSave();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "${dmDocumentTypeName}");
+
+		AssertElementPresent(
+			key_fieldsGroupLabel = "Copy of Fields Group",
+			locator1 = "DDMEditStructure#FORM_FIELDS_GROUP_CONTAINER");
+
+		for (var fieldName : list "Text,Numeric") {
+			DataEngine.viewField(
+				fieldFieldLabel = "Duplicated ${fieldName}",
+				fieldName = "${fieldName}");
+		}
+	}
+
+	@description = "This test validates that upon removing all fields of a field group, the field group is deleted."
+	@priority = "4"
+	test EmptyAFieldGroup {
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DataEngine.delete(fieldFieldLabel = "Text");
+
+		DataEngine.delete(fieldFieldLabel = "Numeric");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Date",
+			fieldName = "Date");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		AssertElementNotPresent(
+			key_fieldFieldLabel = "Fields Group",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var label : list "Text,Numeric") {
+			AssertElementNotPresent(
+				key_fieldFieldLabel = "${label}",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+		}
+	}
+
+	@description = "This test ensures it's possible to create a field group inside another field group."
+	@priority = "5"
+	test NestAFieldGroupOnAnotherFieldGroup {
+		property portal.acceptance = "false";
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Fields Group",
+			fieldFieldLabelEdit = "Fields Group Edited");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Date",
+			fieldName = "Date",
+			targetFieldLabel = "Numeric");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DEBuilder.assertFieldsGroup(
+			fieldGroupDepth = "1",
+			fieldGroupLabel = "Fields Group Edited",
+			fieldsLabelList = "Text");
+
+		DEBuilder.assertFieldsGroup(
+			fieldGroupDepth = "2",
+			fieldGroupLabel = "Fields Group",
+			fieldsLabelList = "Numeric,Date");
+	}
+
+	@description = "This test validates that a collapsible field group can be collapsed when uploading a Document and Media."
+	@priority = "4"
+	test SetFieldGroupAsCollapsibleAndExecuteOnUpload {
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DataEngine.editFieldsGroupCollapsible();
+
+		PortletEntry.save();
+
+		Navigator.gotoNavItem(navItem = "Files");
+
+		DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "DM Document Type Name");
+
+		AssertElementPresent(locator1 = "DataEngineBuilder#PANEL_EXPANDED");
+
+		Click(locator1 = "DataEngineBuilder#PANEL_COLLAPSE_BUTTON");
+
+		AssertElementPresent(locator1 = "DataEngineBuilder#PANEL_COLLAPSED");
+
+		Click(locator1 = "DataEngineBuilder#PANEL_COLLAPSE_BUTTON");
+	}
+
+	@description = "This test validates that a repeatable field group can be duplicated when uploading a document and media."
+	@priority = "4"
+	test SetFieldGroupAsRepeatableAndExecuteOnUpload {
+		property portal.acceptance = "false";
+
+		var dmDocumentTitle = "Title";
+		var newLabel = "Image";
+		var webTitle = "WC Title";
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DataEngine.toggleFieldRepeatable(fieldsGroupLabel = "Fields Group");
+
+		Button.clickSave();
+
+		Navigator.gotoNavItem(navItem = "Files");
+
+		DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "DM Document Type Name");
+
+		PortletEntry.inputTitle(title = "${dmDocumentTitle}");
+
+		DataEngine.addRepeatableField(fieldLabel = "Fields Group");
+
+		PortletEntry.publish();
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "${dmDocumentTitle}");
+
+		WebContent.viewDuplicatedField(
+			fieldLabel = "Fields Group",
+			totalPortletCount = "2");
+	}
+
+}

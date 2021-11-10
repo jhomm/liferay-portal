@@ -14,70 +14,13 @@
 
 package com.liferay.taglib.aui;
 
-import com.liferay.portal.kernel.servlet.taglib.aui.ToolTag;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PortalUtil;
 import com.liferay.taglib.aui.base.BasePanelTag;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-
 /**
+ * @author Eduardo Lundgren
+ * @author Bruno Basto
+ * @author Nathan Cavanaugh
  * @author Julio Camarero
- * @author Brian Wing Shun Chan
  */
 public class PanelTag extends BasePanelTag {
-
-	public void addToolTag(ToolTag toolTag) {
-		if (_toolTags == null) {
-			_toolTags = new ArrayList<>();
-		}
-
-		_toolTags.add(toolTag);
-	}
-
-	public List<ToolTag> getToolTags() {
-		return _toolTags;
-	}
-
-	@Override
-	protected void cleanUp() {
-		super.cleanUp();
-
-		if (_toolTags != null) {
-			for (ToolTag toolTag : _toolTags) {
-				toolTag.cleanUp();
-			}
-
-			_toolTags = null;
-		}
-	}
-
-	@Override
-	protected boolean isCleanUpSetAttributes() {
-		return _CLEAN_UP_SET_ATTRIBUTES;
-	}
-
-	@Override
-	protected void setAttributes(HttpServletRequest request) {
-		super.setAttributes(request);
-
-		String id = getId();
-
-		if (Validator.isNull(id)) {
-			id = PortalUtil.getUniqueElementId(
-				request, StringPool.BLANK, AUIUtil.normalizeId("panel"));
-		}
-
-		setNamespacedAttribute(request, "id", id);
-		setNamespacedAttribute(request, "toolTags", _toolTags);
-	}
-
-	private static final boolean _CLEAN_UP_SET_ATTRIBUTES = true;
-
-	private List<ToolTag> _toolTags;
-
 }

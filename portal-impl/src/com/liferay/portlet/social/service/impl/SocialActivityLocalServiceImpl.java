@@ -14,22 +14,41 @@
 
 package com.liferay.portlet.social.service.impl;
 
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.Property;
+import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.messaging.async.Async;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.model.User;
-import com.liferay.portal.util.PropsValues;
-import com.liferay.portlet.asset.model.AssetEntry;
-import com.liferay.portlet.exportimport.lar.ExportImportThreadLocal;
-import com.liferay.portlet.social.model.SocialActivity;
-import com.liferay.portlet.social.model.SocialActivityConstants;
-import com.liferay.portlet.social.model.SocialActivityDefinition;
 import com.liferay.portlet.social.service.base.SocialActivityLocalServiceBaseImpl;
 import com.liferay.portlet.social.util.SocialActivityHierarchyEntry;
 import com.liferay.portlet.social.util.SocialActivityHierarchyEntryThreadLocal;
+import com.liferay.social.kernel.model.SocialActivity;
+import com.liferay.social.kernel.model.SocialActivityConstants;
+import com.liferay.social.kernel.model.SocialActivityDefinition;
+import com.liferay.social.kernel.model.SocialActivityTable;
+import com.liferay.social.kernel.service.SocialActivityCounterLocalService;
+import com.liferay.social.kernel.service.SocialActivityInterpreterLocalService;
+import com.liferay.social.kernel.service.SocialActivitySetLocalService;
+import com.liferay.social.kernel.service.SocialActivitySettingLocalService;
+import com.liferay.social.kernel.service.persistence.SocialActivityCounterPersistence;
+import com.liferay.social.kernel.service.persistence.SocialActivityLimitPersistence;
+import com.liferay.social.kernel.service.persistence.SocialActivitySetPersistence;
+import com.liferay.social.kernel.service.persistence.SocialActivitySettingPersistence;
 
 import java.util.Date;
 import java.util.List;
@@ -84,15 +103,14 @@ public class SocialActivityLocalServiceImpl
 	 * activities.
 	 * </p>
 	 *
-	 * @param  userId the primary key of the acting user
-	 * @param  groupId the primary key of the group
-	 * @param  createDate the activity's date
-	 * @param  className the target asset's class name
-	 * @param  classPK the primary key of the target asset
-	 * @param  type the activity's type
-	 * @param  extraData any extra data regarding the activity
-	 * @param  receiverUserId the primary key of the receiving user
-	 * @throws PortalException if the user or group could not be found
+	 * @param userId the primary key of the acting user
+	 * @param groupId the primary key of the group
+	 * @param createDate the activity's date
+	 * @param className the target asset's class name
+	 * @param classPK the primary key of the target asset
+	 * @param type the activity's type
+	 * @param extraData any extra data regarding the activity
+	 * @param receiverUserId the primary key of the receiving user
 	 */
 	@Override
 	public void addActivity(
@@ -104,14 +122,14 @@ public class SocialActivityLocalServiceImpl
 			return;
 		}
 
-		User user = userPersistence.findByPrimaryKey(userId);
-		long classNameId = classNameLocalService.getClassNameId(className);
+		User user = _userPersistence.findByPrimaryKey(userId);
+		long classNameId = _classNameLocalService.getClassNameId(className);
 
 		if (groupId > 0) {
-			Group group = groupLocalService.getGroup(groupId);
+			Group group = _groupLocalService.getGroup(groupId);
 
 			if (group.isLayout()) {
-				Layout layout = layoutLocalService.getLayout(
+				Layout layout = _layoutLocalService.getLayout(
 					group.getClassPK());
 
 				groupId = layout.getGroupId();
@@ -141,8 +159,8 @@ public class SocialActivityLocalServiceImpl
 		activity.setExtraData(extraData);
 		activity.setReceiverUserId(receiverUserId);
 
-		AssetEntry assetEntry = assetEntryPersistence.fetchByC_C(
-			classNameId, classPK);
+		AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
+			className, classPK);
 
 		activity.setAssetEntry(assetEntry);
 
@@ -192,14 +210,13 @@ public class SocialActivityLocalServiceImpl
 	 * Records an activity in the database, using a time based on the current
 	 * time in an attempt to make the activity's time unique.
 	 *
-	 * @param  userId the primary key of the acting user
-	 * @param  groupId the primary key of the group
-	 * @param  className the target asset's class name
-	 * @param  classPK the primary key of the target asset
-	 * @param  type the activity's type
-	 * @param  extraData any extra data regarding the activity
-	 * @param  receiverUserId the primary key of the receiving user
-	 * @throws PortalException if the user or group could not be found
+	 * @param userId the primary key of the acting user
+	 * @param groupId the primary key of the group
+	 * @param className the target asset's class name
+	 * @param classPK the primary key of the target asset
+	 * @param type the activity's type
+	 * @param extraData any extra data regarding the activity
+	 * @param receiverUserId the primary key of the receiving user
 	 */
 	@Override
 	public void addActivity(
@@ -207,30 +224,8 @@ public class SocialActivityLocalServiceImpl
 			String extraData, long receiverUserId)
 		throws PortalException {
 
-		if (ExportImportThreadLocal.isImportInProcess()) {
-			return;
-		}
-
-		Date createDate = new Date();
-
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		while (true) {
-			SocialActivity socialActivity =
-				socialActivityPersistence.fetchByG_U_CD_C_C_T_R(
-					groupId, userId, createDate.getTime(), classNameId, classPK,
-					type, receiverUserId);
-
-			if (socialActivity != null) {
-				createDate = new Date(createDate.getTime() + 1);
-			}
-			else {
-				break;
-			}
-		}
-
 		addActivity(
-			userId, groupId, createDate, className, classPK, type, extraData,
+			userId, groupId, new Date(), className, classPK, type, extraData,
 			receiverUserId);
 	}
 
@@ -258,25 +253,24 @@ public class SocialActivityLocalServiceImpl
 
 			activity.setActivityId(activityId);
 
-			socialActivityPersistence.update(activity);
+			activity = socialActivityPersistence.update(activity);
 
 			if (mirrorActivity != null) {
 				long mirrorActivityId = counterLocalService.increment(
 					SocialActivity.class.getName());
 
 				mirrorActivity.setActivityId(mirrorActivityId);
+
 				mirrorActivity.setMirrorActivityId(activity.getPrimaryKey());
 
 				socialActivityPersistence.update(mirrorActivity);
 			}
 
-			if (PropsValues.SOCIAL_ACTIVITY_SETS_ENABLED) {
-				socialActivityInterpreterLocalService.updateActivitySet(
-					activity.getActivityId());
-			}
+			_socialActivityInterpreterLocalService.updateActivitySet(
+				activity.getActivityId());
 		}
 
-		socialActivityCounterLocalService.addActivityCounters(activity);
+		_socialActivityCounterLocalService.addActivityCounters(activity);
 	}
 
 	/**
@@ -288,15 +282,14 @@ public class SocialActivityLocalServiceImpl
 	 * String, long, int, String, long)}
 	 * </p>
 	 *
-	 * @param  userId the primary key of the acting user
-	 * @param  groupId the primary key of the group
-	 * @param  createDate the activity's date
-	 * @param  className the target asset's class name
-	 * @param  classPK the primary key of the target asset
-	 * @param  type the activity's type
-	 * @param  extraData any extra data regarding the activity
-	 * @param  receiverUserId the primary key of the receiving user
-	 * @throws PortalException if the user or group could not be found
+	 * @param userId the primary key of the acting user
+	 * @param groupId the primary key of the group
+	 * @param createDate the activity's date
+	 * @param className the target asset's class name
+	 * @param classPK the primary key of the target asset
+	 * @param type the activity's type
+	 * @param extraData any extra data regarding the activity
+	 * @param receiverUserId the primary key of the receiving user
 	 */
 	@Override
 	public void addUniqueActivity(
@@ -304,12 +297,11 @@ public class SocialActivityLocalServiceImpl
 			long classPK, int type, String extraData, long receiverUserId)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		SocialActivity socialActivity =
 			socialActivityPersistence.fetchByG_U_CD_C_C_T_R(
-				groupId, userId, createDate.getTime(), classNameId, classPK,
-				type, receiverUserId);
+				groupId, userId, createDate.getTime(),
+				_classNameLocalService.getClassNameId(className), classPK, type,
+				receiverUserId);
 
 		if (socialActivity != null) {
 			return;
@@ -329,14 +321,13 @@ public class SocialActivityLocalServiceImpl
 	 * String, long, int, String, long)}
 	 * </p>
 	 *
-	 * @param  userId the primary key of the acting user
-	 * @param  groupId the primary key of the group
-	 * @param  className the target asset's class name
-	 * @param  classPK the primary key of the target asset
-	 * @param  type the activity's type
-	 * @param  extraData any extra data regarding the activity
-	 * @param  receiverUserId the primary key of the receiving user
-	 * @throws PortalException if the user or group could not be found
+	 * @param userId the primary key of the acting user
+	 * @param groupId the primary key of the group
+	 * @param className the target asset's class name
+	 * @param classPK the primary key of the target asset
+	 * @param type the activity's type
+	 * @param extraData any extra data regarding the activity
+	 * @param receiverUserId the primary key of the receiving user
 	 */
 	@Override
 	public void addUniqueActivity(
@@ -344,10 +335,9 @@ public class SocialActivityLocalServiceImpl
 			String extraData, long receiverUserId)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		int count = socialActivityPersistence.countByG_U_C_C_T_R(
-			groupId, userId, classNameId, classPK, type, receiverUserId);
+			groupId, userId, _classNameLocalService.getClassNameId(className),
+			classPK, type, receiverUserId);
 
 		if (count > 0) {
 			return;
@@ -361,8 +351,7 @@ public class SocialActivityLocalServiceImpl
 	/**
 	 * Removes stored activities for the asset.
 	 *
-	 * @param  assetEntry the asset from which to remove stored activities
-	 * @throws PortalException if a portal exception occurred
+	 * @param assetEntry the asset from which to remove stored activities
 	 */
 	@Override
 	public void deleteActivities(AssetEntry assetEntry) throws PortalException {
@@ -371,42 +360,36 @@ public class SocialActivityLocalServiceImpl
 
 	@Override
 	public void deleteActivities(long groupId) {
-		if (PropsValues.SOCIAL_ACTIVITY_SETS_ENABLED) {
-			socialActivitySetPersistence.removeByGroupId(groupId);
-		}
+		_socialActivitySetPersistence.removeByGroupId(groupId);
 
 		socialActivityPersistence.removeByGroupId(groupId);
 
-		socialActivityCounterPersistence.removeByGroupId(groupId);
+		_socialActivityCounterPersistence.removeByGroupId(groupId);
 
-		socialActivityLimitPersistence.removeByGroupId(groupId);
+		_socialActivityLimitPersistence.removeByGroupId(groupId);
 
-		socialActivitySettingPersistence.removeByGroupId(groupId);
+		_socialActivitySettingPersistence.removeByGroupId(groupId);
 	}
 
 	/**
 	 * Removes stored activities for the asset identified by the class name and
 	 * class primary key.
 	 *
-	 * @param  className the target asset's class name
-	 * @param  classPK the primary key of the target asset
-	 * @throws PortalException if the user's activity counters could not be
-	 *         deleted
+	 * @param className the target asset's class name
+	 * @param classPK the primary key of the target asset
 	 */
 	@Override
 	public void deleteActivities(String className, long classPK)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		deleteActivities(classNameId, classPK);
+		deleteActivities(
+			_classNameLocalService.getClassNameId(className), classPK);
 	}
 
 	/**
 	 * Removes the stored activity from the database.
 	 *
-	 * @param  activityId the primary key of the stored activity
-	 * @throws PortalException if the activity could not be found
+	 * @param activityId the primary key of the stored activity
 	 */
 	@Override
 	public void deleteActivity(long activityId) throws PortalException {
@@ -419,16 +402,12 @@ public class SocialActivityLocalServiceImpl
 	/**
 	 * Removes the stored activity and its mirror activity from the database.
 	 *
-	 * @param  activity the activity to be removed
-	 * @throws PortalException if the user's activity counters could not be
-	 *         deleted or if a portal exception occurred
+	 * @param activity the activity to be removed
 	 */
 	@Override
 	public void deleteActivity(SocialActivity activity) throws PortalException {
-		if (PropsValues.SOCIAL_ACTIVITY_SETS_ENABLED) {
-			socialActivitySetLocalService.decrementActivityCount(
-				activity.getActivitySetId());
-		}
+		_socialActivitySetLocalService.decrementActivityCount(
+			activity.getActivitySetId());
 
 		socialActivityPersistence.remove(activity);
 
@@ -449,9 +428,7 @@ public class SocialActivityLocalServiceImpl
 	 * the receiver.
 	 * </p>
 	 *
-	 * @param  userId the primary key of the user
-	 * @throws PortalException if the user's activity counters could not be
-	 *         deleted
+	 * @param userId the primary key of the user
 	 */
 	@Override
 	public void deleteUserActivities(long userId) throws PortalException {
@@ -460,10 +437,8 @@ public class SocialActivityLocalServiceImpl
 				userId, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 
 		for (SocialActivity activity : activities) {
-			if (PropsValues.SOCIAL_ACTIVITY_SETS_ENABLED) {
-				socialActivitySetLocalService.decrementActivityCount(
-					activity.getActivitySetId());
-			}
+			_socialActivitySetLocalService.decrementActivityCount(
+				activity.getActivitySetId());
 
 			socialActivityPersistence.remove(activity);
 		}
@@ -472,15 +447,13 @@ public class SocialActivityLocalServiceImpl
 			userId, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 
 		for (SocialActivity activity : activities) {
-			if (PropsValues.SOCIAL_ACTIVITY_SETS_ENABLED) {
-				socialActivitySetLocalService.decrementActivityCount(
-					activity.getActivitySetId());
-			}
+			_socialActivitySetLocalService.decrementActivityCount(
+				activity.getActivitySetId());
 
 			socialActivityPersistence.remove(activity);
 		}
 
-		socialActivityCounterLocalService.deleteActivityCounters(
+		_socialActivityCounterLocalService.deleteActivityCounters(
 			User.class.getName(), userId);
 	}
 
@@ -488,36 +461,40 @@ public class SocialActivityLocalServiceImpl
 	public SocialActivity fetchFirstActivity(
 		String className, long classPK, int type) {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		return socialActivityPersistence.fetchByC_C_T_First(
-			classNameId, classPK, type, null);
+			_classNameLocalService.getClassNameId(className), classPK, type,
+			null);
 	}
 
 	/**
-	 * Returns a range of all the activities done on assets identified by the
-	 * class name ID.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param  classNameId the target asset's class name ID
-	 * @param  start the lower bound of the range of results
-	 * @param  end the upper bound of the range of results (not inclusive)
-	 * @return the range of matching activities
+	 * @param      classNameId the target asset's class name ID
+	 * @param      start the lower bound of the range of results
+	 * @param      end the upper bound of the range of results (not inclusive)
+	 * @return     the range of matching activities
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getActivities(long, String, int, int)}  Returns a range of
+	 *             all the activities done on assets identified by the class
+	 *             name ID.  <p> Useful when paginating results. Returns a
+	 *             maximum of <code>end - start</code> instances.
+	 *             <code>start</code> and <code>end</code> are not primary keys,
+	 *             they are indexes in the result set. Thus, <code>0</code>
+	 *             refers to the first result in the set. Setting both
+	 *             <code>start</code> and <code>end</code> to {@link
+	 *             QueryUtil#ALL_POS} will return the full result set.</p>
 	 */
+	@Deprecated
 	@Override
 	public List<SocialActivity> getActivities(
 		long classNameId, int start, int end) {
 
-		return socialActivityPersistence.findByClassNameId(
-			classNameId, start, end);
+		DynamicQuery dynamicQuery = dynamicQuery();
+
+		Property classNameIdProperty = PropertyFactoryUtil.forName(
+			"classNameId");
+
+		dynamicQuery.add(classNameIdProperty.eq(classNameId));
+
+		return dynamicQuery(dynamicQuery);
 	}
 
 	/**
@@ -551,6 +528,47 @@ public class SocialActivityLocalServiceImpl
 	}
 
 	/**
+	 * Returns a range of all the activities done on assets identified by the
+	 * company ID and class name.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end -
+	 * start</code> instances. <code>start</code> and <code>end</code> are not
+	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
+	 * refers to the first result in the set. Setting both <code>start</code>
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
+	 * result set.
+	 * </p>
+	 *
+	 * @param  companyId the primary key of the company
+	 * @param  className the target asset's class name
+	 * @param  start the lower bound of the range of results
+	 * @param  end the upper bound of the range of results (not inclusive)
+	 * @return the range of matching activities
+	 */
+	@Override
+	public List<SocialActivity> getActivities(
+		long companyId, String className, int start, int end) {
+
+		DSLQuery dslQuery = DSLQueryFactoryUtil.select(
+			SocialActivityTable.INSTANCE
+		).from(
+			SocialActivityTable.INSTANCE
+		).where(
+			SocialActivityTable.INSTANCE.companyId.eq(
+				companyId
+			).and(
+				SocialActivityTable.INSTANCE.classNameId.eq(
+					_classNameLocalService.getClassNameId(className))
+			)
+		).limit(
+			start, end
+		);
+
+		return socialActivityPersistence.dslQuery(dslQuery);
+	}
+
+	/**
 	 * Returns a range of all the activities done on the asset identified by the
 	 * class name and the class primary key that are mirrors of the activity
 	 * identified by the mirror activity ID.
@@ -576,49 +594,66 @@ public class SocialActivityLocalServiceImpl
 		long mirrorActivityId, String className, long classPK, int start,
 		int end) {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		return getActivities(
-			mirrorActivityId, classNameId, classPK, start, end);
+			mirrorActivityId, _classNameLocalService.getClassNameId(className),
+			classPK, start, end);
 	}
 
 	/**
-	 * Returns a range of all the activities done on assets identified by the
-	 * class name.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end -
-	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
-	 * refers to the first result in the set. Setting both <code>start</code>
-	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
-	 * result set.
-	 * </p>
-	 *
-	 * @param  className the target asset's class name
-	 * @param  start the lower bound of the range of results
-	 * @param  end the upper bound of the range of results (not inclusive)
-	 * @return the range of matching activities
+	 * @param      className the target asset's class name
+	 * @param      start the lower bound of the range of results
+	 * @param      end the upper bound of the range of results (not inclusive)
+	 * @return     the range of matching activities
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getActivities(long, String, int, int)}  Returns a range of
+	 *             all the activities done on assets identified by the class
+	 *             name.  <p> Useful when paginating results. Returns a maximum
+	 *             of <code>end - start</code> instances. <code>start</code> and
+	 *             <code>end</code> are not primary keys, they are indexes in
+	 *             the result set. Thus, <code>0</code> refers to the first
+	 *             result in the set. Setting both <code>start</code> and
+	 *             <code>end</code> to {@link QueryUtil#ALL_POS} will return the
+	 *             full result set.</p>
 	 */
+	@Deprecated
 	@Override
 	public List<SocialActivity> getActivities(
 		String className, int start, int end) {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		return getActivities(classNameId, start, end);
+		return getActivities(
+			_classNameLocalService.getClassNameId(className), start, end);
 	}
 
 	/**
-	 * Returns the number of activities done on assets identified by the class
-	 * name ID.
-	 *
-	 * @param  classNameId the target asset's class name ID
-	 * @return the number of matching activities
+	 * @param      classNameId the target asset's class name ID
+	 * @return     the number of matching activities
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getActivitiesCount(long, String)}
 	 */
+	@Deprecated
 	@Override
 	public int getActivitiesCount(long classNameId) {
-		return socialActivityPersistence.countByClassNameId(classNameId);
+		DynamicQuery dynamicQuery = dynamicQuery();
+
+		Property classNameIdProperty = PropertyFactoryUtil.forName(
+			"classNameId");
+
+		dynamicQuery.add(classNameIdProperty.eq(classNameId));
+
+		Long count = dynamicQueryCount(dynamicQuery);
+
+		return count.intValue();
+	}
+
+	@Override
+	public int getActivitiesCount(
+		long userId, long groupId, Date createDate, String className,
+		long classPK, int type, long receiverUserId) {
+
+		return socialActivityPersistence.countByG_U_CD_C_C_T_R(
+			groupId, userId, createDate.getTime(),
+			_classNameLocalService.getClassNameId(className), classPK, type,
+			receiverUserId);
 	}
 
 	/**
@@ -640,6 +675,31 @@ public class SocialActivityLocalServiceImpl
 	}
 
 	/**
+	 * Returns the number of activities done on assets identified by company ID
+	 * and class name.
+	 *
+	 * @param  companyId the primary key of the company
+	 * @param  className the target asset's class name
+	 * @return the number of matching activities
+	 */
+	@Override
+	public int getActivitiesCount(long companyId, String className) {
+		DSLQuery dslQuery = DSLQueryFactoryUtil.count(
+		).from(
+			SocialActivityTable.INSTANCE
+		).where(
+			SocialActivityTable.INSTANCE.companyId.eq(
+				companyId
+			).and(
+				SocialActivityTable.INSTANCE.classNameId.eq(
+					_classNameLocalService.getClassNameId(className))
+			)
+		);
+
+		return socialActivityPersistence.dslQueryCount(dslQuery);
+	}
+
+	/**
 	 * Returns the number of activities done on the asset identified by the
 	 * class name and class primary key that are mirrors of the activity
 	 * identified by the mirror activity ID.
@@ -653,22 +713,22 @@ public class SocialActivityLocalServiceImpl
 	public int getActivitiesCount(
 		long mirrorActivityId, String className, long classPK) {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		return getActivitiesCount(mirrorActivityId, classNameId, classPK);
+		return getActivitiesCount(
+			mirrorActivityId, _classNameLocalService.getClassNameId(className),
+			classPK);
 	}
 
 	/**
-	 * Returns the number of activities done on assets identified by class name.
-	 *
-	 * @param  className the target asset's class name
-	 * @return the number of matching activities
+	 * @param      className the target asset's class name
+	 * @return     the number of matching activities
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getActivitiesCount(long, String)}
 	 */
+	@Deprecated
 	@Override
 	public int getActivitiesCount(String className) {
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		return getActivitiesCount(classNameId);
+		return getActivitiesCount(
+			_classNameLocalService.getClassNameId(className));
 	}
 
 	/**
@@ -676,7 +736,6 @@ public class SocialActivityLocalServiceImpl
 	 *
 	 * @param  activityId the primary key of the activity
 	 * @return Returns the activity
-	 * @throws PortalException if the activity could not be found
 	 */
 	@Override
 	public SocialActivity getActivity(long activityId) throws PortalException {
@@ -784,7 +843,6 @@ public class SocialActivityLocalServiceImpl
 	 *
 	 * @param  mirrorActivityId the primary key of the mirror activity
 	 * @return Returns the mirror activity
-	 * @throws PortalException if the mirror activity could not be found
 	 */
 	@Override
 	public SocialActivity getMirrorActivity(long mirrorActivityId)
@@ -877,10 +935,10 @@ public class SocialActivityLocalServiceImpl
 	 * <p>
 	 * Useful when paginating results. Returns a maximum of <code>end -
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <>0</code> refers
-	 * to the first result in the set. Setting both <code>start</code> and
-	 * <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result
-	 * set.
+	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
+	 * refers to the first result in the set. Setting both <code>start</code>
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
+	 * result set.
 	 * </p>
 	 *
 	 * @param  userId the primary key of the user
@@ -1099,14 +1157,12 @@ public class SocialActivityLocalServiceImpl
 	protected void deleteActivities(long classNameId, long classPK)
 		throws PortalException {
 
-		if (PropsValues.SOCIAL_ACTIVITY_SETS_ENABLED) {
-			socialActivitySetLocalService.decrementActivityCount(
-				classNameId, classPK);
-		}
+		_socialActivitySetLocalService.decrementActivityCount(
+			classNameId, classPK);
 
 		socialActivityPersistence.removeByC_C(classNameId, classPK);
 
-		socialActivityCounterLocalService.deleteActivityCounters(
+		_socialActivityCounterLocalService.deleteActivityCounters(
 			classNameId, classPK);
 	}
 
@@ -1120,7 +1176,7 @@ public class SocialActivityLocalServiceImpl
 		}
 
 		SocialActivityDefinition activityDefinition =
-			socialActivitySettingLocalService.getActivityDefinition(
+			_socialActivitySettingLocalService.getActivityDefinition(
 				activity.getGroupId(), activity.getClassName(),
 				activity.getType());
 
@@ -1134,5 +1190,47 @@ public class SocialActivityLocalServiceImpl
 
 		return false;
 	}
+
+	@BeanReference(type = AssetEntryLocalService.class)
+	private AssetEntryLocalService _assetEntryLocalService;
+
+	@BeanReference(type = ClassNameLocalService.class)
+	private ClassNameLocalService _classNameLocalService;
+
+	@BeanReference(type = GroupLocalService.class)
+	private GroupLocalService _groupLocalService;
+
+	@BeanReference(type = LayoutLocalService.class)
+	private LayoutLocalService _layoutLocalService;
+
+	@BeanReference(type = SocialActivityCounterLocalService.class)
+	private SocialActivityCounterLocalService
+		_socialActivityCounterLocalService;
+
+	@BeanReference(type = SocialActivityCounterPersistence.class)
+	private SocialActivityCounterPersistence _socialActivityCounterPersistence;
+
+	@BeanReference(type = SocialActivityInterpreterLocalService.class)
+	private SocialActivityInterpreterLocalService
+		_socialActivityInterpreterLocalService;
+
+	@BeanReference(type = SocialActivityLimitPersistence.class)
+	private SocialActivityLimitPersistence _socialActivityLimitPersistence;
+
+	@BeanReference(type = SocialActivitySetLocalService.class)
+	private SocialActivitySetLocalService _socialActivitySetLocalService;
+
+	@BeanReference(type = SocialActivitySetPersistence.class)
+	private SocialActivitySetPersistence _socialActivitySetPersistence;
+
+	@BeanReference(type = SocialActivitySettingLocalService.class)
+	private SocialActivitySettingLocalService
+		_socialActivitySettingLocalService;
+
+	@BeanReference(type = SocialActivitySettingPersistence.class)
+	private SocialActivitySettingPersistence _socialActivitySettingPersistence;
+
+	@BeanReference(type = UserPersistence.class)
+	private UserPersistence _userPersistence;
 
 }

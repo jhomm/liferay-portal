@@ -50,13 +50,9 @@ public class StripDoctypeFilter {
 			buffer[0] = readFromSource();
 			buffer[1] = readFromSource();
 
-			if (buffer[0] == '?') {
-				setBuffer(buffer);
+			if ((buffer[0] == '?') ||
+				((buffer[0] == '!') && (buffer[1] == '-'))) {
 
-				return c;
-			}
-
-			if ((buffer[0] == '!') && (buffer[1] == '-')) {
 				setBuffer(buffer);
 
 				return c;
@@ -91,6 +87,17 @@ public class StripDoctypeFilter {
 	}
 
 	public int read(byte[] bytes, int offset, int length) throws IOException {
+		if (_documentStarted && (length > _bufferLength)) {
+			int bufferLength = _bufferLength;
+
+			for (int i = 0; i < bufferLength; i++) {
+				bytes[offset++] = (byte)(readFromBuffer() & 0xFF);
+			}
+
+			return _inputStream.read(bytes, offset, length - bufferLength) +
+				bufferLength;
+		}
+
 		int read = 0;
 
 		for (read = 0; read < length; read++) {
@@ -104,13 +111,24 @@ public class StripDoctypeFilter {
 				return read;
 			}
 
-			bytes[offset + read] = (byte) (c & 0xFF);
+			bytes[offset + read] = (byte)(c & 0xFF);
 		}
 
 		return read;
 	}
 
 	public int read(char[] chars, int offset, int length) throws IOException {
+		if (_documentStarted && (length > _bufferLength)) {
+			int bufferLength = _bufferLength;
+
+			for (int i = 0; i < bufferLength; i++) {
+				chars[offset++] = (char)readFromBuffer();
+			}
+
+			return _reader.read(chars, offset, length - bufferLength) +
+				bufferLength;
+		}
+
 		int read = 0;
 
 		for (read = 0; read < length; read++) {
@@ -132,7 +150,6 @@ public class StripDoctypeFilter {
 
 	protected StripDoctypeFilter(InputStream inputStream, Reader reader) {
 		_inputStream = inputStream;
-
 		_reader = reader;
 	}
 

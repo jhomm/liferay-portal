@@ -14,6 +14,7 @@
 
 package com.liferay.portal.jsonwebservice;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.json.transformer.SortedHashMapJSONTransformer;
 import com.liferay.portal.jsonwebservice.action.JSONWebServiceInvokerAction;
@@ -29,7 +30,6 @@ import com.liferay.portal.kernel.jsonwebservice.NoSuchJSONWebServiceException;
 import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.util.MethodParametersResolverUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.util.MethodParametersResolverImpl;
 import com.liferay.portal.util.PropsImpl;
 
@@ -180,36 +180,42 @@ public abstract class BaseJSONWebServiceTestCase extends PowerMockito {
 				jsonWebServiceInvokerAction.new InvokerResult(
 					invokerResult.getResult()) {
 
-				@Override
-				protected JSONSerializer createJSONSerializer() {
-					JSONSerializer jsonSerializer =
-						JSONFactoryUtil.createJSONSerializer();
+					@Override
+					protected JSONSerializer createJSONSerializer() {
+						JSONSerializer jsonSerializer =
+							JSONFactoryUtil.createJSONSerializer();
 
-					jsonSerializer.transform(
-						new SortedHashMapJSONTransformer(), HashMap.class);
+						jsonSerializer.transform(
+							new SortedHashMapJSONTransformer(), HashMap.class);
 
-					return jsonSerializer;
-				}
+						return jsonSerializer;
+					}
 
-			};
+				};
 
 			object = newInvokerResult;
 		}
 
 		if (object instanceof JSONSerializable) {
-			return ((JSONSerializable)object).toJSONString();
+			JSONSerializable jsonSerializable = (JSONSerializable)object;
+
+			return jsonSerializable.toJSONString();
 		}
 
 		JSONSerializer jsonSerializer = JSONFactoryUtil.createJSONSerializer();
+
 		return jsonSerializer.serialize(object);
 	}
 
 	protected String toJSON(Object object, String... includes) {
 		if (object instanceof JSONSerializable) {
-			return ((JSONSerializable)object).toJSONString();
+			JSONSerializable jsonSerializable = (JSONSerializable)object;
+
+			return jsonSerializable.toJSONString();
 		}
 
 		JSONSerializer jsonSerializer = JSONFactoryUtil.createJSONSerializer();
+
 		jsonSerializer.include(includes);
 
 		return jsonSerializer.serialize(object);
@@ -232,7 +238,8 @@ public abstract class BaseJSONWebServiceTestCase extends PowerMockito {
 	private class MockHttpServletRequest30 extends MockHttpServletRequest {
 
 		public MockHttpServletRequest30() {
-			_mockServletContext = new MockServletContext() {};
+			_mockServletContext = new MockServletContext() {
+			};
 
 			_mockServletContext.setContextPath(StringPool.BLANK);
 			_mockServletContext.setServletContextName(StringPool.BLANK);

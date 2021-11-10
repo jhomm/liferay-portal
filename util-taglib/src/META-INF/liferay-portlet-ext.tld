@@ -130,14 +130,29 @@
 		</attribute>
 	</tag>
 	<tag>
-		<name>icon-back</name>
-		<tag-class>com.liferay.taglib.portletext.IconBackTag</tag-class>
-		<body-content>JSP</body-content>
-	</tag>
-	<tag>
 		<name>icon-options</name>
 		<tag-class>com.liferay.taglib.portletext.IconOptionsTag</tag-class>
 		<body-content>JSP</body-content>
+		<attribute>
+			<name>direction</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>markupView</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>portletConfigurationIcons</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>showArrow</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
 	</tag>
 	<tag>
 		<name>icon-portlet</name>
@@ -470,17 +485,27 @@
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
+			<name>instanceId</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>persistSettings</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
 			<name>portletName</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>portletProviderClassName</name>
+			<name>portletProviderAction</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>portletProviderAction</name>
+			<name>portletProviderClassName</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
@@ -493,6 +518,7 @@
 			<name>settingsScope</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
+			<description>Deprecated as of Mueller (7.2.x), with no direct replacement.</description>
 		</attribute>
 	</tag>
 </taglib>

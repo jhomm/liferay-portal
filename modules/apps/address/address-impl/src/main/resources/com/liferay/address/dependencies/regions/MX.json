@@ -1,0 +1,130 @@
+[
+	{
+		"name": "Aguascalientes",
+		"regionCode": "AGU"
+	},
+	{
+		"name": "Baja California",
+		"regionCode": "BCN"
+	},
+	{
+		"name": "Baja California Sur",
+		"regionCode": "BCS"
+	},
+	{
+		"name": "Campeche",
+		"regionCode": "CAM"
+	},
+	{
+		"name": "Chiapas",
+		"regionCode": "CHP"
+	},
+	{
+		"name": "Chihuahua",
+		"regionCode": "CHH"
+	},
+	{
+		"name": "Ciudad de México",
+		"regionCode": "DIF"
+	},
+	{
+		"name": "Coahuila de Zaragoza",
+		"regionCode": "COA"
+	},
+	{
+		"name": "Colima",
+		"regionCode": "COL"
+	},
+	{
+		"name": "Durango",
+		"regionCode": "DUR"
+	},
+	{
+		"name": "Guanajuato",
+		"regionCode": "GUA"
+	},
+	{
+		"name": "Guerrero",
+		"regionCode": "GRO"
+	},
+	{
+		"name": "Hidalgo",
+		"regionCode": "HID"
+	},
+	{
+		"name": "Jalisco",
+		"regionCode": "JAL"
+	},
+	{
+		"name": "México",
+		"regionCode": "MEX"
+	},
+	{
+		"name": "Michoacán de Ocampo",
+		"regionCode": "MIC"
+	},
+	{
+		"name": "Morelos",
+		"regionCode": "MOR"
+	},
+	{
+		"name": "Nayarit",
+		"regionCode": "NAY"
+	},
+	{
+		"name": "Nuevo León",
+		"regionCode": "NLE"
+	},
+	{
+		"name": "Oaxaca",
+		"regionCode": "OAX"
+	},
+	{
+		"name": "Puebla",
+		"regionCode": "PUE"
+	},
+	{
+		"name": "Querétaro",
+		"regionCode": "QUE"
+	},
+	{
+		"name": "Quintana Roo",
+		"regionCode": "ROO"
+	},
+	{
+		"name": "San Luis Potosí",
+		"regionCode": "SLP"
+	},
+	{
+		"name": "Sinaloa",
+		"regionCode": "SIN"
+	},
+	{
+		"name": "Sonora",
+		"regionCode": "SON"
+	},
+	{
+		"name": "Tabasco",
+		"regionCode": "TAB"
+	},
+	{
+		"name": "Tamaulipas",
+		"regionCode": "TAM"
+	},
+	{
+		"name": "Tlaxcala",
+		"regionCode": "TLA"
+	},
+	{
+		"name": "Veracruz de Ignacio de la Llave",
+		"regionCode": "VER"
+	},
+	{
+		"name": "Yucatán",
+		"regionCode": "YUC"
+	},
+	{
+		"name": "Zacatecas",
+		"regionCode": "ZAC"
+	}
+]

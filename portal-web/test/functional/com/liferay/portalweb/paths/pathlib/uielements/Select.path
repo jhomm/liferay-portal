@@ -2,15 +2,62 @@
 <head>
 <title>Select</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">Select</td></tr>
 </thead>
+
 <tbody>
 <tr>
-	<td>BULLET_STYLE</td>
-	<td>//div[label[contains(.,'Bullet Style')]]/select</td>
+	<td>ADDRESS_TYPE</td>
+	<td>//div[label[contains(.,'Type')]]/select[contains(@name,'addressType')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ANY</td>
+	<td>//div[not(contains(@class,'hide'))]/div[contains(@class,'input-select-wrapper')][label[contains(.,'${key_selectFieldLabel}')]]/select</td>
+	<td></td>
+</tr>
+<tr>
+	<td>APPLICATION_DECORATORS</td>
+	<td>//div[label[contains(.,'Application Decorators')]]/select[contains(@id,'portletDecorator')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ANY_DISABLED</td>
+	<td>//div[not(contains(@class,'hide'))]/div[contains(@class,'input-select-wrapper')][label[contains(.,'${key_selectFieldLabel}')]]/select[contains(@class,'disabled')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNMENT_TYPE</td>
+	<td>//select[@name='assignmentType']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>BORDER_BOTTOM_SELECT_FIELD</td>
+	<td>//div[contains(@class,'label')][normalize-space()='${key_borderBottom}']/following-sibling::div[1]//div[label[contains(.,'${key_fieldLabel}')]]/select</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PERMISSIONS_VIEW_ROLE</td>
+	<td>//select[contains(.,'${key_permissionsViewRole}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSET_SUBTYPE</td>
+	<td>//div[not(contains(@class,'hide'))]/select[contains(@id,'subtype')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>BLOGS_RATING</td>
+	<td>//select[contains(@id,'blogs')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>APPLICATIONS_RATING</td>
+	<td>//select[contains(@id,'${key_applications}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -19,8 +66,28 @@
 	<td></td>
 </tr>
 <tr>
+	<td>DATE_RANGE_START_DATE</td>
+	<td>xpath=(//ul[contains(@class,'date-range-options')]//input[contains(@name,'startDate') and contains(@type,'text')])[1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DATE_RANGE_START_DATE_VALUE</td>
+	<td>//ul[contains(@class,'date-range-options')]//input[contains(@name,'startDate') and contains(@value,'${key_dateRangeStartDate}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DATE_RANGE_END_DATE</td>
+	<td>xpath=(//ul[contains(@class,'date-range-options')]//input[contains(@name,'endDate') and contains(@type,'text')])[1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DATE_RANGE_END_DATE_VALUE</td>
+	<td>//ul[contains(@class,'date-range-options')]//input[contains(@name,'endDate') and contains(@value,'${key_dateRangeEndDate}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>DEFAULT_LANGUAGE</td>
-	<td>//div[label[contains(.,'Default Language')]]/select</td>
+	<td>//select[contains(@id,'languageId')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -34,53 +101,63 @@
 	<td></td>
 </tr>
 <tr>
-	<td>DOCUMENT_TYPE</td>
-	<td>//select[contains(@id,'fileEntryTypeId')]</td>
+	<td>EXPORT_FILE_FORMAT</td>
+	<td>//div[contains(.,'Export File Format')]//select</td>
 	<td></td>
 </tr>
 <tr>
-	<td>GENDER</td>
-	<td>//div[label[contains(.,'Gender')]]/select</td>
+	<td>FEED_ITEM_CONTENT</td>
+	<td>//select[contains(@id,'contentFieldSelector')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>HEADER</td>
-	<td>//div[label[contains(.,'Header')]]/select</td>
+	<td>FEED_TYPE</td>
+	<td>//select[contains(@id,'feedType')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>INCLUDED_PAGES</td>
-	<td>//div[label[contains(.,'Included Pages')]]/select</td>
+	<td>GENERIC_SELECT_FIELD</td>
+	<td>//div[label[normalize-space(text())='${key_fieldLabel}']]/select</td>
 	<td></td>
 </tr>
 <tr>
-	<td>LANGUAGE</td>
-	<td>//div[label[contains(.,'Language')]]/select</td>
+	<td>GENERIC_SELECT_VALUE</td>
+	<td>//div[label[normalize-space(text())='${key_fieldLabel}']]/select//option[normalize-space(text())='${key_value}']</td>
 	<td></td>
 </tr>
 <tr>
-	<td>LOCKOUT_DURATION</td>
-	<td>//div[label[contains(.,'Lockout Duration')]]/select</td>
+	<td>GROUPED_SELECT_VALUE</td>
+	<td>//div[label[normalize-space(text())='${key_fieldLabel}']]/select/optgroup[@label='${key_groupLabel}']/option[normalize-space(text())='${key_value}']</td>
 	<td></td>
 </tr>
 <tr>
-	<td>MAXIMUM_FAILURE</td>
-	<td>//div[label[contains(.,'Maximum Failure')]]/select</td>
+	<td>GROUPED_SELECT_VALUE_ANY</td>
+	<td>//div[label[normalize-space(text())='${key_fieldLabel}']]/select/optgroup[@label='${key_groupLabel}']/option[${key_index}]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>MINIMUM_AGE</td>
-	<td>//div[label[contains(.,'Minimum Age')]]/select</td>
+	<td>IMAGE_RATIO</td>
+	<td>//div[contains(@class,'image-editor')]//select[contains(@class,'form-control')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>NESTED_CHILDREN</td>
-	<td>//div[label[contains(.,'Nested Children')]]/select</td>
+	<td>KNOWLEDGE_BASE_RATING</td>
+	<td>//select[contains(@id,'knowledge-base')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>NEW_NODE</td>
-	<td>//div[label[contains(.,'New Node')]]/select</td>
+	<td>LOS_ANGELES_TIME_ZONE</td>
+	<td>//select[contains(@id,'timeZoneId')]/option[@value='America/Los_Angeles']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MONDAY_CLOSE</td>
+	<td>//select[contains(@id,'monClose')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MONDAY_OPEN</td>
+	<td>//select[contains(@id,'monOpen')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -89,8 +166,13 @@
 	<td></td>
 </tr>
 <tr>
-	<td>PORTLETS_AVAILABLE</td>
-	<td>//div[label[contains(.,'Portlets Available')]]/select</td>
+	<td>PAGE_DELTA</td>
+	<td>//select[contains(@id,'pageDelta')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PERMISSIONS</td>
+	<td>//select[contains(@id,'inputPermissionsViewRole')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -99,33 +181,28 @@
 	<td></td>
 </tr>
 <tr>
+	<td>REDIRECT_TYPE</td>
+	<td>//div[label[contains(.,'Type')]]/select</td>
+	<td></td>
+</tr>
+<tr>
 	<td>REGION</td>
 	<td>//div[label[contains(.,'Region')]]/select</td>
 	<td></td>
 </tr>
 <tr>
-	<td>REMOTE_PORTLET</td>
-	<td>//div[label[contains(.,'Remote Portlet')]]/select</td>
+	<td>REPORT_FORMAT</td>
+	<td>//select[contains(@id,'AdminPortlet_format')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>RESET_FAILURE_COUNT</td>
-	<td>//div[label[contains(.,'Reset Failure Count')]]/select</td>
+	<td>SAML_NAME_IDENTIFIER_FORMAT_SELECT</td>
+	<td>//select[contains(@id,'SamlAdminPortlet_nameIdFormat')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>RESET_TICKET_MAX_AGE</td>
-	<td>//div[label[contains(.,'Reset Ticket Max Age')]]/select</td>
-	<td></td>
-</tr>
-<tr>
-	<td>ROOT_PAGE</td>
-	<td>//div[label[contains(.,'Root Page')]]/select</td>
-	<td></td>
-</tr>
-<tr>
-	<td>ROOT_PAGE_LEVEL</td>
-	<td>//div[label[contains(.,'Root Page Level')]]/select</td>
+	<td>SELECT_ID</td>
+	<td>//select[contains(@id,'${selectFieldId}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -134,18 +211,38 @@
 	<td></td>
 </tr>
 <tr>
+	<td>SCOPE</td>
+	<td>//div[label[contains(.,'Scope')]]/select | //div/select[@title='Scope']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SCOPE_CONFIGURATION</td>
+	<td>//div[label[contains(.,'Scope')]]/select</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SCOPE_SELECTED</td>
+	<td>//div[label[contains(.,'Scope')]]//option[contains(.,'${key_scopeName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TIME_ZONE</td>
+	<td>//select[contains(@id,'timeZoneId')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>TYPE</td>
 	<td>//div[label[contains(.,'Type')]]/select</td>
 	<td></td>
 </tr>
 <tr>
-	<td>USER_STATUS</td>
-	<td>//select[contains(@id,'StatusSelect')]</td>
+	<td>TYPE_SELECTED</td>
+	<td>//div[label[contains(.,'Type')]]//option[contains(.,'${key_typeName}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>VERSION</td>
-	<td>//div[label[contains(.,'Version')]]/select</td>
+	<td>WORKFLOW_DEFAULT</td>
+	<td>//select[contains(@id,'workflowDefinition-1')]</td>
 	<td></td>
 </tr>
 </tbody>

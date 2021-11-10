@@ -1,0 +1,22 @@
+@default = "isElementPresent"
+definition {
+
+	function isElementPresent {
+		selenium.isElementPresent();
+	}
+
+	function isElementPresentAfterWait {
+		selenium.isElementPresentAfterWait();
+	}
+
+	function isVisible {
+		selenium.isVisible();
+	}
+
+	function waitForVisible {
+		selenium.waitForVisible();
+
+		IsElementPresent.isVisible();
+	}
+
+}

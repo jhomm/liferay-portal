@@ -16,13 +16,15 @@ package com.liferay.portal.util;
 
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.test.CaptureHandler;
-import com.liferay.portal.kernel.test.JDKLoggerTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -30,74 +32,81 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-
-import org.powermock.api.mockito.PowerMockito;
 
 /**
  * @author Manuel de la Peña
  */
-public class LocalizationImplUnitTest extends PowerMockito {
+public class LocalizationImplUnitTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Test
-	public void testGetDefaultImportLocaleUseCase1() {
-		verifyDefaultImportLocale("es_ES", "es_ES,en_US,de_DE", "es_ES", true);
+	public void testGetDefaultImportLocale1() {
+		_testGetDefaultImportLocale(
+			"es_ES", "es_ES,en_US,de_DE", "es_ES", true);
 	}
 
 	@Test
-	public void testGetDefaultImportLocaleUseCase2() {
-		verifyDefaultImportLocale("en_US", "bg_BG,en_US,de_DE", "en_US", true);
+	public void testGetDefaultImportLocale2() {
+		_testGetDefaultImportLocale(
+			"en_US", "bg_BG,en_US,de_DE", "en_US", true);
 	}
 
 	@Test
-	public void testGetDefaultImportLocaleUseCase3() {
-		verifyDefaultImportLocale("bg_BG", "bg_BG,en_US,de_DE", "en_US", true);
+	public void testGetDefaultImportLocale3() {
+		_testGetDefaultImportLocale(
+			"bg_BG", "bg_BG,en_US,de_DE", "en_US", true);
 	}
 
 	@Test
-	public void testGetDefaultImportLocaleUseCase4() {
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					LocalizationImpl.class.getName(), Level.WARNING)) {
+	public void testGetDefaultImportLocale4() {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				LocalizationImpl.class.getName(), Level.WARNING)) {
 
-			verifyDefaultImportLocale("bg_BG", "bg_BG,fr_FR", "bg_BG", true);
+			_testGetDefaultImportLocale("bg_BG", "bg_BG,fr_FR", "bg_BG", true);
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			LogRecord logRecord = logRecords.get(0);
+			LogEntry logEntry = logEntries.get(0);
 
 			Assert.assertEquals(
 				"Language es_ES is missing for com.liferay.portal.className " +
 					"with primary key 0. Setting default language to bg_BG.",
-				logRecord.getMessage());
+				logEntry.getMessage());
 		}
 	}
 
 	@Test
-	public void testGetDefaultImportLocaleWrongUseCase1() {
-		verifyDefaultImportLocale("es_ES", "es_ES,en_US,de_DE", "en_US", false);
+	public void testGetDefaultImportLocale5() {
+		_testGetDefaultImportLocale(
+			"es_ES", "es_ES,en_US,de_DE", "en_US", false);
 	}
 
-	protected Locale[] getContentAvailableLocales(String locales) {
-		String[] localeIds = StringUtil.split(locales);
+	private Locale[] _getContentAvailableLocales(String languageIdsString) {
+		String[] languageIds = StringUtil.split(languageIdsString);
 
-		Locale[] array = new Locale[localeIds.length];
+		Locale[] locale = new Locale[languageIds.length];
 
-		for (int i = 0; i < localeIds.length; i++) {
-			array[i] = LocaleUtil.fromLanguageId(localeIds[i], false);
+		for (int i = 0; i < languageIds.length; i++) {
+			locale[i] = LocaleUtil.fromLanguageId(languageIds[i], false);
 		}
 
-		return array;
+		return locale;
 	}
 
-	protected void verifyDefaultImportLocale(
-		String defaultContentLocale, final String portalAvailableLocales,
-		String expectedLocale, boolean expectedResult) {
+	private void _testGetDefaultImportLocale(
+		String defaultContentLanguageId, String portalAvailableLanguageIds,
+		String expectedLanguageId, boolean expectedResult) {
 
 		LanguageUtil languageUtil = new LanguageUtil();
 
@@ -114,15 +123,16 @@ public class LocalizationImplUnitTest extends PowerMockito {
 						String methodName = method.getName();
 
 						if (methodName.equals("getAvailableLocales")) {
-							return getContentAvailableLocales(
-								portalAvailableLocales);
+							return _getContentAvailableLocales(
+								portalAvailableLanguageIds);
 						}
 
 						if (methodName.equals("isAvailableLocale")) {
 							Locale locale = (Locale)args[0];
 
-							Locale[] portalLocales = getContentAvailableLocales(
-								portalAvailableLocales);
+							Locale[] portalLocales =
+								_getContentAvailableLocales(
+									portalAvailableLanguageIds);
 
 							return ArrayUtil.contains(portalLocales, locale);
 						}
@@ -132,7 +142,7 @@ public class LocalizationImplUnitTest extends PowerMockito {
 
 				}));
 
-		Locale locale = LocaleUtil.fromLanguageId(defaultContentLocale);
+		Locale locale = LocaleUtil.fromLanguageId(defaultContentLanguageId);
 
 		LocaleUtil.setDefault(
 			locale.getLanguage(), locale.getCountry(), locale.getVariant());
@@ -143,7 +153,7 @@ public class LocalizationImplUnitTest extends PowerMockito {
 
 		Locale contentDefaultLocale = LocaleUtil.fromLanguageId("es_ES");
 
-		Locale[] contentAvailableLocales = getContentAvailableLocales(
+		Locale[] contentAvailableLocales = _getContentAvailableLocales(
 			"es_ES,en_US,de_DE");
 
 		Locale defaultImportLocale = LocalizationUtil.getDefaultImportLocale(
@@ -153,13 +163,13 @@ public class LocalizationImplUnitTest extends PowerMockito {
 		if (expectedResult) {
 			Assert.assertTrue(
 				LocaleUtil.equals(
-					LocaleUtil.fromLanguageId(expectedLocale),
+					LocaleUtil.fromLanguageId(expectedLanguageId),
 					defaultImportLocale));
 		}
 		else {
 			Assert.assertFalse(
 				LocaleUtil.equals(
-					LocaleUtil.fromLanguageId(expectedLocale),
+					LocaleUtil.fromLanguageId(expectedLanguageId),
 					defaultImportLocale));
 		}
 	}

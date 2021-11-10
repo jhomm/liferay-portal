@@ -14,9 +14,8 @@
 
 package com.liferay.taglib.util;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.servlet.taglib.util.OutputData;
-import com.liferay.portal.kernel.util.ServerDetector;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -30,35 +29,41 @@ import javax.servlet.jsp.JspWriter;
  */
 public class OutputTag extends PositionTagSupport {
 
-	public static StringBundler getData(
+	public static StringBundler getDataSB(
 		ServletRequest servletRequest, String webKey) {
 
-		OutputData outputData = _getOutputData(servletRequest);
+		OutputData outputData = (OutputData)servletRequest.getAttribute(
+			WebKeys.OUTPUT_DATA);
 
-		return outputData.getMergedData(webKey);
+		if (outputData == null) {
+			return null;
+		}
+
+		return outputData.getMergedDataSB(webKey);
 	}
 
-	public OutputTag(String stringBundlerKey) {
-		_webKey = stringBundlerKey;
+	public OutputTag(String webKey) {
+		_webKey = webKey;
 	}
 
 	@Override
 	public int doEndTag() throws JspException {
 		try {
 			if (_output) {
+				String bodyContentString =
+					getBodyContentAsStringBundler().toString();
+
+				bodyContentString = _addAtrribute(
+					bodyContentString, "link", "data-senna-track",
+					"\"temporary\"");
+				bodyContentString = _addAtrribute(
+					bodyContentString, "script", "data-senna-track",
+					"\"permanent\"");
+				bodyContentString = _addAtrribute(
+					bodyContentString, "style", "data-senna-track",
+					"\"temporary\"");
+
 				if (isPositionInLine()) {
-					StringBundler replaceSb = new StringBundler(3);
-
-					replaceSb.append("<script data-outputkey=\"");
-					replaceSb.append(_outputKey);
-					replaceSb.append("\" ");
-
-					String bodyContentString =
-						getBodyContentAsStringBundler().toString();
-
-					bodyContentString = StringUtil.replace(
-						bodyContentString, "<script", replaceSb.toString());
-
 					JspWriter jspWriter = pageContext.getOut();
 
 					jspWriter.write(bodyContentString);
@@ -67,20 +72,19 @@ public class OutputTag extends PositionTagSupport {
 					OutputData outputData = _getOutputData(
 						pageContext.getRequest());
 
-					outputData.addData(
-						_outputKey, _webKey, getBodyContentAsStringBundler());
+					outputData.addDataSB(
+						_outputKey, _webKey,
+						new StringBundler(bodyContentString));
 				}
 			}
 
 			return EVAL_PAGE;
 		}
-		catch (Exception e) {
-			throw new JspException(e);
+		catch (Exception exception) {
+			throw new JspException(exception);
 		}
 		finally {
-			if (!ServerDetector.isResin()) {
-				cleanUp();
-			}
+			cleanUp();
 		}
 	}
 
@@ -105,7 +109,41 @@ public class OutputTag extends PositionTagSupport {
 		_outputKey = outputKey;
 	}
 
-	private static OutputData _getOutputData(ServletRequest servletRequest) {
+	private String _addAtrribute(
+		String content, String tagName, String attributeName,
+		String attributeValue) {
+
+		int x = 0;
+		int y = 0;
+
+		while (x >= 0) {
+			x = content.indexOf("<" + tagName, y);
+
+			if (x < 0) {
+				break;
+			}
+
+			y = content.indexOf(">", x);
+
+			if (y < 0) {
+				break;
+			}
+
+			String subcontent = content.substring(x, y);
+
+			if (!subcontent.contains(attributeName)) {
+				content = StringUtil.insert(
+					content,
+					StringBundler.concat(
+						" ", attributeName, "=", attributeValue),
+					x + tagName.length() + 1);
+			}
+		}
+
+		return content;
+	}
+
+	private OutputData _getOutputData(ServletRequest servletRequest) {
 		OutputData outputData = (OutputData)servletRequest.getAttribute(
 			WebKeys.OUTPUT_DATA);
 

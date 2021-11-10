@@ -34,6 +34,15 @@ import java.util.Set;
  */
 public class CacheResponseData implements Serializable {
 
+	public CacheResponseData() {
+		_content = null;
+		_contentType = null;
+		_headers = null;
+		_length = 0;
+		_offset = 0;
+		_valid = false;
+	}
+
 	public CacheResponseData(
 			BufferCacheServletResponse bufferCacheServletResponse)
 		throws IOException {
@@ -41,10 +50,12 @@ public class CacheResponseData implements Serializable {
 		ByteBuffer byteBuffer = bufferCacheServletResponse.getByteBuffer();
 
 		_content = byteBuffer.array();
+
 		_contentType = bufferCacheServletResponse.getContentType();
 		_headers = bufferCacheServletResponse.getHeaders();
 		_length = byteBuffer.remaining();
 		_offset = byteBuffer.arrayOffset() + byteBuffer.position();
+		_valid = true;
 	}
 
 	public Object getAttribute(String name) {
@@ -63,6 +74,10 @@ public class CacheResponseData implements Serializable {
 		return _headers;
 	}
 
+	public boolean isValid() {
+		return _valid;
+	}
+
 	public void setAttribute(String name, Object value) {
 		_attributes.put(name, value);
 	}
@@ -74,9 +89,11 @@ public class CacheResponseData implements Serializable {
 
 		_length = objectInputStream.readInt();
 
-		_content = new byte[_length];
+		if (_length > 0) {
+			_content = new byte[_length];
 
-		objectInputStream.readFully(_content);
+			objectInputStream.readFully(_content);
+		}
 	}
 
 	private void writeObject(ObjectOutputStream objectOutputStream)
@@ -85,7 +102,10 @@ public class CacheResponseData implements Serializable {
 		objectOutputStream.defaultWriteObject();
 
 		objectOutputStream.writeInt(_length);
-		objectOutputStream.write(_content, _offset, _length);
+
+		if (_length > 0) {
+			objectOutputStream.write(_content, _offset, _length);
+		}
 	}
 
 	private final Map<String, Object> _attributes = new HashMap<>();
@@ -93,6 +113,7 @@ public class CacheResponseData implements Serializable {
 	private final String _contentType;
 	private final Map<String, Set<Header>> _headers;
 	private transient int _length;
-	private transient final int _offset;
+	private final transient int _offset;
+	private final boolean _valid;
 
 }

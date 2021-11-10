@@ -14,15 +14,19 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.EmailAddressException;
+import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.exception.EmailAddressException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.EmailAddress;
+import com.liferay.portal.kernel.model.ListTypeConstants;
+import com.liferay.portal.kernel.model.SystemEventConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.ListTypeLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.EmailAddress;
-import com.liferay.portal.model.ListTypeConstants;
-import com.liferay.portal.model.SystemEventConstants;
-import com.liferay.portal.model.User;
-import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.service.base.EmailAddressLocalServiceBaseImpl;
 
 import java.util.List;
@@ -34,30 +38,14 @@ import java.util.List;
 public class EmailAddressLocalServiceImpl
 	extends EmailAddressLocalServiceBaseImpl {
 
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link #addEmailAddress(long,
-	 *             String, long, String, int, boolean, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public EmailAddress addEmailAddress(
-			long userId, String className, long classPK, String address,
-			long typeId, boolean primary)
-		throws PortalException {
-
-		return addEmailAddress(
-			userId, className, classPK, address, typeId, primary,
-			new ServiceContext());
-	}
-
 	@Override
 	public EmailAddress addEmailAddress(
 			long userId, String className, long classPK, String address,
 			long typeId, boolean primary, ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userPersistence.findByPrimaryKey(userId);
-		long classNameId = classNameLocalService.getClassNameId(className);
+		User user = _userPersistence.findByPrimaryKey(userId);
+		long classNameId = _classNameLocalService.getClassNameId(className);
 
 		validate(
 			0, user.getCompanyId(), classNameId, classPK, address, typeId,
@@ -78,9 +66,7 @@ public class EmailAddressLocalServiceImpl
 		emailAddress.setTypeId(typeId);
 		emailAddress.setPrimary(primary);
 
-		emailAddressPersistence.update(emailAddress);
-
-		return emailAddress;
+		return emailAddressPersistence.update(emailAddress);
 	}
 
 	@Override
@@ -108,10 +94,9 @@ public class EmailAddressLocalServiceImpl
 	public void deleteEmailAddresses(
 		long companyId, String className, long classPK) {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		List<EmailAddress> emailAddresses = emailAddressPersistence.findByC_C_C(
-			companyId, classNameId, classPK);
+			companyId, _classNameLocalService.getClassNameId(className),
+			classPK);
 
 		for (EmailAddress emailAddress : emailAddresses) {
 			emailAddressLocalService.deleteEmailAddress(emailAddress);
@@ -127,10 +112,9 @@ public class EmailAddressLocalServiceImpl
 	public List<EmailAddress> getEmailAddresses(
 		long companyId, String className, long classPK) {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		return emailAddressPersistence.findByC_C_C(
-			companyId, classNameId, classPK);
+			companyId, _classNameLocalService.getClassNameId(className),
+			classPK);
 	}
 
 	@Override
@@ -147,9 +131,7 @@ public class EmailAddressLocalServiceImpl
 		emailAddress.setTypeId(typeId);
 		emailAddress.setPrimary(primary);
 
-		emailAddressPersistence.update(emailAddress);
-
-		return emailAddress;
+		return emailAddressPersistence.update(emailAddress);
 	}
 
 	protected void validate(
@@ -195,10 +177,19 @@ public class EmailAddressLocalServiceImpl
 			classPK = emailAddress.getClassPK();
 		}
 
-		listTypeService.validate(
+		_listTypeLocalService.validate(
 			typeId, classNameId, ListTypeConstants.EMAIL_ADDRESS);
 
 		validate(emailAddressId, companyId, classNameId, classPK, primary);
 	}
+
+	@BeanReference(type = ClassNameLocalService.class)
+	private ClassNameLocalService _classNameLocalService;
+
+	@BeanReference(type = ListTypeLocalService.class)
+	private ListTypeLocalService _listTypeLocalService;
+
+	@BeanReference(type = UserPersistence.class)
+	private UserPersistence _userPersistence;
 
 }

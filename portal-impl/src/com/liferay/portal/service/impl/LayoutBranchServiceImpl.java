@@ -14,13 +14,19 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.LayoutBranch;
-import com.liferay.portal.security.permission.ActionKeys;
-import com.liferay.portal.service.ServiceContext;
+import com.liferay.portal.kernel.model.LayoutBranch;
+import com.liferay.portal.kernel.model.LayoutRevision;
+import com.liferay.portal.kernel.model.LayoutSetBranch;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
+import com.liferay.portal.kernel.service.permission.LayoutBranchPermissionUtil;
+import com.liferay.portal.kernel.service.persistence.LayoutRevisionPersistence;
+import com.liferay.portal.kernel.service.persistence.LayoutSetBranchPersistence;
 import com.liferay.portal.service.base.LayoutBranchServiceBaseImpl;
-import com.liferay.portal.service.permission.GroupPermissionUtil;
-import com.liferay.portal.service.permission.LayoutBranchPermissionUtil;
 
 /**
  * @author Brian Wing Shun Chan
@@ -34,10 +40,22 @@ public class LayoutBranchServiceImpl extends LayoutBranchServiceBaseImpl {
 			boolean master, ServiceContext serviceContext)
 		throws PortalException {
 
-		long groupId = serviceContext.getScopeGroupId();
+		PermissionChecker permissionChecker = getPermissionChecker();
 
 		GroupPermissionUtil.check(
-			getPermissionChecker(), groupId, ActionKeys.ADD_LAYOUT_BRANCH);
+			permissionChecker, serviceContext.getScopeGroupId(),
+			ActionKeys.ADD_LAYOUT_BRANCH);
+
+		LayoutRevision layoutRevision =
+			_layoutRevisionPersistence.findByPrimaryKey(layoutRevisionId);
+
+		LayoutSetBranch layoutSetBranch =
+			_layoutSetBranchPersistence.findByPrimaryKey(
+				layoutRevision.getLayoutSetBranchId());
+
+		GroupPermissionUtil.check(
+			permissionChecker, layoutSetBranch.getGroupId(),
+			ActionKeys.ADD_LAYOUT_BRANCH);
 
 		return layoutBranchLocalService.addLayoutBranch(
 			layoutRevisionId, name, description, false, serviceContext);
@@ -63,5 +81,11 @@ public class LayoutBranchServiceImpl extends LayoutBranchServiceBaseImpl {
 		return layoutBranchLocalService.updateLayoutBranch(
 			layoutBranchId, name, description, serviceContext);
 	}
+
+	@BeanReference(type = LayoutRevisionPersistence.class)
+	private LayoutRevisionPersistence _layoutRevisionPersistence;
+
+	@BeanReference(type = LayoutSetBranchPersistence.class)
+	private LayoutSetBranchPersistence _layoutSetBranchPersistence;
 
 }

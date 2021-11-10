@@ -14,8 +14,8 @@
 
 package com.liferay.taglib.ui;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchEntry;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.taglib.util.ParamAndPropertyAncestorTagImpl;
 
 import javax.servlet.jsp.JspException;
@@ -27,7 +27,6 @@ public abstract class SearchContainerColumnTag
 	extends ParamAndPropertyAncestorTagImpl {
 
 	@Override
-	@SuppressWarnings("unused")
 	public int doStartTag() throws JspException {
 		return EVAL_BODY_INCLUDE;
 	}
@@ -50,6 +49,10 @@ public abstract class SearchContainerColumnTag
 
 	public String getName() {
 		return name;
+	}
+
+	public boolean getTruncate() {
+		return truncate;
 	}
 
 	public String getValign() {
@@ -76,6 +79,10 @@ public abstract class SearchContainerColumnTag
 		this.name = name;
 	}
 
+	public void setTruncate(boolean truncate) {
+		this.truncate = truncate;
+	}
+
 	public void setValign(String valign) {
 		this.valign = valign;
 	}
@@ -85,6 +92,7 @@ public abstract class SearchContainerColumnTag
 	protected String cssClass = SearchEntry.DEFAULT_CSS_CLASS;
 	protected int index = -1;
 	protected String name = StringPool.BLANK;
+	protected boolean truncate;
 	protected String valign = SearchEntry.DEFAULT_VALIGN;
 
 }

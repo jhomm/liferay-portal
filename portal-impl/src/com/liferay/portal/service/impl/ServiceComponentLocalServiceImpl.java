@@ -14,43 +14,58 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.OldServiceComponentException;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.cache.CacheRegistryUtil;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
-import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
-import com.liferay.portal.kernel.dao.orm.FinderCacheUtil;
+import com.liferay.portal.kernel.dao.db.DBContext;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.db.DBProcessContext;
+import com.liferay.portal.kernel.exception.OldServiceComponentException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.ModelHintsUtil;
+import com.liferay.portal.kernel.model.Release;
+import com.liferay.portal.kernel.model.ServiceComponent;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.service.ReleaseLocalService;
+import com.liferay.portal.kernel.service.configuration.ServiceComponentConfiguration;
+import com.liferay.portal.kernel.service.configuration.servlet.ServletServiceContextComponentConfiguration;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.upgrade.util.UpgradeTable;
 import com.liferay.portal.kernel.upgrade.util.UpgradeTableFactoryUtil;
 import com.liferay.portal.kernel.upgrade.util.UpgradeTableListener;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.InstanceFactory;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.DocumentException;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
-import com.liferay.portal.model.ModelHintsUtil;
-import com.liferay.portal.model.ServiceComponent;
 import com.liferay.portal.service.base.ServiceComponentLocalServiceBaseImpl;
-import com.liferay.portal.service.configuration.ServiceComponentConfiguration;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.OutputStream;
 
 import java.lang.reflect.Field;
 
-import java.security.PrivilegedExceptionAction;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.Filter;
+import org.osgi.framework.ServiceReference;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * @author Brian Wing Shun Chan
@@ -58,16 +73,33 @@ import java.util.List;
 public class ServiceComponentLocalServiceImpl
 	extends ServiceComponentLocalServiceBaseImpl {
 
+	public ServiceComponentLocalServiceImpl() {
+		Filter filter = SystemBundleUtil.createFilter(
+			StringBundler.concat(
+				"(&(objectClass=", UpgradeStep.class.getName(),
+				")(upgrade.from.schema.version=0.0.0)(upgrade.initial.",
+				"database.creation=true))"));
+
+		_upgradeStepServiceTracker = new ServiceTracker<>(
+			_bundleContext, filter, new UpgradeStepServiceTrackerCustomizer());
+
+		_upgradeStepServiceTracker.open();
+	}
+
+	@Override
+	public void destroy() {
+		super.destroy();
+
+		_upgradeStepServiceTracker.close();
+	}
+
 	@Override
 	public void destroyServiceComponent(
 		ServiceComponentConfiguration serviceComponentConfiguration,
 		ClassLoader classLoader) {
 
-		try {
-			clearCacheRegistry(serviceComponentConfiguration);
-		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		if (PropsValues.CACHE_CLEAR_ON_PLUGIN_UNDEPLOY) {
+			CacheRegistryUtil.clear();
 		}
 	}
 
@@ -80,7 +112,7 @@ public class ServiceComponentLocalServiceImpl
 	public ServiceComponent initServiceComponent(
 			ServiceComponentConfiguration serviceComponentConfiguration,
 			ClassLoader classLoader, String buildNamespace, long buildNumber,
-			long buildDate, boolean buildAutoUpgrade)
+			long buildDate)
 		throws PortalException {
 
 		try {
@@ -88,8 +120,8 @@ public class ServiceComponentLocalServiceImpl
 				classLoader,
 				serviceComponentConfiguration.getModelHintsInputStream());
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 
 		try {
@@ -97,18 +129,20 @@ public class ServiceComponentLocalServiceImpl
 				classLoader,
 				serviceComponentConfiguration.getModelHintsExtInputStream());
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 
-		ServiceComponent serviceComponent = null;
+		long previousBuildNumber = 0;
 		ServiceComponent previousServiceComponent = null;
 
-		List<ServiceComponent> serviceComponents =
-			serviceComponentPersistence.findByBuildNamespace(
-				buildNamespace, 0, 1);
+		Map<String, ServiceComponent> serviceComponents =
+			_getServiceComponents();
 
-		if (serviceComponents.isEmpty()) {
+		ServiceComponent serviceComponent = serviceComponents.get(
+			buildNamespace);
+
+		if (serviceComponent == null) {
 			long serviceComponentId = counterLocalService.increment();
 
 			serviceComponent = serviceComponentPersistence.create(
@@ -119,9 +153,29 @@ public class ServiceComponentLocalServiceImpl
 			serviceComponent.setBuildDate(buildDate);
 		}
 		else {
-			serviceComponent = serviceComponents.get(0);
+			previousBuildNumber = serviceComponent.getBuildNumber();
 
-			if (serviceComponent.getBuildNumber() < buildNumber) {
+			if (previousBuildNumber < buildNumber) {
+				List<ServiceComponent> currentServiceComponents =
+					serviceComponentPersistence.findByBuildNamespace(
+						buildNamespace, 0, 1);
+
+				ServiceComponent currentServiceComponent =
+					currentServiceComponents.get(0);
+
+				long currentBuildNumber =
+					currentServiceComponent.getBuildNumber();
+
+				if (currentBuildNumber > previousBuildNumber) {
+					serviceComponent = currentServiceComponent;
+
+					previousBuildNumber = currentBuildNumber;
+
+					_serviceComponents.put(buildNamespace, serviceComponent);
+				}
+			}
+
+			if (previousBuildNumber < buildNumber) {
 				previousServiceComponent = serviceComponent;
 
 				long serviceComponentId = counterLocalService.increment();
@@ -133,11 +187,12 @@ public class ServiceComponentLocalServiceImpl
 				serviceComponent.setBuildNumber(buildNumber);
 				serviceComponent.setBuildDate(buildDate);
 			}
-			else if (serviceComponent.getBuildNumber() > buildNumber) {
+			else if (previousBuildNumber > buildNumber) {
 				throw new OldServiceComponentException(
-					"Build namespace " + buildNamespace + " has build number " +
-						serviceComponent.getBuildNumber() +
-							" which is newer than " + buildNumber);
+					StringBundler.concat(
+						"Build namespace ", buildNamespace,
+						" has build number ", previousBuildNumber,
+						" which is newer than ", buildNumber));
 			}
 			else {
 				return serviceComponent;
@@ -175,193 +230,91 @@ public class ServiceComponentLocalServiceImpl
 
 			serviceComponent.setData(dataXML);
 
-			serviceComponentPersistence.update(serviceComponent);
+			serviceComponent = serviceComponentPersistence.update(
+				serviceComponent);
 
-			serviceComponentLocalService.upgradeDB(
-				classLoader, buildNamespace, buildNumber, buildAutoUpgrade,
-				previousServiceComponent, tablesSQL, sequencesSQL, indexesSQL);
+			if (((serviceComponentConfiguration instanceof
+					ServletServiceContextComponentConfiguration) &&
+				 (previousServiceComponent == null)) ||
+				((previousBuildNumber < buildNumber) &&
+				 (previousServiceComponent != null))) {
+
+				serviceComponentLocalService.upgradeDB(
+					classLoader, buildNamespace, buildNumber,
+					previousServiceComponent, tablesSQL, sequencesSQL,
+					indexesSQL);
+			}
+
+			serviceComponents.put(buildNamespace, serviceComponent);
 
 			removeOldServiceComponents(buildNamespace);
 
 			return serviceComponent;
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 	}
 
 	@Override
 	public void upgradeDB(
-			final ClassLoader classLoader, final String buildNamespace,
-			final long buildNumber, final boolean buildAutoUpgrade,
-			final ServiceComponent previousServiceComponent,
-			final String tablesSQL, final String sequencesSQL,
-			final String indexesSQL)
+			ClassLoader classLoader, String buildNamespace, long buildNumber,
+			ServiceComponent previousServiceComponent, String tablesSQL,
+			String sequencesSQL, String indexesSQL)
 		throws Exception {
 
-		_pacl.doUpgradeDB(
-			new DoUpgradeDBPrivilegedExceptionAction(
-				classLoader, buildNamespace, buildNumber, buildAutoUpgrade,
-				previousServiceComponent, tablesSQL, sequencesSQL, indexesSQL));
+		_upgradeDB(
+			classLoader, buildNamespace, buildNumber, previousServiceComponent,
+			tablesSQL, sequencesSQL, indexesSQL);
 	}
 
 	@Override
 	public void verifyDB() {
-		List<ServiceComponent> serviceComponents =
-			serviceComponentPersistence.findAll();
+		for (Object service : _upgradeStepServiceTracker.getServices()) {
+			UpgradeStepHolder upgradeStepHolder = (UpgradeStepHolder)service;
 
-		for (ServiceComponent serviceComponent : serviceComponents) {
-			String buildNamespace = serviceComponent.getBuildNamespace();
-			String tablesSQL = serviceComponent.getTablesSQL();
-			String sequencesSQL = serviceComponent.getSequencesSQL();
-			String indexesSQL = serviceComponent.getIndexesSQL();
+			String servletContextName = upgradeStepHolder._servletContextName;
+
+			Release release = _releaseLocalService.fetchRelease(
+				upgradeStepHolder._servletContextName);
+
+			if ((release != null) &&
+				!Objects.equals(release.getSchemaVersion(), "0.0.0")) {
+
+				continue;
+			}
 
 			try {
-				serviceComponentLocalService.upgradeDB(
-					null, buildNamespace, 0, false, null, tablesSQL,
-					sequencesSQL, indexesSQL);
+				UpgradeStep upgradeStep = upgradeStepHolder._upgradeStep;
+
+				upgradeStep.upgrade(
+					new DBProcessContext() {
+
+						@Override
+						public DBContext getDBContext() {
+							return new DBContext();
+						}
+
+						@Override
+						public OutputStream getOutputStream() {
+							return null;
+						}
+
+					});
+
+				_releaseLocalService.updateRelease(
+					servletContextName, "0.0.1", "0.0.0");
+
+				release = _releaseLocalService.fetchRelease(servletContextName);
+
+				int buildNumber = upgradeStepHolder._buildNumber;
+
+				release.setBuildNumber(buildNumber);
+
+				_releaseLocalService.updateRelease(release);
 			}
-			catch (Exception e) {
-				_log.error(e, e);
-			}
-		}
-	}
-
-	public class DoUpgradeDBPrivilegedExceptionAction
-		implements PrivilegedExceptionAction<Void> {
-
-		public DoUpgradeDBPrivilegedExceptionAction(
-			ClassLoader classLoader, String buildNamespace, long buildNumber,
-			boolean buildAutoUpgrade, ServiceComponent previousServiceComponent,
-			String tablesSQL, String sequencesSQL, String indexesSQL) {
-
-			_classLoader = classLoader;
-			_buildNamespace = buildNamespace;
-			_buildNumber = buildNumber;
-			_buildAutoUpgrade = buildAutoUpgrade;
-			_previousServiceComponent = previousServiceComponent;
-			_tablesSQL = tablesSQL;
-			_sequencesSQL = sequencesSQL;
-			_indexesSQL = indexesSQL;
-		}
-
-		public ClassLoader getClassLoader() {
-			return _classLoader;
-		}
-
-		@Override
-		public Void run() throws Exception {
-			doUpgradeDB(
-				_classLoader, _buildNamespace, _buildNumber, _buildAutoUpgrade,
-				_previousServiceComponent, _tablesSQL, _sequencesSQL,
-				_indexesSQL);
-
-			return null;
-		}
-
-		private final boolean _buildAutoUpgrade;
-		private final String _buildNamespace;
-		private final long _buildNumber;
-		private final ClassLoader _classLoader;
-		private final String _indexesSQL;
-		private final ServiceComponent _previousServiceComponent;
-		private final String _sequencesSQL;
-		private final String _tablesSQL;
-
-	}
-
-	public interface PACL {
-
-		public void doUpgradeDB(
-				DoUpgradeDBPrivilegedExceptionAction
-					doUpgradeDBPrivilegedExceptionAction)
-			throws Exception;
-
-	}
-
-	protected void clearCacheRegistry(
-			ServiceComponentConfiguration serviceComponentConfiguration)
-		throws DocumentException {
-
-		InputStream inputStream =
-			serviceComponentConfiguration.getHibernateInputStream();
-
-		if (inputStream == null) {
-			return;
-		}
-
-		Document document = UnsecureSAXReaderUtil.read(inputStream);
-
-		Element rootElement = document.getRootElement();
-
-		List<Element> classElements = rootElement.elements("class");
-
-		for (Element classElement : classElements) {
-			String name = classElement.attributeValue("name");
-
-			CacheRegistryUtil.unregister(name);
-		}
-
-		CacheRegistryUtil.clear();
-
-		if (PropsValues.CACHE_CLEAR_ON_PLUGIN_UNDEPLOY) {
-			EntityCacheUtil.clearCache();
-			FinderCacheUtil.clearCache();
-		}
-	}
-
-	protected void doUpgradeDB(
-			ClassLoader classLoader, String buildNamespace, long buildNumber,
-			boolean buildAutoUpgrade, ServiceComponent previousServiceComponent,
-			String tablesSQL, String sequencesSQL, String indexesSQL)
-		throws Exception {
-
-		DB db = DBFactoryUtil.getDB();
-
-		if (previousServiceComponent == null) {
-			if (_log.isInfoEnabled()) {
-				_log.info("Running " + buildNamespace + " SQL scripts");
-			}
-
-			db.runSQLTemplateString(tablesSQL, true, false);
-			db.runSQLTemplateString(sequencesSQL, true, false);
-			db.runSQLTemplateString(indexesSQL, true, false);
-		}
-		else if (buildAutoUpgrade) {
-			if (_log.isInfoEnabled()) {
-				_log.info(
-					"Upgrading " + buildNamespace +
-						" database to build number " + buildNumber);
-			}
-
-			if (!tablesSQL.equals(previousServiceComponent.getTablesSQL())) {
-				if (_log.isInfoEnabled()) {
-					_log.info("Upgrading database with tables.sql");
-				}
-
-				db.runSQLTemplateString(tablesSQL, true, false);
-
-				upgradeModels(classLoader, previousServiceComponent, tablesSQL);
-			}
-
-			if (!sequencesSQL.equals(
-					previousServiceComponent.getSequencesSQL())) {
-
-				if (_log.isInfoEnabled()) {
-					_log.info("Upgrading database with sequences.sql");
-				}
-
-				db.runSQLTemplateString(sequencesSQL, true, false);
-			}
-
-			if (!indexesSQL.equals(previousServiceComponent.getIndexesSQL()) ||
-				!tablesSQL.equals(previousServiceComponent.getTablesSQL())) {
-
-				if (_log.isInfoEnabled()) {
-					_log.info("Upgrading database with indexes.sql");
-				}
-
-				db.runSQLTemplateString(indexesSQL, true, false);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 			}
 		}
 	}
@@ -382,11 +335,12 @@ public class ServiceComponentLocalServiceImpl
 
 			modelNames.addAll(getModelNames(xml));
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			if (_log.isInfoEnabled()) {
 				_log.info(
 					"No optional file META-INF/portlet-model-hints-ext.xml " +
-						"found");
+						"found",
+					exception);
 			}
 		}
 
@@ -416,9 +370,9 @@ public class ServiceComponentLocalServiceImpl
 
 		List<String> modifiedTableNames = new ArrayList<>();
 
-		List<String> previousTablesSQLParts = ListUtil.toList(
+		List<String> previousTablesSQLParts = ListUtil.fromArray(
 			StringUtil.split(previousTablesSQL, StringPool.SEMICOLON));
-		List<String> tablesSQLParts = ListUtil.toList(
+		List<String> tablesSQLParts = ListUtil.fromArray(
 			StringUtil.split(tablesSQL, StringPool.SEMICOLON));
 
 		tablesSQLParts.removeAll(previousTablesSQLParts);
@@ -456,10 +410,11 @@ public class ServiceComponentLocalServiceImpl
 
 			return upgradeTableListener;
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
 				_log.debug(
-					"Unable to instantiate " + upgradeTableListenerClassName);
+					"Unable to instantiate " + upgradeTableListenerClassName,
+					exception);
 			}
 
 			return null;
@@ -479,9 +434,7 @@ public class ServiceComponentLocalServiceImpl
 				buildNamespace, _SERVICE_COMPONENTS_MAX,
 				serviceComponentsCount);
 
-		for (int i = 0; i < serviceComponents.size(); i++) {
-			ServiceComponent serviceComponent = serviceComponents.get(i);
-
+		for (ServiceComponent serviceComponent : serviceComponents) {
 			serviceComponentPersistence.remove(serviceComponent);
 		}
 	}
@@ -500,8 +453,9 @@ public class ServiceComponentLocalServiceImpl
 			int pos = modelName.lastIndexOf(".model.");
 
 			Class<?> modelClass = Class.forName(
-				modelName.substring(0, pos) + ".model.impl." +
-					modelName.substring(pos + 7) + "ModelImpl",
+				StringBundler.concat(
+					modelName.substring(0, pos), ".model.impl.",
+					modelName.substring(pos + 7), "ModelImpl"),
 				true, classLoader);
 
 			Field dataSourceField = modelClass.getField("DATA_SOURCE");
@@ -550,6 +504,101 @@ public class ServiceComponentLocalServiceImpl
 		}
 	}
 
+	private Map<String, ServiceComponent> _getServiceComponents() {
+		if (_serviceComponents != null) {
+			return _serviceComponents;
+		}
+
+		synchronized (this) {
+			if (_serviceComponents != null) {
+				return _serviceComponents;
+			}
+
+			Map<String, ServiceComponent> serviceComponents =
+				new ConcurrentHashMap<>();
+
+			for (ServiceComponent serviceComponent :
+					serviceComponentPersistence.findAll()) {
+
+				String buildNamespace = serviceComponent.getBuildNamespace();
+
+				ServiceComponent previousServiceComponent =
+					serviceComponents.get(buildNamespace);
+
+				if ((previousServiceComponent == null) ||
+					(serviceComponent.getBuildNumber() >
+						previousServiceComponent.getBuildNumber())) {
+
+					serviceComponents.put(buildNamespace, serviceComponent);
+				}
+			}
+
+			_serviceComponents = serviceComponents;
+		}
+
+		return _serviceComponents;
+	}
+
+	private void _upgradeDB(
+			ClassLoader classLoader, String buildNamespace, long buildNumber,
+			ServiceComponent previousServiceComponent, String tablesSQL,
+			String sequencesSQL, String indexesSQL)
+		throws Exception {
+
+		DB db = DBManagerUtil.getDB();
+
+		if (previousServiceComponent == null) {
+			if (_log.isInfoEnabled()) {
+				_log.info("Running " + buildNamespace + " SQL scripts");
+			}
+
+			db.runSQLTemplateString(tablesSQL, false);
+			db.runSQLTemplateString(sequencesSQL, false);
+			db.runSQLTemplateString(indexesSQL, false);
+		}
+		else if (PropsValues.SCHEMA_MODULE_BUILD_AUTO_UPGRADE) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					StringBundler.concat(
+						"Auto upgrading ", buildNamespace,
+						" database to build number ", buildNumber,
+						" is not supported for a production environment. ",
+						"Write an UpgradeStep to ensure data is upgraded ",
+						"correctly."));
+			}
+
+			if (!tablesSQL.equals(previousServiceComponent.getTablesSQL())) {
+				if (_log.isInfoEnabled()) {
+					_log.info("Upgrading database with tables.sql");
+				}
+
+				db.runSQLTemplateString(tablesSQL, false);
+
+				upgradeModels(classLoader, previousServiceComponent, tablesSQL);
+			}
+
+			if (!sequencesSQL.equals(
+					previousServiceComponent.getSequencesSQL())) {
+
+				if (_log.isInfoEnabled()) {
+					_log.info("Upgrading database with sequences.sql");
+				}
+
+				db.runSQLTemplateString(sequencesSQL, false);
+			}
+
+			if (!indexesSQL.equals(previousServiceComponent.getIndexesSQL()) ||
+				!tablesSQL.equals(previousServiceComponent.getTablesSQL())) {
+
+				if (_log.isInfoEnabled()) {
+					_log.info("Upgrading database with indexes.sql");
+				}
+
+				db.runSQLTemplateString(indexesSQL, false);
+			}
+		}
+	}
+
 	private static final String _DATA_SOURCE_DEFAULT = "liferayDataSource";
 
 	private static final int _SERVICE_COMPONENTS_MAX = 10;
@@ -557,17 +606,66 @@ public class ServiceComponentLocalServiceImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		ServiceComponentLocalServiceImpl.class);
 
-	private static final PACL _pacl = new NoPACL();
+	private final BundleContext _bundleContext =
+		SystemBundleUtil.getBundleContext();
 
-	private static class NoPACL implements PACL {
+	@BeanReference(type = ReleaseLocalService.class)
+	private ReleaseLocalService _releaseLocalService;
+
+	private volatile Map<String, ServiceComponent> _serviceComponents;
+	private final ServiceTracker<UpgradeStep, UpgradeStepHolder>
+		_upgradeStepServiceTracker;
+
+	private static class UpgradeStepHolder {
+
+		private UpgradeStepHolder(
+			String servletContextName, int buildNumber,
+			UpgradeStep upgradeStep) {
+
+			_servletContextName = servletContextName;
+			_buildNumber = buildNumber;
+			_upgradeStep = upgradeStep;
+		}
+
+		private final int _buildNumber;
+		private final String _servletContextName;
+		private final UpgradeStep _upgradeStep;
+
+	}
+
+	private class UpgradeStepServiceTrackerCustomizer
+		implements ServiceTrackerCustomizer<UpgradeStep, UpgradeStepHolder> {
 
 		@Override
-		public void doUpgradeDB(
-				DoUpgradeDBPrivilegedExceptionAction
-					doUpgradeDBPrivilegedExceptionAction)
-			throws Exception {
+		public UpgradeStepHolder addingService(
+			ServiceReference<UpgradeStep> serviceReference) {
 
-			doUpgradeDBPrivilegedExceptionAction.run();
+			String servletContextName = (String)serviceReference.getProperty(
+				"upgrade.bundle.symbolic.name");
+			int buildNumber = GetterUtil.getInteger(
+				serviceReference.getProperty("build.number"));
+
+			UpgradeStep upgradeStep = _bundleContext.getService(
+				serviceReference);
+
+			return new UpgradeStepHolder(
+				servletContextName, buildNumber, upgradeStep);
+		}
+
+		@Override
+		public void modifiedService(
+			ServiceReference<UpgradeStep> serviceReference,
+			UpgradeStepHolder upgradeStepHolder) {
+
+			addingService(serviceReference);
+		}
+
+		@Override
+		public void removedService(
+			ServiceReference<UpgradeStep> serviceReference,
+			UpgradeStepHolder upgradeStepHolder) {
+
+			_bundleContext.ungetService(serviceReference);
 		}
 
 	}

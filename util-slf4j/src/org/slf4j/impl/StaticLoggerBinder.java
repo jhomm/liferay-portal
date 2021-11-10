@@ -14,7 +14,7 @@
 
 package org.slf4j.impl;
 
-import com.liferay.util.sl4fj.LiferayLoggerFactory;
+import com.liferay.util.slf4j.LiferayLoggerFactory;
 
 import org.slf4j.ILoggerFactory;
 import org.slf4j.spi.LoggerFactoryBinder;
@@ -29,7 +29,7 @@ public class StaticLoggerBinder implements LoggerFactoryBinder {
 
 	public static String REQUESTED_API_VERSION = "1.6.99";
 
-	public static final StaticLoggerBinder getSingleton() {
+	public static StaticLoggerBinder getSingleton() {
 		return _SINGLETON;
 	}
 
@@ -44,7 +44,6 @@ public class StaticLoggerBinder implements LoggerFactoryBinder {
 	}
 
 	private StaticLoggerBinder() {
-		_iLoggerFactory = new LiferayLoggerFactory();
 	}
 
 	private static final String _LOGGER_FACTORY_CLASS_NAME =
@@ -53,6 +52,6 @@ public class StaticLoggerBinder implements LoggerFactoryBinder {
 	private static final StaticLoggerBinder _SINGLETON =
 		new StaticLoggerBinder();
 
-	private final ILoggerFactory _iLoggerFactory;
+	private final ILoggerFactory _iLoggerFactory = new LiferayLoggerFactory();
 
 }

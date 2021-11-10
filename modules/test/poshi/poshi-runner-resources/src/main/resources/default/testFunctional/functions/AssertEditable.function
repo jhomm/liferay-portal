@@ -1,0 +1,10 @@
+@default = "assertEditable"
+definition {
+
+	function assertEditable {
+		selenium.waitForVisible();
+
+		selenium.assertEditable();
+	}
+
+}

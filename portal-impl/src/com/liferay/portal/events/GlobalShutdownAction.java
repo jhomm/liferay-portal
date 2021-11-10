@@ -14,37 +14,30 @@
 
 package com.liferay.portal.events;
 
-import com.liferay.portal.deploy.RequiredPluginsUtil;
+import com.liferay.document.library.kernel.document.conversion.DocumentConversionUtil;
+import com.liferay.petra.executor.PortalExecutorManager;
+import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.fabric.server.FabricServerUtil;
-import com.liferay.portal.im.AIMConnector;
-import com.liferay.portal.im.ICQConnector;
-import com.liferay.portal.im.MSNConnector;
-import com.liferay.portal.im.YMConnector;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.deploy.auto.AutoDeployDir;
 import com.liferay.portal.kernel.deploy.auto.AutoDeployUtil;
 import com.liferay.portal.kernel.deploy.hot.HotDeployUtil;
-import com.liferay.portal.kernel.deploy.sandbox.SandboxDeployDir;
-import com.liferay.portal.kernel.deploy.sandbox.SandboxDeployUtil;
 import com.liferay.portal.kernel.events.SimpleAction;
-import com.liferay.portal.kernel.executor.PortalExecutorManagerUtil;
 import com.liferay.portal.kernel.javadoc.JavadocManagerUtil;
 import com.liferay.portal.kernel.log.Jdk14LogFactoryImpl;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.MessageBusUtil;
-import com.liferay.portal.kernel.resiliency.mpi.MPIHelperUtil;
-import com.liferay.portal.kernel.util.CentralizedThreadLocal;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.ServiceProxyFactory;
 import com.liferay.portal.struts.AuthPublicPathRegistry;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portal.zip.TrueZIPHelperUtil;
-import com.liferay.portlet.documentlibrary.util.DocumentConversionUtil;
 import com.liferay.util.ThirdPartyThreadLocalRegistry;
 
 import java.sql.Connection;
@@ -83,9 +76,8 @@ public class GlobalShutdownAction extends SimpleAction {
 			if (threadGroup.getParent() == null) {
 				break;
 			}
-			else {
-				threadGroup = threadGroup.getParent();
-			}
+
+			threadGroup = threadGroup.getParent();
 		}
 
 		return threadGroup;
@@ -105,54 +97,6 @@ public class GlobalShutdownAction extends SimpleAction {
 
 		AuthPublicPathRegistry.unregister(PropsValues.AUTH_PUBLIC_PATHS);
 
-		// Instant messenger AIM
-
-		try {
-			if (_log.isDebugEnabled()) {
-				_log.debug("Shutting down AIM");
-			}
-
-			AIMConnector.disconnect();
-		}
-		catch (Exception e) {
-		}
-
-		// Instant messenger ICQ
-
-		try {
-			if (_log.isDebugEnabled()) {
-				_log.debug("Shutting down ICQ");
-			}
-
-			ICQConnector.disconnect();
-		}
-		catch (Exception e) {
-		}
-
-		// Instant messenger MSN
-
-		try {
-			if (_log.isDebugEnabled()) {
-				_log.debug("Shutting down MSN");
-			}
-
-			MSNConnector.disconnect();
-		}
-		catch (Exception e) {
-		}
-
-		// Instant messenger YM
-
-		try {
-			if (_log.isDebugEnabled()) {
-				_log.debug("Shutting down YM");
-			}
-
-			YMConnector.disconnect();
-		}
-		catch (Exception e) {
-		}
-
 		// Javadoc
 
 		JavadocManagerUtil.unload(StringPool.BLANK);
@@ -160,10 +104,6 @@ public class GlobalShutdownAction extends SimpleAction {
 		// OpenOffice
 
 		DocumentConversionUtil.disconnect();
-
-		// Plugins
-
-		RequiredPluginsUtil.stopCheckingRequiredPlugins();
 	}
 
 	protected void shutdownLevel2() {
@@ -175,10 +115,6 @@ public class GlobalShutdownAction extends SimpleAction {
 		// Hot deploy
 
 		HotDeployUtil.unregisterListeners();
-
-		// Sandbox deploy
-
-		SandboxDeployUtil.unregisterDir(SandboxDeployDir.DEFAULT_NAME);
 	}
 
 	protected void shutdownLevel3() {
@@ -197,8 +133,8 @@ public class GlobalShutdownAction extends SimpleAction {
 					PropsValues.PORTAL_FABRIC_SHUTDOWN_TIMEOUT,
 					TimeUnit.MILLISECONDS);
 			}
-			catch (Exception e) {
-				_log.error("Unable to stop fabric server", e);
+			catch (Exception exception) {
+				_log.error("Unable to stop fabric server", exception);
 			}
 		}
 	}
@@ -207,43 +143,25 @@ public class GlobalShutdownAction extends SimpleAction {
 
 		// Hypersonic
 
-		DB db = DBFactoryUtil.getDB();
+		DB db = DBManagerUtil.getDB();
 
-		String dbType = db.getType();
-
-		if (dbType.equals(DB.TYPE_HYPERSONIC)) {
-			Connection connection = null;
-			Statement statement = null;
-
-			try {
-				connection = DataAccess.getConnection();
-
-				statement = connection.createStatement();
+		if (db.getDBType() == DBType.HYPERSONIC) {
+			try (Connection connection = DataAccess.getConnection();
+				Statement statement = connection.createStatement()) {
 
 				statement.executeUpdate("SHUTDOWN");
 			}
-			catch (Exception e) {
-				_log.error(e, e);
-			}
-			finally {
-				DataAccess.cleanUp(connection, statement);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 			}
 		}
-
-		// Portal Resiliency
-
-		MPIHelperUtil.shutdown();
 	}
 
 	protected void shutdownLevel5() {
 
 		// Portal executors
 
-		PortalExecutorManagerUtil.shutdown(true);
-
-		// TrueZip
-
-		TrueZIPHelperUtil.shutdown();
+		_portalExecutorManager.shutdown(true);
 	}
 
 	protected void shutdownLevel6() {
@@ -255,7 +173,10 @@ public class GlobalShutdownAction extends SimpleAction {
 		try {
 			LogFactoryUtil.setLogFactory(new Jdk14LogFactoryImpl());
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
 		}
 
 		// Thread local registry
@@ -285,7 +206,10 @@ public class GlobalShutdownAction extends SimpleAction {
 				try {
 					thread.interrupt();
 				}
-				catch (Exception e) {
+				catch (Exception exception) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(exception, exception);
+					}
 				}
 			}
 
@@ -295,5 +219,10 @@ public class GlobalShutdownAction extends SimpleAction {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		GlobalShutdownAction.class);
+
+	private static volatile PortalExecutorManager _portalExecutorManager =
+		ServiceProxyFactory.newServiceTrackedInstance(
+			PortalExecutorManager.class, GlobalShutdownAction.class,
+			"_portalExecutorManager", true);
 
 }

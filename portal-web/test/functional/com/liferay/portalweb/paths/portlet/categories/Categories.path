@@ -2,45 +2,22 @@
 <head>
 <title>Categories</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">Categories</td></tr>
 </thead>
+
 <tbody>
-<tr>
-	<td>ADD_VOCABULARY_BUTTON</td>
-	<td>//a[contains(@title,'Add Vocabulary')]</td>
-	<td></td>
-</tr>
 <tr>
 	<td>ADD_CATEGORY_BUTTON</td>
 	<td>//a[contains(@title,'Add Category')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>ACTIONS_BUTTON</td>
-	<td>//li[contains(@class,'dropdown')]/a[contains(.,'Actions')]</td>
-	<td></td>
-</tr>
-<tr>
 	<td>SUBCATEGORY_CHECKBOX</td>
-	<td>//tr[contains(.,'${key_subcategoryName}')]/td[1]/input</td>
-	<td></td>
-</tr>
-<tr>
-	<td>INFO_MESSAGE_ALERT</td>
-	<td>//div[contains(@class,'message-response') and contains(@class,'alert')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>BACK_BUTTON</td>
-	<td>//span[@class='header-back-to']/a[@title='Back']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>ENTRY_HEADER</td>
-	<td>//h3[@class='header-title']/span</td>
+	<td>//tr[contains(.,'${key_subcategoryName}')]/td[1]//input</td>
 	<td></td>
 </tr>
 <tr>
@@ -61,23 +38,17 @@
 </tr>
 <tr>
 	<td>CATEGORY_ENTRY_LINK</td>
-	<td>//tr[contains(.,'${key_categoryName}')]/td[2]/a</td>
+	<td>//*[@data-qa-id='row']/td/a[contains(.,'${key_categoryName}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--CATEGORY_ENTRY_MENULIST-->
-<tr>
-	<td>CATEGORY_ENTRY_MENULIST_ADD_SUBCATEGORY</td>
-	<td>//ul[contains(@class,'dropdown-menu')]/li/a[contains(.,'Add Subcategory')]</td>
+	<td>CATEGORY_ENTRY_PATH</td>
+	<td>//*[@data-qa-id='row'][td[contains(@class,'category')][contains(.,'${key_categoryName}')]]//td[contains(@class,'lfr-path-column')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>CATEGORY_ENTRY_MENULIST_ARROW</td>
-	<td>//tr[contains(.,'${key_categoryName}')]//a[contains(@id,'assetCategories')]</td>
+	<td>CATEGORY_NAME_FIELD</td>
+	<td>//input[@id = '_com_liferay_asset_categories_admin_web_portlet_AssetCategoriesAdminPortlet_title']</td>
 	<td></td>
 </tr>
 <tr>
@@ -86,46 +57,6 @@
 	<td></td>
 </tr>
 <!--CATEGORY_DETAILS-->
-<tr>
-	<td>CATEGORY_DETAILS_EDIT_BUTTON</td>
-	<td>//a[contains(@id,'assetVocabularies')]/span[contains(.,'Edit')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CATEGORY_DETAILS_DELETE_BUTTON</td>
-	<td>//a[contains(@id,'assetVocabularies')]/span[contains(.,'Delete')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CATEGORY_DETAILS_PERMISSIONS_BUTTON</td>
-	<td>//a[contains(@id,'assetVocabularies')]/span[contains(.,'Permissions')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CATEGORY_DETAILS_ADD_CATEGORY_BUTTON</td>
-	<td>//a[contains(@id,'assetVocabularies')]/span[contains(.,'Add Category')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CATEGORY_DETAILS_ADD_SUBCATEGORY_BUTTON</td>
-	<td>//a[contains(@id,'assetVocabularies')]/span[contains(.,'Add Subcategory')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CATEGORY_DETAILS_ARROW</td>
-	<td>//tr[contains(.,'${key_vocabularyName}')]//a[contains(@id,'assetVocabularies') and contains(@class,'dropdown-toggle')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CATEGORY_DETAILS_PROPERTY_KEY</td>
-	<td>//span[@class='property-key']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CATEGORY_DETAILS_PROPERTY_VALUE</td>
-	<td>//span[@class='property-value']</td>
-	<td></td>
-</tr>
 <tr>
 	<td>CATEGORY_DETAILS_PROPERTY_KEY_2</td>
 	<td>//input[contains(@id,'key${key_pathNumber}')]</td>
@@ -141,6 +72,22 @@
 	<td></td>
 	<td></td>
 </tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<!--OOTB_CATEGORIES-->
+<tr>
+	<td>LOCKED_VOCABULARY</td>
+	<td>//a[contains(@class,'nav-link')][.//*[name()='svg'][contains(@class,'icon-lock')]]/span[normalize-space(text())='${key_vocabularyName}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INTERNAL_VISIBILITY</td>
+	<td>//*[contains(@id,'AssetCategoriesAdminPortlet_visibilityType') and @value='1']</td>
+	<td></td>
+</tr>
 <!--SUBCATEGORY_ENTRY-->
 <tr>
 	<td>SUBCATEGORY_ENTRY</td>
@@ -153,34 +100,19 @@
 	<td></td>
 </tr>
 <tr>
-	<td>SUBCATEGORY_ENTRY_LINK</td>
-	<td>//tr[contains(.,'${key_subcategoryName}')]/td[2]/a</td>
-	<td></td>
-</tr>
-<tr>
-	<td>SUBCATEGORY_ENTRY_HEADER</td>
-	<td>//h3[@class='header-title']/span</td>
-	<td></td>
-</tr>
-<tr>
-	<td>SUBCATEGORY_ENTRY_ARROW</td>
-	<td>//tr[contains(.,'${key_subcategoryName}')]//a[contains(@id,'assetCategories')]</td>
-	<td></td>
-</tr>
-<tr>
 	<td></td>
 	<td></td>
 	<td></td>
 </tr>
 <!--VOCABULARY_ENTRY-->
 <tr>
-	<td>VOCABULARY_ENTRY_GENERIC</td>
-	<td>//tr[contains(.,'Topic')]/td[2]</td>
+	<td>VOCABULARY_ENTRY</td>
+	<td>//tr[contains(.,'${key_vocabularyName}')]/td[2]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>VOCABULARY_ENTRY</td>
-	<td>//tr[contains(.,'${key_vocabularyName}')]/td[2]</td>
+	<td>VOCABULARY_ENTRY_CHECKBOX</td>
+	<td>//tr[contains(.,'${key_vocabularyName}')]/td[1]//input</td>
 	<td></td>
 </tr>
 <tr>
@@ -190,12 +122,7 @@
 </tr>
 <tr>
 	<td>VOCABULARY_ENTRY_LINK</td>
-	<td>//tr[contains(.,'${key_vocabularyName}')]/td[2]/a</td>
-	<td></td>
-</tr>
-<tr>
-	<td>VOCABULARY_ENTRY_MENULIST_ARROW</td>
-	<td>//tr[contains(.,'${key_vocabularyName}')]//a[contains(@id,'assetVocabularies')]</td>
+	<td>//tr[contains(.,'${key_vocabularyName}')]/td[2]//a</td>
 	<td></td>
 </tr>
 <tr>
@@ -209,19 +136,25 @@
 	<td>//div[contains(@id,'assetCategories')]//td[contains(.,'${key_categoryName}')]</td>
 	<td></td>
 </tr>
+<!--VOCABULARY-->
 <tr>
-	<td>VOCABULARY_CATEGORY_SUBCATEGORY</td>
-	<td>//ul[@class='tree-container']/li/div/span[contains(.,'${key_subcategoryName}')]</td>
+	<td>VOCABULARY_EDIT_CHECKBOX</td>
+	<td>//span[contains(text(), '${label}')]/..//input</td>
 	<td></td>
 </tr>
 <tr>
-	<td>VOCABULARY_CATEGORY_LABEL</td>
-	<td>//div[@id='categoriesTreeContainer']/ul/li[contains(.,'${key_categoryName}')]/div</td>
+	<td>VOCABULARY_ICON_INTERNAL_USE</td>
+	<td>//span[contains(text(), '${key_vocabularyName}')]/..//span[contains(@title, 'For Internal Use Only')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>SUBCATEGORY_ENTRY_MENULIST_ARROW</td>
-	<td>//tr[contains(.,'${key_subcategoryName}')]//a[contains(@id,'assetCategories')]</td>
+	<td>VOCABULARY_LINK_DOCUMENTATION</td>
+	<td>//a[contains(text(), 'Learn how')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>VOCABULARY_VISIBILITY_DISABLED</td>
+	<td>//div[@class='radio']/label[@class=' disabled' and contains(., '${key_visibilityType}')]</td>
 	<td></td>
 </tr>
 </tbody>

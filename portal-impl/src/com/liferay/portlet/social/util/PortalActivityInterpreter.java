@@ -14,10 +14,12 @@
 
 package com.liferay.portlet.social.util;
 
-import com.liferay.portal.service.ServiceContext;
-import com.liferay.portlet.social.model.BaseSocialActivityInterpreter;
-import com.liferay.portlet.social.model.SocialActivity;
-import com.liferay.portlet.social.model.SocialActivityFeedEntry;
+import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.language.LanguageResources;
+import com.liferay.social.kernel.model.BaseSocialActivityInterpreter;
+import com.liferay.social.kernel.model.SocialActivity;
+import com.liferay.social.kernel.model.SocialActivityFeedEntry;
 
 /**
  * @author Brian Wing Shun Chan
@@ -30,6 +32,11 @@ public class PortalActivityInterpreter extends BaseSocialActivityInterpreter {
 	}
 
 	@Override
+	protected ResourceBundleLoader acquireResourceBundleLoader() {
+		return LanguageResources.PORTAL_RESOURCE_BUNDLE_LOADER;
+	}
+
+	@Override
 	protected SocialActivityFeedEntry doInterpret(
 			SocialActivity activity, ServiceContext serviceContext)
 		throws Exception {
@@ -37,7 +44,8 @@ public class PortalActivityInterpreter extends BaseSocialActivityInterpreter {
 		return null;
 	}
 
-	private static final String[] _CLASS_NAMES =
-		{PortalActivityInterpreter.class.getName()};
+	private static final String[] _CLASS_NAMES = {
+		PortalActivityInterpreter.class.getName()
+	};
 
 }

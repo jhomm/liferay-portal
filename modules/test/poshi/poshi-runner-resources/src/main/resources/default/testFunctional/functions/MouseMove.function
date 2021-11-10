@@ -1,0 +1,12 @@
+@default = "mouseMove"
+definition {
+
+	function mouseMove {
+		selenium.mouseMove();
+	}
+
+	function mouseMoveAt {
+		selenium.mouseMoveAt();
+	}
+
+}

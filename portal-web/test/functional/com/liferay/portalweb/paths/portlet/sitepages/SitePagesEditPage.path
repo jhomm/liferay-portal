@@ -2,106 +2,43 @@
 <head>
 <title>SitePagesEditPage</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">SitePagesEditPage</td></tr>
 </thead>
+
 <tbody>
 <!--DETAILS-->
 <tr>
-	<td>DETAILS_PANEL_TOGGLE</td>
-	<td>//input[contains(@id,'GroupPagesPortlet')]</td>
+	<td>LAYOUT_CARD</td>
+	<td>//div[contains(@class,'card')]//span[contains(.,'${key_columnName}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>LOCALIZED_FLAG_ICON</td>
-	<td>//li[@role='menuitem' and @data-value='${key_localizationName}']/a</td>
+	<td>LAYOUT_CARD_SELECTED</td>
+	<td>//div[label[contains(.,'${key_columnName}')]]//img[contains(@class,'layout-selected')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>FRIENDLY_URL_TITLE</td>
-	<td>//label[contains(@for,'friendlyURL')]</td>
+	<td>LAYOUT_PAGE_TEMPLATE_SELECT</td>
+	<td>//select[contains(@name,'layoutPageTemplate')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>FRIENDLY_URL_FIELD</td>
-	<td>//input[contains(@id,'friendlyURL')]</td>
+	<td>LINK_TO_PAGE_SELECT_BUTTON</td>
+	<td>//button[contains(@id,'selectLayoutButton')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>FRIENDLY_URL_ENGLISH_UNITED_STATES</td>
-	<td>//div[contains(@id,'friendlyURL')]//li[@data-value='en_US']/a</td>
-	<td></td>
-</tr>
-<tr>
-	<td>FRIENDLY_URL_LOCALIZED</td>
-	<td>//div[contains(@id,'friendlyURL')]//li[@data-value='${key_friendlyUrlLocalized}']/a</td>
-	<td></td>
-</tr>
-<tr>
-	<td>FRIENDLY_URL_SPANISH_SPAIN</td>
-	<td>//div[contains(@id,'friendlyURL')]//li[@data-value='es_ES']/a</td>
-	<td></td>
-</tr>
-<tr>
-	<td>FRIENDLY_URL_PORTUGUESE_BRAZIL</td>
-	<td>//div[contains(@id,'friendlyURL')]//li[@data-value='pt_BR']/a</td>
-	<td></td>
-</tr>
-<tr>
-	<td>LAYOUT_RADIO</td>
-	<td>//input[@value='${columnName}']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_LABEL</td>
-	<td>//li[contains(@data-search,'${key_pageType}')]//label[contains(@for,'addLayoutSelectedPageTemplate')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_RADIO</td>
-	<td>//li[contains(@data-search,'${key_pageType}')]//input[contains(@id,'addLayoutSelectedPageTemplate')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_LAYOUT</td>
-	<td>//select[contains(@id,'type')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>TYPE_PAGE_OPTIONS</td>
-	<td>//div[contains(@id,'typeOptions')]//select[contains(@id,'type')]/option[@value='embedded']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_TEMPLATE_AUTOMATICALLY_APPLY_CHANGES_LABEL</td>
-	<td>//li[contains(@data-search,'${key_pageType}')]//label[contains(@for,'addLayoutLayoutPrototypeLinkEnabled')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_TEMPLATE_AUTOMATICALLY_APPLY_CHANGES_LABEL_GENERIC</td>
-	<td>//label[contains(@for,'layoutPrototypeLinkEnabled')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_TEMPLATE_AUTOMATICALLY_APPLY_CHANGES_CHECKBOX</td>
-	<td>//li[contains(@data-search,'${key_pageType}')]//input[contains(@name,'layoutPrototypeLinkEnabled')]</td>
+	<td>PAGE_TYPE_DESCRIPTION</td>
+	<td>//p[contains(@class,'text')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PAGE_TYPE_TEMPLATE_AUTOMATICALLY_APPLY_CHANGES_CHECKBOX_GENERIC</td>
-	<td>//label[contains(@for,'layoutPrototypeLinkEnabled')]/input[contains(@id,'layoutPrototypeLinkEnabled')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_PANEL_DESCRIPTION_FIELD</td>
-	<td>//textarea[contains(@id,'descriptionPanel')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_PANEL_COMPONENT_TREE_ARROW</td>
-	<td>//span[contains(.,'${key_componentName}')]/../i[contains(@class,'tree-hitarea')]</td>
+	<td>//label[contains(.,'Inherit Changes')]//input</td>
 	<td></td>
 </tr>
 <tr>
@@ -111,48 +48,12 @@
 </tr>
 <tr>
 	<td>PAGE_TYPE_PANEL_CHECKBOX_INPUT</td>
-	<td>//span[contains(.,'${key_componentOrPortletName}')]/../span[contains(@class,'tree-node-checkbox')]/input</td>
+	<td>//input[@type="hidden"][contains(@id,'panelSelectedPortlets')][contains(@value,'${key_componentOrPortletName}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>PAGE_TYPE_EMBEDDED_URL_FIELD</td>
-	<td>//input[contains(@id,'urlEmbedded')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_EMBEDDED_DESCRIPTION_FIELD</td>
-	<td>//textarea[contains(@id,'_descriptionEmbedded')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_LINK_TO_URL_URL_FIELD</td>
-	<td>//input[contains(@id,'url')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_LINK_TO_URL_DESCRIPTION_FIELD</td>
-	<td>//textarea[contains(@id,'descriptionUrl')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_LINK_TO_PAGE_LABEL</td>
-	<td>//div[contains(@class,'link_to_layout')]/div/label[contains(@for,'linkToLayoutId')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_TYPE_LINK_TO_PAGE_PAGE_SELECT</td>
-	<td>//div[contains(@class,'link_to_layout')]/div/select[contains(@id,'linkToLayoutId')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--CATEGORIZATION-->
-<tr>
-	<td>CATEGORIZATION_PANEL_TOGGLE</td>
-	<td>//a[contains(@id,'categorization')]</td>
+	<td>PAGE_TYPE_FULL_PAGE_APPLICATION_SELECT</td>
+	<td>//select[contains(@id,'fullPageApplication')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -162,134 +63,79 @@
 </tr>
 <!--SEO-->
 <tr>
-	<td>SEO_PANEL_LINK</td>
-	<td>//li/a[contains(@id,'seoLink')]</td>
+	<td>PREVIEW_DESCRIPTION</td>
+	<td>//div[contains(@class,'preview-seo-description')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>SEO_PANEL_TOGGLE</td>
-	<td>//div[contains(@id,'seo')]/div</td>
+	<td>PREVIEW_IMAGE</td>
+	<td>//div[contains(@class,'preview-seo-image')]//img[contains(@src,'${key_imageName}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>SEO_HTML_TITLE</td>
-	<td>//div[contains(.,'HTML Title')]/span/input</td>
+	<td>PREVIEW_SERP</td>
+	<td>//div[contains(@class,'preview-seo-serp')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>SEO_HTML_TITLE_META_TAGS</td>
-	<td>//div[contains(.,'HTML Title')]/span//ul/li[@data-value='${key_defaultSiteLanguageKey}']</td>
+	<td>PREVIEW_TITLE</td>
+	<td>//div[contains(@class,'preview-seo-title text-truncate')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>SEO_META_TAGS_DESCRIPTION</td>
-	<td>//div[contains(@id,'descriptionSEOContentBox')]//li[contains(@data-value,'${key_defaultSiteLanguageKey}')]</td>
+	<td>PREVIEW_TITLE_ELLIPSES</td>
+	<td>portal/screenshots/page/preview_title_ellipses.png</td>
 	<td></td>
 </tr>
 <tr>
+	<td>PREVIEW_TITLE_ELLIPSES_OG</td>
+	<td>portal/screenshots/page/preview_title_ellipses_og.png</td>
 	<td></td>
+</tr>
+<tr>
+	<td>PREVIEW_URL</td>
+	<td>//div[contains(@class,'preview-seo-url text-truncate')]</td>
 	<td></td>
+</tr>
+<tr>
+	<td>PREVIEW_URL_ELLIPSES</td>
+	<td>portal/screenshots/page/preview_url_ellipses.png</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PREVIEW_URL_ELLIPSES_OG</td>
+	<td>portal/screenshots/page/preview_url_ellipses_og.png</td>
 	<td></td>
 </tr>
 <!--LOOK_AND_FEEL-->
 <tr>
-	<td>LOOK_AND_FEEL_PANEL_TOGGLE</td>
-	<td>//div[contains(@id,'LookAndFeel')]/div</td>
+	<td>CHANGE_CURRENT_THEME_BUTTON</td>
+	<td>//button[contains(.,'Change Current Theme')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--JAVASCRIPT-->
-<tr>
-	<td>JAVASCRIPT_PANEL_TOGGLE</td>
-	<td>//div[contains(@id,'javascript')]//textarea</td>
+	<td>MASTER_LAYOUT_NAME</td>
+	<td>//div[@class='sheet-section']//span[contains(@id,'masterLayoutName')][contains(.,'${key_masterLayoutName}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--CUSTOM_FIELDS-->
-<tr>
-	<td>CUSTOM_FIELDS_PANEL_TOGGLE</td>
-	<td>//div[contains(@id,'customFields')]/div</td>
+	<td>REGULAR_UNIQUE_LOOK_AND_FEEL</td>
+	<td>//input[contains(@id,'regularUniqueLookAndFeel')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--ADVANCED_PANEL-->
-<tr>
-	<td>ADVANCED_PANEL_TOGGLE</td>
-	<td>//div[contains(@id,'advanced')]/div</td>
+	<td>SECTION_TITLE</td>
+	<td>//div[@class='sheet-section']/h3[contains(.,'${key_sectionTitle}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--MOBILE_DEVICE_RULES-->
-<tr>
-	<td>MOBILE_DEVICE_RULES_PANEL_TOGGLE</td>
-	<td>//div[contains(@id,'mobileDeviceRules')]/div</td>
+	<td>STYLE_BOOK_NAME</td>
+	<td>//div[@class='sheet-section']//span[contains(@id,'styleBookName')][contains(.,'${key_styleBookName}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--EMBEDDED_PORTLETS-->
-<tr>
-	<td>EMBEDDED_PORTLETS_PANEL_TOGGLE</td>
-	<td>//div[contains(@id,'embeddedPortlets')]/div</td>
-	<td></td>
-</tr>
-<tr>
-	<td>EMBEDDED_PORTLETS_CHECKBOX_1</td>
-	<td>//div[contains(@id,'embeddedPortlets')]//tbody/tr[1]/td[1]/input</td>
-	<td></td>
-</tr>
-<tr>
-	<td>EMBEDDED_PORTLETS_CHECKBOX_2</td>
-	<td>//div[contains(@id,'embeddedPortlets')]//tbody/tr[2]/td[1]/input</td>
-	<td></td>
-</tr>
-<tr>
-	<td>EMBEDDED_PORTLETS_PORTLET_ID_1</td>
-	<td>//div[contains(@id,'embeddedPortlets')]//tbody/tr[1]/td[2]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>EMBEDDED_PORTLETS_PORTLET_ID_2</td>
-	<td>//div[contains(@id,'embeddedPortlets')]//tbody/tr[2]/td[2]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>EMBEDDED_PORTLETS_TITLE_1</td>
-	<td>//div[contains(@id,'embeddedPortlets')]//tbody/tr[1]/td[3]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>EMBEDDED_PORTLETS_TITLE_2</td>
-	<td>//div[contains(@id,'embeddedPortlets')]//tbody/tr[2]/td[3]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>EMBEDDED_PORTLETS_STATUS_1</td>
-	<td>//div[contains(@id,'embeddedPortlets')]//tbody/tr[1]/td[4]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>EMBEDDED_PORTLETS_STATUS_2</td>
-	<td>//div[contains(@id,'embeddedPortlets')]//tbody/tr[2]/td[4]</td>
+	<td>VIEW_THEME</td>
+	<td>//div[contains(@class, 'main-content-card')]//h4[contains(.,'Name')]/following-sibling::p[1]</td>
 	<td></td>
 </tr>
 <tr>
@@ -299,49 +145,13 @@
 </tr>
 <!--CUSTOMIZATION_SETTINGS-->
 <tr>
-	<td>CUSTOMIZATION_SETTINGS_PANEL_TOGGLE</td>
-	<td>//div[contains(@id,'customizationSettings')]/div</td>
-	<td></td>
-</tr>
-<tr>
 	<td>CUSTOMIZATION_SETTINGS_SHOW_CUSTOMIZABLE_SECTIONS</td>
-	<td>//div[@class='customization-settings']/button[contains(@id,'manageCustomization')]</td>
+	<td>//input[contains(@id,'CUSTOMIZABLE_LAYOUT')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>CUSTOMIZATION_SETTINGS_CUSTOMIZABLE_COLUMN_CHECKBOX</td>
-	<td>//input[contains(@name,'TypeSettingsProperties--column-${key_columnId}-customizable')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CUSTOMIZATION_SETTINGS_CUSTOMIZABLE_COLUMN</td>
-	<td>//input[contains(@name,'TypeSettingsProperties--column-${key_columnId}-customizable--')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--COPY_APPLICATIONS-->
-<tr>
-	<td>COPY_APPLICATIONS_MESSAGE_INFO</td>
-	<td>//div[contains(@id,'copyPortletsFromPage')]/p</td>
-	<td></td>
-</tr>
-<tr>
-	<td>COPY_APPLICATIONS_COPY_FROM_PAGE_LABEL</td>
-	<td>//div[contains(@id,'copyPortletsFromPage')]//label[contains(@for,'copyLayoutId')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>COPY_APPLICATIONS_COPY_FROM_PAGE_SELECT</td>
-	<td>//div[contains(@id,'copyPortletsFromPage')]//select[contains(@id,'copyLayoutId')]/option[@value='1']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>COPY_APPLICATIONS_COPY_BUTTON</td>
-	<td>//div[contains(@id,'copyPortletsFromPage')]//button[contains(@id,'copySubmitButton')]</td>
+	<td>//input[contains(@name,'column-${key_columnId}-customizable')]/../span[contains(@class,'toggle-switch')]</td>
 	<td></td>
 </tr>
 </tbody>

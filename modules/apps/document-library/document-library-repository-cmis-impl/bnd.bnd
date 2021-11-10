@@ -1,22 +1,32 @@
 Bundle-Name: Liferay Document Library Repository CMIS Implementation
 Bundle-SymbolicName: com.liferay.document.library.repository.cmis.impl
-Bundle-Version: 1.0.0
+Bundle-Version: 6.0.12
 Import-Package:\
-	!com.ctc.wstx.*,\
-	!com.sun.istack,\
-	!com.sun.net.httpserver,\
-	!com.sun.org.apache.xml.internal.resolver.*,\
+	!com.sun.msv.*,\
+	!com.sun.tools.xjc.*,\
 	!com.sun.xml.*,\
-	!org.apache.cxf.frontend,\
+	\
+	!junit.framework.*,\
+	\
+	!net.sf.cglib.*,\
+	\
+	!org.apache.aries.*,\
+	!org.apache.axiom.*,\
+	!org.apache.cxf.*,\
 	!org.apache.http.*,\
+	!org.apache.mina.*,\
+	!org.apache.neethi.*,\
+	!org.apache.xml.resolver.*,\
+	\
 	!org.json.simple.*,\
-	!org.jvnet.*,\
+	\
+	!org.junit.*,\
+	\
+	!org.osgi.service.blueprint.*,\
+	\
+	!org.relaxng.datatype.*,\
+	\
+	!org.springframework.osgi.io.*,\
+	!org.springframework.osgi.util.*,\
+	\
 	*
-Include-Resource:\
-	classes,\
-	@${app.server.lib.portal.dir}/chemistry-opencmis-client-api.jar,\
-	@${app.server.lib.portal.dir}/chemistry-opencmis-client-bindings.jar,\
-	@${app.server.lib.portal.dir}/chemistry-opencmis-client-impl.jar,\
-	@${app.server.lib.portal.dir}/chemistry-opencmis-commons-api.jar,\
-	@${app.server.lib.portal.dir}/chemistry-opencmis-commons-impl.jar,\
-	@${app.server.lib.portal.dir}/jaxws-rt.jar

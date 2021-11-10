@@ -14,50 +14,34 @@
 
 package com.liferay.portal.events;
 
+import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalServiceUtil;
 import com.liferay.portal.fabric.server.FabricServerUtil;
 import com.liferay.portal.jericho.CachedLoggerProvider;
-import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManager;
-import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManagerUtil;
-import com.liferay.portal.kernel.cluster.ClusterExecutor;
-import com.liferay.portal.kernel.cluster.ClusterMasterExecutor;
+import com.liferay.portal.kernel.dao.db.DB;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.events.ActionException;
 import com.liferay.portal.kernel.events.SimpleAction;
-import com.liferay.portal.kernel.executor.PortalExecutorManager;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.messaging.MessageBus;
-import com.liferay.portal.kernel.nio.intraband.Intraband;
-import com.liferay.portal.kernel.nio.intraband.SystemDataType;
-import com.liferay.portal.kernel.nio.intraband.mailbox.MailboxDatagramReceiveHandler;
-import com.liferay.portal.kernel.nio.intraband.messaging.MessageDatagramReceiveHandler;
-import com.liferay.portal.kernel.nio.intraband.proxy.IntrabandProxyDatagramReceiveHandler;
-import com.liferay.portal.kernel.nio.intraband.rpc.RPCDatagramReceiveHandler;
-import com.liferay.portal.kernel.resiliency.mpi.MPIHelperUtil;
-import com.liferay.portal.kernel.resiliency.spi.agent.annotation.Direction;
-import com.liferay.portal.kernel.resiliency.spi.agent.annotation.DistributedRegistry;
-import com.liferay.portal.kernel.resiliency.spi.agent.annotation.MatchType;
-import com.liferay.portal.kernel.scheduler.SchedulerEngineHelper;
-import com.liferay.portal.kernel.scheduler.SchedulerLifecycle;
-import com.liferay.portal.kernel.search.IndexerRegistry;
-import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
+import com.liferay.portal.kernel.util.BasePortalLifecycle;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.PortalLifecycle;
+import com.liferay.portal.kernel.util.PortalLifecycleUtil;
 import com.liferay.portal.kernel.util.ReleaseInfo;
-import com.liferay.portal.plugin.PluginPackageIndexer;
 import com.liferay.portal.tools.DBUpgrader;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portal.util.WebKeys;
-import com.liferay.portlet.messageboards.util.MBMessageIndexer;
-import com.liferay.registry.Filter;
-import com.liferay.registry.Registry;
-import com.liferay.registry.RegistryUtil;
-import com.liferay.registry.dependency.ServiceDependencyListener;
-import com.liferay.registry.dependency.ServiceDependencyManager;
-import com.liferay.taglib.servlet.JspFactorySwapper;
 
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletRequest;
+import java.io.InputStream;
 
-import org.apache.struts.tiles.taglib.ComponentConstants;
+import org.apache.commons.io.IOUtils;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Brian Wing Shun Chan
@@ -71,11 +55,11 @@ public class StartupAction extends SimpleAction {
 		try {
 			doRun(ids);
 		}
-		catch (RuntimeException re) {
-			throw re;
+		catch (RuntimeException runtimeException) {
+			throw runtimeException;
 		}
-		catch (Exception e) {
-			throw new ActionException(e);
+		catch (Exception exception) {
+			throw new ActionException(exception);
 		}
 	}
 
@@ -83,141 +67,100 @@ public class StartupAction extends SimpleAction {
 
 		// Print release information
 
-		System.out.println("Starting " + ReleaseInfo.getReleaseInfo());
+		Class<?> clazz = getClass();
 
-		// Portal resiliency
+		ClassLoader classLoader = clazz.getClassLoader();
 
-		ServiceDependencyManager portalResiliencyServiceDependencyManager =
-			new ServiceDependencyManager();
+		try (InputStream inputStream = classLoader.getResourceAsStream(
+				"com/liferay/portal/events/dependencies/startup.txt")) {
 
-		portalResiliencyServiceDependencyManager.registerDependencies(
-			MessageBus.class, PortalExecutorManager.class);
-
-		portalResiliencyServiceDependencyManager.addServiceDependencyListener(
-			new PortalResiliencyServiceDependencyLister());
-
-		// Shutdown hook
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Add shutdown hook");
+			System.out.println(IOUtils.toString(inputStream));
 		}
 
-		Runtime runtime = Runtime.getRuntime();
+		System.out.println("Starting " + ReleaseInfo.getReleaseInfo() + "\n");
 
-		runtime.addShutdownHook(new Thread(new ShutdownHook()));
+		StartupHelperUtil.printPatchLevel();
 
-		// Indexers
+		if (PropsValues.PORTAL_FABRIC_ENABLED) {
+			FabricServerUtil.start();
+		}
 
-		ServiceDependencyManager indexerRegistryServiceDependencyManager =
-			new ServiceDependencyManager();
+		// MySQL version
 
-		indexerRegistryServiceDependencyManager.registerDependencies(
-			IndexerRegistry.class);
+		DB db = DBManagerUtil.getDB();
 
-		indexerRegistryServiceDependencyManager.addServiceDependencyListener(
-			new ServiceDependencyListener() {
+		if ((db.getDBType() == DBType.MYSQL) &&
+			(GetterUtil.getFloat(db.getVersionString()) < 5.6F)) {
+
+			_log.error(
+				"Please upgrade to at least MySQL 5.6.4. The portal no " +
+					"longer supports older versions of MySQL.");
+
+			System.exit(1);
+		}
+
+		// Check required schema version
+
+		StartupHelperUtil.verifyRequiredSchemaVersion();
+
+		DBUpgrader.checkReleaseState();
+
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		final ServiceRegistration<ModuleServiceLifecycle>
+			moduleServiceLifecycleServiceRegistration =
+				bundleContext.registerService(
+					ModuleServiceLifecycle.class,
+					new ModuleServiceLifecycle() {
+					},
+					HashMapDictionaryBuilder.<String, Object>put(
+						"module.service.lifecycle", "database.initialized"
+					).put(
+						"service.vendor", ReleaseInfo.getVendor()
+					).put(
+						"service.version", ReleaseInfo.getVersion()
+					).build());
+
+		PortalLifecycleUtil.register(
+			new BasePortalLifecycle() {
 
 				@Override
-				public void dependenciesFulfilled() {
-					IndexerRegistryUtil.register(new MBMessageIndexer());
-					IndexerRegistryUtil.register(new PluginPackageIndexer());
+				protected void doPortalDestroy() {
+					moduleServiceLifecycleServiceRegistration.unregister();
 				}
 
 				@Override
-				public void destroy() {
+				protected void doPortalInit() {
 				}
 
-			});
+			},
+			PortalLifecycle.METHOD_DESTROY);
 
-		// Upgrade
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Upgrade database");
-		}
-
-		DBUpgrader.upgrade();
-
-		// Scheduler
+		// Check class names
 
 		if (_log.isDebugEnabled()) {
-			_log.debug("Initialize scheduler engine lifecycle");
+			_log.debug("Check class names");
 		}
 
-		ServiceDependencyManager schedulerServiceDependencyManager =
-			new ServiceDependencyManager();
+		ClassNameLocalServiceUtil.checkClassNames();
 
-		schedulerServiceDependencyManager.addServiceDependencyListener(
-			new ServiceDependencyListener() {
-
-				@Override
-				public void dependenciesFulfilled() {
-					SchedulerLifecycle schedulerLifecycle =
-						new SchedulerLifecycle();
-
-					schedulerLifecycle.registerPortalLifecycle(
-						PortalLifecycle.METHOD_INIT);
-				}
-
-				@Override
-				public void destroy() {
-				}
-
-			});
-
-		final Registry registry = RegistryUtil.getRegistry();
-
-		Filter filter = registry.getFilter(
-			"(objectClass=com.liferay.portal.scheduler.quartz.internal." +
-				"QuartzSchemaManager)");
-
-		schedulerServiceDependencyManager.registerDependencies(
-			new Class[] {SchedulerEngineHelper.class},
-			new Filter[] {filter});
-
-		// Verify
+		// Check resource actions
 
 		if (_log.isDebugEnabled()) {
-			_log.debug("Verify database");
+			_log.debug("Check resource actions");
 		}
 
-		DBUpgrader.verify();
+		StartupHelperUtil.initResourceActions();
 
-		// Cluster master token listener
+		if (StartupHelperUtil.isDBNew()) {
+			DBUpgrader.verify();
 
-		ServiceDependencyManager clusterMasterExecutorServiceDependencyManager =
-			new ServiceDependencyManager();
+			DLFileEntryTypeLocalServiceUtil.getBasicDocumentDLFileEntryType();
+		}
 
-		clusterMasterExecutorServiceDependencyManager.
-			addServiceDependencyListener(
-				new ServiceDependencyListener() {
-
-					@Override
-					public void dependenciesFulfilled() {
-						ClusterMasterExecutor clusterMasterExecutor =
-							registry.getService(ClusterMasterExecutor.class);
-
-						if (!clusterMasterExecutor.isEnabled()) {
-							BackgroundTaskManagerUtil.cleanUpBackgroundTasks();
-						}
-						else {
-							clusterMasterExecutor.
-								notifyMasterTokenTransitionListeners();
-						}
-					}
-
-					@Override
-					public void destroy() {
-					}
-
-				});
-
-		clusterMasterExecutorServiceDependencyManager.registerDependencies(
-			BackgroundTaskManager.class, ClusterExecutor.class,
-			ClusterMasterExecutor.class);
-
-		// Liferay JspFactory
-
-		JspFactorySwapper.swap();
+		if (PropsValues.DATABASE_INDEXES_UPDATE_ON_STARTUP) {
+			StartupHelperUtil.updateIndexes(true);
+		}
 
 		// Jericho
 
@@ -225,60 +168,5 @@ public class StartupAction extends SimpleAction {
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(StartupAction.class);
-
-	private class PortalResiliencyServiceDependencyLister
-		implements ServiceDependencyListener {
-
-		@Override
-		public void dependenciesFulfilled() {
-			Registry registry = RegistryUtil.getRegistry();
-
-			MessageBus messageBus = registry.getService(MessageBus.class);
-
-			try {
-				DistributedRegistry.registerDistributed(
-					ComponentConstants.COMPONENT_CONTEXT, Direction.DUPLEX,
-					MatchType.POSTFIX);
-				DistributedRegistry.registerDistributed(
-					MimeResponse.MARKUP_HEAD_ELEMENT, Direction.DUPLEX,
-					MatchType.EXACT);
-				DistributedRegistry.registerDistributed(
-					PortletRequest.LIFECYCLE_PHASE, Direction.DUPLEX,
-					MatchType.EXACT);
-				DistributedRegistry.registerDistributed(WebKeys.class);
-
-				Intraband intraband = MPIHelperUtil.getIntraband();
-
-				intraband.registerDatagramReceiveHandler(
-					SystemDataType.MAILBOX.getValue(),
-					new MailboxDatagramReceiveHandler());
-
-				intraband.registerDatagramReceiveHandler(
-					SystemDataType.MESSAGE.getValue(),
-					new MessageDatagramReceiveHandler(messageBus));
-
-				intraband.registerDatagramReceiveHandler(
-					SystemDataType.PROXY.getValue(),
-					new IntrabandProxyDatagramReceiveHandler());
-
-				intraband.registerDatagramReceiveHandler(
-					SystemDataType.RPC.getValue(),
-					new RPCDatagramReceiveHandler());
-
-				if (PropsValues.PORTAL_FABRIC_ENABLED) {
-					FabricServerUtil.start();
-				}
-			}
-			catch (Exception e) {
-				throw new IllegalStateException(
-					"Unable to initialize portal resiliency", e);
-			}
-		}
-
-		@Override
-		public void destroy() {
-		}
-
-	}
 
 }

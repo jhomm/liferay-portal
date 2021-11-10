@@ -14,14 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.MembershipRequest;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.MembershipRequest;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -34,26 +31,28 @@ import java.util.Date;
  * The cache model class for representing MembershipRequest in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see MembershipRequest
  * @generated
  */
-@ProviderType
-public class MembershipRequestCacheModel implements CacheModel<MembershipRequest>,
-	Externalizable, MVCCModel {
+public class MembershipRequestCacheModel
+	implements CacheModel<MembershipRequest>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof MembershipRequestCacheModel)) {
+		if (!(object instanceof MembershipRequestCacheModel)) {
 			return false;
 		}
 
-		MembershipRequestCacheModel membershipRequestCacheModel = (MembershipRequestCacheModel)obj;
+		MembershipRequestCacheModel membershipRequestCacheModel =
+			(MembershipRequestCacheModel)object;
 
-		if ((membershipRequestId == membershipRequestCacheModel.membershipRequestId) &&
-				(mvccVersion == membershipRequestCacheModel.mvccVersion)) {
+		if ((membershipRequestId ==
+				membershipRequestCacheModel.membershipRequestId) &&
+			(mvccVersion == membershipRequestCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -110,7 +109,8 @@ public class MembershipRequestCacheModel implements CacheModel<MembershipRequest
 
 	@Override
 	public MembershipRequest toEntityModel() {
-		MembershipRequestImpl membershipRequestImpl = new MembershipRequestImpl();
+		MembershipRequestImpl membershipRequestImpl =
+			new MembershipRequestImpl();
 
 		membershipRequestImpl.setMvccVersion(mvccVersion);
 		membershipRequestImpl.setMembershipRequestId(membershipRequestId);
@@ -126,14 +126,14 @@ public class MembershipRequestCacheModel implements CacheModel<MembershipRequest
 		}
 
 		if (comments == null) {
-			membershipRequestImpl.setComments(StringPool.BLANK);
+			membershipRequestImpl.setComments("");
 		}
 		else {
 			membershipRequestImpl.setComments(comments);
 		}
 
 		if (replyComments == null) {
-			membershipRequestImpl.setReplyComments(StringPool.BLANK);
+			membershipRequestImpl.setReplyComments("");
 		}
 		else {
 			membershipRequestImpl.setReplyComments(replyComments);
@@ -157,44 +157,55 @@ public class MembershipRequestCacheModel implements CacheModel<MembershipRequest
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
 		membershipRequestId = objectInput.readLong();
+
 		groupId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
+
 		userId = objectInput.readLong();
 		createDate = objectInput.readLong();
 		comments = objectInput.readUTF();
 		replyComments = objectInput.readUTF();
 		replyDate = objectInput.readLong();
+
 		replierUserId = objectInput.readLong();
+
 		statusId = objectInput.readLong();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
 		objectOutput.writeLong(membershipRequestId);
+
 		objectOutput.writeLong(groupId);
+
 		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(userId);
 		objectOutput.writeLong(createDate);
 
 		if (comments == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(comments);
 		}
 
 		if (replyComments == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(replyComments);
 		}
 
 		objectOutput.writeLong(replyDate);
+
 		objectOutput.writeLong(replierUserId);
+
 		objectOutput.writeLong(statusId);
 	}
 
@@ -209,4 +220,5 @@ public class MembershipRequestCacheModel implements CacheModel<MembershipRequest
 	public long replyDate;
 	public long replierUserId;
 	public long statusId;
+
 }

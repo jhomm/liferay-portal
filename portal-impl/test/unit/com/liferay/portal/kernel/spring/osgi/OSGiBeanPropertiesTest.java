@@ -14,17 +14,19 @@
 
 package com.liferay.portal.kernel.spring.osgi;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.PropsUtil;
-import com.liferay.portal.util.PropsImpl;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.Serializable;
 
+import java.util.Arrays;
 import java.util.EventListener;
 import java.util.Map;
 import java.util.Set;
 
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
@@ -32,14 +34,13 @@ import org.junit.Test;
  */
 public class OSGiBeanPropertiesTest {
 
-	@Before
-	public void setUp() {
-		PropsUtil.setProps(new PropsImpl());
-	}
+	@ClassRule
+	public static LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Test
 	public void testAnnotatedClass() {
-		@OSGiBeanProperties()
+		@OSGiBeanProperties
 		class C {
 		}
 
@@ -60,10 +61,12 @@ public class OSGiBeanPropertiesTest {
 		class C implements Serializable {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(1, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 2, interfaceNames.size());
 	}
 
 	@Test
@@ -75,14 +78,16 @@ public class OSGiBeanPropertiesTest {
 		class C extends B {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(1, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 2, interfaceNames.size());
 	}
 
 	@Test
-	public void testServicesAnnotatedButExtendsMutliple() {
+	public void testServicesAnnotatedButExtendsMultiple() {
 		class B implements EventListener, Serializable {
 		}
 
@@ -90,10 +95,12 @@ public class OSGiBeanPropertiesTest {
 		class C extends B {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(1, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 2, interfaceNames.size());
 	}
 
 	@Test
@@ -102,10 +109,12 @@ public class OSGiBeanPropertiesTest {
 		class C implements Serializable {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(1, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 2, interfaceNames.size());
 	}
 
 	@Test
@@ -114,10 +123,12 @@ public class OSGiBeanPropertiesTest {
 		class C implements EventListener, Serializable {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(1, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 2, interfaceNames.size());
 	}
 
 	@Test(expected = ClassCastException.class)
@@ -126,10 +137,12 @@ public class OSGiBeanPropertiesTest {
 		class C {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(1, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 1, interfaceNames.size());
 	}
 
 	@Test(expected = ClassCastException.class)
@@ -138,22 +151,26 @@ public class OSGiBeanPropertiesTest {
 		class C implements Serializable {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(1, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 1, interfaceNames.size());
 	}
 
 	@Test
 	public void testServicesAnnotatedNoneSet() {
-		@OSGiBeanProperties()
+		@OSGiBeanProperties
 		class C {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(0, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 1, interfaceNames.size());
 	}
 
 	@Test
@@ -161,14 +178,16 @@ public class OSGiBeanPropertiesTest {
 		class B implements Serializable {
 		}
 
-		@OSGiBeanProperties()
+		@OSGiBeanProperties
 		class C extends B {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(1, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 2, interfaceNames.size());
 	}
 
 	@Test
@@ -176,38 +195,44 @@ public class OSGiBeanPropertiesTest {
 		class B implements EventListener, Serializable {
 		}
 
-		@OSGiBeanProperties()
+		@OSGiBeanProperties
 		class C extends B {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(2, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 3, interfaceNames.size());
 	}
 
 	@Test
 	public void testServicesAnnotatedNoneSetButImplements() {
-		@OSGiBeanProperties()
+		@OSGiBeanProperties
 		class C implements Serializable {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(1, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 2, interfaceNames.size());
 	}
 
 	@Test
 	public void testServicesAnnotatedNoneSetButImplementsMultiple() {
-		@OSGiBeanProperties()
+		@OSGiBeanProperties
 		class C implements EventListener, Serializable {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(2, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 3, interfaceNames.size());
 	}
 
 	@Test
@@ -215,10 +240,12 @@ public class OSGiBeanPropertiesTest {
 		class C {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(0, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 1, interfaceNames.size());
 	}
 
 	@Test
@@ -229,10 +256,12 @@ public class OSGiBeanPropertiesTest {
 		class C extends B {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(1, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 2, interfaceNames.size());
 	}
 
 	@Test
@@ -243,10 +272,12 @@ public class OSGiBeanPropertiesTest {
 		class C extends B {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(2, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 3, interfaceNames.size());
 	}
 
 	@Test
@@ -254,10 +285,12 @@ public class OSGiBeanPropertiesTest {
 		class C implements Serializable {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(1, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 2, interfaceNames.size());
 	}
 
 	@Test
@@ -265,10 +298,12 @@ public class OSGiBeanPropertiesTest {
 		class C implements EventListener, Serializable {
 		}
 
-		Set<Class<?>> interfaceClasses = OSGiBeanProperties.Service.interfaces(
-			new C());
+		Set<String> interfaceNames = OSGiBeanProperties.Service.interfaceNames(
+			new C(), C.class.getAnnotation(OSGiBeanProperties.class),
+			StringPool.EMPTY_ARRAY);
 
-		Assert.assertEquals(2, interfaceClasses.size());
+		Assert.assertEquals(
+			interfaceNames.toString(), 3, interfaceNames.size());
 	}
 
 	@Test
@@ -292,11 +327,13 @@ public class OSGiBeanPropertiesTest {
 
 		Assert.assertTrue(clazz.isArray());
 		Assert.assertEquals(Boolean[].class, clazz);
+
 		Boolean[] values = (Boolean[])value;
-		Assert.assertEquals(true, values[0]);
-		Assert.assertEquals(false, values[1]);
-		Assert.assertEquals(true, values[2]);
-		Assert.assertEquals(3, values.length);
+
+		Assert.assertTrue(values[0]);
+		Assert.assertFalse(values[1]);
+		Assert.assertTrue(values[2]);
+		Assert.assertEquals(Arrays.toString(values), 3, values.length);
 	}
 
 	@Test
@@ -318,11 +355,13 @@ public class OSGiBeanPropertiesTest {
 
 		Assert.assertTrue(clazz.isArray());
 		Assert.assertEquals(Byte[].class, clazz);
+
 		Byte[] values = (Byte[])value;
+
 		Assert.assertEquals((byte)127, (byte)values[0]);
 		Assert.assertEquals((byte)95, (byte)values[1]);
 		Assert.assertEquals((byte)13, (byte)values[2]);
-		Assert.assertEquals(3, values.length);
+		Assert.assertEquals(Arrays.toString(values), 3, values.length);
 	}
 
 	@Test
@@ -346,11 +385,13 @@ public class OSGiBeanPropertiesTest {
 
 		Assert.assertTrue(clazz.isArray());
 		Assert.assertEquals(Character[].class, clazz);
+
 		Character[] values = (Character[])value;
+
 		Assert.assertEquals('@', (char)values[0]);
 		Assert.assertEquals('#', (char)values[1]);
 		Assert.assertEquals('\u0069', (char)values[2]);
-		Assert.assertEquals(3, values.length);
+		Assert.assertEquals(Arrays.toString(values), 3, values.length);
 	}
 
 	@Test
@@ -375,11 +416,13 @@ public class OSGiBeanPropertiesTest {
 
 		Assert.assertTrue(clazz.isArray());
 		Assert.assertEquals(Double[].class, clazz);
+
 		Double[] values = (Double[])value;
+
 		Assert.assertEquals(Double.MAX_VALUE, values[0], 0);
 		Assert.assertEquals(Double.MIN_VALUE, values[1], 0);
 		Assert.assertEquals(Double.MIN_NORMAL, values[2], 0);
-		Assert.assertEquals(3, values.length);
+		Assert.assertEquals(Arrays.toString(values), 3, values.length);
 	}
 
 	@Test
@@ -405,11 +448,13 @@ public class OSGiBeanPropertiesTest {
 
 		Assert.assertTrue(clazz.isArray());
 		Assert.assertEquals(Float[].class, clazz);
+
 		Float[] values = (Float[])value;
+
 		Assert.assertEquals(Float.MAX_VALUE, values[0], 0);
 		Assert.assertEquals(Float.MIN_VALUE, values[1], 0);
 		Assert.assertEquals(Float.MIN_NORMAL, values[2], 0);
-		Assert.assertEquals(3, values.length);
+		Assert.assertEquals(Arrays.toString(values), 3, values.length);
 	}
 
 	@Test
@@ -434,11 +479,13 @@ public class OSGiBeanPropertiesTest {
 
 		Assert.assertTrue(clazz.isArray());
 		Assert.assertEquals(Integer[].class, clazz);
+
 		Integer[] values = (Integer[])value;
+
 		Assert.assertEquals(Integer.MAX_VALUE, (int)values[0]);
 		Assert.assertEquals(Integer.MIN_VALUE, (int)values[1]);
 		Assert.assertEquals(12, (int)values[2]);
-		Assert.assertEquals(3, values.length);
+		Assert.assertEquals(Arrays.toString(values), 3, values.length);
 	}
 
 	@Test
@@ -463,11 +510,13 @@ public class OSGiBeanPropertiesTest {
 
 		Assert.assertTrue(clazz.isArray());
 		Assert.assertEquals(Long[].class, clazz);
+
 		Long[] values = (Long[])value;
+
 		Assert.assertEquals(Long.MAX_VALUE, (long)values[0]);
 		Assert.assertEquals(Long.MIN_VALUE, (long)values[1]);
-		Assert.assertEquals(12l, (long)values[2]);
-		Assert.assertEquals(3, values.length);
+		Assert.assertEquals(12L, (long)values[2]);
+		Assert.assertEquals(Arrays.toString(values), 3, values.length);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -502,11 +551,13 @@ public class OSGiBeanPropertiesTest {
 
 		Assert.assertTrue(clazz.isArray());
 		Assert.assertEquals(String[].class, clazz);
+
 		String[] values = (String[])value;
+
 		Assert.assertEquals("valueA", values[0]);
 		Assert.assertEquals("valueB", values[1]);
 		Assert.assertEquals("valueC", values[2]);
-		Assert.assertEquals(3, values.length);
+		Assert.assertEquals(Arrays.toString(values), 3, values.length);
 	}
 
 	@Test
@@ -528,11 +579,13 @@ public class OSGiBeanPropertiesTest {
 
 		Assert.assertTrue(clazz.isArray());
 		Assert.assertEquals(Short[].class, clazz);
+
 		Short[] values = (Short[])value;
+
 		Assert.assertEquals(Short.MAX_VALUE, (short)values[0]);
 		Assert.assertEquals(Short.MIN_VALUE, (short)values[1]);
 		Assert.assertEquals(12, (short)values[2]);
-		Assert.assertEquals(3, values.length);
+		Assert.assertEquals(Arrays.toString(values), 3, values.length);
 	}
 
 	@Test
@@ -545,8 +598,8 @@ public class OSGiBeanPropertiesTest {
 			new C());
 
 		Assert.assertNotNull(properties);
-		Assert.assertFalse(properties.isEmpty());
-		Assert.assertEquals(2, properties.size());
+		Assert.assertFalse(properties.toString(), properties.isEmpty());
+		Assert.assertEquals(properties.toString(), 2, properties.size());
 		Assert.assertEquals("value1", properties.get("key1"));
 	}
 
@@ -577,8 +630,8 @@ public class OSGiBeanPropertiesTest {
 			new C());
 
 		Assert.assertNotNull(properties);
-		Assert.assertFalse(properties.isEmpty());
-		Assert.assertEquals(1, properties.size());
+		Assert.assertFalse(properties.toString(), properties.isEmpty());
+		Assert.assertEquals(properties.toString(), 1, properties.size());
 		Assert.assertEquals("value", properties.get("key"));
 	}
 

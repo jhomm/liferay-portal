@@ -14,13 +14,17 @@
 
 package com.liferay.portlet.social.service.impl;
 
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.User;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portlet.social.RequestUserIdException;
-import com.liferay.portlet.social.model.SocialRequest;
-import com.liferay.portlet.social.model.SocialRequestConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portlet.social.service.base.SocialRequestLocalServiceBaseImpl;
+import com.liferay.social.kernel.exception.RequestUserIdException;
+import com.liferay.social.kernel.model.SocialRequest;
+import com.liferay.social.kernel.model.SocialRequestConstants;
+import com.liferay.social.kernel.service.SocialRequestInterpreterLocalService;
 
 import java.util.List;
 
@@ -52,9 +56,6 @@ public class SocialRequestLocalServiceImpl
 	 * @param  extraData the extra data regarding the request
 	 * @param  receiverUserId the primary key of the user receiving the request
 	 * @return the social request
-	 * @throws PortalException if the users could not be found, if the users
-	 *         were not from the same company, or if either of the users was the
-	 *         default user
 	 */
 	@Override
 	public SocialRequest addRequest(
@@ -62,9 +63,8 @@ public class SocialRequestLocalServiceImpl
 			String extraData, long receiverUserId)
 		throws PortalException {
 
-		User user = userPersistence.findByPrimaryKey(userId);
-		long classNameId = classNameLocalService.getClassNameId(className);
-		User receiverUser = userPersistence.findByPrimaryKey(receiverUserId);
+		User user = _userPersistence.findByPrimaryKey(userId);
+		User receiverUser = _userPersistence.findByPrimaryKey(receiverUserId);
 		long now = System.currentTimeMillis();
 
 		if ((userId == receiverUserId) || user.isDefaultUser() ||
@@ -73,6 +73,8 @@ public class SocialRequestLocalServiceImpl
 
 			throw new RequestUserIdException();
 		}
+
+		long classNameId = _classNameLocalService.getClassNameId(className);
 
 		SocialRequest request = socialRequestPersistence.fetchByU_C_C_T_R(
 			userId, classNameId, classPK, type, receiverUserId);
@@ -96,9 +98,7 @@ public class SocialRequestLocalServiceImpl
 		request.setReceiverUserId(receiverUserId);
 		request.setStatus(SocialRequestConstants.STATUS_PENDING);
 
-		socialRequestPersistence.update(request);
-
-		return request;
+		return socialRequestPersistence.update(request);
 	}
 
 	/**
@@ -120,8 +120,7 @@ public class SocialRequestLocalServiceImpl
 	 * Removes the social request identified by its primary key from the
 	 * database.
 	 *
-	 * @param  requestId the primary key of the social request
-	 * @throws PortalException if the social request could not be found
+	 * @param requestId the primary key of the social request
 	 */
 	@Override
 	public void deleteRequest(long requestId) throws PortalException {
@@ -338,16 +337,15 @@ public class SocialRequestLocalServiceImpl
 	public boolean hasRequest(
 		long userId, String className, long classPK, int type, int status) {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
+		int count = socialRequestPersistence.countByU_C_C_T_S(
+			userId, _classNameLocalService.getClassNameId(className), classPK,
+			type, status);
 
-		if (socialRequestPersistence.countByU_C_C_T_S(
-				userId, classNameId, classPK, type, status) <= 0) {
-
+		if (count <= 0) {
 			return false;
 		}
-		else {
-			return true;
-		}
+
+		return true;
 	}
 
 	/**
@@ -370,17 +368,15 @@ public class SocialRequestLocalServiceImpl
 		long userId, String className, long classPK, int type,
 		long receiverUserId, int status) {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		SocialRequest socialRequest = socialRequestPersistence.fetchByU_C_C_T_R(
-			userId, classNameId, classPK, type, receiverUserId);
+			userId, _classNameLocalService.getClassNameId(className), classPK,
+			type, receiverUserId);
 
 		if ((socialRequest == null) || (socialRequest.getStatus() != status)) {
 			return false;
 		}
-		else {
-			return true;
-		}
+
+		return true;
 	}
 
 	/**
@@ -389,10 +385,10 @@ public class SocialRequestLocalServiceImpl
 	 * <p>
 	 * If the status is updated to {@link SocialRequestConstants#STATUS_CONFIRM}
 	 * then {@link
-	 * com.liferay.portlet.social.service.SocialRequestInterpreterLocalService#processConfirmation(
+	 * SocialRequestInterpreterLocalService#processConfirmation(
 	 * SocialRequest, ThemeDisplay)} is called. If the status is updated to
 	 * {@link SocialRequestConstants#STATUS_IGNORE} then {@link
-	 * com.liferay.portlet.social.service.SocialRequestInterpreterLocalService#processRejection(
+	 * SocialRequestInterpreterLocalService#processRejection(
 	 * SocialRequest, ThemeDisplay)} is called.
 	 * </p>
 	 *
@@ -400,7 +396,6 @@ public class SocialRequestLocalServiceImpl
 	 * @param  status the new status
 	 * @param  themeDisplay the theme display
 	 * @return the updated social request
-	 * @throws PortalException if the social request could not be found
 	 */
 	@Override
 	public SocialRequest updateRequest(
@@ -413,18 +408,28 @@ public class SocialRequestLocalServiceImpl
 		request.setModifiedDate(System.currentTimeMillis());
 		request.setStatus(status);
 
-		socialRequestPersistence.update(request);
+		request = socialRequestPersistence.update(request);
 
 		if (status == SocialRequestConstants.STATUS_CONFIRM) {
-			socialRequestInterpreterLocalService.processConfirmation(
+			_socialRequestInterpreterLocalService.processConfirmation(
 				request, themeDisplay);
 		}
 		else if (status == SocialRequestConstants.STATUS_IGNORE) {
-			socialRequestInterpreterLocalService.processRejection(
+			_socialRequestInterpreterLocalService.processRejection(
 				request, themeDisplay);
 		}
 
 		return request;
 	}
+
+	@BeanReference(type = ClassNameLocalService.class)
+	private ClassNameLocalService _classNameLocalService;
+
+	@BeanReference(type = SocialRequestInterpreterLocalService.class)
+	private SocialRequestInterpreterLocalService
+		_socialRequestInterpreterLocalService;
+
+	@BeanReference(type = UserPersistence.class)
+	private UserPersistence _userPersistence;
 
 }

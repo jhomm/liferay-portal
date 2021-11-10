@@ -1,0 +1,80 @@
+@default = "assertClick"
+@summary = "Click on '${locator1}' that should have a value of '${value1}'"
+definition {
+
+	function assertClick {
+		if (contains("${locator1}", "/input")) {
+			AssertClick.assertValueClickAt();
+		}
+		else {
+			AssertClick.assertTextClickAt();
+		}
+	}
+
+	function assertPartialTextClickAt {
+		AssertTextEquals.assertPartialText();
+
+		selenium.mouseOver();
+
+		selenium.clickAt();
+	}
+
+	function assertTextClick {
+		AssertTextEquals.assertText();
+
+		selenium.mouseOver();
+
+		selenium.click();
+	}
+
+	function assertTextClickAt {
+		AssertTextEquals.assertText();
+
+		selenium.mouseOver();
+
+		selenium.clickAt();
+	}
+
+	function assertTextClickAtAndPause {
+		AssertTextEquals.assertText();
+
+		selenium.mouseOver();
+
+		selenium.clickAt();
+	}
+
+	function assertTextClickNoMouseOver {
+		AssertTextEquals.assertText();
+
+		selenium.click();
+	}
+
+	function assertValueClickAt {
+		AssertTextEquals.assertValue();
+
+		selenium.mouseOver();
+
+		selenium.clickAt();
+	}
+
+	function pauseAssertPartialTextClickAt {
+		AssertClick.assertPartialTextClickAt();
+	}
+
+	function pauseAssertTextClickAt {
+		AssertClick.assertTextClickAt();
+	}
+
+	function pauseMakeVisibleAssertTextEqualsClickAt {
+		selenium.makeVisible();
+
+		selenium.waitForVisible();
+
+		selenium.waitForText();
+
+		selenium.mouseDown();
+
+		selenium.mouseUp();
+	}
+
+}

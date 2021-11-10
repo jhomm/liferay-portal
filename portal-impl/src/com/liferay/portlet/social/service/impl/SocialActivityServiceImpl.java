@@ -14,18 +14,23 @@
 
 package com.liferay.portlet.social.service.impl;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.security.auth.PrincipalException;
-import com.liferay.portal.security.permission.ActionKeys;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.service.ServiceContext;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portlet.social.model.SocialActivity;
-import com.liferay.portlet.social.model.SocialActivityInterpreter;
-import com.liferay.portlet.social.model.impl.SocialActivityInterpreterImpl;
 import com.liferay.portlet.social.service.base.SocialActivityServiceBaseImpl;
+import com.liferay.social.kernel.model.SocialActivity;
+import com.liferay.social.kernel.model.SocialActivityInterpreter;
+import com.liferay.social.kernel.model.impl.SocialActivityInterpreterImpl;
+import com.liferay.social.kernel.service.SocialActivityInterpreterLocalService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +60,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getActivities(
@@ -90,7 +94,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getActivities(
@@ -126,7 +129,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getActivities(
@@ -134,11 +136,10 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 			int end)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		List<SocialActivity> activities =
 			socialActivityLocalService.getActivities(
-				mirrorActivityId, classNameId, classPK, 0,
+				mirrorActivityId,
+				_classNameLocalService.getClassNameId(className), classPK, 0,
 				end + PropsValues.SOCIAL_ACTIVITY_FILTER_SEARCH_LIMIT);
 
 		return filterActivities(activities, start, end);
@@ -161,18 +162,15 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getActivities(
 			String className, int start, int end)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
 		List<SocialActivity> activities =
 			socialActivityLocalService.getActivities(
-				classNameId, 0,
+				_classNameLocalService.getClassNameId(className), 0,
 				end + PropsValues.SOCIAL_ACTIVITY_FILTER_SEARCH_LIMIT);
 
 		return filterActivities(activities, start, end);
@@ -222,9 +220,9 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	public int getActivitiesCount(
 		long mirrorActivityId, String className, long classPK) {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		return getActivitiesCount(mirrorActivityId, classNameId, classPK);
+		return getActivitiesCount(
+			mirrorActivityId, _classNameLocalService.getClassNameId(className),
+			classPK);
 	}
 
 	/**
@@ -235,9 +233,8 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 */
 	@Override
 	public int getActivitiesCount(String className) {
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		return getActivitiesCount(classNameId);
+		return getActivitiesCount(
+			_classNameLocalService.getClassNameId(className));
 	}
 
 	/**
@@ -245,7 +242,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 *
 	 * @param  activityId the primary key of the activity
 	 * @return Returns the activity
-	 * @throws PortalException if the activity could not be found
 	 */
 	@Override
 	public SocialActivity getActivity(long activityId) throws PortalException {
@@ -253,7 +249,7 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 			activityId);
 
 		List<SocialActivityInterpreter> activityInterpreters =
-			socialActivityInterpreterLocalService.getActivityInterpreters(
+			_socialActivityInterpreterLocalService.getActivityInterpreters(
 				StringPool.BLANK);
 
 		if (!hasPermission(activity, activityInterpreters)) {
@@ -296,7 +292,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getGroupActivities(
@@ -347,7 +342,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getGroupUsersActivities(
@@ -383,7 +377,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 *
 	 * @param  mirrorActivityId the primary key of the mirror activity
 	 * @return Returns the mirror activity
-	 * @throws PortalException if the mirror activity could not be found
 	 */
 	@Override
 	public SocialActivity getMirrorActivity(long mirrorActivityId)
@@ -393,7 +386,7 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 			mirrorActivityId);
 
 		List<SocialActivityInterpreter> activityInterpreters =
-			socialActivityInterpreterLocalService.getActivityInterpreters(
+			_socialActivityInterpreterLocalService.getActivityInterpreters(
 				StringPool.BLANK);
 
 		if (!hasPermission(activity, activityInterpreters)) {
@@ -421,7 +414,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getOrganizationActivities(
@@ -466,7 +458,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getOrganizationUsersActivities(
@@ -501,17 +492,16 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * <p>
 	 * Useful when paginating results. Returns a maximum of <code>end -
 	 * start</code> instances. <code>start</code> and <code>end</code> are not
-	 * primary keys, they are indexes in the result set. Thus, <>0</code> refers
-	 * to the first result in the set. Setting both <code>start</code> and
-	 * <code>end</code> to {@link QueryUtil#ALL_POS} will return the full result
-	 * set.
+	 * primary keys, they are indexes in the result set. Thus, <code>0</code>
+	 * refers to the first result in the set. Setting both <code>start</code>
+	 * and <code>end</code> to {@link QueryUtil#ALL_POS} will return the full
+	 * result set.
 	 * </p>
 	 *
 	 * @param  userId the primary key of the user
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getRelationActivities(
@@ -545,7 +535,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getRelationActivities(
@@ -603,7 +592,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getUserActivities(
@@ -646,7 +634,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getUserGroupsActivities(
@@ -690,7 +677,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getUserGroupsAndOrganizationsActivities(
@@ -735,7 +721,6 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 	 * @param  start the lower bound of the range of results
 	 * @param  end the upper bound of the range of results (not inclusive)
 	 * @return the range of matching activities
-	 * @throws PortalException if a permission checker was not initialized
 	 */
 	@Override
 	public List<SocialActivity> getUserOrganizationsActivities(
@@ -770,7 +755,7 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 		List<SocialActivity> filteredActivities = new ArrayList<>();
 
 		List<SocialActivityInterpreter> activityInterpreters =
-			socialActivityInterpreterLocalService.getActivityInterpreters(
+			_socialActivityInterpreterLocalService.getActivityInterpreters(
 				StringPool.BLANK);
 
 		for (SocialActivity activity : activities) {
@@ -808,25 +793,42 @@ public class SocialActivityServiceImpl extends SocialActivityServiceBaseImpl {
 		PermissionChecker permissionChecker = getPermissionChecker();
 		ServiceContext serviceContext = new ServiceContext();
 
-		for (int i = 0; i < activityInterpreters.size(); i++) {
-			SocialActivityInterpreterImpl activityInterpreterImpl =
-				(SocialActivityInterpreterImpl)activityInterpreters.get(i);
+		for (SocialActivityInterpreter activityInterpreter :
+				activityInterpreters) {
 
-			if (activityInterpreterImpl.hasClassName(activity.getClassName())) {
+			SocialActivityInterpreterImpl socialActivityInterpreterImpl =
+				(SocialActivityInterpreterImpl)activityInterpreter;
+
+			if (socialActivityInterpreterImpl.hasClassName(
+					activity.getClassName())) {
+
 				try {
-					if (activityInterpreterImpl.hasPermission(
+					if (socialActivityInterpreterImpl.hasPermission(
 							permissionChecker, activity, ActionKeys.VIEW,
 							serviceContext)) {
 
 						return true;
 					}
 				}
-				catch (Exception e) {
+				catch (Exception exception) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(exception, exception);
+					}
 				}
 			}
 		}
 
 		return false;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		SocialActivityServiceImpl.class);
+
+	@BeanReference(type = ClassNameLocalService.class)
+	private ClassNameLocalService _classNameLocalService;
+
+	@BeanReference(type = SocialActivityInterpreterLocalService.class)
+	private SocialActivityInterpreterLocalService
+		_socialActivityInterpreterLocalService;
 
 }

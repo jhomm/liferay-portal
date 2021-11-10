@@ -14,62 +14,97 @@
 
 package com.liferay.taglib.aui;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
+import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.servlet.taglib.aui.ValidatorTag;
-import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.TextFormatter;
+import com.liferay.portal.kernel.util.Tuple;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.aui.base.BaseSelectTag;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
+import javax.servlet.jsp.tagext.BodyTag;
 
 /**
  * @author Julio Camarero
  * @author Jorge Ferrer
  * @author Brian Wing Shun Chan
  */
-public class SelectTag extends BaseSelectTag {
-
-	@Override
-	public int doEndTag() throws JspException {
-		updateFormValidators();
-
-		return super.doEndTag();
-	}
+public class SelectTag extends BaseSelectTag implements BodyTag {
 
 	@Override
 	public int doStartTag() throws JspException {
-		addRequiredValidatorTag();
+		addModelValidatorTags();
 
-		return super.doStartTag();
+		if (getRequired()) {
+			addRequiredValidatorTag();
+		}
+
+		super.doStartTag();
+
+		return EVAL_BODY_BUFFERED;
 	}
 
-	protected void addRequiredValidatorTag() {
-		if (!getRequired()) {
+	@Override
+	public String getField() {
+		String field = super.getField();
+
+		if (Validator.isNull(field)) {
+			field = getName();
+		}
+
+		return field;
+	}
+
+	@Override
+	public String getInputName() {
+		return getName();
+	}
+
+	@Override
+	public Class<?> getModel() {
+		Class<?> model = super.getModel();
+
+		if (model == null) {
+			model = (Class<?>)pageContext.getAttribute(
+				"aui:model-context:model");
+		}
+
+		return model;
+	}
+
+	protected void addModelValidatorTags() {
+		Class<?> model = getModel();
+
+		if (model == null) {
 			return;
 		}
 
-		ValidatorTag validatorTag = new ValidatorTagImpl(
-			"required", null, null, false);
+		List<Tuple> modelValidators = ModelHintsUtil.getValidators(
+			model.getName(), getField());
 
-		addValidatorTag("required", validatorTag);
-	}
-
-	protected void addValidatorTag(
-		String validatorName, ValidatorTag validatorTag) {
-
-		if (_validators == null) {
-			_validators = new HashMap<>();
+		if (modelValidators == null) {
+			return;
 		}
 
-		_validators.put(validatorName, validatorTag);
+		for (Tuple modelValidator : modelValidators) {
+			String validatorName = (String)modelValidator.getObject(1);
+			String validatorErrorMessage = (String)modelValidator.getObject(2);
+			String validatorValue = (String)modelValidator.getObject(3);
+			boolean customValidator = (Boolean)modelValidator.getObject(4);
+
+			ValidatorTag validatorTag = new ValidatorTagImpl(
+				validatorName, validatorErrorMessage, validatorValue,
+				customValidator);
+
+			addValidatorTag(validatorName, validatorTag);
+		}
 	}
 
 	@Override
@@ -78,8 +113,8 @@ public class SelectTag extends BaseSelectTag {
 	}
 
 	@Override
-	protected void setAttributes(HttpServletRequest request) {
-		super.setAttributes(request);
+	protected void setAttributes(HttpServletRequest httpServletRequest) {
+		super.setAttributes(httpServletRequest);
 
 		Object bean = getBean();
 
@@ -95,6 +130,12 @@ public class SelectTag extends BaseSelectTag {
 			name = name.substring(pos + 2, name.length() - 2);
 		}
 
+		String field = getField();
+
+		if (Validator.isNull(field)) {
+			field = name;
+		}
+
 		String id = getId();
 
 		if (Validator.isNull(id)) {
@@ -104,7 +145,7 @@ public class SelectTag extends BaseSelectTag {
 		String label = getLabel();
 
 		if (label == null) {
-			label = TextFormatter.format(name, TextFormatter.P);
+			label = TextFormatter.format(name, TextFormatter.K);
 		}
 
 		String listType = getListType();
@@ -119,7 +160,7 @@ public class SelectTag extends BaseSelectTag {
 		String title = getTitle();
 
 		if ((title == null) && Validator.isNull(label)) {
-			title = TextFormatter.format(name, TextFormatter.P);
+			title = TextFormatter.format(name, TextFormatter.K);
 		}
 
 		String value = String.valueOf(getValue());
@@ -130,40 +171,36 @@ public class SelectTag extends BaseSelectTag {
 			}
 
 			if (!getIgnoreRequestValue()) {
-				value = ParamUtil.getString(request, name, value);
+				value = ParamUtil.getString(httpServletRequest, name, value);
 			}
 		}
 
-		setNamespacedAttribute(request, "bean", bean);
-		setNamespacedAttribute(request, "id", id);
-		setNamespacedAttribute(request, "label", label);
-		setNamespacedAttribute(request, "listTypeFieldName", listTypeFieldName);
-		setNamespacedAttribute(request, "title", String.valueOf(title));
-		setNamespacedAttribute(request, "value", value);
-	}
+		setNamespacedAttribute(httpServletRequest, "bean", bean);
+		setNamespacedAttribute(httpServletRequest, "field", field);
+		setNamespacedAttribute(httpServletRequest, "id", id);
+		setNamespacedAttribute(httpServletRequest, "label", label);
+		setNamespacedAttribute(
+			httpServletRequest, "listTypeFieldName", listTypeFieldName);
+		setNamespacedAttribute(httpServletRequest, "model", getModel());
+		setNamespacedAttribute(
+			httpServletRequest, "title", String.valueOf(title));
+		setNamespacedAttribute(httpServletRequest, "value", value);
 
-	protected void updateFormValidators() {
-		if (_validators == null) {
-			return;
+		if (Validator.isNotNull(bodyContent)) {
+			setNamespacedAttribute(
+				httpServletRequest, "bodyContent", bodyContent.getString());
 		}
 
-		HttpServletRequest request =
-			(HttpServletRequest)pageContext.getRequest();
+		Map<String, ValidatorTag> validatorTags = getValidatorTags();
 
-		Map<String, List<ValidatorTag>> validatorTagsMap =
-			(Map<String, List<ValidatorTag>>)request.getAttribute(
-				"aui:form:validatorTagsMap");
+		if ((validatorTags != null) &&
+			(validatorTags.get("required") != null)) {
 
-		if (validatorTagsMap != null) {
-			List<ValidatorTag> validatorTags = ListUtil.fromMapValues(
-				_validators);
-
-			validatorTagsMap.put(getName(), validatorTags);
+			setNamespacedAttribute(
+				httpServletRequest, "required", Boolean.TRUE.toString());
 		}
 	}
 
 	private static final boolean _CLEAN_UP_SET_ATTRIBUTES = true;
-
-	private Map<String, ValidatorTag> _validators;
 
 }

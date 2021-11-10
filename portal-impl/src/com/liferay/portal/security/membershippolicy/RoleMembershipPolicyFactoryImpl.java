@@ -17,12 +17,15 @@ package com.liferay.portal.security.membershippolicy;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.security.membershippolicy.RoleMembershipPolicy;
+import com.liferay.portal.kernel.security.membershippolicy.RoleMembershipPolicyFactory;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.registry.Registry;
-import com.liferay.registry.RegistryUtil;
-import com.liferay.registry.ServiceReference;
-import com.liferay.registry.ServiceTracker;
-import com.liferay.registry.ServiceTrackerCustomizer;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * @author Sergio González
@@ -31,51 +34,41 @@ import com.liferay.registry.ServiceTrackerCustomizer;
  * @author Peter Fellwock
  */
 public class RoleMembershipPolicyFactoryImpl
-		implements RoleMembershipPolicyFactory {
+	implements RoleMembershipPolicyFactory {
 
 	@Override
 	public RoleMembershipPolicy getRoleMembershipPolicy() {
-		return _instance._serviceTracker.getService();
+		return _serviceTracker.getService();
 	}
 
 	private RoleMembershipPolicyFactoryImpl() {
-		Registry registry = RegistryUtil.getRegistry();
-
-		_serviceTracker = registry.trackServices(
-			RoleMembershipPolicy.class,
-			new RoleMembershipPolicyTrackerCustomizer());
-
-		_serviceTracker.open();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		RoleMembershipPolicyFactoryImpl.class);
 
-	private static final RoleMembershipPolicyFactoryImpl _instance =
-		new RoleMembershipPolicyFactoryImpl();
+	private static final BundleContext _bundleContext =
+		SystemBundleUtil.getBundleContext();
+	private static final ServiceTracker<?, RoleMembershipPolicy>
+		_serviceTracker;
 
-	private final ServiceTracker<?, RoleMembershipPolicy> _serviceTracker;
-
-	private class RoleMembershipPolicyTrackerCustomizer
-		implements
-			ServiceTrackerCustomizer
-				<RoleMembershipPolicy, RoleMembershipPolicy> {
+	private static class RoleMembershipPolicyTrackerCustomizer
+		implements ServiceTrackerCustomizer
+			<RoleMembershipPolicy, RoleMembershipPolicy> {
 
 		@Override
 		public RoleMembershipPolicy addingService(
 			ServiceReference<RoleMembershipPolicy> serviceReference) {
 
-			Registry registry = RegistryUtil.getRegistry();
-
-			RoleMembershipPolicy roleMembershipPolicy = registry.getService(
-				serviceReference);
+			RoleMembershipPolicy roleMembershipPolicy =
+				_bundleContext.getService(serviceReference);
 
 			if (PropsValues.MEMBERSHIP_POLICY_AUTO_VERIFY) {
 				try {
 					roleMembershipPolicy.verifyPolicy();
 				}
-				catch (PortalException pe) {
-					_log.error(pe, pe);
+				catch (PortalException portalException) {
+					_log.error(portalException, portalException);
 				}
 			}
 
@@ -93,11 +86,17 @@ public class RoleMembershipPolicyFactoryImpl
 			ServiceReference<RoleMembershipPolicy> serviceReference,
 			RoleMembershipPolicy roleMembershipPolicy) {
 
-			Registry registry = RegistryUtil.getRegistry();
-
-			registry.ungetService(serviceReference);
+			_bundleContext.ungetService(serviceReference);
 		}
 
+	}
+
+	static {
+		_serviceTracker = new ServiceTracker<>(
+			_bundleContext, RoleMembershipPolicy.class,
+			new RoleMembershipPolicyTrackerCustomizer());
+
+		_serviceTracker.open();
 	}
 
 }

@@ -14,9 +14,11 @@
 
 package com.liferay.util;
 
-import com.liferay.portal.kernel.util.CharPool;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeFormatter;
 
@@ -42,7 +44,7 @@ public class JS {
 
 		// Adjust for JavaScript specific annoyances
 
-		s = StringUtil.replace(s, "+", "%2B");
+		s = StringUtil.replace(s, '+', "%2B");
 		s = StringUtil.replace(s, "%20", "+");
 
 		// Decode URL
@@ -50,7 +52,10 @@ public class JS {
 		try {
 			s = URLDecoder.decode(s, StringPool.UTF8);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
 		}
 
 		return s;
@@ -63,23 +68,18 @@ public class JS {
 		try {
 			s = URLEncoder.encode(s, StringPool.UTF8);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
 		}
 
 		// Adjust for JavaScript specific annoyances
 
-		s = StringUtil.replace(s, "+", "%20");
+		s = StringUtil.replace(s, '+', "%20");
 		s = StringUtil.replace(s, "%2B", "+");
 
 		return s;
-	}
-
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link #encodeURIComponent}
-	 */
-	@Deprecated
-	public static String escape(String s) {
-		return encodeURIComponent(s);
 	}
 
 	public static String getSafeName(String name) {
@@ -94,37 +94,29 @@ public class JS {
 		for (int i = 0; i < name.length(); i++) {
 			char c = name.charAt(i);
 
-			switch (c) {
-				case CharPool.SPACE:
+			if ((c == CharPool.DASH) || (c == CharPool.PERIOD) ||
+				(c == CharPool.SPACE)) {
 
-				case CharPool.DASH:
+				if (sb == null) {
+					sb = new StringBuilder(name.length() - 1);
 
-				case CharPool.PERIOD:
-					if (sb == null) {
-						sb = new StringBuilder(name.length() - 1);
-
-						sb.append(name, index, i);
-					}
-
-					break;
-
-				default:
-					if (sb != null) {
-						sb.append(c);
-					}
+					sb.append(name, index, i);
+				}
+			}
+			else if (sb != null) {
+				sb.append(c);
 			}
 		}
 
 		if (sb == null) {
 			return name;
 		}
-		else {
-			return sb.toString();
-		}
+
+		return sb.toString();
 	}
 
 	public static String toScript(String[] array) {
-		StringBundler sb = new StringBundler(array.length * 4 + 2);
+		StringBundler sb = new StringBundler((array.length * 4) + 2);
 
 		sb.append(StringPool.OPEN_BRACKET);
 
@@ -143,13 +135,7 @@ public class JS {
 		return sb.toString();
 	}
 
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link #decodeURIComponent}
-	 */
-	@Deprecated
-	public static String unescape(String s) {
-		return decodeURIComponent(s);
-	}
+	private static final Log _log = LogFactoryUtil.getLog(JS.class);
 
 	private static final Pattern _pattern = Pattern.compile("%u[0-9a-fA-F]{4}");
 

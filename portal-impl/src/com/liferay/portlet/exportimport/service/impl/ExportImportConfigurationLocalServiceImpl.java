@@ -14,8 +14,14 @@
 
 package com.liferay.portlet.exportimport.service.impl;
 
+import com.liferay.exportimport.kernel.configuration.constants.ExportImportConfigurationConstants;
+import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.model.SystemEventConstants;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
@@ -28,25 +34,24 @@ import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.model.SystemEventConstants;
-import com.liferay.portal.model.User;
-import com.liferay.portal.service.ServiceContext;
-import com.liferay.portlet.exportimport.configuration.ExportImportConfigurationConstants;
-import com.liferay.portlet.exportimport.model.ExportImportConfiguration;
 import com.liferay.portlet.exportimport.service.base.ExportImportConfigurationLocalServiceBaseImpl;
-import com.liferay.portlet.trash.model.TrashEntry;
+import com.liferay.trash.kernel.exception.RestoreEntryException;
+import com.liferay.trash.kernel.exception.TrashEntryException;
+import com.liferay.trash.kernel.model.TrashEntry;
+import com.liferay.trash.kernel.service.TrashEntryLocalService;
 
 import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -97,8 +102,7 @@ public class ExportImportConfigurationLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userPersistence.findByPrimaryKey(userId);
-		Date now = new Date();
+		User user = _userPersistence.findByPrimaryKey(userId);
 
 		long exportImportConfigurationId = counterLocalService.increment();
 
@@ -115,15 +119,14 @@ public class ExportImportConfigurationLocalServiceImpl
 		exportImportConfiguration.setType(type);
 
 		if (settingsMap != null) {
-			String settings = JSONFactoryUtil.serialize(settingsMap);
-
-			exportImportConfiguration.setSettings(settings);
+			exportImportConfiguration.setSettings(
+				JSONFactoryUtil.serialize(settingsMap));
 		}
 
 		exportImportConfiguration.setStatus(status);
 		exportImportConfiguration.setStatusByUserId(userId);
 		exportImportConfiguration.setStatusByUserName(user.getScreenName());
-		exportImportConfiguration.setStatusDate(now);
+		exportImportConfiguration.setStatusDate(new Date());
 
 		return exportImportConfigurationPersistence.update(
 			exportImportConfiguration);
@@ -146,14 +149,9 @@ public class ExportImportConfigurationLocalServiceImpl
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public ExportImportConfiguration deleteExportImportConfiguration(
-			ExportImportConfiguration exportImportConfiguration)
-		throws PortalException {
+		ExportImportConfiguration exportImportConfiguration) {
 
 		exportImportConfigurationPersistence.remove(exportImportConfiguration);
-
-		trashEntryLocalService.deleteEntry(
-			ExportImportConfiguration.class.getName(),
-			exportImportConfiguration.getExportImportConfigurationId());
 
 		return exportImportConfiguration;
 	}
@@ -172,9 +170,7 @@ public class ExportImportConfigurationLocalServiceImpl
 	}
 
 	@Override
-	public void deleteExportImportConfigurations(long groupId)
-		throws PortalException {
-
+	public void deleteExportImportConfigurations(long groupId) {
 		List<ExportImportConfiguration> exportImportConfigurations =
 			exportImportConfigurationPersistence.findByGroupId(groupId);
 
@@ -243,6 +239,29 @@ public class ExportImportConfigurationLocalServiceImpl
 	}
 
 	@Override
+	public List<ExportImportConfiguration> getExportImportConfigurations(
+		long companyId, long groupId, String keywords, int type, int start,
+		int end,
+		OrderByComparator<ExportImportConfiguration> orderByComparator) {
+
+		return exportImportConfigurationFinder.findByKeywords(
+			companyId, groupId, keywords, type,
+			WorkflowConstants.STATUS_APPROVED, start, end, orderByComparator);
+	}
+
+	@Override
+	public List<ExportImportConfiguration> getExportImportConfigurations(
+		long companyId, long groupId, String name, String description, int type,
+		boolean andSearch, int start, int end,
+		OrderByComparator<ExportImportConfiguration> orderByComparator) {
+
+		return exportImportConfigurationFinder.findByC_G_N_D_T(
+			companyId, groupId, name, description, type,
+			WorkflowConstants.STATUS_APPROVED, andSearch, start, end,
+			orderByComparator);
+	}
+
+	@Override
 	public int getExportImportConfigurationsCount(long groupId) {
 		return exportImportConfigurationPersistence.countByG_S(
 			groupId, WorkflowConstants.STATUS_APPROVED);
@@ -252,6 +271,25 @@ public class ExportImportConfigurationLocalServiceImpl
 	public int getExportImportConfigurationsCount(long groupId, int type) {
 		return exportImportConfigurationPersistence.countByG_T_S(
 			groupId, type, WorkflowConstants.STATUS_APPROVED);
+	}
+
+	@Override
+	public int getExportImportConfigurationsCount(
+		long companyId, long groupId, String keywords, int type) {
+
+		return exportImportConfigurationFinder.countByKeywords(
+			companyId, groupId, keywords, type,
+			WorkflowConstants.STATUS_APPROVED);
+	}
+
+	@Override
+	public int getExportImportConfigurationsCount(
+		long companyId, long groupId, String name, String description, int type,
+		boolean andSearch) {
+
+		return exportImportConfigurationFinder.countByC_G_N_D_T(
+			companyId, groupId, name, description, type,
+			WorkflowConstants.STATUS_APPROVED, andSearch);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -264,13 +302,17 @@ public class ExportImportConfigurationLocalServiceImpl
 			exportImportConfigurationPersistence.findByPrimaryKey(
 				exportImportConfigurationId);
 
+		if (exportImportConfiguration.isInTrash()) {
+			throw new TrashEntryException();
+		}
+
 		int oldStatus = exportImportConfiguration.getStatus();
 
 		exportImportConfiguration = updateStatus(
 			userId, exportImportConfiguration.getExportImportConfigurationId(),
 			WorkflowConstants.STATUS_IN_TRASH);
 
-		trashEntryLocalService.addTrashEntry(
+		_trashEntryLocalService.addTrashEntry(
 			userId, exportImportConfiguration.getGroupId(),
 			ExportImportConfiguration.class.getName(),
 			exportImportConfiguration.getExportImportConfigurationId(), null,
@@ -289,7 +331,12 @@ public class ExportImportConfigurationLocalServiceImpl
 			exportImportConfigurationPersistence.findByPrimaryKey(
 				exportImportConfigurationId);
 
-		TrashEntry trashEntry = trashEntryLocalService.getEntry(
+		if (!exportImportConfiguration.isInTrash()) {
+			throw new RestoreEntryException(
+				RestoreEntryException.INVALID_STATUS);
+		}
+
+		TrashEntry trashEntry = _trashEntryLocalService.getEntry(
 			ExportImportConfiguration.class.getName(),
 			exportImportConfigurationId);
 
@@ -297,7 +344,7 @@ public class ExportImportConfigurationLocalServiceImpl
 			userId, exportImportConfiguration.getExportImportConfigurationId(),
 			trashEntry.getStatus());
 
-		trashEntryLocalService.deleteEntry(
+		_trashEntryLocalService.deleteEntry(
 			ExportImportConfiguration.class.getName(),
 			exportImportConfiguration.getExportImportConfigurationId());
 
@@ -306,9 +353,9 @@ public class ExportImportConfigurationLocalServiceImpl
 
 	@Override
 	public BaseModelSearchResult<ExportImportConfiguration>
-		searchExportImportConfigurations(
-			long companyId, long groupId, int type, String keywords, int start,
-			int end, Sort sort)
+			searchExportImportConfigurations(
+				long companyId, long groupId, int type, String keywords,
+				int start, int end, Sort sort)
 		throws PortalException {
 
 		String description = null;
@@ -330,10 +377,10 @@ public class ExportImportConfigurationLocalServiceImpl
 
 	@Override
 	public BaseModelSearchResult<ExportImportConfiguration>
-		searchExportImportConfigurations(
-			long companyId, long groupId, int type, String name,
-			String description, boolean andSearch, int start, int end,
-			Sort sort)
+			searchExportImportConfigurations(
+				long companyId, long groupId, int type, String name,
+				String description, boolean andSearch, int start, int end,
+				Sort sort)
 		throws PortalException {
 
 		Indexer<ExportImportConfiguration> indexer =
@@ -369,7 +416,7 @@ public class ExportImportConfigurationLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userPersistence.findByPrimaryKey(userId);
+		User user = _userPersistence.findByPrimaryKey(userId);
 
 		ExportImportConfiguration exportImportConfiguration =
 			exportImportConfigurationPersistence.findByPrimaryKey(
@@ -381,9 +428,8 @@ public class ExportImportConfigurationLocalServiceImpl
 		exportImportConfiguration.setDescription(description);
 
 		if (settingsMap != null) {
-			String settings = JSONFactoryUtil.serialize(settingsMap);
-
-			exportImportConfiguration.setSettings(settings);
+			exportImportConfiguration.setSettings(
+				JSONFactoryUtil.serialize(settingsMap));
 		}
 
 		return exportImportConfigurationPersistence.update(
@@ -396,7 +442,7 @@ public class ExportImportConfigurationLocalServiceImpl
 			long userId, long exportImportConfigurationId, int status)
 		throws PortalException {
 
-		User user = userPersistence.findByPrimaryKey(userId);
+		User user = _userPersistence.findByPrimaryKey(userId);
 
 		ExportImportConfiguration exportImportConfiguration =
 			exportImportConfigurationPersistence.findByPrimaryKey(
@@ -407,9 +453,8 @@ public class ExportImportConfigurationLocalServiceImpl
 		exportImportConfiguration.setStatusByUserName(user.getScreenName());
 		exportImportConfiguration.setStatusDate(new Date());
 
-		exportImportConfigurationPersistence.update(exportImportConfiguration);
-
-		return exportImportConfiguration;
+		return exportImportConfigurationPersistence.update(
+			exportImportConfiguration);
 	}
 
 	protected SearchContext buildSearchContext(
@@ -420,15 +465,18 @@ public class ExportImportConfigurationLocalServiceImpl
 
 		searchContext.setAndSearch(andSearch);
 
-		Map<String, Serializable> attributes = new HashMap<>();
-
-		attributes.put(Field.STATUS, WorkflowConstants.STATUS_APPROVED);
-		attributes.put("description", description);
-		attributes.put("groupId", groupId);
-		attributes.put("name", name);
-		attributes.put("type", type);
-
-		searchContext.setAttributes(attributes);
+		searchContext.setAttributes(
+			HashMapBuilder.<String, Serializable>put(
+				Field.STATUS, WorkflowConstants.STATUS_APPROVED
+			).put(
+				"description", description
+			).put(
+				"groupId", groupId
+			).put(
+				"name", name
+			).put(
+				"type", type
+			).build());
 
 		searchContext.setCompanyId(companyId);
 		searchContext.setEnd(end);
@@ -446,5 +494,12 @@ public class ExportImportConfigurationLocalServiceImpl
 
 		return searchContext;
 	}
+
+	@BeanReference(type = TrashEntryLocalService.class)
+	@SuppressWarnings("deprecation")
+	private TrashEntryLocalService _trashEntryLocalService;
+
+	@BeanReference(type = UserPersistence.class)
+	private UserPersistence _userPersistence;
 
 }

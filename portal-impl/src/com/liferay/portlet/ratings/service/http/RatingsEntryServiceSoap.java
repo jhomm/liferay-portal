@@ -14,30 +14,28 @@
 
 package com.liferay.portlet.ratings.service.http;
 
-import aQute.bnd.annotation.ProviderType;
-
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-
-import com.liferay.portlet.ratings.service.RatingsEntryServiceUtil;
+import com.liferay.ratings.kernel.service.RatingsEntryServiceUtil;
 
 import java.rmi.RemoteException;
 
 /**
  * Provides the SOAP utility for the
- * {@link RatingsEntryServiceUtil} service utility. The
- * static methods of this class calls the same methods of the service utility.
- * However, the signatures are different because it is difficult for SOAP to
- * support certain types.
+ * <code>RatingsEntryServiceUtil</code> service
+ * utility. The static methods of this class call the same methods of the
+ * service utility. However, the signatures are different because it is
+ * difficult for SOAP to support certain types.
  *
  * <p>
  * ServiceBuilder follows certain rules in translating the methods. For example,
- * if the method in the service utility returns a {@link java.util.List}, that
- * is translated to an array of {@link com.liferay.portlet.ratings.model.RatingsEntrySoap}.
- * If the method in the service utility returns a
- * {@link com.liferay.portlet.ratings.model.RatingsEntry}, that is translated to a
- * {@link com.liferay.portlet.ratings.model.RatingsEntrySoap}. Methods that SOAP cannot
- * safely wire are skipped.
+ * if the method in the service utility returns a <code>java.util.List</code>,
+ * that is translated to an array of
+ * <code>com.liferay.ratings.kernel.model.RatingsEntrySoap</code>. If the method in the
+ * service utility returns a
+ * <code>com.liferay.ratings.kernel.model.RatingsEntry</code>, that is translated to a
+ * <code>com.liferay.ratings.kernel.model.RatingsEntrySoap</code>. Methods that SOAP
+ * cannot safely wire are skipped.
  * </p>
  *
  * <p>
@@ -59,39 +57,44 @@ import java.rmi.RemoteException;
  *
  * @author Brian Wing Shun Chan
  * @see RatingsEntryServiceHttp
- * @see com.liferay.portlet.ratings.model.RatingsEntrySoap
- * @see RatingsEntryServiceUtil
+ * @deprecated As of Athanasius (7.3.x), with no direct replacement
  * @generated
  */
-@ProviderType
+@Deprecated
 public class RatingsEntryServiceSoap {
-	public static void deleteEntry(java.lang.String className, long classPK)
+
+	public static void deleteEntry(String className, long classPK)
 		throws RemoteException {
+
 		try {
 			RatingsEntryServiceUtil.deleteEntry(className, classPK);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	public static com.liferay.portlet.ratings.model.RatingsEntrySoap updateEntry(
-		java.lang.String className, long classPK, double score)
+	public static com.liferay.ratings.kernel.model.RatingsEntrySoap updateEntry(
+			String className, long classPK, double score)
 		throws RemoteException {
+
 		try {
-			com.liferay.portlet.ratings.model.RatingsEntry returnValue = RatingsEntryServiceUtil.updateEntry(className,
-					classPK, score);
+			com.liferay.ratings.kernel.model.RatingsEntry returnValue =
+				RatingsEntryServiceUtil.updateEntry(className, classPK, score);
 
-			return com.liferay.portlet.ratings.model.RatingsEntrySoap.toSoapModel(returnValue);
+			return com.liferay.ratings.kernel.model.RatingsEntrySoap.
+				toSoapModel(returnValue);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 
-			throw new RemoteException(e.getMessage());
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(RatingsEntryServiceSoap.class);
+	private static Log _log = LogFactoryUtil.getLog(
+		RatingsEntryServiceSoap.class);
+
 }

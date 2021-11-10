@@ -1,0 +1,23 @@
+definition {
+
+	@summary = "Get a classNameId by value"
+	macro _getClassNameId {
+		Variables.assertDefined(parameterList = "${value}");
+
+		var portalURL = JSONCompany.getPortalURL();
+
+		var curl = '''
+			${portalURL}/api/jsonws/classname/fetch-class-name \
+			  -u test@liferay.com:test \
+			  -d value=${value}
+		''';
+		var classNameId = JSONCurlUtil.post("${curl}", "$.[?(@['value'] == '${value}')]['classNameId']");
+
+		if ("${classNameId}" == "") {
+			echo("The ${value} doesn't exist.");
+		}
+
+		return "${classNameId}";
+	}
+
+}

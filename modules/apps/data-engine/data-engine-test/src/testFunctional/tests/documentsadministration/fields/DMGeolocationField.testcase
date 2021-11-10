@@ -1,0 +1,246 @@
+@component-name = "data-engine"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Data Engine";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONGroup.addGroup(groupName = "Test Site Name");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "test-site-name");
+
+		DMNavigator.gotoDocumentType();
+
+		DMDocumentType.addWithoutSave(
+			dmDocumentTypeFieldNames = "Geolocation",
+			dmDocumentTypeName = "DM Document Type Name");
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
+
+			User.logoutPG();
+		}
+	}
+
+	@description = "Verify if geolocation field can be be duplicated."
+	@priority = "4"
+	test DuplicateGeolocation {
+		property portal.acceptance = "false";
+
+		DataEngine.duplicate(fieldFieldLabel = "Geolocation");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Copy of Geolocation",
+			fieldName = "Geolocation");
+	}
+
+	@description = "Edit the label and help text of Separator Field"
+	@priority = "5"
+	test EditLabelAndHelpTextOfGeolocation {
+		property portal.acceptance = "false";
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Geolocation",
+			fieldFieldLabelEdit = "Edited Geolocation");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Edited Geolocation",
+			fieldHelp = "Geolocation Field Help Text");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Geolocation",
+			fieldHelp = "Geolocation Field Help Text",
+			fieldName = "Geolocation");
+	}
+
+	@description = "Edit Field Reference with valid and invalid characters."
+	@priority = "4"
+	test EditReferenceOfGeolocationWithValidAndInvalidCharacters {
+		property portal.acceptance = "false";
+
+		DataEngine.editFieldReference(
+			assertFieldReference = "GeolocationReference",
+			fieldFieldLabel = "Geolocation",
+			fieldReference = "Geolocation Reference @#@$%$%%");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DEBuilder.assertFieldReference(
+			fieldLabel = "Geolocation",
+			fieldReference = "GeolocationReference");
+
+		DataEngine.editFieldReference(
+			assertFieldReference = "GeolocationReferenceValidCharacters",
+			fieldFieldLabel = "Geolocation",
+			fieldReference = "GeolocationReferenceValidCharacters");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DEBuilder.assertFieldReference(
+			fieldLabel = "Geolocation",
+			fieldReference = "GeolocationReferenceValidCharacters");
+	}
+
+	@description = "Verify if geolocation field can repeat field (clicking on +) when it is set as repeatable."
+	@priority = "4"
+	test RepeatableGeolocationOnRenderer {
+		property portal.acceptance = "false";
+
+		DataEngine.toggleFieldRepeatable(fieldFieldLabel = "Geolocation");
+
+		DDLDataDefinition.save();
+
+		Navigator.gotoNavItem(navItem = "Files");
+
+		DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "DM Document Type Name");
+
+		PortletEntry.inputTitle(title = "Documents and Media Title");
+
+		DataEngine.addRepeatableField(fieldLabel = "Geolocation");
+
+		PortletEntry.publish();
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "Documents and Media Title");
+
+		DataEngine.assertFieldRepeated(
+			fieldName = "Geolocation",
+			index = "2");
+	}
+
+	@description = "Verify if user has the ability to set Searchable Option"
+	@priority = "5"
+	test SetSearchableOfGeolocation {
+		property portal.acceptance = "false";
+
+		DataEngine.editFieldSearchable(
+			fieldFieldLabel = "Geolocation",
+			searchableType = "Disable");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DataEngine.viewFieldSearchable(
+			fieldFieldLabel = "Geolocation",
+			searchableType = "Disable");
+
+		DataEngine.editFieldSearchable(
+			fieldFieldLabel = "Geolocation",
+			searchableType = "Keyword");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DataEngine.viewFieldSearchable(
+			fieldFieldLabel = "Geolocation",
+			searchableType = "Keyword");
+
+		DataEngine.editFieldSearchable(
+			fieldFieldLabel = "Geolocation",
+			searchableType = "Text");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DataEngine.viewFieldSearchable(
+			fieldFieldLabel = "Geolocation",
+			searchableType = "Text");
+	}
+
+	@description = "Verify if a user can show/hide label."
+	@priority = "4"
+	test ShowAndHideGeolocationLabel {
+		property portal.acceptance = "false";
+
+		var key_fieldFieldLabel = "Geolocation";
+
+		DataEngine.toggleShowLabel(fieldLabel = "${key_fieldFieldLabel}");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DataEngine.assertFieldNotPresent(fieldFieldLabel = "${key_fieldFieldLabel}");
+
+		DataEngine.toggleShowLabel(hiddenFieldLabel = "${key_fieldFieldLabel}");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "${key_fieldFieldLabel}",
+			fieldName = "${key_fieldFieldLabel}");
+	}
+
+	@description = "Verify if duplicated geolocation field is correctly loaded."
+	@priority = "4"
+	test VerifyDuplicatedGeolocationOnRenderer {
+		property portal.acceptance = "false";
+
+		DataEngine.duplicate(fieldFieldLabel = "Geolocation");
+
+		DDLDataDefinition.save();
+
+		Navigator.gotoNavItem(navItem = "Files");
+
+		DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "DM Document Type Name");
+
+		AssertElementPresent(
+			key_fieldFieldLabel = "Copy of Geolocation",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+	}
+
+	@description = "Verify if user has the ability to set as Required or not."
+	@priority = "4"
+	test VerifyRequiredPropertyOfGeolocationOnRenderer {
+		property portal.acceptance = "false";
+
+		var fieldLabel = "Geolocation";
+
+		DataEngine.editFieldRequired(fieldFieldLabel = "${fieldLabel}");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Type Name");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#FIELD_LABEL_REQUIRED");
+
+		DDLDataDefinition.save();
+
+		Navigator.gotoNavItem(navItem = "Files");
+
+		DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "DM Document Type Name");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#FIELD_LABEL_REQUIRED");
+	}
+
+}

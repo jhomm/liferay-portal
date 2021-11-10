@@ -16,13 +16,16 @@ package com.liferay.portal.upgrade.util;
 
 import com.liferay.portal.events.StartupHelperUtil;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeException;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import java.sql.Connection;
 
 /**
  * @author Alexander Chow
@@ -32,10 +35,6 @@ public abstract class BaseUpgradeTableImpl extends Table {
 
 	public BaseUpgradeTableImpl(String tableName) {
 		super(tableName);
-	}
-
-	public BaseUpgradeTableImpl(String tableName, Object[][] columns) {
-		super(tableName, columns);
 	}
 
 	public String[] getIndexesSQL() throws Exception {
@@ -75,51 +74,61 @@ public abstract class BaseUpgradeTableImpl extends Table {
 	}
 
 	public void updateTable() throws Exception {
+		try (Connection connection = DataAccess.getConnection()) {
+			updateTable(connection, connection, true);
+		}
+	}
+
+	protected void updateTable(
+			Connection sourceConnection, Connection targetConnection,
+			boolean deleteSource)
+		throws Exception {
+
 		_calledUpdateTable = true;
 
-		generateTempFile();
+		generateTempFile(sourceConnection);
 
 		String tempFileName = getTempFileName();
 
 		try {
-			DB db = DBFactoryUtil.getDB();
+			DB db = DBManagerUtil.getDB();
 
-			if (Validator.isNotNull(tempFileName)) {
-				String deleteSQL = getDeleteSQL();
-
-				db.runSQL(deleteSQL);
+			if (Validator.isNotNull(tempFileName) && deleteSource) {
+				db.runSQL(sourceConnection, getDeleteSQL());
 			}
 
 			String createSQL = getCreateSQL();
 
 			if (Validator.isNotNull(createSQL)) {
-				db.runSQL("drop table " + getTableName());
+				if (deleteSource) {
+					db.runSQL(sourceConnection, "drop table " + getTableName());
+				}
 
-				db.runSQL(createSQL);
+				db.runSQL(targetConnection, createSQL);
 			}
 
-			populateTable();
+			populateTable(targetConnection);
 
 			String[] indexesSQL = getIndexesSQL();
 
 			boolean dropIndexes = false;
 
 			for (String indexSQL : indexesSQL) {
-				if (!isAllowUniqueIndexes()) {
-					if (indexSQL.contains("create unique index")) {
-						indexSQL = StringUtil.replace(
-							indexSQL, "create unique index ", "create index ");
+				if (!isAllowUniqueIndexes() &&
+					indexSQL.contains("create unique index")) {
 
-						dropIndexes = true;
-					}
+					indexSQL = StringUtil.replace(
+						indexSQL, "create unique index ", "create index ");
+
+					dropIndexes = true;
 				}
 
 				try {
-					db.runSQL(indexSQL);
+					db.runSQLTemplateString(targetConnection, indexSQL, false);
 				}
-				catch (Exception e) {
+				catch (Exception exception) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(e.getMessage() + ": " + indexSQL);
+						_log.warn(exception.getMessage() + ": " + indexSQL);
 					}
 				}
 			}

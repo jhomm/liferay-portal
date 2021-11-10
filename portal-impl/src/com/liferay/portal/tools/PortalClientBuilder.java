@@ -14,13 +14,13 @@
 
 package com.liferay.portal.tools;
 
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.io.DummyOutputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
@@ -99,7 +99,8 @@ public class PortalClientBuilder {
 				serviceName.startsWith("Portlet_")) {
 
 				Wsdl2JavaTask.generateJava(
-					url + "/" + serviceName + "?wsdl", outputDir, mappingFile);
+					StringBundler.concat(url, "/", serviceName, "?wsdl"),
+					outputDir, mappingFile);
 			}
 		}
 
@@ -107,13 +108,14 @@ public class PortalClientBuilder {
 
 		if (testNamespace.exists()) {
 			throw new RuntimeException(
-				"Please update " + mappingFile + " to namespace " +
-					"com.liferay.portal to com.liferay.client.soap.portal");
+				StringBundler.concat(
+					"Please update ", mappingFile, " from namespace ",
+					"com.liferay.portal to com.liferay.client.soap.portal"));
 		}
 	}
 
 	private HttpServlet _createAxisHttpServlet(final File docRootDir)
-		throws ServletException {
+		throws Exception {
 
 		AxisServlet axisServlet = new AxisServlet();
 
@@ -122,14 +124,14 @@ public class PortalClientBuilder {
 				new ResourceLoader() {
 
 					@Override
-					public Resource getResource(String name) {
-						return new FileSystemResource(
-							new File(docRootDir, name));
+					public ClassLoader getClassLoader() {
+						return AxisServlet.class.getClassLoader();
 					}
 
 					@Override
-					public ClassLoader getClassLoader() {
-						return AxisServlet.class.getClassLoader();
+					public Resource getResource(String name) {
+						return new FileSystemResource(
+							new File(docRootDir, name));
 					}
 
 				}),
@@ -152,6 +154,7 @@ public class PortalClientBuilder {
 				_axisHttpServlet.getServletContext(), "GET", path);
 
 		mockHttpServletRequest.setPathInfo(path.substring(index));
+
 		mockHttpServletRequest.setQueryString(url.getQuery());
 		mockHttpServletRequest.setScheme(url.getProtocol());
 		mockHttpServletRequest.setServerName(url.getHost());
@@ -165,8 +168,8 @@ public class PortalClientBuilder {
 			_axisHttpServlet.service(
 				mockHttpServletRequest, mockHttpServletResponse);
 		}
-		catch (ServletException se) {
-			throw new IOException(se);
+		catch (ServletException servletException) {
+			throw new IOException(servletException);
 		}
 
 		return mockHttpServletResponse.getContentAsByteArray();
@@ -207,26 +210,18 @@ public class PortalClientBuilder {
 			soapNamespace.substring(0, pos) + ".client.soap" +
 				soapNamespace.substring(pos);
 
-		StringBundler sb = new StringBundler(12);
-
-		sb.append("com.liferay.client.soap.portal.kernel.util=");
-		sb.append("http://util.kernel.portal.liferay.com\n");
-
-		sb.append("com.liferay.client.soap.portal.model=");
-		sb.append("http://model.portal.liferay.com\n");
-
-		sb.append("com.liferay.client.soap.portal.service=");
-		sb.append("http://service.portal.liferay.com\n");
-
-		sb.append(soapNamespace);
-		sb.append(".model=");
-		sb.append("http://model.knowledgebase.liferay.com\n");
-
-		sb.append(soapNamespace);
-		sb.append(".service.http=");
-		sb.append("urn:http.service.knowledgebase.liferay.com\n");
-
-		FileUtil.write(mappingFile, sb.toString());
+		FileUtil.write(
+			mappingFile,
+			StringBundler.concat(
+				"com.liferay.client.soap.portal.kernel.util=",
+				"http://util.kernel.portal.liferay.com\n",
+				"com.liferay.client.soap.portal.model=",
+				"http://model.portal.liferay.com\n",
+				"com.liferay.client.soap.portal.service=",
+				"http://service.portal.liferay.com\n", soapNamespace,
+				".model=http://model.knowledgebase.liferay.com\n",
+				soapNamespace,
+				".service.http=urn:http.service.knowledgebase.liferay.com\n"));
 	}
 
 	private final HttpServlet _axisHttpServlet;

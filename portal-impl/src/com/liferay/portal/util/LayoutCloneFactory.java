@@ -16,7 +16,7 @@ package com.liferay.portal.util;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.ClassLoaderUtil;
+import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 /**
@@ -32,7 +32,7 @@ public class LayoutCloneFactory {
 				}
 
 				ClassLoader classLoader =
-					ClassLoaderUtil.getPortalClassLoader();
+					PortalClassLoaderUtil.getClassLoader();
 
 				try {
 					Class<?> clazz = classLoader.loadClass(
@@ -40,14 +40,16 @@ public class LayoutCloneFactory {
 
 					_layoutClone = (LayoutClone)clazz.newInstance();
 				}
-				catch (Exception e) {
-					_log.error(e, e);
+				catch (Exception exception) {
+					_log.error(exception, exception);
 				}
 			}
 		}
 		else {
 			if (_log.isDebugEnabled()) {
-				_log.debug("Return " + _layoutClone.getClass().getName());
+				Class<?> clazz = _layoutClone.getClass();
+
+				_log.debug("Return " + clazz.getName());
 			}
 		}
 

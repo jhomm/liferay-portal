@@ -1,0 +1,74 @@
+definition {
+
+	macro addAccountManager {
+		JSONUser.addUser(
+			userEmailAddress = "${userEmailAddress}",
+			userFirstName = "${userFirstName}",
+			userLastName = "${userLastName}",
+			userScreenName = "${userScreenName}");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "${userEmailAddress}");
+
+		JSONOrganization.addOrganization(organizationName = "${orgName}");
+
+		JSONOrganization.assignUserToOrganization(
+			organizationName = "${orgName}",
+			userEmailAddress = "${userEmailAddress}");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		User.assignOrgRoleCP(
+			roleTitle = "${orgRoleTitle}",
+			userScreenName = "${userScreenName}");
+
+		Accounts.openAccountsAdmin();
+
+		LexiconEntry.gotoEntry(rowEntry = "${accountName}");
+
+		Accounts.assignOrganizations(
+			accountName = "${accountName}",
+			assigneeName = "${orgName}");
+	}
+
+	macro addBlockedEmailDomain {
+		PortalSettings.gotoConfiguration(
+			configurationCategory = "Accounts",
+			configurationName = "Email Domains",
+			configurationScope = "Virtual Instance Scope");
+
+		SystemSettings.editTextAreaSettingMultiLines(
+			settingName = "Blocked Email Domains",
+			settingValues = "${settingValues}");
+
+		SystemSettings.saveConfiguration();
+	}
+
+	macro disableAccountEmailDomain {
+		PortalSettings.gotoConfiguration(
+			configurationCategory = "Accounts",
+			configurationName = "Email Domains",
+			configurationScope = "Virtual Instance Scope");
+
+		Uncheck.uncheckToggleSwitch(
+			key_toggleSwitchLabel = "Enable Email Domain Validation",
+			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+
+		PortletEntry.update();
+	}
+
+	macro enableAccountEmailDomain {
+		PortalSettings.gotoConfiguration(
+			configurationCategory = "Accounts",
+			configurationName = "Email Domains",
+			configurationScope = "Virtual Instance Scope");
+
+		PortalSettings.editConfigurationUsersPersonalMenuShowInControlMenu(toggleSwitchLabel = "Enable Email Domain Validation");
+	}
+
+}

@@ -14,10 +14,9 @@
 
 package com.liferay.portal.fabric.status;
 
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.process.ProcessCallable;
-import com.liferay.portal.kernel.process.ProcessException;
-import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.process.ProcessCallable;
+import com.liferay.petra.process.ProcessException;
 
 import java.io.Serializable;
 
@@ -32,6 +31,7 @@ import java.lang.management.ThreadInfo;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +58,7 @@ public class JMXProxyUtil {
 			classLoader = ClassLoader.getSystemClassLoader();
 		}
 
-		return (T)ProxyUtil.newProxyInstance(
+		return (T)Proxy.newProxyInstance(
 			classLoader, new Class<?>[] {interfaceClass},
 			new JMXProxyInvocationHandler(objectName, processCallableExecutor));
 	}
@@ -149,9 +149,9 @@ public class JMXProxyUtil {
 			return objectName.equals(platformManagedObject.getObjectName());
 		}
 
-		if (ProxyUtil.isProxyClass(target.getClass())) {
-			InvocationHandler invocationHandler =
-				ProxyUtil.getInvocationHandler(target);
+		if (Proxy.isProxyClass(target.getClass())) {
+			InvocationHandler invocationHandler = Proxy.getInvocationHandler(
+				target);
 
 			if (invocationHandler instanceof JMXProxyInvocationHandler) {
 				JMXProxyInvocationHandler jmxProxyInvocationHandler =
@@ -258,15 +258,15 @@ public class JMXProxyUtil {
 				return (Serializable)mBeanServer.getAttribute(
 					_objectName, _attributeName);
 			}
-			catch (AttributeNotFoundException anfe) {
+			catch (AttributeNotFoundException attributeNotFoundException) {
 				if (_optional) {
 					return null;
 				}
 
-				throw new ProcessException(anfe);
+				throw new ProcessException(attributeNotFoundException);
 			}
-			catch (Exception e) {
-				throw new ProcessException(e);
+			catch (Exception exception) {
+				throw new ProcessException(exception);
 			}
 		}
 
@@ -369,8 +369,8 @@ public class JMXProxyUtil {
 					_objectName, _operationName, _arguments,
 					_parameterTypeNames);
 			}
-			catch (Exception e) {
-				throw new ProcessException(e);
+			catch (Exception exception) {
+				throw new ProcessException(exception);
 			}
 		}
 
@@ -406,13 +406,13 @@ public class JMXProxyUtil {
 					_objectName,
 					new Attribute(_attributeName, _attributeValue));
 			}
-			catch (AttributeNotFoundException anfe) {
+			catch (AttributeNotFoundException attributeNotFoundException) {
 				if (!_optional) {
-					throw new ProcessException(anfe);
+					throw new ProcessException(attributeNotFoundException);
 				}
 			}
-			catch (Exception e) {
-				throw new ProcessException(e);
+			catch (Exception exception) {
+				throw new ProcessException(exception);
 			}
 
 			return null;

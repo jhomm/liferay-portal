@@ -17,7 +17,7 @@ package com.liferay.portal.service.impl;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.model.BrowserTracker;
+import com.liferay.portal.kernel.model.BrowserTracker;
 import com.liferay.portal.service.base.BrowserTrackerLocalServiceBaseImpl;
 
 /**
@@ -65,9 +65,9 @@ public class BrowserTrackerLocalServiceImpl
 		browserTracker.setBrowserKey(browserKey);
 
 		try {
-			browserTrackerPersistence.update(browserTracker);
+			browserTracker = browserTrackerPersistence.update(browserTracker);
 		}
-		catch (SystemException se) {
+		catch (SystemException systemException) {
 			if (_log.isWarnEnabled()) {
 				_log.warn("Add failed, fetch {userId=" + userId + "}");
 			}
@@ -76,7 +76,7 @@ public class BrowserTrackerLocalServiceImpl
 				userId, false);
 
 			if (browserTracker == null) {
-				throw se;
+				throw systemException;
 			}
 		}
 

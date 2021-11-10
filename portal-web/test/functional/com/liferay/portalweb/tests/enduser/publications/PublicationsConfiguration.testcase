@@ -1,0 +1,103 @@
+@component-name = "portal-publications"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Publications";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+	}
+
+	@priority = "5"
+	test CannotEnablePublicationsWhenStagingIsTurnedOn {
+		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+
+		ProductMenu.gotoPortlet(
+			category = "Publishing",
+			portlet = "Staging",
+			site = "Guest");
+
+		Staging.activateStagingCP(siteName = "${siteName}");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Publications",
+			panel = "Applications",
+			portlet = "Publications");
+
+		Check.checkToggleSwitch(locator1 = "Publications#PUBLICATIONS_TOGGLE_SWITCH");
+
+		Click(locator1 = "Button#SUBMIT");
+
+		Alert.viewErrorMessage(errorMessage = "Staging is enabled for at least one site or asset library in the current virtual instance. Publications and staging cannot be used together.");
+	}
+
+	@priority = "5"
+	test EnableDisablePublications {
+		property portal.acceptance = "true";
+
+		Publications.enablePublications();
+
+		Publications.createNewPublication(publicationName = "Publication Name");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentFile = "Document_1.jpg",
+			dmDocumentTitle = "DM Document Title");
+
+		Publications.disablePublications();
+
+		AssertElementNotPresent(locator1 = "Publications#PUBLICATIONS_INDICATOR_BUTTON");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMDocument.viewDefault();
+	}
+
+	@priority = "5"
+	test EnablePublicationsAndGoToOverview {
+		Publications.enablePublications();
+
+		AssertTextEquals(
+			locator1 = "Publications#MANGE_PUBLICATIONS_PAGE_TITLE",
+			value1 = "Publications");
+
+		AssertTextPresent(
+			key_publicationName = "Production",
+			locator1 = "Publications#PUBLICATIONS_INDICATOR_TITLE",
+			value1 = "Production");
+
+		Click(locator1 = "Publications#PUBLICATIONS_INDICATOR_BUTTON");
+
+		for (var menuItem : list "Select a Publication,Create New Publication") {
+			MenuItem.viewPresent(menuItem = "${menuItem}");
+		}
+
+		for (var menuItem : list "Review Changes,Schedule,Publish") {
+			MenuItem.viewNotPresent(menuItem = "${menuItem}");
+		}
+
+		Navigator.openURL();
+
+		ProductMenuHelper.openProductMenu();
+
+		ProductMenuHelper.expandCategory(category = "Publishing");
+
+		AssertElementNotPresent(
+			key_portlet = "Staging",
+			locator1 = "ProductMenu#PORTLET");
+	}
+
+}

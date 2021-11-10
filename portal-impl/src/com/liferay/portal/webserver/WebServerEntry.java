@@ -14,9 +14,13 @@
 
 package com.liferay.portal.webserver;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.URLCodec;
+
+import java.text.Format;
 
 import java.util.Date;
 
@@ -37,6 +41,14 @@ public class WebServerEntry {
 		_name = name;
 		_createDate = createDate;
 		_modifiedDate = modifiedDate;
+
+		if (modifiedDate != null) {
+			Format format = FastDateFormatFactoryUtil.getSimpleDateFormat(
+				"d MMM yyyy HH:mm z");
+
+			_modifiedDateString = format.format(modifiedDate);
+		}
+
 		_description = GetterUtil.getString(description);
 		_size = size;
 	}
@@ -51,6 +63,10 @@ public class WebServerEntry {
 
 	public Date getModifiedDate() {
 		return _modifiedDate;
+	}
+
+	public String getModifiedDateString() {
+		return _modifiedDateString;
 	}
 
 	public String getName() {
@@ -77,6 +93,10 @@ public class WebServerEntry {
 		_modifiedDate = modifiedDate;
 	}
 
+	public void setModifiedDateString(String modifiedDateString) {
+		_modifiedDateString = modifiedDateString;
+	}
+
 	public void setName(String name) {
 		_name = name;
 	}
@@ -97,10 +117,10 @@ public class WebServerEntry {
 		}
 
 		if (path.endsWith(StringPool.SLASH)) {
-			path = path + HttpUtil.encodeURL(name, true);
+			path = path + URLCodec.encodeURL(name, true);
 		}
 		else {
-			path = path + StringPool.SLASH + HttpUtil.encodeURL(name, true);
+			path = path + StringPool.SLASH + URLCodec.encodeURL(name, true);
 		}
 
 		return path;
@@ -109,6 +129,7 @@ public class WebServerEntry {
 	private Date _createDate;
 	private String _description;
 	private Date _modifiedDate;
+	private String _modifiedDateString;
 	private String _name;
 	private String _path;
 	private long _size;

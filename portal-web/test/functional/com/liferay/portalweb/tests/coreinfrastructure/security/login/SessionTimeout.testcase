@@ -1,0 +1,139 @@
+@component-name = "portal-security"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Login";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			User.firstLoginPG();
+		}
+	}
+
+	@description = "This is a use case for LPS-75977. Redirect on expire"
+	@priority = "5"
+	test RedirectOnExpire {
+		property custom.properties = "session.timeout=2${line.separator}session.timeout.redirect.on.expire=true";
+		property test.name.skip.portal.instance = "SessionTimeout#RedirectOnExpire";
+		property web.xml.timeout = "2";
+
+		task ("Add public page") {
+			Navigator.openURL();
+
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+
+			SitePages.addPublicPage(pageName = "Session Page");
+		}
+
+		task ("Assert expired session error message and user sign in not present ") {
+			Navigator.gotoPage(pageName = "Session Page");
+
+			User.viewSessionNotExpired();
+		}
+
+		task ("Wait for expiration time") {
+			Pause(locator1 = "60000");
+		}
+
+		task ("Assert expired session error message") {
+			User.viewExpiredSessionErrorMessage(message = "Due to inactivity, your session will expire");
+		}
+
+		task ("Wait and sign in") {
+			Pause(locator1 = "60000");
+
+			User.viewSignInPresent();
+		}
+
+		task ("Assert welcome page") {
+			Smoke.viewWelcomeContentPage();
+		}
+	}
+
+	@description = "This is a use cae for LRQA-7765. Remember me checked"
+	@priority = "4"
+	test RememberMeChecked {
+		property custom.properties = "session.timeout=2";
+		property web.xml.timeout = "2";
+
+		task ("Assert session not expired and user sign in not present") {
+			Navigator.openURL();
+
+			User.viewSessionNotExpired();
+		}
+
+		task ("Wait for expiration time") {
+			Pause(locator1 = "120000");
+		}
+
+		task ("Assert session expired message") {
+			User.viewExpiredSessionErrorMessage(message = "Danger:Due to inactivity, your session has expired. Please save any data you may have entered before refreshing the page.");
+		}
+
+		task ("Refresh and sign in") {
+			Refresh();
+
+			User.viewSignIn();
+
+			User.firstLoginUI(
+				password = "test",
+				rememberMeChecked = "true",
+				userEmailAddress = "test@liferay.com");
+		}
+
+		task ("Wait for session expired") {
+			Navigator.openURL();
+
+			Pause(locator1 = "120000");
+			User.viewSessionNotExpired(sigin = "False");
+
+			//AssertElementNotPresent(locator1 = "Home#ERROR_MESSAGE_EXPIRED_SESSION");
+
+		}
+
+		task ("Refresh and assert welcome message") {
+			Refresh();
+
+			Smoke.viewWelcomeContentPage();
+		}
+
+		task ("Logout and login") {
+			User.logoutPG();
+
+			User.loginPG();
+		}
+
+		task ("Open portal, assert session expired message and user sign in not present") {
+			Navigator.openURL();
+
+			User.viewSessionNotExpired();
+		}
+
+		task ("Wait for session expired") {
+			Pause(locator1 = "120000");
+
+			User.viewExpiredSessionErrorMessage(message = "Danger:Due to inactivity, your session has expired. Please save any data you may have entered before refreshing the page.");
+		}
+
+		task ("Refresh and assert user sign in present") {
+			Refresh();
+
+			User.viewSignIn();
+		}
+	}
+
+}

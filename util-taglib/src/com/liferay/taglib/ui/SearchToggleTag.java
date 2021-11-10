@@ -25,6 +25,26 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class SearchToggleTag extends IncludeTag {
 
+	public String getButtonLabel() {
+		return _buttonLabel;
+	}
+
+	public DisplayTerms getDisplayTerms() {
+		return _displayTerms;
+	}
+
+	public String getId() {
+		return _id;
+	}
+
+	public String getMarkupView() {
+		return _markupView;
+	}
+
+	public boolean isAutoFocus() {
+		return _autoFocus;
+	}
+
 	public void setAutoFocus(boolean autoFocus) {
 		_autoFocus = autoFocus;
 	}
@@ -41,23 +61,25 @@ public class SearchToggleTag extends IncludeTag {
 		_id = id;
 	}
 
-	public void setView(String view) {
-		_view = view;
+	public void setMarkupView(String markupView) {
+		_markupView = markupView;
 	}
 
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
 		_autoFocus = false;
 		_buttonLabel = null;
 		_displayTerms = null;
 		_id = null;
-		_view = null;
+		_markupView = null;
 	}
 
 	@Override
 	protected String getEndPage() {
-		if (Validator.isNotNull(_view)) {
-			return "/html/taglib/ui/search_toggle/" + _view + "/end.jsp";
+		if (Validator.isNotNull(_markupView)) {
+			return "/html/taglib/ui/search_toggle/" + _markupView + "/end.jsp";
 		}
 
 		return "/html/taglib/ui/search_toggle/end.jsp";
@@ -65,28 +87,29 @@ public class SearchToggleTag extends IncludeTag {
 
 	@Override
 	protected String getStartPage() {
-		if (Validator.isNotNull(_view)) {
-			return "/html/taglib/ui/search_toggle/" + _view + "/start.jsp";
+		if (Validator.isNotNull(_markupView)) {
+			return "/html/taglib/ui/search_toggle/" + _markupView +
+				"/start.jsp";
 		}
 
 		return "/html/taglib/ui/search_toggle/start.jsp";
 	}
 
 	@Override
-	protected void setAttributes(HttpServletRequest request) {
-		request.setAttribute(
+	protected void setAttributes(HttpServletRequest httpServletRequest) {
+		httpServletRequest.setAttribute(
 			"liferay-ui:search-toggle:autoFocus", String.valueOf(_autoFocus));
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			"liferay-ui:search-toggle:buttonLabel", _buttonLabel);
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			"liferay-ui:search-toggle:displayTerms", _displayTerms);
-		request.setAttribute("liferay-ui:search-toggle:id", _id);
+		httpServletRequest.setAttribute("liferay-ui:search-toggle:id", _id);
 	}
 
 	private boolean _autoFocus;
 	private String _buttonLabel;
 	private DisplayTerms _displayTerms;
 	private String _id;
-	private String _view;
+	private String _markupView;
 
 }

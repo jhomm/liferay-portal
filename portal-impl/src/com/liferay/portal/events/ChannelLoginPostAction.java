@@ -17,9 +17,9 @@ package com.liferay.portal.events;
 import com.liferay.portal.kernel.events.Action;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.notifications.ChannelHubManagerUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.model.User;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,19 +32,22 @@ import javax.servlet.http.HttpSession;
 public class ChannelLoginPostAction extends Action {
 
 	@Override
-	public void run(HttpServletRequest request, HttpServletResponse response) {
-		try {
-			HttpSession session = request.getSession();
+	public void run(
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
-			User user = (User)session.getAttribute(WebKeys.USER);
+		try {
+			HttpSession httpSession = httpServletRequest.getSession();
+
+			User user = (User)httpSession.getAttribute(WebKeys.USER);
 
 			if (!user.isDefaultUser()) {
 				ChannelHubManagerUtil.getChannel(
 					user.getCompanyId(), user.getUserId(), true);
 			}
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 	}
 

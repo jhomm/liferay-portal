@@ -14,19 +14,32 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.DuplicateTeamException;
-import com.liferay.portal.TeamNameException;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.exception.DuplicateTeamException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.util.CharPool;
+import com.liferay.portal.kernel.exception.TeamNameException;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.SystemEventConstants;
+import com.liferay.portal.kernel.model.Team;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.persistence.GroupPersistence;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
+import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.ResourceConstants;
-import com.liferay.portal.model.Role;
-import com.liferay.portal.model.RoleConstants;
-import com.liferay.portal.model.Team;
-import com.liferay.portal.model.User;
-import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.service.base.TeamLocalServiceBaseImpl;
 
 import java.util.LinkedHashMap;
@@ -37,21 +50,6 @@ import java.util.List;
  */
 public class TeamLocalServiceImpl extends TeamLocalServiceBaseImpl {
 
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link #addTeam(long, long, String,
-	 *             String, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public Team addTeam(
-			long userId, long groupId, String name, String description)
-		throws PortalException {
-
-		return addTeam(
-			userId, groupId, name, description, new ServiceContext());
-	}
-
 	@Override
 	public Team addTeam(
 			long userId, long groupId, String name, String description,
@@ -60,7 +58,7 @@ public class TeamLocalServiceImpl extends TeamLocalServiceBaseImpl {
 
 		// Team
 
-		User user = userPersistence.findByPrimaryKey(userId);
+		User user = _userPersistence.findByPrimaryKey(userId);
 
 		validate(0, groupId, name);
 
@@ -69,24 +67,24 @@ public class TeamLocalServiceImpl extends TeamLocalServiceBaseImpl {
 		Team team = teamPersistence.create(teamId);
 
 		team.setUuid(serviceContext.getUuid());
-		team.setUserId(userId);
 		team.setCompanyId(user.getCompanyId());
+		team.setUserId(userId);
 		team.setUserName(user.getFullName());
 		team.setGroupId(groupId);
 		team.setName(name);
 		team.setDescription(description);
 
-		teamPersistence.update(team);
+		team = teamPersistence.update(team);
 
 		// Resources
 
-		resourceLocalService.addResources(
+		_resourceLocalService.addResources(
 			user.getCompanyId(), groupId, userId, Team.class.getName(),
 			team.getTeamId(), false, true, true);
 
 		// Role
 
-		roleLocalService.addRole(
+		_roleLocalService.addRole(
 			userId, Team.class.getName(), teamId, String.valueOf(teamId), null,
 			null, RoleConstants.TYPE_PROVIDER, null, null);
 
@@ -101,6 +99,7 @@ public class TeamLocalServiceImpl extends TeamLocalServiceBaseImpl {
 	}
 
 	@Override
+	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public Team deleteTeam(Team team) throws PortalException {
 
 		// Team
@@ -109,15 +108,41 @@ public class TeamLocalServiceImpl extends TeamLocalServiceBaseImpl {
 
 		// Resources
 
-		resourceLocalService.deleteResource(
+		_resourceLocalService.deleteResource(
 			team.getCompanyId(), Team.class.getName(),
 			ResourceConstants.SCOPE_INDIVIDUAL, team.getTeamId());
 
+		// Group
+
+		List<Group> groups = _groupPersistence.findByC_S(
+			team.getCompanyId(), true);
+
+		for (Group group : groups) {
+			UnicodeProperties typeSettingsUnicodeUnicodeProperties =
+				group.getTypeSettingsProperties();
+
+			List<Long> defaultTeamIds = ListUtil.fromArray(
+				StringUtil.split(
+					typeSettingsUnicodeUnicodeProperties.getProperty(
+						"defaultTeamIds"),
+					0L));
+
+			if (defaultTeamIds.contains(team.getTeamId())) {
+				defaultTeamIds.remove(team.getTeamId());
+
+				typeSettingsUnicodeUnicodeProperties.setProperty(
+					"defaultTeamIds",
+					ListUtil.toString(defaultTeamIds, StringPool.BLANK));
+
+				_groupLocalService.updateGroup(
+					group.getGroupId(),
+					typeSettingsUnicodeUnicodeProperties.toString());
+			}
+		}
+
 		// Role
 
-		Role role = team.getRole();
-
-		roleLocalService.deleteRole(role);
+		_roleLocalService.deleteRole(team.getRole());
 
 		return team;
 	}
@@ -132,8 +157,18 @@ public class TeamLocalServiceImpl extends TeamLocalServiceBaseImpl {
 	}
 
 	@Override
+	public Team fetchTeam(long groupId, String name) {
+		return teamPersistence.fetchByG_N(groupId, name);
+	}
+
+	@Override
 	public List<Team> getGroupTeams(long groupId) {
 		return teamPersistence.findByGroupId(groupId);
+	}
+
+	@Override
+	public int getGroupTeamsCount(long groupId) {
+		return teamPersistence.countByGroupId(groupId);
 	}
 
 	@Override
@@ -142,24 +177,29 @@ public class TeamLocalServiceImpl extends TeamLocalServiceBaseImpl {
 	}
 
 	@Override
+	public List<Team> getUserOrUserGroupTeams(long groupId, long userId) {
+		return teamFinder.findByG_U(
+			groupId, userId, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	@Override
 	public List<Team> getUserTeams(long userId, long groupId) {
-		LinkedHashMap<String, Object> params = new LinkedHashMap<>();
-
-		params.put("usersTeams", userId);
-
 		return search(
-			groupId, null, null, params, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			null);
+			groupId, null, null,
+			LinkedHashMapBuilder.<String, Object>put(
+				"usersTeams", userId
+			).build(),
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 	}
 
 	@Override
 	public List<Team> search(
 		long groupId, String name, String description,
 		LinkedHashMap<String, Object> params, int start, int end,
-		OrderByComparator<Team> obc) {
+		OrderByComparator<Team> orderByComparator) {
 
 		return teamFinder.findByG_N_D(
-			groupId, name, description, params, start, end, obc);
+			groupId, name, description, params, start, end, orderByComparator);
 	}
 
 	@Override
@@ -181,9 +221,7 @@ public class TeamLocalServiceImpl extends TeamLocalServiceBaseImpl {
 		team.setName(name);
 		team.setDescription(description);
 
-		teamPersistence.update(team);
-
-		return team;
+		return teamPersistence.update(team);
 	}
 
 	protected void validate(long teamId, long groupId, String name)
@@ -202,5 +240,20 @@ public class TeamLocalServiceImpl extends TeamLocalServiceBaseImpl {
 			throw new DuplicateTeamException("{teamId=" + teamId + "}");
 		}
 	}
+
+	@BeanReference(type = GroupLocalService.class)
+	private GroupLocalService _groupLocalService;
+
+	@BeanReference(type = GroupPersistence.class)
+	private GroupPersistence _groupPersistence;
+
+	@BeanReference(type = ResourceLocalService.class)
+	private ResourceLocalService _resourceLocalService;
+
+	@BeanReference(type = RoleLocalService.class)
+	private RoleLocalService _roleLocalService;
+
+	@BeanReference(type = UserPersistence.class)
+	private UserPersistence _userPersistence;
 
 }

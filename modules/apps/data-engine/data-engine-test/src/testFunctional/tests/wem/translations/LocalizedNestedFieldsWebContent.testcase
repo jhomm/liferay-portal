@@ -1,0 +1,1087 @@
+@component-name = "data-engine"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Data Engine";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONGroup.addGroup(groupName = "Test Site Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
+		}
+	}
+
+	@description = "This is a test for LRQA-66585. This test validates the creation, edition and persistence of fields with Options on the Web Content Admin."
+	@priority = "5"
+	test AddAndEditTranslatedFieldsWithOptions {
+		property portal.acceptance = "true";
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Select from List",
+			fieldName = "Select from List");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Single Selection",
+			fieldName = "Single Selection",
+			targetFieldLabel = "Select from List");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Multiple Selection",
+			fieldName = "Multiple Selection",
+			targetFieldGroupLabel = "Fields Group");
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			for (var index : list "1,2,3") {
+				DataEngine.addFieldOption(
+					fieldFieldLabel = "${fieldName}",
+					index = "${index}",
+					optionValue = "Option ${index}");
+			}
+		}
+
+		Translations.addLanguageManageTranslations(key_language = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContentStructures.addName(structureName = "WC Structure Title - pt-BR");
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "${fieldName}",
+				fieldFieldLabelEdit = "${fieldName} - pt-BR");
+		}
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			for (var index : list "1,2,3") {
+				DataEngine.addFieldOption(
+					fieldFieldLabel = "${fieldName} - pt-BR",
+					index = "${index}",
+					optionValue = "Option ${index} - pt-BR");
+			}
+		}
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			DataEngine.viewField(
+				fieldFieldLabel = "${fieldName}",
+				fieldName = "${fieldName}");
+		}
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			DEBuilder.assertFieldOptionLabels(
+				fieldFieldLabel = "${fieldName}",
+				optionLabelList = "Option 1,Option 2,Option 3");
+		}
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			DataEngine.viewField(
+				fieldFieldLabel = "${fieldName} - pt-BR",
+				fieldName = "${fieldName}");
+		}
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			DEBuilder.assertFieldOptionLabels(
+				fieldFieldLabel = "${fieldName} - pt-BR",
+				optionLabelList = "Option 1 - pt-BR,Option 2 - pt-BR,Option 3 - pt-BR");
+		}
+
+		PortletEntry.changeLocale(locale = "en-US");
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "${fieldName}",
+				fieldFieldLabelEdit = "${fieldName} - edited");
+		}
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			for (var index : list "1,2,3") {
+				DataEngine.addFieldOption(
+					fieldFieldLabel = "${fieldName} - edited",
+					index = "${index}",
+					optionValue = "Option ${index} - edited");
+			}
+		}
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "${fieldName} - pt-BR",
+				fieldFieldLabelEdit = "${fieldName} - pt-BR edited");
+		}
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			for (var index : list "1,2,3") {
+				DataEngine.addFieldOption(
+					fieldFieldLabel = "${fieldName} - pt-BR edited",
+					index = "${index}",
+					optionValue = "Option ${index} - pt-BR edited");
+			}
+		}
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			DataEngine.viewField(
+				fieldFieldLabel = "${fieldName} - edited",
+				fieldName = "${fieldName}");
+		}
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			DEBuilder.assertFieldOptionLabels(
+				fieldFieldLabel = "${fieldName} - edited",
+				optionLabelList = "Option 1 - edited,Option 2 - edited,Option 3 - edited");
+		}
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			DataEngine.viewField(
+				fieldFieldLabel = "${fieldName} - pt-BR edited",
+				fieldName = "${fieldName}");
+		}
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			DEBuilder.assertFieldOptionLabels(
+				fieldFieldLabel = "${fieldName} - pt-BR edited",
+				optionLabelList = "Option 1 - pt-BR edited,Option 2 - pt-BR edited,Option 3 - pt-BR edited");
+		}
+
+		WebContentStructures.saveCP();
+
+		NavItem.gotoWebContent();
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Title");
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			WebContent.assertFieldOnWebContent(fieldFieldLabel = "${fieldName} - edited");
+		}
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		for (var fieldName : list "Select from List,Single Selection,Multiple Selection") {
+			WebContent.assertFieldOnWebContent(fieldFieldLabel = "${fieldName} - pt-BR edited");
+		}
+
+		PortletEntry.changeLocale(locale = "en-US");
+
+		WebContent.addWithStructureCP(
+			webContentMultipleSelection = "Option 1 - edited",
+			webContentMultipleSelectionFieldLabel = "Multiple Selection - edited",
+			webContentSelectFromList = "Option 1 - edited",
+			webContentSelectFromListFieldLabel = "Select from List - edited",
+			webContentSingleSelection = "Option 1 - edited",
+			webContentSingleSelectionFieldLabel = "Single Selection - edited",
+			webContentTitle = "Web Content Title");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContent.addWithStructureCP(
+			webContentMultipleSelection = "Option 2 - pt-BR edited",
+			webContentMultipleSelectionFieldLabel = "Multiple Selection - pt-BR edited",
+			webContentSelectFromList = "Option 2 - pt-BR edited",
+			webContentSelectFromListFieldLabel = "Select from List - pt-BR edited",
+			webContentSingleSelection = "Option 2 - pt-BR edited",
+			webContentSingleSelectionFieldLabel = "Single Selection - pt-BR edited",
+			webContentTitle = "Web Content Title - pt-BR");
+
+		DataEngine.toggleMultipleSelectionOption(
+			webContentMultipleSelection = "Option 1 - pt-BR edited",
+			webContentMultipleSelectionFieldLabel = "Multiple Selection - pt-BR edited");
+
+		PortletEntry.publish();
+
+		WebContent.viewWithStructureCP(
+			webContentMultipleSelection = "Option 1 - edited",
+			webContentMultipleSelectionFieldLabel = "Multiple Selection - edited",
+			webContentSelectFromList = "Option 1 - edited",
+			webContentSelectFromListFieldLabel = "Select from List - edited",
+			webContentSingleSelection = "Option 1 - edited",
+			webContentSingleSelectionFieldLabel = "Single Selection - edited",
+			webContentTitle = "Web Content Title");
+
+		WebContent.viewWithStructureCP(
+			skipGotoEditCP = "true",
+			webContentLocaleFieldLabel = "pt-BR",
+			webContentMultipleSelection = "Option 2 - pt-BR edited",
+			webContentMultipleSelectionFieldLabel = "Multiple Selection - pt-BR edited",
+			webContentSelectFromList = "Option 2 - pt-BR edited",
+			webContentSelectFromListFieldLabel = "Select from List - pt-BR edited",
+			webContentSingleSelection = "Option 2 - pt-BR edited",
+			webContentSingleSelectionFieldLabel = "Single Selection - pt-BR edited",
+			webContentTitle = "Web Content Title - pt-BR");
+
+		PortletEntry.changeLocale(locale = "en-US");
+
+		WebContent.addWithStructureCP(
+			webContentMultipleSelection = "Option 3 - edited",
+			webContentMultipleSelectionFieldLabel = "Multiple Selection - edited",
+			webContentSelectFromList = "Option 3 - edited",
+			webContentSelectFromListFieldLabel = "Select from List - edited",
+			webContentSingleSelection = "Option 3 - edited",
+			webContentSingleSelectionFieldLabel = "Single Selection - edited");
+
+		DataEngine.toggleMultipleSelectionOption(
+			webContentMultipleSelection = "Option 1 - edited",
+			webContentMultipleSelectionFieldLabel = "Multiple Selection - edited");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContent.addWithStructureCP(
+			webContentMultipleSelection = "Option 1 - pt-BR edited",
+			webContentMultipleSelectionFieldLabel = "Multiple Selection - pt-BR edited",
+			webContentSelectFromList = "Option 1 - pt-BR edited",
+			webContentSelectFromListFieldLabel = "Select from List - pt-BR edited",
+			webContentSingleSelection = "Option 1 - pt-BR edited",
+			webContentSingleSelectionFieldLabel = "Single Selection - pt-BR edited");
+
+		DataEngine.toggleMultipleSelectionOption(
+			webContentMultipleSelection = "Option 2 - pt-BR edited",
+			webContentMultipleSelectionFieldLabel = "Multiple Selection - pt-BR edited");
+
+		PortletEntry.publish();
+
+		WebContent.viewWithStructureCP(
+			webContentMultipleSelection = "Option 3 - edited",
+			webContentMultipleSelectionFieldLabel = "Multiple Selection - edited",
+			webContentSelectFromList = "Option 3 - edited",
+			webContentSelectFromListFieldLabel = "Select from List - edited",
+			webContentSingleSelection = "Option 3 - edited",
+			webContentSingleSelectionFieldLabel = "Single Selection - edited",
+			webContentTitle = "Web Content Title");
+
+		WebContent.viewWithStructureCP(
+			skipGotoEditCP = "true",
+			webContentLocaleFieldLabel = "pt-BR",
+			webContentMultipleSelection = "Option 1 - pt-BR edited",
+			webContentMultipleSelectionFieldLabel = "Multiple Selection - pt-BR edited",
+			webContentSelectFromList = "Option 1 - pt-BR edited",
+			webContentSelectFromListFieldLabel = "Select from List - pt-BR edited",
+			webContentSingleSelection = "Option 1 - pt-BR edited",
+			webContentSingleSelectionFieldLabel = "Single Selection - pt-BR edited",
+			webContentTitle = "Web Content Title - pt-BR");
+	}
+
+	@description = "This test ensures translations persists for a repeatable duplicated field group."
+	@priority = "5"
+	test CheckDuplicatedRepeatableStructureOnWebContent {
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		Translations.addLanguageManageTranslations(key_language = "pt-BR");
+
+		DataEngine.toggleFieldRepeatable(fieldsGroupLabel = "Fields Group");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "Grupo de Campos");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Texto");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Numérico");
+
+		WebContentStructures.saveCP();
+
+		NavItem.click(navItem = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Title");
+
+		WebContent.addCP(webContentTitle = "WC Title");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.addRepeatableField(fieldLabel = "Grupo de Campos");
+
+		PortletEntry.publish();
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "WC Title");
+
+		for (var n : list "1,2") {
+			for (var label : list "Fields Group,Text,Numeric") {
+				AssertVisible(
+					key_fieldFieldLabel = "${label}",
+					key_index = "${n}",
+					locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL_ANY");
+			}
+		}
+
+		AssertElementNotPresent(
+			key_fieldName = "FieldsGroup",
+			key_index = "1",
+			locator1 = "FormFields#FIELD_REMOVE");
+
+		AssertVisible(
+			key_fieldName = "FieldsGroup",
+			key_index = "2",
+			locator1 = "FormFields#FIELD_REMOVE");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		for (var n : list "1,2") {
+			for (var label : list "Grupo de Campos,Texto,Numérico") {
+				AssertVisible(
+					key_fieldFieldLabel = "${label}",
+					key_index = "${n}",
+					locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL_ANY");
+			}
+		}
+
+		AssertElementNotPresent(
+			key_fieldName = "FieldsGroup",
+			key_index = "1",
+			locator1 = "FormFields#FIELD_REMOVE");
+
+		AssertVisible(
+			key_fieldName = "FieldsGroup",
+			key_index = "2",
+			locator1 = "FormFields#FIELD_REMOVE");
+	}
+
+	@description = "This test ensures that the language selector is successfully displayed and functional on the Web Content."
+	@priority = "4"
+	test CheckLanguageSelector {
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Title");
+
+		Click.clickNoMouseOver(locator1 = "Button#LOCALIZATION_GENERIC");
+
+		AssertElementPresent(
+			key_locale = "en_US",
+			locator1 = "Translation#LOCALIZATION_NAME",
+			value1 = "lexicon-icon-en-us");
+
+		AssertElementPresent(
+			key_locale = "en_US",
+			locator1 = "Translation#LOCALIZATION_NAME",
+			value1 = "Default");
+	}
+
+	@description = "This test ensures structures translations are displayed on a Web Content."
+	@priority = "5"
+	test CheckStructureTranslationsOnWebContent {
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Date",
+			fieldName = "Date",
+			targetFieldLabel = "Text");
+
+		WebContentStructures.addLocalization(
+			locale = "pt-BR",
+			localization1Name = "Título do conteúdo da web");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "Grupo de Campos");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Texto");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Date",
+			fieldFieldLabelEdit = "Data");
+
+		WebContentStructures.saveCP();
+
+		Navigator.gotoNavItem(navItem = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Title");
+
+		for (var label : list "Fields Group,Text,Date") {
+			AssertVisible(
+				key_fieldFieldLabel = "${label}",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+		}
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		for (var label : list "Grupo de Campos,Texto,Data") {
+			AssertVisible(
+				key_fieldFieldLabel = "${label}",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+		}
+	}
+
+	@description = "This test ensures that the default values persists after translating the Web Content for another locale."
+	@priority = "4"
+	test DefaultTitlePersistsUponFirstlyTranslatingForAnotherLocale {
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Date",
+			fieldName = "Date",
+			targetFieldLabel = "Text");
+
+		WebContentStructures.saveCP();
+
+		Navigator.gotoNavItem(navItem = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Title");
+
+		PortletEntry.changeLocale(locale = "pt_BR");
+
+		WebContent.addWithStructureCP(
+			webContentDate = "10/10/2020",
+			webContentText = "Este é um campo de texto",
+			webContentTitle = "Título do conteúdo da web");
+
+		PortletEntry.changeLocale(locale = "en_US");
+
+		WebContent.addWithStructureCP(
+			webContentDate = "01/01/2021",
+			webContentText = "This is a Text field",
+			webContentTitle = "Web Content Title");
+
+		PortletEntry.publish();
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "Web Content Title");
+
+		WebContent.viewWithStructureCP(
+			predefinedValue = "true",
+			webContentDate = "01/01/2021",
+			webContentText = "This is a Text field");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "Título do conteúdo da web");
+
+		WebContent.viewWithStructureCP(
+			predefinedValue = "true",
+			webContentDate = "10/10/2020",
+			webContentText = "Este é um campo de texto");
+	}
+
+	@description = "This test ensures that the default language values are carried to a new locale before translating it."
+	@priority = "4"
+	test DefaultValuesAreCarriedToNewLocale {
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		WebContentStructures.saveCP();
+
+		Navigator.gotoNavItem(navItem = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Title");
+
+		WebContent.addWithStructureCP(
+			webContentNumeric = "8",
+			webContentText = "This is a Text field",
+			webContentTitle = "Web Content Title");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContent.addWithStructureCP(
+			webContentNumeric = "123",
+			webContentText = "Este é um campo de texto",
+			webContentTitle = "Título do conteúdo da web");
+
+		PortletEntry.publish();
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "Web Content Title");
+
+		PortletEntry.changeLocale(locale = "zh-CN");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "Web Content Title");
+
+		WebContent.viewWithStructureCP(
+			predefinedValue = "true",
+			webContentNumeric = "8",
+			webContentText = "This is a Text field");
+	}
+
+	@description = "This test ensures translations persists for N languages and N field groups levels."
+	@priority = "5"
+	test TranslateWebContentFromStructureWithNLevelNestedFieldsAndToNLanguages {
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Rich Text",
+			fieldName = "Rich Text",
+			targetFieldLabel = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Rich Text");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "First Level Fields Group");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "Second Level Fields Group");
+
+		WebContentStructures.addLocalization(
+			locale = "pt-BR",
+			localization1Name = "WC Título da Estrutura");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "First Level Fields Group",
+			fieldsGroupLabelEdit = "Grupo de campos de primeiro nível");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Second Level Fields Group",
+			fieldsGroupLabelEdit = "Grupo de Campos de Segundo Nível");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Texto");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Rich Text",
+			fieldFieldLabelEdit = "Texto Rico");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Numérico");
+
+		WebContentStructures.addLocalization(
+			locale = "de-DE",
+			localization1Name = "WC Structure Title German");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "First Level Fields Group",
+			fieldsGroupLabelEdit = "First Level Fields Group German");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Second Level Fields Group",
+			fieldsGroupLabelEdit = "Second Level Fields Group German");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Text German");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Rich Text",
+			fieldFieldLabelEdit = "Rich Text German");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Numeric German");
+
+		WebContentStructures.addLocalization(
+			locale = "ja-JP",
+			localization1Name = "WC Structure Title Japan");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "First Level Fields Group",
+			fieldsGroupLabelEdit = "First Level Fields Group Japan");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Second Level Fields Group",
+			fieldsGroupLabelEdit = "Second Level Fields Group Japan");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Text Japan");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Rich Text",
+			fieldFieldLabelEdit = "Rich Text Japan");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Numeric Japan");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Title");
+
+		WebContent.addWithStructureCP(webContentTitle = "WC Title");
+
+		WebContent.addWithStructureCP(
+			webContentNumeric = "123",
+			webContentRichText = "This is a Rich Text field",
+			webContentText = "This is a Text field",
+			webContentTitle = "Web Content Title");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContent.addWithStructureCP(
+			webContentNumeric = "5",
+			webContentNumericFieldLabel = "Numérico",
+			webContentRichText = "Este é um campo de Texto Rico",
+			webContentRichTextFieldLabel = "Texto Rico",
+			webContentText = "Este é um campo de texto",
+			webContentTextFieldLabel = "Texto",
+			webContentTitle = "Título do conteúdo da web");
+
+		PortletEntry.changeLocale(locale = "de-DE");
+
+		WebContent.addWithStructureCP(
+			webContentNumeric = "543",
+			webContentNumericFieldLabel = "Numeric German",
+			webContentRichText = "This is a Rich Text field in German",
+			webContentRichTextFieldLabel = "Rich Text German",
+			webContentText = "This is a Text field in German",
+			webContentTextFieldLabel = "Text German",
+			webContentTitle = "WC Structure Title German");
+
+		PortletEntry.changeLocale(locale = "ja-JP");
+
+		WebContent.addWithStructureCP(
+			webContentNumeric = "321",
+			webContentNumericFieldLabel = "Numeric Japan",
+			webContentRichText = "This is a Rich Text field in Japan",
+			webContentRichTextFieldLabel = "Rich Text Japan",
+			webContentText = "This is a Text field in Japan",
+			webContentTextFieldLabel = "Text Japan",
+			webContentTitle = "WC Structure Title Japan");
+
+		PortletEntry.publish();
+
+		WebContent.viewWithStructureCP(
+			webContentNumeric = "123",
+			webContentRichText = "This is a Rich Text field",
+			webContentText = "This is a Text field",
+			webContentTitle = "Web Content Title");
+
+		for (var fieldsGroupLabel : list "First Level Fields Group,Second Level Fields Group") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldsGroupLabel}",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+		}
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "Título do conteúdo da web");
+
+		WebContent.viewWithStructureCP(
+			predefinedValue = "true",
+			webContentNumeric = "5",
+			webContentNumericFieldLabel = "Numérico",
+			webContentRichText = "Este é um campo de Texto Rico",
+			webContentRichTextFieldLabel = "Texto Rico",
+			webContentText = "Este é um campo de texto",
+			webContentTextFieldLabel = "Texto");
+
+		for (var fieldsGroupLabel : list "Grupo de campos de primeiro nível,Grupo de Campos de Segundo Nível") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldsGroupLabel}",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+		}
+
+		PortletEntry.changeLocale(locale = "de-DE");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "WC Structure Title German");
+
+		WebContent.viewWithStructureCP(
+			predefinedValue = "true",
+			webContentNumeric = "543",
+			webContentNumericFieldLabel = "Numeric German",
+			webContentRichText = "This is a Rich Text field in German",
+			webContentRichTextFieldLabel = "Rich Text German",
+			webContentText = "This is a Text field in German",
+			webContentTextFieldLabel = "Text German");
+
+		for (var fieldsGroupLabel : list "First Level Fields Group German,Second Level Fields Group German") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldsGroupLabel}",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+		}
+
+		PortletEntry.changeLocale(locale = "ja-JP");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "WC Structure Title Japan");
+
+		WebContent.viewWithStructureCP(
+			predefinedValue = "true",
+			webContentNumeric = "321",
+			webContentNumericFieldLabel = "Numeric Japan",
+			webContentRichText = "This is a Rich Text field in Japan",
+			webContentRichTextFieldLabel = "Rich Text Japan",
+			webContentText = "This is a Text field in Japan",
+			webContentTextFieldLabel = "Text Japan");
+
+		for (var fieldsGroupLabel : list "First Level Fields Group Japan,Second Level Fields Group Japan") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldsGroupLabel}",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+		}
+	}
+
+	@description = "This test ensures that the translations persists for all fields nested."
+	@priority = "5"
+	test TranslateWebContentWithAllFieldsNested {
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addFieldGroupWithFields(fieldNameList = "Text,Select from List,Single Selection,Multiple Selection,Grid,Date,Numeric,Image,Rich Text,Upload,Color,Web Content,Geolocation,Link to Page,Separator");
+
+		WebContentStructures.saveCP();
+
+		NavItem.gotoWebContent();
+
+		DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "WC Structure Title");
+
+		WebContent.addWithStructureCP(
+			webContentColor = "FF0D0D",
+			webContentDate = "02/19/2021",
+			webContentMultipleSelection = "Option 1",
+			webContentNumeric = "17",
+			webContentRichText = "This is a Rich Text field",
+			webContentSelectFromList = "Option 2",
+			webContentSingleSelection = "Option 1",
+			webContentText = "This is a Text field",
+			webContentTitle = "Web Content Title");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContent.addWithStructureCP(
+			webContentColor = "000000",
+			webContentDate = "03/02/2021",
+			webContentMultipleSelection = "Option 2",
+			webContentNumeric = "13",
+			webContentRichText = "Este é um campo de texto completo",
+			webContentSelectFromList = "Option 1",
+			webContentSingleSelection = "Option 2",
+			webContentText = "Este é um campo de texto",
+			webContentTitle = "Título do Web Content");
+
+		PortletEntry.publish();
+
+		WebContent.viewWithStructureCP(
+			webContentColor = "000000",
+			webContentDate = "03/02/2021",
+			webContentLocaleFieldLabel = "pt_BR",
+			webContentMultipleSelection = "Option 2",
+			webContentNumeric = "13",
+			webContentRichText = "Este é um campo de texto completo",
+			webContentSelectFromList = "Option 1",
+			webContentSingleSelection = "Option 2",
+			webContentText = "Este é um campo de texto",
+			webContentTitle = "Web Content Title",
+			webContentTitleTranslated = "Título do Web Content");
+	}
+
+	@description = "This test ensures Web Content translations do not modify previously translated content."
+	@priority = "5"
+	test TranslationDoesNotChangeAnother {
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Rich Text",
+			fieldName = "Rich Text",
+			targetFieldLabel = "Text");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Title");
+
+		WebContent.addWithStructureCP(
+			webContentRichText = "English Rich Text",
+			webContentText = "English Text",
+			webContentTitle = "WC WebContent English");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContent.addWithStructureCP(
+			webContentRichText = "ptBR Rich Text",
+			webContentText = "ptBR Text",
+			webContentTitle = "WC WebContent ptBR");
+
+		PortletEntry.changeLocale(locale = "fr-FR");
+
+		WebContent.addWithStructureCP(
+			webContentRichText = "frFR Rich Text",
+			webContentText = "frFR Text",
+			webContentTitle = "WC WebContent frFR");
+
+		PortletEntry.publish();
+
+		WebContent.viewWithStructureCP(
+			webContentRichText = "English Rich Text",
+			webContentText = "English Text",
+			webContentTitle = "WC WebContent English");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "WC WebContent ptBR");
+
+		WebContent.viewWithStructureCP(
+			predefinedValue = "true",
+			webContentRichText = "ptBR Rich Text",
+			webContentText = "ptBR Text");
+
+		PortletEntry.changeLocale(locale = "fr-FR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "WC WebContent frFR");
+
+		WebContent.viewWithStructureCP(
+			predefinedValue = "true",
+			webContentRichText = "frFR Rich Text",
+			webContentText = "frFR Text");
+	}
+
+	@description = "This test ensures Web Content translations persists."
+	@priority = "5"
+	test TranslationsRemainsUponSavingWebContent {
+		property portal.acceptance = "true";
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "First Rich Text",
+			fieldName = "Rich Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Second Rich Text",
+			fieldName = "Rich Text",
+			targetFieldLabel = "First Rich Text");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Title");
+
+		WebContent.addWithStructureCP(
+			webContentRichText = "This is the first Rich Text field",
+			webContentRichTextFieldLabel = "First Rich Text",
+			webContentTitle = "WC WebContent Title");
+
+		WebContent.addWithStructureCP(
+			webContentRichText = "This is the second Rich Text field",
+			webContentRichTextFieldLabel = "Second Rich Text");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContent.addWithStructureCP(
+			webContentRichText = "Este é o primeiro campo Rico Texto",
+			webContentRichTextFieldLabel = "First Rich Text",
+			webContentTitle = "Título da Estrutura WC");
+
+		WebContent.addWithStructureCP(
+			webContentRichText = "Este é o segundo campo de Rico Texto",
+			webContentRichTextFieldLabel = "Second Rich Text");
+
+		PortletEntry.publish();
+
+		WebContent.viewWithStructureCP(
+			webContentRichText = "This is the first Rich Text field",
+			webContentRichTextFieldLabel = "First Rich Text",
+			webContentTitle = "WC WebContent Title");
+
+		WebContent.viewWithStructureCP(
+			predefinedValue = "true",
+			webContentRichText = "This is the second Rich Text field",
+			webContentRichTextFieldLabel = "Second Rich Text");
+
+		for (var fieldFieldLabel : list "First Rich Text,Second Rich Text") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Fields Group",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = "Título da Estrutura WC");
+
+		WebContent.viewWithStructureCP(
+			predefinedValue = "true",
+			webContentRichText = "Este é o primeiro campo Rico Texto",
+			webContentRichTextFieldLabel = "First Rich Text");
+
+		WebContent.viewWithStructureCP(
+			predefinedValue = "true",
+			webContentRichText = "Este é o segundo campo de Rico Texto",
+			webContentRichTextFieldLabel = "Second Rich Text");
+
+		for (var fieldFieldLabel : list "First Rich Text,Second Rich Text") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Fields Group",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+	}
+
+	@description = "This test ensures that the first language displayed to the user is the default language."
+	@priority = "4"
+	test VerifyDefaultLanguageIsFirstShown {
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Image",
+			fieldName = "Image");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Image");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Text",
+			fieldName = "Text",
+			targetFieldLabel = "Numeric");
+
+		WebContentStructures.addLocalization(
+			locale = "pt-BR",
+			localization1Name = "Nome da Estrutura WC");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "Grupo de Campos");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Image",
+			fieldFieldLabelEdit = "Imagem");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Numérica");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Texto");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Title");
+
+		PortletEntry.viewLocale(locale = "en-US");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Fields Group",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Image,Numeric,Text") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Fields Group",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+	}
+
+}

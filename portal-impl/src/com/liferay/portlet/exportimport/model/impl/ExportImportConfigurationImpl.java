@@ -33,10 +33,8 @@ public class ExportImportConfigurationImpl
 			return _settingsMap;
 		}
 
-		String settings = getSettings();
-
 		_settingsMap = (Map<String, Serializable>)JSONFactoryUtil.deserialize(
-			settings);
+			getSettings());
 
 		return _settingsMap;
 	}

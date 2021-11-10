@@ -14,10 +14,8 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.model.PluginSetting;
-import com.liferay.portal.service.PluginSettingLocalServiceUtil;
+import com.liferay.portal.kernel.model.PluginSetting;
+import com.liferay.portal.kernel.service.PluginSettingLocalServiceUtil;
 
 /**
  * The extended model base implementation for the PluginSetting service. Represents a row in the &quot;PluginSetting&quot; database table, with each column mapped to a property of this class.
@@ -31,13 +29,13 @@ import com.liferay.portal.service.PluginSettingLocalServiceUtil;
  * @see PluginSetting
  * @generated
  */
-@ProviderType
-public abstract class PluginSettingBaseImpl extends PluginSettingModelImpl
-	implements PluginSetting {
+public abstract class PluginSettingBaseImpl
+	extends PluginSettingModelImpl implements PluginSetting {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. All methods that expect a plugin setting model instance should use the {@link PluginSetting} interface instead.
+	 * Never modify or reference this class directly. All methods that expect a plugin setting model instance should use the <code>PluginSetting</code> interface instead.
 	 */
 	@Override
 	public void persist() {
@@ -48,4 +46,5 @@ public abstract class PluginSettingBaseImpl extends PluginSettingModelImpl
 			PluginSettingLocalServiceUtil.updatePluginSetting(this);
 		}
 	}
+
 }

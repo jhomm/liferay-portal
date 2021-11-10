@@ -1,0 +1,227 @@
+<html>
+<head>
+<title>MyWorkflowTasks</title>
+</head>
+
+<body>
+<table border="1" cellpadding="1" cellspacing="1">
+<thead>
+<tr><td rowspan="1" colspan="3">MyWorkflowTasks</td></tr>
+</thead>
+
+<tbody>
+<tr>
+	<td>ASSIGNED_TO_ME_ACTIVE</td>
+	<td>//*[contains(@class,'nav-link active') and contains(.,'Assigned to Me')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<!--TABLE_GENERIC-->
+<tr>
+	<td>UNPUBLISH_ALERT_ERROR_MESSAGE_LINK</td>
+	<td>//a[text()='Configure assignments']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TABLE_GENERIC_ASSET_TITLE</td>
+	<td>//tr[contains(.,'${key_workflowAssetTitle}')]/td[1]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>REVERSE_SORT_DIRECTION_BUTTON</td>
+	<td>//*[contains(@class, 'lexicon-icon lexicon-icon-order')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<!--ASSIGNED_TO_ME_TABLE-->
+<tr>
+	<td>ASSIGNED_TO_ME_TABLE_ASSET_TITLE_2</td>
+	<td>//tr[contains(.,'${key_workflowAssetTitle}')][2]/td[1]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_ME_TABLE_ASSET_TYPE</td>
+	<td>//tr[contains(.,'${key_workflowAssetTitle}')]/td[2]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_ME_TABLE_ASSET_SPECIFIC_TYPE</td>
+	<td>//tr[${key_position}][contains(.,'${key_workflowAssetTitle}')]/td[2]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_ME_TABLE_TASK</td>
+	<td>//tr[contains(.,'${key_workflowAssetTitle}')]/td[3]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_ME_TABLE_SPECIFIC_TASK</td>
+	<td>//tr[${key_position}][contains(.,'${key_workflowAssetTitle}')]/td[3]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_ME_TABLE_LAST_ACTIVITY_DATE</td>
+	<td>//tr[contains(.,'${key_workflowAssetTitle}')]/td[4]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_ME_TABLE_DUE_DATE</td>
+	<td>//tr[contains(.,'${key_workflowAssetTitle}')]/td[5]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_ME_TABLE_END_DATE</td>
+	<td>//tr[contains(.,'${key_workflowAssetTitle}')]/td[6]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_ME_TABLE_ACTIONS</td>
+	<td>//tr[contains(.,'${key_workflowAssetTitle}')]/td[6]//div/a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_ME_TABLE_SPECIFIC_ACTIONS</td>
+	<td>//tr[${key_position}][contains(.,'${key_workflowAssetTitle}')]/td[6]//div/a</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<!--ASSIGNED_TO_MY_ROLES_TABLE-->
+<tr>
+	<td>ASSIGNED_TO_MY_ROLES_TABLE_ASSET_TITLE</td>
+	<td>//tr[contains(.,'${key_workflowTask}') and contains(.,'${key_workflowAssetTitle}')]/td[1]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_MY_ROLES_TABLE_ASSET_TITLE_DUPLICATE</td>
+	<td>//tr[contains(.,'${key_workflowTask}') and contains(.,'${key_workflowAssetTitle}')][2]/td[1]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_MY_ROLES_TABLE_ASSET_TYPE</td>
+	<td>//tr[contains(.,'${key_workflowTask}') and contains(.,'${key_workflowAssetTitle}')]/td[2]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MY_WORKFLOW_TASKS_SEARCH_INPUT_FIELD</td>
+	<td>//input[contains(@name,'keywords')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MY_WORKFLOW_TASKS_SEARCH_ICON</td>
+	<td>//button[contains(@class, 'btn btn-monospaced btn-unstyled')][2]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MY_WORKFLOW_TASKS_SEARCH_RESULT_BAR</td>
+	<td>//span[contains(text(),'${key_resultBarMessage}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_MY_ROLES_TABLE_TASK</td>
+	<td>//tr[contains(.,'${key_workflowTask}') and contains(.,'${key_workflowAssetTitle}')]/td[3]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_MY_ROLES_TABLE_LAST_ACTIVITY_DATE</td>
+	<td>//tr[contains(.,'${key_workflowTask}') and contains(.,'${key_workflowAssetTitle}')]/td[4]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_MY_ROLES_TABLE_DUE_DATE</td>
+	<td>//tr[contains(.,'${key_workflowTask}') and contains(.,'${key_workflowAssetTitle}')]/td[5]//a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSIGNED_TO_MY_ROLES_TABLE_ACTIONS</td>
+	<td>//tr[contains(.,'${key_workflowTask}') and contains(.,'${key_workflowAssetTitle}')]/td[6]//div/a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MY_WORKFLOW_TASK_ITEM_POSITION</td>
+	<td>//tr[@data-qa-id='row'][${key_rowPosition}]//a//span[@class='text-truncate' and contains(text(),'${key_title}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<!--DIALOG_BOX-->
+<tr>
+	<td>IFRAME_UPDATE_DUE_DATE</td>
+	<td>//iframe[@title='Update Due Date']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DIALOG_BOX_DUE_DATE</td>
+	<td>//input[contains(@id,'_dueDate')] | //label[contains(@for,'dateInput')]/following-sibling::input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DONE_BUTTON</td>
+	<td>//button[contains(@class,'btn btn-primary') and '${status}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DIALOG_BOX_DUE_DATE_TIME</td>
+	<td>//input[contains(@id,'_dueDateTime')] | //input[contains(@placeholder,'HH:mm')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DIALOG_BOX_COMMENT_FIELD</td>
+	<td>//textarea[contains(@id,'_comment')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DIALOG_BOX_ASSIGN_TO_SELECT</td>
+	<td>//select[contains(@id,'MyWorkflowTaskPortlet_assigneeUserId')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DIALOG_BOX_ASSIGN_TO_VALUE</td>
+	<td>//option[contains(text(),'${key_user}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+<!--COMPLETED_TABLE-->
+<tr>
+	<td>COMPLETED_TABLE_ASSET_TITLE</td>
+	<td>//tr[contains(.,'${key_workflowAssetTitle}')]/td//a</td>
+	<td></td>
+</tr>
+<!--Menu-->
+<tr>
+	<td>DROPDOWN_MENU_OPTION</td>
+	<td>//a[contains(@class,'dropdown-item') and contains(text(), '${key_selectOption}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PROCESS_NAME_TABLE_ROW</td>
+	<td>//tr[${key_rowNumber}]//td[1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>COMPLETED_TABLE_PAGINATION</td>
+	<td>//li[contains(@class,'page-item active')]/a[contains(.,'${key_pageNumber}')]</td>
+	<td></td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

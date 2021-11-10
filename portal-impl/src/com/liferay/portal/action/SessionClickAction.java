@@ -14,15 +14,19 @@
 
 package com.liferay.portal.action;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.security.auth.AuthTokenUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.security.auth.AuthTokenUtil;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.SessionClicks;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.SessionClicks;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.struts.Action;
+import com.liferay.portal.struts.model.ActionForward;
+import com.liferay.portal.struts.model.ActionMapping;
 
 import java.util.Enumeration;
 
@@ -31,102 +35,112 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.apache.struts.action.Action;
-import org.apache.struts.action.ActionForm;
-import org.apache.struts.action.ActionForward;
-import org.apache.struts.action.ActionMapping;
-
 /**
  * @author Brian Wing Shun Chan
  */
-public class SessionClickAction extends Action {
+public class SessionClickAction implements Action {
 
 	@Override
 	public ActionForward execute(
-			ActionMapping actionMapping, ActionForm actionForm,
-			HttpServletRequest request, HttpServletResponse response)
+			ActionMapping actionMapping, HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws Exception {
 
 		try {
 			AuthTokenUtil.checkCSRFToken(
-				request, SessionClickAction.class.getName());
+				httpServletRequest, SessionClickAction.class.getName());
 
-			HttpSession session = request.getSession();
+			HttpSession httpSession = httpServletRequest.getSession();
 
-			Enumeration<String> enu = request.getParameterNames();
+			Enumeration<String> enumeration =
+				httpServletRequest.getParameterNames();
 
 			boolean useHttpSession = ParamUtil.getBoolean(
-				request, "useHttpSession");
+				httpServletRequest, "useHttpSession");
 
-			while (enu.hasMoreElements()) {
-				String name = enu.nextElement();
+			while (enumeration.hasMoreElements()) {
+				String name = enumeration.nextElement();
 
-				if (!name.equals("doAsUserId")) {
-					String value = ParamUtil.getString(request, name);
+				if (!StringUtil.equals(name, "cmd") &&
+					!StringUtil.equals(name, "doAsUserId") &&
+					!StringUtil.equals(name, "p_auth")) {
+
+					String value = ParamUtil.getString(
+						httpServletRequest, name);
 
 					if (useHttpSession) {
-						SessionClicks.put(session, name, value);
+						SessionClicks.put(httpSession, name, value);
 					}
 					else {
-						SessionClicks.put(request, name, value);
+						SessionClicks.put(httpServletRequest, name, value);
 					}
 				}
 			}
 
-			String value = getValue(request);
+			String value = getValue(httpServletRequest);
 
 			if (value != null) {
-				response.setContentType(ContentTypes.APPLICATION_JSON);
+				String cmd = ParamUtil.getString(
+					httpServletRequest, Constants.CMD);
+
+				if (StringUtil.equals(cmd, "get")) {
+					httpServletResponse.setContentType(ContentTypes.TEXT_PLAIN);
+				}
+				else {
+					httpServletResponse.setContentType(
+						ContentTypes.APPLICATION_JSON);
+				}
 
 				ServletOutputStream servletOutputStream =
-					response.getOutputStream();
+					httpServletResponse.getOutputStream();
 
 				servletOutputStream.print(value);
 			}
 
 			return null;
 		}
-		catch (Exception e) {
-			PortalUtil.sendError(e, request, response);
+		catch (Exception exception) {
+			PortalUtil.sendError(
+				exception, httpServletRequest, httpServletResponse);
 
 			return null;
 		}
 	}
 
-	protected String getValue(HttpServletRequest request) {
-		HttpSession session = request.getSession();
+	protected String getValue(HttpServletRequest httpServletRequest) {
+		HttpSession httpSession = httpServletRequest.getSession();
 
-		String cmd = ParamUtil.getString(request, Constants.CMD);
+		String cmd = ParamUtil.getString(httpServletRequest, Constants.CMD);
 
 		boolean useHttpSession = ParamUtil.getBoolean(
-			request, "useHttpSession");
+			httpServletRequest, "useHttpSession");
 
-		if (cmd.equals("get")) {
-			String key = ParamUtil.getString(request, "key");
+		if (StringUtil.equals(cmd, "get")) {
+			String key = ParamUtil.getString(httpServletRequest, "key");
 			String value = StringPool.BLANK;
 
 			if (useHttpSession) {
-				value = SessionClicks.get(session, key, cmd);
+				value = SessionClicks.get(httpSession, key, cmd);
 			}
 			else {
-				value = SessionClicks.get(request, key, cmd);
+				value = SessionClicks.get(httpServletRequest, key, cmd);
 			}
 
 			return value;
 		}
-		else if (cmd.equals("getAll")) {
+		else if (StringUtil.equals(cmd, "getAll")) {
 			JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
 
-			String[] keys = request.getParameterValues("key");
+			String[] keys = httpServletRequest.getParameterValues("key");
 
 			for (String key : keys) {
 				String value = StringPool.BLANK;
 
 				if (useHttpSession) {
-					value = SessionClicks.get(session, key, cmd);
+					value = SessionClicks.get(httpSession, key, cmd);
 				}
 				else {
-					value = SessionClicks.get(request, key, cmd);
+					value = SessionClicks.get(httpServletRequest, key, cmd);
 				}
 
 				jsonObject.put(key, value);

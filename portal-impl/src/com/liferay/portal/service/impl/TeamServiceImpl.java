@@ -14,40 +14,27 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.Team;
-import com.liferay.portal.security.auth.PrincipalException;
-import com.liferay.portal.security.permission.ActionKeys;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.service.ServiceContext;
+import com.liferay.portal.kernel.model.Team;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
+import com.liferay.portal.kernel.service.permission.TeamPermissionUtil;
+import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
+import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.service.base.TeamServiceBaseImpl;
-import com.liferay.portal.service.permission.GroupPermissionUtil;
-import com.liferay.portal.service.permission.TeamPermissionUtil;
-import com.liferay.portal.service.permission.UserPermissionUtil;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public class TeamServiceImpl extends TeamServiceBaseImpl {
-
-	/**
-	 * @throws     PortalException
-	 * @deprecated As of 7.0.0, replaced by {@link #addTeam(long, String,
-	 *             String, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public Team addTeam(long groupId, String name, String description)
-		throws PortalException {
-
-		GroupPermissionUtil.check(
-			getPermissionChecker(), groupId, ActionKeys.MANAGE_TEAMS);
-
-		return teamLocalService.addTeam(
-			getUserId(), groupId, name, description);
-	}
 
 	@Override
 	public Team addTeam(
@@ -133,7 +120,26 @@ public class TeamServiceImpl extends TeamServiceBaseImpl {
 				ActionKeys.MANAGE_TEAMS, ActionKeys.UPDATE);
 		}
 
-		return userPersistence.containsTeam(userId, teamId);
+		return _userPersistence.containsTeam(userId, teamId);
+	}
+
+	@Override
+	public List<Team> search(
+		long groupId, String name, String description,
+		LinkedHashMap<String, Object> params, int start, int end,
+		OrderByComparator<Team> orderByComparator) {
+
+		return teamFinder.filterFindByG_N_D(
+			groupId, name, description, params, start, end, orderByComparator);
+	}
+
+	@Override
+	public int searchCount(
+		long groupId, String name, String description,
+		LinkedHashMap<String, Object> params) {
+
+		return teamFinder.filterCountByG_N_D(
+			groupId, name, description, params);
 	}
 
 	@Override
@@ -145,5 +151,8 @@ public class TeamServiceImpl extends TeamServiceBaseImpl {
 
 		return teamLocalService.updateTeam(teamId, name, description);
 	}
+
+	@BeanReference(type = UserPersistence.class)
+	private UserPersistence _userPersistence;
 
 }

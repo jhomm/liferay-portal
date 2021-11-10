@@ -1,0 +1,116 @@
+@component-name = "portal-commerce"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Product Info Management";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		Navigator.openURL();
+
+		if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
+			User.logoutPG();
+		}
+
+		User.firstLoginPG();
+
+		CommerceConfiguration.commerceAdminTearDown();
+	}
+
+	test CreateNewAvailabilityEstimate {
+		property portal.acceptance = "true";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Settings",
+			portlet = "Availability Estimates");
+
+		Click(locator1 = "Button#PLUS");
+
+		CommerceEntry.addNewAvailabilityEstimatesEntry(entryName = "New Availability Estimate");
+
+		Button.clickSave();
+
+		AssertElementPresent(locator1 = "Message#SUCCESS");
+	}
+
+	test CreateNewCountry {
+		property portal.acceptance = "false";
+		property portal.upstream = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Settings",
+			portlet = "Countries");
+
+		Click(locator1 = "Button#PLUS");
+
+		CommerceEntry.addNewCountriesEntry(
+			entryIsoNumber = "020",
+			entryIsoThreeLetters = "TCO",
+			entryIsoTwoLetters = "54",
+			entryName = "Test Country");
+
+		Button.clickSave();
+
+		AssertElementPresent(locator1 = "Message#SUCCESS");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Regions");
+
+		Click(locator1 = "Button#PLUS");
+
+		CommerceEntry.addNewRegionsEntry(
+			code = "TRE",
+			entryName = "Test Region");
+
+		Button.clickSave();
+
+		AssertElementPresent(locator1 = "Message#SUCCESS");
+
+		AssertElementPresent(
+			key_entry = "Test Region",
+			locator1 = "CommerceNavigation#ANY_ENTRY_NAME");
+	}
+
+	test CreateNewMeasurementUnits {
+		property portal.acceptance = "true";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Settings",
+			portlet = "Measurement Units");
+
+		Click(locator1 = "Button#PLUS");
+
+		CommerceEntry.addNewDimensionUnit(entryName = "New Dimension Unit");
+
+		Button.clickSave();
+
+		AssertElementPresent(locator1 = "Message#SUCCESS");
+
+		CommerceNavigator.gotoCommercePortletNavItem(navItem = "Weight");
+
+		Click(locator1 = "Button#PLUS");
+
+		CommerceEntry.addNewWeightUnit(entryName = "New Weight Unit");
+
+		Button.clickSave();
+
+		AssertElementPresent(locator1 = "Message#SUCCESS");
+	}
+
+	test ViewInstanceCurrenciesAvailable {
+		property environment.acceptance = "true";
+		property portal.acceptance = "true";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Store Management",
+			portlet = "Currencies");
+
+		CommerceEntry.viewCurrenciesEntry(currenciesList = "US Dollar,Australian Dollar,British Pound,Canadian Dollar,Chinese Yuan Renminbi,Euro,Hong Kong Dollar,Japanese Yen,Indian Rupee,Brazilian Real");
+	}
+
+}

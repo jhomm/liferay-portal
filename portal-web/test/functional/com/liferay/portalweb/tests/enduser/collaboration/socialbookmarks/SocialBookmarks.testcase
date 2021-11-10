@@ -1,0 +1,134 @@
+@component-name = "portal-collaboration"
+definition {
+
+	property custom.properties = "default.layout.template.id=1_column";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Social Bookmarks";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			BlogsEntry.tearDownCP();
+
+			Blogs.tearDownConfigurationDisplaySettingsPG(
+				pageName = "Blogs Page",
+				portletName = "Blogs");
+
+			KBArticle.tearDownCP();
+
+			Page.tearDownCP();
+		}
+	}
+
+	@priority = "3"
+	@refactordone
+	test BlogsEntryWithSocialBookmarksAreViewableInSite {
+		property osgi.app.includes = "social-bookmarks";
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Blogs Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = "1",
+			groupName = "Guest",
+			layoutName = "Blogs Page",
+			widgetName = "Blogs");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content",
+			entrySubtitle = "Blogs Entry Subtitle",
+			entryTitle = "Blogs Entry Title");
+
+		BlogsNavigator.openToBlogEntry(
+			entryTitle = "Blogs Entry Title",
+			layoutName = "Blogs Page",
+			siteURLKey = "guest");
+
+		SocialBookmarks.viewDefaultSharableBookmarks();
+
+		Blogs.disableSocialBookmarkSites(disableSocialBookmarkSites = "Facebook,LinkedIn,Twitter");
+
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		SocialBookmarks.viewShareIconNotPresent();
+
+		SocialBookmarks.viewNoBookmarkIcons(socialBookmarks = "Facebook,LinkedIn,Twitter");
+
+		Blogs.enableSocialBookmarkSites(enableSocialBookmarkSites = "Facebook,LinkedIn,Twitter");
+
+		BlogsNavigator.openToBlogEntry(
+			entryTitle = "Blogs Entry Title",
+			layoutName = "Blogs Page",
+			siteURLKey = "guest");
+
+		SocialBookmarks.viewDefaultSharableBookmarks();
+	}
+
+	@priority = "3"
+	@refactordone
+	test KBArticleWithAllSocialBookmarkAreViewableInSite {
+		property osgi.app.includes = "social-bookmarks,knowledge-base";
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Knowledge Base Display Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = "1",
+			groupName = "Guest",
+			layoutName = "Knowledge Base Display Page",
+			widgetName = "Knowledge Base Display");
+
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Display Page");
+
+		SocialBookmarks.viewBookmarkMenuItems(socialBookmarks = "Twitter,Facebook,LinkedIn");
+	}
+
+	@priority = "4"
+	@refactordone
+	test KBArticleWithSocialBookmarkCanBeChangedInSite {
+		property osgi.app.includes = "social-bookmarks,knowledge-base";
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Knowledge Base Display Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = "1",
+			groupName = "Guest",
+			layoutName = "Knowledge Base Display Page",
+			widgetName = "Knowledge Base Display");
+
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Display Page");
+
+		KBArticle.configureKBSocialBookmarkSites(disableSocialBookmarkSites = "Twitter");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Display Page");
+
+		SocialBookmarks.viewBookmarkMenuItems(socialBookmarks = "Facebook,LinkedIn");
+
+		SocialBookmarks.viewBookmarksNotPresent(socialBookmarks = "Twitter");
+	}
+
+}

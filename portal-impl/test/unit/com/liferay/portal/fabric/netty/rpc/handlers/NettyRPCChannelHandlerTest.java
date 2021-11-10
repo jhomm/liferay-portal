@@ -15,10 +15,12 @@
 package com.liferay.portal.fabric.netty.rpc.handlers;
 
 import com.liferay.portal.fabric.netty.rpc.RPCSerializable;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 
 import java.lang.reflect.Constructor;
@@ -29,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -37,8 +40,10 @@ import org.junit.Test;
 public class NettyRPCChannelHandlerTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Test
 	public void testChannelRead0() {
@@ -51,14 +56,14 @@ public class NettyRPCChannelHandlerTest {
 		RPCSerializable rpcSerializable = new RPCSerializable(
 			System.currentTimeMillis()) {
 
-				@Override
-				public void execute(Channel channel) {
-					channelReference.set(channel);
-				}
+			@Override
+			public void execute(Channel channel) {
+				channelReference.set(channel);
+			}
 
-				private static final long serialVersionUID = 1L;
+			private static final long serialVersionUID = 1L;
 
-			};
+		};
 
 		embeddedChannel.writeInbound(rpcSerializable);
 
@@ -68,7 +73,8 @@ public class NettyRPCChannelHandlerTest {
 	@Test
 	public void testStructure() throws ReflectiveOperationException {
 		Assert.assertNotNull(
-			NettyRPCChannelHandler.class.getAnnotation(Sharable.class));
+			NettyRPCChannelHandler.class.getAnnotation(
+				ChannelHandler.Sharable.class));
 
 		Field instanceField = NettyRPCChannelHandler.class.getField("INSTANCE");
 

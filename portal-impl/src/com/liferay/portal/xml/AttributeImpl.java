@@ -36,17 +36,18 @@ public class AttributeImpl extends NodeImpl implements Attribute {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof AttributeImpl)) {
+		if (!(object instanceof AttributeImpl)) {
 			return false;
 		}
 
-		org.dom4j.Attribute attribute =
-			((AttributeImpl)obj).getWrappedAttribute();
+		AttributeImpl attributeImpl = (AttributeImpl)object;
+
+		org.dom4j.Attribute attribute = attributeImpl.getWrappedAttribute();
 
 		return _attribute.equals(attribute);
 	}
@@ -63,9 +64,8 @@ public class AttributeImpl extends NodeImpl implements Attribute {
 		if (namespace == null) {
 			return null;
 		}
-		else {
-			return new NamespaceImpl(namespace);
-		}
+
+		return new NamespaceImpl(namespace);
 	}
 
 	@Override
@@ -85,9 +85,8 @@ public class AttributeImpl extends NodeImpl implements Attribute {
 		if (qName == null) {
 			return null;
 		}
-		else {
-			return new QNameImpl(qName);
-		}
+
+		return new QNameImpl(qName);
 	}
 
 	@Override

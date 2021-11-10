@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Brian Wing Shun Chan
@@ -34,6 +35,11 @@ public class UnmodifiableJSONObjectImpl extends JSONObjectImpl {
 		List<String> list = Collections.emptyList();
 
 		return list.iterator();
+	}
+
+	@Override
+	public Set<String> keySet() {
+		return Collections.emptySet();
 	}
 
 	@Override
@@ -73,7 +79,7 @@ public class UnmodifiableJSONObjectImpl extends JSONObjectImpl {
 	}
 
 	@Override
-	public JSONObject put(String key, JSONArray value) {
+	public JSONObject put(String key, JSONArray jsonArray) {
 		if (_log.isWarnEnabled()) {
 			_log.warn("Modifications are unsupported");
 		}
@@ -82,7 +88,7 @@ public class UnmodifiableJSONObjectImpl extends JSONObjectImpl {
 	}
 
 	@Override
-	public JSONObject put(String key, JSONObject value) {
+	public JSONObject put(String key, JSONObject jsonObject) {
 		if (_log.isWarnEnabled()) {
 			_log.warn("Modifications are unsupported");
 		}

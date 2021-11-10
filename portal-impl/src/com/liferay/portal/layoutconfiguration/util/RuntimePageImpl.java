@@ -14,58 +14,40 @@
 
 package com.liferay.portal.layoutconfiguration.util;
 
-import com.liferay.portal.kernel.executor.PortalExecutorManagerUtil;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
+import com.liferay.petra.io.unsync.UnsyncStringWriter;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.layoutconfiguration.util.RuntimePage;
+import com.liferay.portal.kernel.layoutconfiguration.util.xml.RuntimeLogic;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
+import com.liferay.portal.kernel.model.LayoutTemplate;
+import com.liferay.portal.kernel.model.LayoutTemplateConstants;
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.service.LayoutTemplateLocalServiceUtil;
+import com.liferay.portal.kernel.servlet.PipingServletResponse;
+import com.liferay.portal.kernel.servlet.PluginContextListener;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.template.Template;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateManager;
 import com.liferay.portal.kernel.template.TemplateManagerUtil;
 import com.liferay.portal.kernel.template.TemplateResource;
-import com.liferay.portal.kernel.util.ClassLoaderUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
-import com.liferay.portal.kernel.util.ObjectValuePair;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.layoutconfiguration.util.velocity.CustomizationSettingsProcessor;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.layoutconfiguration.util.velocity.TemplateProcessor;
 import com.liferay.portal.layoutconfiguration.util.xml.ActionURLLogic;
 import com.liferay.portal.layoutconfiguration.util.xml.PortletLogic;
 import com.liferay.portal.layoutconfiguration.util.xml.RenderURLLogic;
-import com.liferay.portal.layoutconfiguration.util.xml.RuntimeLogic;
-import com.liferay.portal.model.LayoutTemplate;
-import com.liferay.portal.model.LayoutTemplateConstants;
-import com.liferay.portal.model.Portlet;
-import com.liferay.portal.service.LayoutTemplateLocalServiceUtil;
-import com.liferay.portal.servlet.ThreadLocalFacadeServletRequestWrapperUtil;
-import com.liferay.portal.util.PropsValues;
-import com.liferay.portal.util.WebKeys;
-import com.liferay.taglib.servlet.PipingServletResponse;
-import com.liferay.taglib.util.DummyVelocityTaglib;
-import com.liferay.taglib.util.VelocityTaglib;
-
-import java.io.Closeable;
+import com.liferay.portlet.internal.PortletBagUtil;
+import com.liferay.portlet.internal.PortletTypeUtil;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import javax.portlet.PortletResponse;
 import javax.portlet.RenderResponse;
@@ -81,392 +63,10 @@ import org.apache.commons.lang.time.StopWatch;
  * @author Raymond Augé
  * @author Shuyang Zhou
  */
-@DoPrivileged
 public class RuntimePageImpl implements RuntimePage {
 
 	@Override
-	public StringBundler getProcessedTemplate(
-			HttpServletRequest request, HttpServletResponse response,
-			String portletId, TemplateResource templateResource)
-		throws Exception {
-
-		return doDispatch(request, response, portletId, templateResource, true);
-	}
-
-	@Override
-	public void processCustomizationSettings(
-			HttpServletRequest request, HttpServletResponse response,
-			TemplateResource templateResource)
-		throws Exception {
-
-		doDispatch(request, response, null, templateResource, false);
-	}
-
-	@Override
-	public void processTemplate(
-			HttpServletRequest request, HttpServletResponse response,
-			String portletId, TemplateResource templateResource)
-		throws Exception {
-
-		StringBundler sb = doDispatch(
-			request, response, portletId, templateResource, true);
-
-		sb.writeTo(response.getWriter());
-	}
-
-	@Override
-	public void processTemplate(
-			HttpServletRequest request, HttpServletResponse response,
-			TemplateResource templateResource)
-		throws Exception {
-
-		processTemplate(request, response, null, templateResource);
-	}
-
-	@Override
-	public String processXML(
-			HttpServletRequest request, HttpServletResponse response,
-			String content)
-		throws Exception {
-
-		PortletResponse portletResponse = (PortletResponse)request.getAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE);
-
-		if ((portletResponse != null) &&
-			!(portletResponse instanceof RenderResponse)) {
-
-			throw new IllegalArgumentException(
-				"processXML can only be invoked in the render phase");
-		}
-
-		RuntimeLogic portletLogic = new PortletLogic(request, response);
-
-		content = processXML(request, content, portletLogic);
-
-		if (portletResponse == null) {
-			return content;
-		}
-
-		RenderResponse renderResponse = (RenderResponse)portletResponse;
-
-		RuntimeLogic actionURLLogic = new ActionURLLogic(renderResponse);
-		RuntimeLogic renderURLLogic = new RenderURLLogic(renderResponse);
-
-		content = processXML(request, content, actionURLLogic);
-		content = processXML(request, content, renderURLLogic);
-
-		return content;
-	}
-
-	@Override
-	public String processXML(
-			HttpServletRequest request, String content,
-			RuntimeLogic runtimeLogic)
-		throws Exception {
-
-		if (Validator.isNull(content)) {
-			return StringPool.BLANK;
-		}
-
-		int index = content.indexOf(runtimeLogic.getOpenTag());
-
-		if (index == -1) {
-			return content;
-		}
-
-		Portlet renderPortlet = (Portlet)request.getAttribute(
-			WebKeys.RENDER_PORTLET);
-
-		Boolean renderPortletResource = (Boolean)request.getAttribute(
-			WebKeys.RENDER_PORTLET_RESOURCE);
-
-		String outerPortletId = (String)request.getAttribute(
-			WebKeys.OUTER_PORTLET_ID);
-
-		if (outerPortletId == null) {
-			request.setAttribute(
-				WebKeys.OUTER_PORTLET_ID, renderPortlet.getPortletId());
-		}
-
-		try {
-			request.setAttribute(WebKeys.RENDER_PORTLET_RESOURCE, Boolean.TRUE);
-
-			StringBundler sb = new StringBundler();
-
-			int x = 0;
-			int y = index;
-
-			while (y != -1) {
-				sb.append(content.substring(x, y));
-
-				int close1 = content.indexOf(runtimeLogic.getClose1Tag(), y);
-				int close2 = content.indexOf(runtimeLogic.getClose2Tag(), y);
-
-				if ((close2 == -1) || ((close1 != -1) && (close1 < close2))) {
-					x = close1 + runtimeLogic.getClose1Tag().length();
-				}
-				else {
-					x = close2 + runtimeLogic.getClose2Tag().length();
-				}
-
-				String runtimePortletTag = content.substring(y, x);
-
-				if ((renderPortlet != null) &&
-					runtimePortletTag.contains(renderPortlet.getPortletId())) {
-
-					return StringPool.BLANK;
-				}
-
-				sb.append(runtimeLogic.processXML(runtimePortletTag));
-
-				y = content.indexOf(runtimeLogic.getOpenTag(), x);
-			}
-
-			if (y == -1) {
-				sb.append(content.substring(x));
-			}
-
-			return sb.toString();
-		}
-		finally {
-			if (outerPortletId == null) {
-				request.removeAttribute(WebKeys.OUTER_PORTLET_ID);
-			}
-
-			request.setAttribute(WebKeys.RENDER_PORTLET, renderPortlet);
-
-			if (renderPortletResource == null) {
-				request.removeAttribute(WebKeys.RENDER_PORTLET_RESOURCE);
-			}
-			else {
-				request.setAttribute(
-					WebKeys.RENDER_PORTLET_RESOURCE, renderPortletResource);
-			}
-		}
-	}
-
-	protected StringBundler doDispatch(
-			HttpServletRequest request, HttpServletResponse response,
-			String portletId, TemplateResource templateResource,
-			boolean processTemplate)
-		throws Exception {
-
-		ClassLoader pluginClassLoader = null;
-
-		LayoutTemplate layoutTemplate = getLayoutTemplate(
-			templateResource.getTemplateId());
-
-		if (layoutTemplate != null) {
-			String pluginServletContextName = GetterUtil.getString(
-				layoutTemplate.getServletContextName());
-
-			ServletContext pluginServletContext = ServletContextPool.get(
-				pluginServletContextName);
-
-			if (pluginServletContext != null) {
-				pluginClassLoader = pluginServletContext.getClassLoader();
-			}
-		}
-
-		ClassLoader contextClassLoader =
-			ClassLoaderUtil.getContextClassLoader();
-
-		try {
-			if ((pluginClassLoader != null) &&
-				(pluginClassLoader != contextClassLoader)) {
-
-				ClassLoaderUtil.setContextClassLoader(pluginClassLoader);
-			}
-
-			if (processTemplate) {
-				return doProcessTemplate(
-					request, response, portletId, templateResource, false);
-			}
-			else {
-				doProcessCustomizationSettings(
-					request, response, templateResource, false);
-
-				return null;
-			}
-		}
-		finally {
-			if ((pluginClassLoader != null) &&
-				(pluginClassLoader != contextClassLoader)) {
-
-				ClassLoaderUtil.setContextClassLoader(contextClassLoader);
-			}
-		}
-	}
-
-	protected void doProcessCustomizationSettings(
-			HttpServletRequest request, HttpServletResponse response,
-			TemplateResource templateResource, boolean restricted)
-		throws Exception {
-
-		CustomizationSettingsProcessor processor =
-			new CustomizationSettingsProcessor(request, response);
-
-		Template template = TemplateManagerUtil.getTemplate(
-			TemplateConstants.LANG_TYPE_VM, templateResource, restricted);
-
-		template.put("processor", processor);
-
-		// Velocity variables
-
-		template.prepare(request);
-
-		// liferay:include tag library
-
-		VelocityTaglib velocityTaglib = new DummyVelocityTaglib();
-
-		template.put("taglibLiferay", velocityTaglib);
-		template.put("theme", velocityTaglib);
-
-		try {
-			template.processTemplate(response.getWriter());
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-
-			throw e;
-		}
-	}
-
-	protected StringBundler doProcessTemplate(
-			HttpServletRequest request, HttpServletResponse response,
-			String portletId, TemplateResource templateResource,
-			boolean restricted)
-		throws Exception {
-
-		TemplateProcessor processor = new TemplateProcessor(
-			request, response, portletId);
-
-		TemplateManager templateManager =
-			TemplateManagerUtil.getTemplateManager(
-				TemplateConstants.LANG_TYPE_VM);
-
-		Template template = TemplateManagerUtil.getTemplate(
-			TemplateConstants.LANG_TYPE_VM, templateResource, restricted);
-
-		template.put("processor", processor);
-
-		// Velocity variables
-
-		template.prepare(request);
-
-		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
-
-		templateManager.addTaglibTheme(
-			template, "taglibLiferay", request,
-			new PipingServletResponse(response, unsyncStringWriter));
-
-		try {
-			template.processTemplate(unsyncStringWriter);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-
-			throw e;
-		}
-
-		boolean portletParallelRender = GetterUtil.getBoolean(
-			request.getAttribute(WebKeys.PORTLET_PARALLEL_RENDER));
-
-		Lock lock = null;
-
-		Map<String, StringBundler> contentsMap = new HashMap<>();
-
-		Map<Integer, List<PortletRenderer>> portletRenderersMap =
-			processor.getPortletRenderers();
-
-		for (Map.Entry<Integer, List<PortletRenderer>> entry :
-				portletRenderersMap.entrySet()) {
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Processing portlets with render weight " + entry.getKey());
-			}
-
-			List<PortletRenderer> portletRenderers = entry.getValue();
-
-			StopWatch stopWatch = new StopWatch();
-
-			stopWatch.start();
-
-			if (portletParallelRender && (portletRenderers.size() > 1)) {
-				if (_log.isDebugEnabled()) {
-					_log.debug("Start parallel rendering");
-				}
-
-				if (lock == null) {
-					lock = new ReentrantLock();
-				}
-
-				request.setAttribute(
-					WebKeys.PARALLEL_RENDERING_MERGE_LOCK, lock);
-
-				ObjectValuePair<HttpServletRequest, Closeable> objectValuePair =
-					ThreadLocalFacadeServletRequestWrapperUtil.inject(request);
-
-				try {
-					parallelyRenderPortlets(
-						objectValuePair.getKey(), response, processor,
-						contentsMap, portletRenderers);
-				}
-				finally {
-					Closeable closeable = objectValuePair.getValue();
-
-					closeable.close();
-				}
-
-				request.removeAttribute(WebKeys.PARALLEL_RENDERING_MERGE_LOCK);
-
-				if (_log.isDebugEnabled()) {
-					_log.debug(
-						"Finished parallel rendering in " +
-							stopWatch.getTime() + " ms");
-				}
-			}
-			else {
-				if (_log.isDebugEnabled()) {
-					_log.debug("Start serial rendering");
-				}
-
-				for (PortletRenderer portletRenderer : portletRenderers) {
-					Portlet portlet = portletRenderer.getPortlet();
-
-					contentsMap.put(
-						portlet.getPortletId(),
-						portletRenderer.render(request, response));
-
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							"Serially rendered portlet " +
-								portlet.getPortletId() + " in " +
-									stopWatch.getTime() + " ms");
-					}
-				}
-
-				if (_log.isDebugEnabled()) {
-					_log.debug(
-						"Finished serial rendering in " + stopWatch.getTime() +
-							" ms");
-				}
-			}
-		}
-
-		if (portletParallelRender && (_waitTime == Integer.MAX_VALUE)) {
-			_waitTime = PropsValues.LAYOUT_PARALLEL_RENDER_TIMEOUT;
-		}
-
-		StringBundler sb = StringUtil.replaceWithStringBundler(
-			unsyncStringWriter.toString(), "[$TEMPLATE_PORTLET_", "$]",
-			contentsMap);
-
-		return sb;
-	}
-
-	protected LayoutTemplate getLayoutTemplate(String velocityTemplateId) {
+	public LayoutTemplate getLayoutTemplate(String velocityTemplateId) {
 		String separator = LayoutTemplateConstants.CUSTOM_SEPARATOR;
 		boolean standard = false;
 
@@ -506,173 +106,404 @@ public class RuntimePageImpl implements RuntimePage {
 			layoutTemplateId, standard, themeId);
 	}
 
-	protected void parallelyRenderPortlets(
-			HttpServletRequest request, HttpServletResponse response,
-			TemplateProcessor processor, Map<String, StringBundler> contentsMap,
-			List<PortletRenderer> portletRenderers)
+	@Override
+	public StringBundler getProcessedTemplate(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, String portletId,
+			TemplateResource templateResource)
 		throws Exception {
 
-		ExecutorService executorService =
-			PortalExecutorManagerUtil.getPortalExecutor(
-				RuntimePageImpl.class.getName());
+		return doDispatch(
+			httpServletRequest, httpServletResponse, portletId,
+			templateResource, TemplateConstants.LANG_TYPE_VM);
+	}
 
-		Map<Future<StringBundler>, PortletRenderer> futures = new HashMap<>(
-			portletRenderers.size());
+	@Override
+	public void processTemplate(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, String portletId,
+			TemplateResource templateResource)
+		throws Exception {
 
-		for (PortletRenderer portletRenderer : portletRenderers) {
-			if (_log.isDebugEnabled()) {
-				Portlet portlet = portletRenderer.getPortlet();
+		StringBundler sb = doDispatch(
+			httpServletRequest, httpServletResponse, portletId,
+			templateResource, TemplateConstants.LANG_TYPE_VM);
 
-				_log.debug(
-					"Submit portlet " + portlet.getPortletId() +
-						" for parallel rendering");
-			}
+		sb.writeTo(httpServletResponse.getWriter());
+	}
 
-			Callable<StringBundler> renderCallable =
-				portletRenderer.getCallable(request, response);
+	@Override
+	public void processTemplate(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, String portletId,
+			TemplateResource templateResource, String langType)
+		throws Exception {
 
-			Future<StringBundler> future = null;
+		StringBundler sb = doDispatch(
+			httpServletRequest, httpServletResponse, portletId,
+			templateResource, langType);
 
-			try {
-				future = executorService.submit(renderCallable);
-			}
-			catch (RejectedExecutionException ree) {
+		sb.writeTo(httpServletResponse.getWriter());
+	}
 
-				// This should only happen when user configures an AbortPolicy
-				// (or some other customized RejectedExecutionHandler that
-				// throws RejectedExecutionException) for this
-				// ThreadPoolExecutor. AbortPolicy is not the recommended
-				// setting, but to be more robust, we take care of this by
-				// converting the rejection to a fallback action.
+	@Override
+	public void processTemplate(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse,
+			TemplateResource templateResource)
+		throws Exception {
 
-				future = new FutureTask<>(renderCallable);
+		processTemplate(
+			httpServletRequest, httpServletResponse, null, templateResource);
+	}
 
-				// Cancel immediately
+	@Override
+	public void processTemplate(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse,
+			TemplateResource templateResource, String langType)
+		throws Exception {
 
-				future.cancel(true);
-			}
+		processTemplate(
+			httpServletRequest, httpServletResponse, null, templateResource,
+			langType);
+	}
 
-			futures.put(future, portletRenderer);
+	@Override
+	public String processXML(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, String content)
+		throws Exception {
+
+		PortletResponse portletResponse =
+			(PortletResponse)httpServletRequest.getAttribute(
+				JavaConstants.JAVAX_PORTLET_RESPONSE);
+
+		if ((portletResponse != null) &&
+			!(portletResponse instanceof RenderResponse)) {
+
+			throw new IllegalArgumentException(
+				"processXML can only be invoked in the render phase");
 		}
 
-		long waitTime = _waitTime;
+		RuntimeLogic portletLogic = new PortletLogic(
+			httpServletRequest, httpServletResponse);
 
-		for (Map.Entry<Future<StringBundler>, PortletRenderer> entry :
-				futures.entrySet()) {
+		content = processXML(httpServletRequest, content, portletLogic);
 
-			Future<StringBundler> future = entry.getKey();
-			PortletRenderer portletRenderer = entry.getValue();
+		if (portletResponse == null) {
+			return content;
+		}
 
-			Portlet portlet = portletRenderer.getPortlet();
+		RenderResponse renderResponse = (RenderResponse)portletResponse;
 
-			if (future.isCancelled()) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(
-						"Reject portlet " + portlet.getPortletId() +
-							" for parallel rendering");
+		RuntimeLogic actionURLLogic = new ActionURLLogic(renderResponse);
+		RuntimeLogic renderURLLogic = new RenderURLLogic(renderResponse);
+
+		content = processXML(httpServletRequest, content, actionURLLogic);
+		content = processXML(httpServletRequest, content, renderURLLogic);
+
+		return content;
+	}
+
+	@Override
+	public String processXML(
+			HttpServletRequest httpServletRequest, String content,
+			RuntimeLogic runtimeLogic)
+		throws Exception {
+
+		if (Validator.isNull(content)) {
+			return StringPool.BLANK;
+		}
+
+		int index = content.indexOf(runtimeLogic.getOpenTag());
+
+		if (index == -1) {
+			return content;
+		}
+
+		Portlet renderPortlet = (Portlet)httpServletRequest.getAttribute(
+			WebKeys.RENDER_PORTLET);
+
+		Boolean renderPortletResource =
+			(Boolean)httpServletRequest.getAttribute(
+				WebKeys.RENDER_PORTLET_RESOURCE);
+
+		String outerPortletId = (String)httpServletRequest.getAttribute(
+			WebKeys.OUTER_PORTLET_ID);
+
+		if (outerPortletId == null) {
+			httpServletRequest.setAttribute(
+				WebKeys.OUTER_PORTLET_ID, renderPortlet.getPortletId());
+		}
+
+		try {
+			httpServletRequest.setAttribute(
+				WebKeys.RENDER_PORTLET_RESOURCE, Boolean.TRUE);
+
+			StringBundler sb = new StringBundler();
+
+			int x = 0;
+			int y = index;
+
+			while (y != -1) {
+				sb.append(content.substring(x, y));
+
+				String close1Tag = runtimeLogic.getClose1Tag();
+				String close2Tag = runtimeLogic.getClose2Tag();
+
+				int close1 = content.indexOf(close1Tag, y);
+				int close2 = content.indexOf(close2Tag, y);
+
+				if ((close2 == -1) || ((close1 != -1) && (close1 < close2))) {
+					x = close1 + close1Tag.length();
 				}
+				else {
+					x = close2 + close2Tag.length();
+				}
+
+				String runtimePortletTag = content.substring(y, x);
+
+				if ((renderPortlet != null) &&
+					runtimePortletTag.contains(renderPortlet.getPortletId())) {
+
+					return StringPool.BLANK;
+				}
+
+				sb.append(runtimeLogic.processXML(runtimePortletTag));
+
+				y = content.indexOf(runtimeLogic.getOpenTag(), x);
 			}
-			else if ((waitTime > 0) || future.isDone()) {
-				try {
-					long startTime = System.currentTimeMillis();
 
-					StringBundler sb = future.get(
-						waitTime, TimeUnit.MILLISECONDS);
-
-					long duration = System.currentTimeMillis() - startTime;
-
-					waitTime -= duration;
-
-					contentsMap.put(portlet.getPortletId(), sb);
-
-					portletRenderer.finishParallelRender();
-
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							"Parallely rendered portlet " +
-								portlet.getPortletId() + " in " + duration +
-									" ms");
-					}
-
-					continue;
-				}
-				catch (ExecutionException ee) {
-					throw ee;
-				}
-				catch (InterruptedException ie) {
-
-					// On interruption, stop waiting, force all pending portlets
-					// to fall back to ajax loading or an error message.
-
-					waitTime = -1;
-				}
-				catch (TimeoutException te) {
-
-					// On timeout, stop waiting, force all pending portlets to
-					// fall back to ajax loading or an error message.
-
-					waitTime = -1;
-				}
-				catch (CancellationException ce) {
-
-					// This should only happen on a concurrent shutdown of the
-					// thread pool. Simply stops the render process.
-
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							"Asynchronized cancellation detected that should " +
-								"only be caused by a concurrent shutdown of " +
-									"the thread pool",
-							ce);
-					}
-
-					return;
-				}
-
-				// Cancel by interrupting rendering thread
-
-				future.cancel(true);
+			if (y == -1) {
+				sb.append(content.substring(x));
 			}
 
-			StringBundler sb = null;
+			return sb.toString();
+		}
+		finally {
+			if (outerPortletId == null) {
+				httpServletRequest.removeAttribute(WebKeys.OUTER_PORTLET_ID);
+			}
 
-			if (processor.isPortletAjaxRender() && portlet.isAjaxable()) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(
-						"Fall back to ajax rendering of portlet " +
-							portlet.getPortletId());
-				}
+			httpServletRequest.setAttribute(
+				WebKeys.RENDER_PORTLET, renderPortlet);
 
-				sb = portletRenderer.renderAjax(request, response);
+			if (renderPortletResource == null) {
+				httpServletRequest.removeAttribute(
+					WebKeys.RENDER_PORTLET_RESOURCE);
 			}
 			else {
-				if (_log.isDebugEnabled()) {
-					if (processor.isPortletAjaxRender()) {
-						_log.debug(
-							"Fall back to an error message for portlet " +
-								portlet.getPortletId() +
-									" since it is not ajaxable");
-					}
-					else {
-						_log.debug(
-							"Fall back to an error message for portlet " +
-								portlet.getPortletId() +
-									" since ajax rendering is disabled");
-					}
-				}
+				httpServletRequest.setAttribute(
+					WebKeys.RENDER_PORTLET_RESOURCE, renderPortletResource);
+			}
+		}
+	}
 
-				sb = portletRenderer.renderError(request, response);
+	protected StringBundler doDispatch(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, String portletId,
+			TemplateResource templateResource, String langType)
+		throws Exception {
+
+		ClassLoader pluginClassLoader = null;
+
+		LayoutTemplate layoutTemplate = getLayoutTemplate(
+			templateResource.getTemplateId());
+
+		if (layoutTemplate != null) {
+			String pluginServletContextName = GetterUtil.getString(
+				layoutTemplate.getServletContextName());
+
+			ServletContext pluginServletContext = ServletContextPool.get(
+				pluginServletContextName);
+
+			if (pluginServletContext != null) {
+				pluginClassLoader =
+					(ClassLoader)pluginServletContext.getAttribute(
+						PluginContextListener.PLUGIN_CLASS_LOADER);
+			}
+		}
+
+		Thread currentThread = Thread.currentThread();
+
+		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
+
+		try {
+			if ((pluginClassLoader != null) &&
+				(pluginClassLoader != contextClassLoader)) {
+
+				currentThread.setContextClassLoader(pluginClassLoader);
 			}
 
-			contentsMap.put(portlet.getPortletId(), sb);
-
-			portletRenderer.finishParallelRender();
+			return doProcessTemplate(
+				httpServletRequest, httpServletResponse, portletId,
+				templateResource, langType, false);
 		}
+		finally {
+			if ((pluginClassLoader != null) &&
+				(pluginClassLoader != contextClassLoader)) {
+
+				currentThread.setContextClassLoader(contextClassLoader);
+			}
+		}
+	}
+
+	protected StringBundler doProcessTemplate(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, String portletId,
+			TemplateResource templateResource, String langType,
+			boolean restricted)
+		throws Exception {
+
+		TemplateProcessor processor = new TemplateProcessor(
+			httpServletRequest, httpServletResponse, portletId);
+
+		TemplateManager templateManager =
+			TemplateManagerUtil.getTemplateManager(langType);
+
+		Template template = templateManager.getTemplate(
+			templateResource, restricted);
+
+		template.put("processor", processor);
+
+		// Velocity variables
+
+		template.prepare(httpServletRequest);
+
+		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
+
+		template.prepareTaglib(
+			httpServletRequest,
+			new PipingServletResponse(httpServletResponse, unsyncStringWriter));
+
+		try {
+			template.processTemplate(unsyncStringWriter);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw exception;
+		}
+
+		Map<Integer, List<PortletRenderer>> portletRenderersMap =
+			processor.getPortletRenderers();
+
+		Map<String, Map<String, Object>> portletHeaderRequestMap =
+			new HashMap<>();
+
+		for (Map.Entry<Integer, List<PortletRenderer>> entry :
+				portletRenderersMap.entrySet()) {
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Processing portlets with render weight " + entry.getKey());
+			}
+
+			List<PortletRenderer> portletRenderers = entry.getValue();
+
+			StopWatch stopWatch = new StopWatch();
+
+			stopWatch.start();
+
+			if (_log.isDebugEnabled()) {
+				_log.debug("Start serial header phase");
+			}
+
+			for (PortletRenderer portletRenderer : portletRenderers) {
+				Portlet portletModel = portletRenderer.getPortlet();
+
+				if (!portletModel.isReady()) {
+					continue;
+				}
+
+				javax.portlet.Portlet portlet =
+					PortletBagUtil.getPortletInstance(
+						httpServletRequest.getServletContext(), portletModel,
+						portletModel.getRootPortletId());
+
+				if (!PortletTypeUtil.isHeaderPortlet(portlet)) {
+					continue;
+				}
+
+				Map<String, Object> headerRequestMap =
+					portletRenderer.renderHeaders(
+						httpServletRequest, httpServletResponse,
+						portletModel.getHeaderRequestAttributePrefixes());
+
+				String rendererPortletId = portletModel.getPortletId();
+
+				portletHeaderRequestMap.put(
+					rendererPortletId, headerRequestMap);
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						StringBundler.concat(
+							"Serially rendered headers for portlet ",
+							rendererPortletId, " in ", stopWatch.getTime(),
+							" ms"));
+				}
+			}
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Finished serial header phase in " + stopWatch.getTime() +
+						" ms");
+			}
+		}
+
+		Map<String, StringBundler> contentsMap = new HashMap<>();
+
+		for (Map.Entry<Integer, List<PortletRenderer>> entry :
+				portletRenderersMap.entrySet()) {
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Processing portlets with render weight " + entry.getKey());
+			}
+
+			List<PortletRenderer> portletRenderers = entry.getValue();
+
+			StopWatch stopWatch = new StopWatch();
+
+			stopWatch.start();
+
+			if (_log.isDebugEnabled()) {
+				_log.debug("Start serial rendering");
+			}
+
+			for (PortletRenderer portletRenderer : portletRenderers) {
+				Portlet portlet = portletRenderer.getPortlet();
+
+				String rendererPortletId = portlet.getPortletId();
+
+				contentsMap.put(
+					rendererPortletId,
+					portletRenderer.render(
+						httpServletRequest, httpServletResponse,
+						portletHeaderRequestMap.get(rendererPortletId)));
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						StringBundler.concat(
+							"Serially rendered portlet ", rendererPortletId,
+							" in ", stopWatch.getTime(), " ms"));
+				}
+			}
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Finished serial rendering in " + stopWatch.getTime() +
+						" ms");
+			}
+		}
+
+		return StringUtil.replaceWithStringBundler(
+			unsyncStringWriter.toString(), "[$TEMPLATE_PORTLET_", "$]",
+			contentsMap);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		RuntimePageImpl.class);
-
-	private int _waitTime = Integer.MAX_VALUE;
 
 }

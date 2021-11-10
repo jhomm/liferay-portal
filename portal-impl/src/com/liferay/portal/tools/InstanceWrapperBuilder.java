@@ -14,9 +14,9 @@
 
 package com.liferay.portal.tools;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
@@ -26,6 +26,7 @@ import com.thoughtworks.qdox.JavaDocBuilder;
 import com.thoughtworks.qdox.model.DocletTag;
 import com.thoughtworks.qdox.model.JavaClass;
 import com.thoughtworks.qdox.model.JavaMethod;
+import com.thoughtworks.qdox.model.JavaPackage;
 import com.thoughtworks.qdox.model.JavaParameter;
 import com.thoughtworks.qdox.model.Type;
 import com.thoughtworks.qdox.model.TypeVariable;
@@ -73,8 +74,8 @@ public class InstanceWrapperBuilder {
 				_createIW(parentDir, srcFile);
 			}
 		}
-		catch (Exception e) {
-			e.printStackTrace();
+		catch (Exception exception) {
+			exception.printStackTrace();
 		}
 	}
 
@@ -90,7 +91,11 @@ public class InstanceWrapperBuilder {
 		// Package
 
 		sb.append("package ");
-		sb.append(javaClass.getPackage().getName());
+
+		JavaPackage javaPackage = javaClass.getPackage();
+
+		sb.append(javaPackage.getName());
+
 		sb.append(";");
 
 		// Class declaration
@@ -103,16 +108,14 @@ public class InstanceWrapperBuilder {
 
 		sb.append("public static ");
 		sb.append(javaClass.getName());
-		sb.append("_IW getInstance() {");
-		sb.append("return _instance;");
-		sb.append("}\n");
+		sb.append("_IW getInstance() {return _instance;}\n");
 
 		for (JavaMethod javaMethod : javaMethods) {
-			String methodName = javaMethod.getName();
-
 			if (!javaMethod.isPublic() || !javaMethod.isStatic()) {
 				continue;
 			}
+
+			String methodName = javaMethod.getName();
 
 			if (methodName.equals("getInstance")) {
 				methodName = "getWrappedInstance";
@@ -134,9 +137,7 @@ public class InstanceWrapperBuilder {
 			if (typeParameters.length > 0) {
 				sb.append(" <");
 
-				for (int i = 0; i < typeParameters.length; i++) {
-					TypeVariable typeParameter = typeParameters[i];
-
+				for (TypeVariable typeParameter : typeParameters) {
 					sb.append(typeParameter.getName());
 					sb.append(", ");
 				}
@@ -153,9 +154,7 @@ public class InstanceWrapperBuilder {
 
 			JavaParameter[] javaParameters = javaMethod.getParameters();
 
-			for (int i = 0; i < javaParameters.length; i++) {
-				JavaParameter javaParameter = javaParameters[i];
-
+			for (JavaParameter javaParameter : javaParameters) {
 				sb.append(_getTypeGenericsName(javaParameter.getType()));
 
 				if (javaParameter.isVarArgs()) {
@@ -177,9 +176,7 @@ public class InstanceWrapperBuilder {
 
 			Set<String> newExceptions = new LinkedHashSet<>();
 
-			for (int j = 0; j < thrownExceptions.length; j++) {
-				Type thrownException = thrownExceptions[j];
-
+			for (Type thrownException : thrownExceptions) {
 				newExceptions.add(thrownException.getValue());
 			}
 
@@ -196,7 +193,11 @@ public class InstanceWrapperBuilder {
 
 			sb.append("{\n");
 
-			if (!javaMethod.getReturnType().getValue().equals("void")) {
+			Type returnType = javaMethod.getReturnType();
+
+			String returnTypeValue = returnType.getValue();
+
+			if (!returnTypeValue.equals("void")) {
 				sb.append("return ");
 			}
 
@@ -205,9 +206,7 @@ public class InstanceWrapperBuilder {
 			sb.append(javaMethod.getName());
 			sb.append("(");
 
-			for (int j = 0; j < javaParameters.length; j++) {
-				JavaParameter javaParameter = javaParameters[j];
-
+			for (JavaParameter javaParameter : javaParameters) {
 				sb.append(javaParameter.getName());
 				sb.append(", ");
 			}
@@ -216,16 +215,14 @@ public class InstanceWrapperBuilder {
 				sb.setIndex(sb.index() - 1);
 			}
 
-			sb.append(");");
-			sb.append("}\n");
+			sb.append(");}\n");
 		}
 
 		// Private constructor
 
 		sb.append("private ");
 		sb.append(javaClass.getName());
-		sb.append("_IW() {");
-		sb.append("}");
+		sb.append("_IW() {}");
 
 		// Fields
 
@@ -242,9 +239,10 @@ public class InstanceWrapperBuilder {
 		// Write file
 
 		File file = new File(
-			parentDir + "/" +
-				StringUtil.replace(javaClass.getPackage().getName(), ".", "/") +
-					"/" + javaClass.getName() + "_IW.java");
+			StringBundler.concat(
+				parentDir, "/",
+				StringUtil.replace(javaPackage.getName(), '.', '/'), "/",
+				javaClass.getName(), "_IW.java"));
 
 		ToolsUtil.writeFile(file, sb.toString(), null);
 	}
@@ -263,7 +261,7 @@ public class InstanceWrapperBuilder {
 		throws IOException {
 
 		String className = StringUtil.replace(
-			srcFile.substring(0, srcFile.length() - 5), "/", ".");
+			srcFile.substring(0, srcFile.length() - 5), '/', '.');
 
 		JavaDocBuilder builder = new JavaDocBuilder();
 
@@ -282,13 +280,13 @@ public class InstanceWrapperBuilder {
 		}
 
 		StringBundler sb = new StringBundler(
-			actualTypeArguments.length * 2 + 3);
+			(actualTypeArguments.length * 2) + 3);
 
 		sb.append(type.getValue());
 		sb.append("<");
 
-		for (int i = 0; i < actualTypeArguments.length; i++) {
-			sb.append(_getTypeGenericsName(actualTypeArguments[i]));
+		for (Type actualTypeArgument : actualTypeArguments) {
+			sb.append(_getTypeGenericsName(actualTypeArgument));
 			sb.append(", ");
 		}
 

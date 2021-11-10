@@ -14,11 +14,12 @@
 
 package com.liferay.portal.jsonwebservice;
 
+import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONDeserializer;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.HashMap;
@@ -27,18 +28,17 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
-import jodd.servlet.ServletUtil;
-
 /**
  * @author Igor Spasic
  */
 public class JSONRPCRequest {
 
 	public static JSONRPCRequest detectJSONRPCRequest(
-		HttpServletRequest request) {
+		HttpServletRequest httpServletRequest) {
 
 		try {
-			String requestBody = ServletUtil.readRequestBody(request);
+			String requestBody = StreamUtil.toString(
+				httpServletRequest.getInputStream());
 
 			if (Validator.isNull(requestBody) ||
 				!requestBody.startsWith(StringPool.OPEN_CURLY_BRACE) ||
@@ -75,9 +75,9 @@ public class JSONRPCRequest {
 
 			return jsonrpcRequest;
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug("Unable to parse JSON RPC request", e);
+				_log.debug("Unable to parse JSON RPC request", exception);
 			}
 
 			return null;
@@ -102,9 +102,8 @@ public class JSONRPCRequest {
 		if (value != null) {
 			return String.valueOf(value);
 		}
-		else {
-			return null;
-		}
+
+		return null;
 	}
 
 	public Set<String> getParameterNames() {

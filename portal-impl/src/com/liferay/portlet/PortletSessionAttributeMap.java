@@ -15,7 +15,6 @@
 package com.liferay.portlet;
 
 import com.liferay.portal.kernel.util.MappingEnumeration;
-import com.liferay.portal.kernel.util.MappingEnumeration.Mapper;
 import com.liferay.portal.kernel.util.SetUtil;
 
 import java.util.AbstractMap;
@@ -36,12 +35,14 @@ import javax.servlet.http.HttpSession;
  */
 public class PortletSessionAttributeMap extends AbstractMap<String, Object> {
 
-	public PortletSessionAttributeMap(HttpSession session) {
-		this(session, null);
+	public PortletSessionAttributeMap(HttpSession httpSession) {
+		this(httpSession, null);
 	}
 
-	public PortletSessionAttributeMap(HttpSession session, String scopePrefix) {
-		this.session = session;
+	public PortletSessionAttributeMap(
+		HttpSession httpSession, String scopePrefix) {
+
+		this.httpSession = httpSession;
 		this.scopePrefix = scopePrefix;
 	}
 
@@ -76,7 +77,7 @@ public class PortletSessionAttributeMap extends AbstractMap<String, Object> {
 		Enumeration<String> enumeration = getAttributeNames(false);
 
 		while (enumeration.hasMoreElements()) {
-			Object attributeValue = session.getAttribute(
+			Object attributeValue = httpSession.getAttribute(
 				enumeration.nextElement());
 
 			if (attributeValue.equals(value)) {
@@ -108,7 +109,7 @@ public class PortletSessionAttributeMap extends AbstractMap<String, Object> {
 			return null;
 		}
 
-		return session.getAttribute(encodeKey(String.valueOf(key)));
+		return httpSession.getAttribute(encodeKey(String.valueOf(key)));
 	}
 
 	@Override
@@ -162,7 +163,7 @@ public class PortletSessionAttributeMap extends AbstractMap<String, Object> {
 
 		while (enumeration.hasMoreElements()) {
 			attributeValues.add(
-				session.getAttribute(enumeration.nextElement()));
+				httpSession.getAttribute(enumeration.nextElement()));
 		}
 
 		return attributeValues;
@@ -177,22 +178,21 @@ public class PortletSessionAttributeMap extends AbstractMap<String, Object> {
 	}
 
 	protected Enumeration<String> getAttributeNames(boolean removePrefix) {
-		Enumeration<String> enumeration = session.getAttributeNames();
+		Enumeration<String> enumeration = httpSession.getAttributeNames();
 
 		if (scopePrefix == null) {
 			return enumeration;
 		}
 
 		return new MappingEnumeration<>(
-			enumeration,
-			new AttributeNameMapper(scopePrefix, removePrefix));
+			enumeration, new AttributeNameMapper(scopePrefix, removePrefix));
 	}
 
+	protected final HttpSession httpSession;
 	protected final String scopePrefix;
-	protected final HttpSession session;
 
 	protected static class AttributeNameMapper
-		implements Mapper<String, String> {
+		implements MappingEnumeration.Mapper<String, String> {
 
 		@Override
 		public String map(String attributeName) {

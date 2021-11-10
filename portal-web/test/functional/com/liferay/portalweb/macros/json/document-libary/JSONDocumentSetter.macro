@@ -1,0 +1,16 @@
+definition {
+
+	macro setServiceContext {
+		if (!(isSet(serviceContext))) {
+			var serviceContext = JSONServiceContextUtil.setServiceContext(
+				addGroupPermissions = "true",
+				addGuestPermissions = "${addGuestPermissions}",
+				assetCategoryIds = "${assetCategoryIds}",
+				assetTagNames = "${assetTagNames}",
+				workflowAction = "${workflowAction}");
+		}
+
+		return "${serviceContext}";
+	}
+
+}

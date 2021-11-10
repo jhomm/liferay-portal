@@ -1,0 +1,62 @@
+[
+	{
+		"name": "Baden-Württemberg",
+		"regionCode": "BW"
+	},
+	{
+		"name": "Bayern",
+		"regionCode": "BY"
+	},
+	{
+		"name": "Berlin",
+		"regionCode": "BE"
+	},
+	{
+		"name": "Brandenburg",
+		"regionCode": "BB"
+	},
+	{
+		"name": "Bremen",
+		"regionCode": "HB"
+	},
+	{
+		"name": "Hamburg",
+		"regionCode": "HH"
+	},
+	{
+		"name": "Hessen",
+		"regionCode": "HE"
+	},
+	{
+		"name": "Mecklenburg-Vorpommern",
+		"regionCode": "MV"
+	},
+	{
+		"name": "Niedersachsen",
+		"regionCode": "NI"
+	},
+	{
+		"name": "Nordrhein-Westfalen",
+		"regionCode": "NW"
+	},
+	{
+		"name": "Rheinland-Pfalz",
+		"regionCode": "RP"
+	},
+	{
+		"name": "Saarland",
+		"regionCode": "SL"
+	},
+	{
+		"name": "Sachsen",
+		"regionCode": "SN"
+	},
+	{
+		"name": "Sachsen-Anhalt",
+		"regionCode": "ST"
+	},
+	{
+		"name": "Thüringen",
+		"regionCode": "TH"
+	}
+]

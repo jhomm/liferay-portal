@@ -14,10 +14,10 @@
 
 package com.liferay.portlet.social.util;
 
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portlet.social.model.BaseSocialRequestInterpreter;
-import com.liferay.portlet.social.model.SocialRequest;
-import com.liferay.portlet.social.model.SocialRequestFeedEntry;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.social.kernel.model.BaseSocialRequestInterpreter;
+import com.liferay.social.kernel.model.SocialRequest;
+import com.liferay.social.kernel.model.SocialRequestFeedEntry;
 
 /**
  * @author Brian Wing Shun Chan
@@ -44,7 +44,8 @@ public class PortalRequestInterpreter extends BaseSocialRequestInterpreter {
 		return true;
 	}
 
-	private static final String[] _CLASS_NAMES =
-		{PortalRequestInterpreter.class.getName()};
+	private static final String[] _CLASS_NAMES = {
+		PortalRequestInterpreter.class.getName()
+	};
 
 }

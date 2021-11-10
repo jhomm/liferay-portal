@@ -1,0 +1,209 @@
+@component-name = "portal-analytics-cloud"
+definition {
+
+	property portal.release = "false";
+	property portal.upstream = "true";
+	property property.group = "analytics.cloud.profile";
+	property testray.main.component.name = "Analytics Cloud";
+
+	setUp {
+		task ("Copy the token from AC") {
+			ACUtils.launchAC();
+		}
+
+		task ("Set up instance and sign in DXP") {
+			TestCase.setUpPortalInstance();
+		}
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		ACUtils.tearDownDXP();
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+
+		ACUtils.tearDownAC();
+	}
+
+	@description = "Automation ID: LRAC-8890 | Test Summary: Able to change retention period"
+	@priority = "4"
+	test CanChangeRetentionPeriod {
+		task ("Launch AC and go to Settings") {
+			ACNavigation.goToSettings();
+		}
+
+		task ("Go to Data Control And Privacy") {
+			ACSettings.goToDataControlAndPrivacy();
+		}
+
+		task ("Assert Retetion Period Presence") {
+			AssertElementPresent(
+				key_nameTableChannels = "Retention Period",
+				locator1 = "CommerceEntry#SEARCH_TABLES_CHANNELS");
+		}
+
+		task ("Change Retention Period to 7 Months") {
+			ACSettings.changeRetentionPeriodTo7Months();
+		}
+
+		task ("Assert that Retention Period changed") {
+			AssertElementPresent(
+				locator1 = "OpenIDConnectLogin#OPENID_CONNECT_DROPDOWN_MENU",
+				value1 = "7 Months");
+		}
+	}
+
+	@description = "Automation ID: LRAC-8119 | Test Summary: Create Access Request"
+	@priority = "5"
+	test CanCreateAccessRequest {
+		task ("Create Access Request") {
+			ACNavigation.goToSettings();
+
+			var email = ACSettings.createRequestLogByEmail(jobType = "Access");
+		}
+
+		task ("Assert that Access Request was created and is on the list") {
+			ACSettings.goToProperties();
+
+			ACSettings.goToDataControlAndPrivacy();
+
+			Click(locator1 = "ACDataControlAndPrivacy#REQUEST_LOG");
+
+			ACSettings.assertRequestLog(
+				jobType = "Access",
+				key_emailAdress = "${email}");
+		}
+	}
+
+	@description = "Automation ID: LRAC-8117 | Test Summary: Create Delete Request"
+	@priority = "5"
+	test CanCreateDeleteRequest {
+		task ("Create Delete Request") {
+			ACNavigation.goToSettings();
+
+			var email = ACSettings.createRequestLogByEmail(jobType = "Delete");
+		}
+
+		task ("Assert that Delete Request was created and is on the list") {
+			ACSettings.goToProperties();
+
+			ACSettings.goToDataControlAndPrivacy();
+
+			Click(locator1 = "ACDataControlAndPrivacy#REQUEST_LOG");
+
+			ACSettings.assertRequestLog(
+				jobType = "Delete",
+				key_emailAdress = "${email}");
+		}
+	}
+
+	@description = "Automation ID: LRAC-8109 | Test Summary: Create Suppress Request"
+	@priority = "5"
+	test CanCreateSuppressRequest {
+		task ("Go to settings and create a suppress request") {
+			ACNavigation.goToSettings();
+
+			var email = ACSettings.createRequestLogByEmail(jobType = "Suppress");
+		}
+
+		task ("Assert that the suppress request was created") {
+			ACSettings.goToProperties();
+
+			ACSettings.goToDataControlAndPrivacy();
+
+			Click(locator1 = "ACDataControlAndPrivacy#REQUEST_LOG");
+
+			ACSettings.assertRequestLog(
+				jobType = "Suppress",
+				key_emailAdress = "${email}");
+		}
+	}
+
+	@description = "Automation ID: LRAC-8893 | Test Summary: Able to unsuppress user"
+	@ignore = "true"
+	@priority = "3"
+	test CanUnsuppressUser {
+		property portal.upstream = "quarantine";
+
+		// AC Refactor: Timing issues may happen on this test case
+		// AC Refactor ticket: LRAC-9439
+
+		task ("Go to settings and create a suppress request") {
+			ACNavigation.goToSettings();
+
+			ACSettings.createRequestLogByEmail(
+				emailAdresses = "test@liferay.com",
+				jobTypes = "Suppress");
+		}
+
+		task ("Wait for the suppress request be completed") {
+			ACSettings.goToDataControlAndPrivacy();
+
+			Click(locator1 = "ACDataControlAndPrivacy#SUPPRESSED_USERS");
+
+			while (IsElementNotPresent(itemName = "test@liferay.com", locator1 = "ACSettings#ITEM_ON_LIST") && (maxIterations = "50")) {
+				Refresh();
+			}
+		}
+
+		// Couldn't assert the list due to missing data.
+
+		task ("Unsuppress the user") {
+			Button.click(button = "Unsuppress");
+		}
+
+		task ("Assert that the user was unsuppressed") {
+			ACSettings.createRequestLogByEmail(
+				emailAdresses = "test@liferay.com",
+				jobTypes = "Access");
+
+			ACSettings.goToDataControlAndPrivacy();
+
+			Click(locator1 = "ACDataControlAndPrivacy#REQUEST_LOG");
+
+			ACSettings.assertRequestLog(
+				emailAdresses = "test@liferay.com",
+				jobType = "Unsuppress");
+
+			ACSettings.assertRequestLog(
+				emailAdresses = "test@liferay.com",
+				jobType = "Access");
+		}
+	}
+
+	@description = "Automation ID: LRAC-8892 | Test Summary: Suppressed user appears in Suppressed User List"
+	@ignore = "true"
+	@priority = "5"
+	test SuppressedUserAppearsInSuppressedUserList {
+		property portal.upstream = "quarantine";
+
+		// AC Refactor: Timing issues may happen on this test case
+		// AC Refactor ticket: LRAC-9438
+
+		task ("Go to settings and create a suppress request") {
+			ACNavigation.goToSettings();
+
+			ACSettings.createRequestLogByEmail(
+				emailAdresses = "test@liferay.com",
+				jobTypes = "Suppress");
+		}
+
+		task ("Assert that the user is in the suppressed user list") {
+			ACSettings.goToDataControlAndPrivacy();
+
+			Click(locator1 = "ACDataControlAndPrivacy#SUPPRESSED_USERS");
+
+			while (IsElementNotPresent(itemName = "test@liferay.com", locator1 = "ACSettings#ITEM_ON_LIST") && (maxIterations = "50")) {
+				Refresh();
+			}
+
+			// Couldn't assert the list due to missing data.
+
+			ACUtils.assertItemsName(itemList = "test@liferay.com");
+		}
+	}
+
+}

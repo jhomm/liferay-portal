@@ -14,10 +14,6 @@
  */
 --%>
 
-<c:if test="<%= BrowserSnifferUtil.isIe(request) %>">
-	<meta content="<%= PropsValues.BROWSER_COMPATIBILITY_IE_VERSIONS %>" http-equiv="x-ua-compatible" />
-</c:if>
-
 <meta content="<%= ContentTypes.TEXT_HTML_UTF8 %>" http-equiv="content-type" />
 
 <%
@@ -32,7 +28,7 @@ int refreshRate = ParamUtil.getInteger(request, "refresh_rate");
 String cacheControl = request.getParameter("cache_control");
 %>
 
-<c:if test='<%= (cacheControl != null) && (cacheControl.equals("0")) %>'>
+<c:if test='<%= (cacheControl != null) && cacheControl.equals("0") %>'>
 	<meta content="no-cache" http-equiv="cache-control" />
 	<meta content="no-cache" http-equiv="pragma" />
 	<meta content="0" http-equiv="expires" />

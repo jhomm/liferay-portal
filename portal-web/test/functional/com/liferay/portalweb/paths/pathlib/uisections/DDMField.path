@@ -2,30 +2,27 @@
 <head>
 <title>DDMField</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">DDMField</td></tr>
 </thead>
+
 <tbody>
 <tr>
 	<td>BOOLEAN</td>
-	<td>//div[@data-fieldname='${key_fieldName}']/label[@class='checkbox']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>DATE</td>
-	<td>//div[@data-fieldname='${key_fieldName}']/span/input</td>
+	<td>//div[@data-field-name='${key_fieldName}']//label[contains(.,'Boolean')]//input[@type='checkbox']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>DDM_INPUT</td>
-	<td>//div[contains(@data-fieldname,'${key_fieldDefaultValue}')]/input</td>
+	<td>//div[contains(@data-fieldname,'${key_fieldDefaultValue}')]//input</td>
 	<td></td>
 </tr>
 <tr>
-	<td>DECIMAL</td>
-	<td>//div[@data-fieldname='${key_fieldName}']/input</td>
+	<td>GEOLOCATION</td>
+	<td>//div[@data-fieldname='${key_fieldName}']//span[contains(.,'${key_fieldFieldLabel}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -34,43 +31,63 @@
 	<td></td>
 </tr>
 <tr>
-	<td>IMAGE</td>
-	<td>//div[@data-fieldname='${key_fieldName}']/input[contains(@type,'file')]</td>
+	<td>IMAGE_PREVIEW_PNG</td>
+	<td>portal/screenshots/ddm/spaceport_image_preview.png</td>
 	<td></td>
 </tr>
 <tr>
-	<td>INTEGER</td>
-	<td>//div[@data-fieldname='${key_fieldName}']/input</td>
+	<td>MULTIPLE_LINES</td>
+	<td>//label[normalize-space(text())='${key_fieldFieldLabel}']//following-sibling::textarea</td>
 	<td></td>
 </tr>
 <tr>
-	<td>LINK_TO_PAGE</td>
-	<td>//div[contains(.,'Link to Page')]/select</td>
-	<td></td>
-</tr>
-<tr>
-	<td>NUMBER</td>
-	<td>//div[@data-fieldname='${key_fieldName}']/input</td>
+	<td>NESTED_INPUT</td>
+	<td>//div[contains(@class,'nested-separator')][//following-sibling::div[1][//label[normalize-space(text())='${key_fieldName}']]]//following-sibling::div[2]//label[normalize-space(text())='${key_nestedFieldName}']//following-sibling::input</td>
 	<td></td>
 </tr>
 <tr>
 	<td>RADIO</td>
-	<td>//div[@data-fieldname='${key_fieldName}']/label[contains(.,'${key_radioValue}')]</td>
+	<td>//div[@data-fieldname='${key_fieldName}']//label[contains(.,'${key_radioValue}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SELECT</td>
-	<td>//div[@data-fieldname='${key_fieldName}']/select</td>
+	<td>//div[@data-fieldname='${key_fieldName}']//select</td>
 	<td></td>
 </tr>
 <tr>
-	<td>TEXT</td>
-	<td>//div[@data-fieldname='${key_fieldName}']/input</td>
+	<td>SELECT_FROM_LIST</td>
+	<td>//label[normalize-space(text())='${key_fieldFieldLabel}']//following-sibling::div[contains(@class,'form-builder-select-field')]//div[contains(@class,'option-selected')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SEPARATOR</td>
+	<td>//label[normalize-space(text())='${key_fieldFieldLabel}']/following-sibling::div[contains(@class,'separator')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>TEXT_BOX</td>
-	<td>//div[@data-fieldname='${key_fieldName}']/textarea</td>
+	<td>//div[contains(@data-fieldname,'${key_fieldName}')]//textarea</td>
+	<td></td>
+</tr>
+<tr>
+	<td>WEB_CONTENT</td>
+	<td>//div[@data-field-name='${key_fieldName}']//label[contains(.,'${key_fieldFieldLabel}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>WEB_CONTENT_TITLE_SELECTED</td>
+	<td>//div[@data-fieldname='${key_fieldName}']//input[@value='${key_fieldData}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>REMOVE_REPEATED_FIELD</td>
+	<td>//div[contains(@data-field-name,'${key_fieldName}')]/..//button[@*='Remove']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>REMOVE_SPECIFIC_REPEATED_FIELD</td>
+	<td>//div[@class='ddm-field' and contains(.,'${key_fieldValue}')]//button[@class= 'ddm-form-field-repeatable-delete-button p-0 btn btn-sm btn-primary']</td>
 	<td></td>
 </tr>
 </tbody>

@@ -2,21 +2,23 @@
 <head>
 <title>MessageBoardsRemovedAttachments</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">MessageBoardsRemovedAttachments</td></tr>
 </thead>
+
 <tbody>
 <!--ATTACHMENT_TABLE-->
 <tr>
-	<td>ATTACHMENT_TABLE_NAME</td>
-	<td>//tbody[@class='table-data']/tr[contains(.,'${key_mbAttachmentFile}')]/td</td>
+	<td>ATTACHMENT_FILE_NAME</td>
+	<td>//td[contains(@class,'lfr-file-name-column')]/a[contains(.,'${key_mbAttachmentFile}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>ATTACHMENT_TABLE_ACTIONS</td>
-	<td>//tbody[@class='table-data']/tr[contains(.,'${key_mbAttachmentFile}')]/td[3]/div/a[contains(@class,'dropdown-toggle')]</td>
+	<td>REMOVED_ATTACHMENT_LINK</td>
+	<td>//a[contains(@id,'view-removed-attachments-link')]</td>
 	<td></td>
 </tr>
 </tbody>

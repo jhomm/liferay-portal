@@ -14,6 +14,7 @@
 
 package com.liferay.portal.dao.orm.hibernate;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.orm.Dialect;
 
 /**
@@ -32,6 +33,11 @@ public class DialectImpl implements Dialect {
 	@Override
 	public boolean supportsLimit() {
 		return _dialect.supportsLimit();
+	}
+
+	@Override
+	public String toString() {
+		return StringBundler.concat("{_dialect=", _dialect, "}");
 	}
 
 	private final org.hibernate.dialect.Dialect _dialect;

@@ -14,7 +14,7 @@
 
 package com.liferay.taglib.ui;
 
-import com.liferay.portal.model.LayoutTemplate;
+import com.liferay.portal.kernel.model.LayoutTemplate;
 import com.liferay.taglib.util.IncludeTag;
 
 import java.util.List;
@@ -25,6 +25,18 @@ import javax.servlet.http.HttpServletRequest;
  * @author Eudaldo Alonso
  */
 public class LayoutTemplatesListTag extends IncludeTag {
+
+	public String getLayoutTemplateId() {
+		return _layoutTemplateId;
+	}
+
+	public String getLayoutTemplateIdPrefix() {
+		return _layoutTemplateIdPrefix;
+	}
+
+	public List<LayoutTemplate> getLayoutTemplates() {
+		return _layoutTemplates;
+	}
 
 	public void setLayoutTemplateId(String layoutTemplateId) {
 		_layoutTemplateId = layoutTemplateId;
@@ -40,6 +52,8 @@ public class LayoutTemplatesListTag extends IncludeTag {
 
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
 		_layoutTemplateId = null;
 		_layoutTemplateIdPrefix = null;
 		_layoutTemplates = null;
@@ -51,14 +65,14 @@ public class LayoutTemplatesListTag extends IncludeTag {
 	}
 
 	@Override
-	protected void setAttributes(HttpServletRequest request) {
-		request.setAttribute(
+	protected void setAttributes(HttpServletRequest httpServletRequest) {
+		httpServletRequest.setAttribute(
 			"liferay-ui:layout-templates-list:layoutTemplateId",
 			_layoutTemplateId);
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			"liferay-ui:layout-templates-list:layoutTemplateIdPrefix",
 			_layoutTemplateIdPrefix);
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			"liferay-ui:layout-templates-list:layoutTemplates",
 			_layoutTemplates);
 	}

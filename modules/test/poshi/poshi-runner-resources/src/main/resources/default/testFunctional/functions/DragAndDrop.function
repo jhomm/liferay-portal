@@ -1,0 +1,32 @@
+@default = "dragAndDropToObject"
+definition {
+
+	function dragAndDrop {
+		selenium.dragAndDrop();
+	}
+
+	function dragAndDropToObject {
+		selenium.waitForVisible("${locator1}");
+
+		selenium.mouseOver("${locator1}");
+
+		selenium.waitForPartialText("${locator1}", "${value1}");
+
+		selenium.waitForVisible("${locator2}");
+
+		selenium.mouseOver("${locator2}");
+
+		selenium.dragAndDropToObject("${locator1}", "${locator2}");
+	}
+
+	function dragAndDropToObjectNotVisible {
+		selenium.waitForVisible("${locator1}");
+
+		selenium.mouseOver("${locator1}");
+
+		selenium.waitForText("${locator1}", "${value1}");
+
+		selenium.dragAndDropToObject("${locator1}", "${locator2}");
+	}
+
+}

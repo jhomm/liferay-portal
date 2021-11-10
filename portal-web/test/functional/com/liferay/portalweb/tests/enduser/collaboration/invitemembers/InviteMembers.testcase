@@ -1,0 +1,97 @@
+@component-name = "portal-collaboration"
+definition {
+
+	property custom.properties = "jsonws.web.service.paths.excludes=";
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Invite Members";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONUser.addUser(
+			userEmailAddress = "userea@liferay.com",
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "userea@liferay.com");
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			Site.tearDownCP();
+
+			Page.tearDownCP();
+
+			JSONUser.tearDownNonAdminUsers();
+		}
+	}
+
+	@description = "This test is skipping portal instance setup due to LPS-75168"
+	@priority = "4"
+	@refactordone
+	test CanViewNewSiteMember {
+		property test.name.skip.portal.instance = "InviteMembers#CanViewNewSiteMember";
+
+		JSONGroup.addGroup(groupName = "Site Name");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Site Name",
+			layoutName = "Site Page 1");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = "2",
+			groupName = "Site Name",
+			layoutName = "Site Page 1",
+			widgetName = "Invite Members");
+
+		Site.openSiteMembershipsAdmin(siteURLKey = "site-name");
+
+		LexiconCard.viewCardNotPresent(card = "userfn userln");
+
+		Navigator.openSitePage(
+			pageName = "Site Page 1",
+			siteName = "Site Name");
+
+		InviteMembers.inviteMembers(inviteUserFullName = "userfn userln");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "userea@liferay.com",
+			userLoginFullName = "userfn userln");
+
+		Notifications.viewBadgeCount(notificationCount = "1");
+
+		Notifications.gotoNotifications();
+
+		Notifications.viewRequest(requestsTitle = "Test Test invited you to join Site Name.");
+
+		Notifications.acceptRequest(requestsTitle = "Test Test invited you to join Site Name.");
+
+		Refresh();
+
+		Notifications.viewNoRequest();
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "test@liferay.com",
+			userLoginFullName = "Test Test");
+
+		Site.openSiteMembershipsAdmin(siteURLKey = "site-name");
+
+		Site.viewMemberCP(
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
+	}
+
+}

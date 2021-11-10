@@ -1,0 +1,30 @@
+{
+	"dependencies": {
+		"@clayui/alert": "3.39.0",
+		"@clayui/button": "3.39.0",
+		"@clayui/form": "3.39.0",
+		"@clayui/icon": "3.39.0",
+		"@clayui/layout": "3.39.0",
+		"@clayui/navigation-bar": "3.39.0",
+		"@clayui/progress-bar": "3.39.0",
+		"@clayui/tabs": "3.39.0",
+		"@clayui/toolbar": "3.39.0",
+		"@liferay/frontend-js-react-web": "*",
+		"@liferay/frontend-js-state-web": "*",
+		"cropperjs": "1.5.11",
+		"frontend-js-web": "*",
+		"metal-state": "2.16.8",
+		"prop-types": "15.7.2",
+		"react": "16.12.0",
+		"react-dom": "16.12.0"
+	},
+	"main": "index.es.js",
+	"name": "item-selector-taglib",
+	"scripts": {
+		"build": "liferay-npm-scripts build",
+		"checkFormat": "liferay-npm-scripts check",
+		"format": "liferay-npm-scripts fix",
+		"test": "liferay-npm-scripts test"
+	},
+	"version": "5.1.20"
+}

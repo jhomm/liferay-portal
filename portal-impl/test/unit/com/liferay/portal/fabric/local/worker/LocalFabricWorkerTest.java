@@ -14,19 +14,22 @@
 
 package com.liferay.portal.fabric.local.worker;
 
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.process.ProcessCallable;
+import com.liferay.petra.process.ProcessException;
 import com.liferay.portal.fabric.status.FabricStatus;
 import com.liferay.portal.fabric.status.RemoteFabricStatus;
 import com.liferay.portal.fabric.worker.FabricWorker;
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.process.ProcessCallable;
-import com.liferay.portal.kernel.process.ProcessException;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -35,8 +38,10 @@ import org.junit.Test;
 public class LocalFabricWorkerTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Test
 	public void testConstructor() {
@@ -84,20 +89,20 @@ public class LocalFabricWorkerTest {
 			localFabricWorker.write(
 				new ProcessCallable<String>() {
 
-				@Override
-				public String call() throws ProcessException {
-					throw processException;
-				}
+					@Override
+					public String call() throws ProcessException {
+						throw processException;
+					}
 
-			});
+				});
 
 		try {
 			exceptionNoticeableFuture.get();
 
 			Assert.fail();
 		}
-		catch (ExecutionException ee) {
-			Assert.assertSame(processException, ee.getCause());
+		catch (ExecutionException executionException) {
+			Assert.assertSame(processException, executionException.getCause());
 		}
 	}
 

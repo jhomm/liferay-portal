@@ -48,21 +48,22 @@ public class UrlRewriteFilter extends BasePortalFilter {
 		try {
 			_urlRewriteFilter.init(filterConfig);
 		}
-		catch (ServletException se) {
+		catch (ServletException servletException) {
 			_urlRewriteFilter = null;
 
-			_log.error(se, se);
+			_log.error(servletException, servletException);
 		}
 	}
 
 	@Override
 	protected void processFilter(
-			HttpServletRequest request, HttpServletResponse response,
-			FilterChain filterChain)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, FilterChain filterChain)
 		throws Exception {
 
 		if (_urlRewriteFilter != null) {
-			_urlRewriteFilter.doFilter(request, response, filterChain);
+			_urlRewriteFilter.doFilter(
+				httpServletRequest, httpServletResponse, filterChain);
 		}
 	}
 

@@ -14,10 +14,10 @@
 
 package com.liferay.portal.util;
 
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
-import com.liferay.portal.kernel.util.CharPool;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.util.CustomJspRegistry;
 
 import java.util.Map;
 import java.util.Set;
@@ -27,12 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Ryan Park
  * @author Brian Wing Shun Chan
  */
-@DoPrivileged
 public class CustomJspRegistryImpl implements CustomJspRegistry {
-
-	public CustomJspRegistryImpl() {
-		_servletContextNames = new ConcurrentHashMap<>();
-	}
 
 	@Override
 	public String getCustomJspFileName(
@@ -41,18 +36,13 @@ public class CustomJspRegistryImpl implements CustomJspRegistry {
 		int pos = fileName.lastIndexOf(CharPool.PERIOD);
 
 		if (pos == -1) {
-			return fileName.concat(StringPool.PERIOD).concat(
-				servletContextName);
+			return StringBundler.concat(
+				fileName, StringPool.PERIOD, servletContextName);
 		}
 
-		StringBundler sb = new StringBundler(4);
-
-		sb.append(fileName.substring(0, pos));
-		sb.append(CharPool.PERIOD);
-		sb.append(servletContextName);
-		sb.append(fileName.substring(pos));
-
-		return sb.toString();
+		return StringBundler.concat(
+			fileName.substring(0, pos), CharPool.PERIOD, servletContextName,
+			fileName.substring(pos));
 	}
 
 	@Override
@@ -77,6 +67,7 @@ public class CustomJspRegistryImpl implements CustomJspRegistry {
 		_servletContextNames.remove(servletContextName);
 	}
 
-	private final Map<String, String> _servletContextNames;
+	private final Map<String, String> _servletContextNames =
+		new ConcurrentHashMap<>();
 
 }

@@ -14,17 +14,18 @@
 
 package com.liferay.portal.metadata;
 
+import com.liferay.dynamic.data.mapping.kernel.DDMForm;
+import com.liferay.dynamic.data.mapping.kernel.DDMFormField;
+import com.liferay.dynamic.data.mapping.kernel.DDMFormFieldValue;
+import com.liferay.dynamic.data.mapping.kernel.DDMFormValues;
+import com.liferay.dynamic.data.mapping.kernel.UnlocalizedValue;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.metadata.RawMetadataProcessor;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portlet.dynamicdatamapping.DDMForm;
-import com.liferay.portlet.dynamicdatamapping.DDMFormField;
-import com.liferay.portlet.dynamicdatamapping.DDMFormFieldValue;
-import com.liferay.portlet.dynamicdatamapping.DDMFormValues;
-import com.liferay.portlet.dynamicdatamapping.UnlocalizedValue;
 
 import java.io.File;
 import java.io.InputStream;
@@ -43,9 +44,10 @@ import org.apache.tika.metadata.CreativeCommons;
 import org.apache.tika.metadata.DublinCore;
 import org.apache.tika.metadata.Geographic;
 import org.apache.tika.metadata.HttpHeaders;
-import org.apache.tika.metadata.MSOffice;
 import org.apache.tika.metadata.Message;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.Office;
+import org.apache.tika.metadata.OfficeOpenXMLCore;
 import org.apache.tika.metadata.Property;
 import org.apache.tika.metadata.TIFF;
 import org.apache.tika.metadata.TikaMetadataKeys;
@@ -108,8 +110,8 @@ public abstract class BaseRawMetadataProcessor implements RawMetadataProcessor {
 
 			String fieldClassName = fieldClass.getSimpleName();
 
-			String name = fieldClassName.concat(
-				StringPool.UNDERLINE).concat(field.getName());
+			String name = StringBundler.concat(
+				fieldClassName, StringPool.UNDERLINE, field.getName());
 
 			String value = getMetadataValue(metadata, field);
 
@@ -141,21 +143,21 @@ public abstract class BaseRawMetadataProcessor implements RawMetadataProcessor {
 			return ddmFormValuesMap;
 		}
 
-		for (String key : fieldsMap.keySet()) {
-			Field[] fields = fieldsMap.get(key);
+		for (Map.Entry<String, Field[]> entry : fieldsMap.entrySet()) {
+			Field[] fields = entry.getValue();
 
 			DDMFormValues ddmFormValues = createDDMFormValues(metadata, fields);
 
-			Map<String, List<DDMFormFieldValue>> ddmFormFieldsValuesMap =
+			Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
 				ddmFormValues.getDDMFormFieldValuesMap();
 
-			Set<String> names = ddmFormFieldsValuesMap.keySet();
+			Set<String> names = ddmFormFieldValuesMap.keySet();
 
 			if (names.isEmpty()) {
 				continue;
 			}
 
-			ddmFormValuesMap.put(key, ddmFormValues);
+			ddmFormValuesMap.put(entry.getKey(), ddmFormValues);
 		}
 
 		return ddmFormValuesMap;
@@ -183,11 +185,12 @@ public abstract class BaseRawMetadataProcessor implements RawMetadataProcessor {
 		try {
 			fieldValue = field.get(metadata);
 		}
-		catch (IllegalAccessException iae) {
+		catch (IllegalAccessException illegalAccessException) {
 			if (_log.isWarnEnabled()) {
 				_log.warn(
 					"The property " + field.getName() +
-						" will not be added to the metatada set");
+						" will not be added to the metatada set",
+					illegalAccessException);
 			}
 		}
 
@@ -226,14 +229,14 @@ public abstract class BaseRawMetadataProcessor implements RawMetadataProcessor {
 		_addFields(Geographic.class, fields);
 		_addFields(HttpHeaders.class, fields);
 		_addFields(Message.class, fields);
-		_addFields(MSOffice.class, fields);
+		_addFields(Office.class, fields);
+		_addFields(OfficeOpenXMLCore.class, fields);
 		_addFields(TIFF.class, fields);
 		_addFields(TikaMetadataKeys.class, fields);
 		_addFields(TikaMimeKeys.class, fields);
 		_addFields(XMPDM.class, fields);
 
-		_fields.put(
-			TIKA_RAW_METADATA, fields.toArray(new Field[fields.size()]));
+		_fields.put(TIKA_RAW_METADATA, fields.toArray(new Field[0]));
 	}
 
 }

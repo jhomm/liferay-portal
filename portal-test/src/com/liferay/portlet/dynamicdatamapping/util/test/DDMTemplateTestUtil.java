@@ -14,17 +14,16 @@
 
 package com.liferay.portlet.dynamicdatamapping.util.test;
 
+import com.liferay.dynamic.data.mapping.kernel.DDMTemplate;
+import com.liferay.dynamic.data.mapping.kernel.DDMTemplateManager;
+import com.liferay.dynamic.data.mapping.kernel.DDMTemplateManagerUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.service.ServiceContext;
-import com.liferay.portlet.dynamicdatamapping.DDMTemplate;
-import com.liferay.portlet.dynamicdatamapping.DDMTemplateManager;
-import com.liferay.portlet.dynamicdatamapping.DDMTemplateManagerUtil;
 
-import java.util.HashMap;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * @author Eudaldo Alonso
@@ -33,22 +32,21 @@ import java.util.Map;
 public class DDMTemplateTestUtil {
 
 	public static DDMTemplate addTemplate(
-			long groupId, long classNameId, long classPK)
+			long groupId, long classNameId, long classPK,
+			long resourceClassNameId)
 		throws Exception {
 
 		return addTemplate(
-			groupId, classNameId, classPK, TemplateConstants.LANG_TYPE_VM,
-			getSampleTemplateXSL(), LocaleUtil.getSiteDefault());
+			groupId, classNameId, classPK, resourceClassNameId,
+			TemplateConstants.LANG_TYPE_VM, getSampleTemplateXSL(),
+			LocaleUtil.getSiteDefault());
 	}
 
 	public static DDMTemplate addTemplate(
-			long groupId, long classNameId, long classPK, String language,
-			String script, Locale defaultLocale)
+			long groupId, long classNameId, long classPK,
+			long resourceClassNameId, String language, String script,
+			Locale defaultLocale)
 		throws Exception {
-
-		Map<Locale, String> nameMap = new HashMap<>();
-
-		nameMap.put(defaultLocale, "Test Template");
 
 		ServiceContext serviceContext = new ServiceContext();
 
@@ -56,9 +54,13 @@ public class DDMTemplateTestUtil {
 		serviceContext.setAddGuestPermissions(true);
 
 		return DDMTemplateManagerUtil.addTemplate(
-			TestPropsValues.getUserId(), groupId, classNameId, classPK, 0l,
-			null, nameMap, null, DDMTemplateManager.TEMPLATE_TYPE_DISPLAY, null,
-			language, script, false, false, null, null, serviceContext);
+			TestPropsValues.getUserId(), groupId, classNameId, classPK,
+			resourceClassNameId, null,
+			HashMapBuilder.put(
+				defaultLocale, "Test Template"
+			).build(),
+			null, DDMTemplateManager.TEMPLATE_TYPE_DISPLAY, null, language,
+			script, false, false, null, null, serviceContext);
 	}
 
 	public static String getSampleTemplateXSL() {

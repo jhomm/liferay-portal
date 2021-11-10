@@ -14,13 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.OrgLabor;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.OrgLabor;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -31,26 +29,26 @@ import java.io.ObjectOutput;
  * The cache model class for representing OrgLabor in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see OrgLabor
  * @generated
  */
-@ProviderType
-public class OrgLaborCacheModel implements CacheModel<OrgLabor>, Externalizable,
-	MVCCModel {
+public class OrgLaborCacheModel
+	implements CacheModel<OrgLabor>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof OrgLaborCacheModel)) {
+		if (!(object instanceof OrgLaborCacheModel)) {
 			return false;
 		}
 
-		OrgLaborCacheModel orgLaborCacheModel = (OrgLaborCacheModel)obj;
+		OrgLaborCacheModel orgLaborCacheModel = (OrgLaborCacheModel)object;
 
 		if ((orgLaborId == orgLaborCacheModel.orgLaborId) &&
-				(mvccVersion == orgLaborCacheModel.mvccVersion)) {
+			(mvccVersion == orgLaborCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -76,12 +74,14 @@ public class OrgLaborCacheModel implements CacheModel<OrgLabor>, Externalizable,
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(37);
+		StringBundler sb = new StringBundler(39);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
 		sb.append(", orgLaborId=");
 		sb.append(orgLaborId);
+		sb.append(", companyId=");
+		sb.append(companyId);
 		sb.append(", organizationId=");
 		sb.append(organizationId);
 		sb.append(", typeId=");
@@ -125,6 +125,7 @@ public class OrgLaborCacheModel implements CacheModel<OrgLabor>, Externalizable,
 
 		orgLaborImpl.setMvccVersion(mvccVersion);
 		orgLaborImpl.setOrgLaborId(orgLaborId);
+		orgLaborImpl.setCompanyId(companyId);
 		orgLaborImpl.setOrganizationId(organizationId);
 		orgLaborImpl.setTypeId(typeId);
 		orgLaborImpl.setSunOpen(sunOpen);
@@ -150,50 +151,88 @@ public class OrgLaborCacheModel implements CacheModel<OrgLabor>, Externalizable,
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
 		orgLaborId = objectInput.readLong();
+
+		companyId = objectInput.readLong();
+
 		organizationId = objectInput.readLong();
+
 		typeId = objectInput.readLong();
+
 		sunOpen = objectInput.readInt();
+
 		sunClose = objectInput.readInt();
+
 		monOpen = objectInput.readInt();
+
 		monClose = objectInput.readInt();
+
 		tueOpen = objectInput.readInt();
+
 		tueClose = objectInput.readInt();
+
 		wedOpen = objectInput.readInt();
+
 		wedClose = objectInput.readInt();
+
 		thuOpen = objectInput.readInt();
+
 		thuClose = objectInput.readInt();
+
 		friOpen = objectInput.readInt();
+
 		friClose = objectInput.readInt();
+
 		satOpen = objectInput.readInt();
+
 		satClose = objectInput.readInt();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
 		objectOutput.writeLong(orgLaborId);
+
+		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(organizationId);
+
 		objectOutput.writeLong(typeId);
+
 		objectOutput.writeInt(sunOpen);
+
 		objectOutput.writeInt(sunClose);
+
 		objectOutput.writeInt(monOpen);
+
 		objectOutput.writeInt(monClose);
+
 		objectOutput.writeInt(tueOpen);
+
 		objectOutput.writeInt(tueClose);
+
 		objectOutput.writeInt(wedOpen);
+
 		objectOutput.writeInt(wedClose);
+
 		objectOutput.writeInt(thuOpen);
+
 		objectOutput.writeInt(thuClose);
+
 		objectOutput.writeInt(friOpen);
+
 		objectOutput.writeInt(friClose);
+
 		objectOutput.writeInt(satOpen);
+
 		objectOutput.writeInt(satClose);
 	}
 
 	public long mvccVersion;
 	public long orgLaborId;
+	public long companyId;
 	public long organizationId;
 	public long typeId;
 	public int sunOpen;
@@ -210,4 +249,5 @@ public class OrgLaborCacheModel implements CacheModel<OrgLabor>, Externalizable,
 	public int friClose;
 	public int satOpen;
 	public int satClose;
+
 }

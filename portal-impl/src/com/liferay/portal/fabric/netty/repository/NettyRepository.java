@@ -14,17 +14,18 @@
 
 package com.liferay.portal.fabric.netty.repository;
 
+import com.liferay.petra.concurrent.AsyncBroker;
+import com.liferay.petra.concurrent.BaseFutureListener;
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.concurrent.NoticeableFutureConverter;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.fabric.netty.fileserver.FileHelperUtil;
 import com.liferay.portal.fabric.netty.fileserver.FileRequest;
 import com.liferay.portal.fabric.netty.fileserver.FileResponse;
 import com.liferay.portal.fabric.netty.util.NettyUtil;
 import com.liferay.portal.fabric.repository.Repository;
 import com.liferay.portal.fabric.repository.RepositoryHelperUtil;
-import com.liferay.portal.kernel.concurrent.AsyncBroker;
-import com.liferay.portal.kernel.concurrent.BaseFutureListener;
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.concurrent.NoticeableFutureConverter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
@@ -178,7 +179,7 @@ public class NettyRepository implements Repository<Channel> {
 
 			return fileTime.toMillis();
 		}
-		catch (IOException ioe) {
+		catch (IOException ioException) {
 			return Long.MIN_VALUE;
 		}
 	}
@@ -193,17 +194,14 @@ public class NettyRepository implements Repository<Channel> {
 
 		final Path cachedLocalFilePath = pathMap.get(remoteFilePath);
 
-		final DefaultNoticeableFuture<FileResponse> defaultNoticeableFuture =
-			new DefaultNoticeableFuture<>();
+		boolean[] newMarker = new boolean[1];
 
 		NoticeableFuture<FileResponse> noticeableFuture = asyncBroker.post(
-			remoteFilePath, defaultNoticeableFuture);
+			remoteFilePath, newMarker);
 
-		if (noticeableFuture == null) {
-			noticeableFuture = defaultNoticeableFuture;
-
+		if (newMarker[0]) {
 			NettyUtil.scheduleCancellation(
-				channel, defaultNoticeableFuture, getFileTimeout);
+				channel, noticeableFuture, getFileTimeout);
 
 			ChannelFuture channelFuture = channel.writeAndFlush(
 				new FileRequest(
@@ -220,7 +218,7 @@ public class NettyRepository implements Repository<Channel> {
 						}
 
 						if (channelFuture.isCancelled()) {
-							defaultNoticeableFuture.cancel(true);
+							noticeableFuture.cancel(true);
 
 							return;
 						}
@@ -245,73 +243,72 @@ public class NettyRepository implements Repository<Channel> {
 		return new NoticeableFutureConverter<Path, FileResponse>(
 			noticeableFuture) {
 
-				@Override
-				protected Path convert(FileResponse fileResponse)
-					throws IOException {
+			@Override
+			protected Path convert(FileResponse fileResponse)
+				throws IOException {
 
-					if (fileResponse.isFileNotFound()) {
-						if (_log.isWarnEnabled()) {
-							_log.warn(
-								"Remote file " + remoteFilePath +
-									" is not found");
-						}
-
-						return null;
+				if (fileResponse.isFileNotFound()) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(
+							"Remote file " + remoteFilePath + " is not found");
 					}
 
-					if (fileResponse.isFileNotModified()) {
-						if (_log.isDebugEnabled()) {
-							_log.debug(
-								"Remote file " + remoteFilePath +
-									" is not modified, use cached local file " +
-										cachedLocalFilePath);
-						}
-
-						return cachedLocalFilePath;
-					}
-
-					Path targetLocalFilePath = localFilePath;
-
-					synchronized (fileResponse) {
-						Path recheckCacheLocalFilePath = pathMap.get(
-							remoteFilePath);
-
-						if (recheckCacheLocalFilePath != null) {
-							targetLocalFilePath = recheckCacheLocalFilePath;
-						}
-
-						Path tempLocalFilePath = fileResponse.getLocalFile();
-
-						if (tempLocalFilePath.startsWith(repositoryPath)) {
-							Files.copy(
-								fileResponse.getLocalFile(),
-								targetLocalFilePath,
-								StandardCopyOption.REPLACE_EXISTING);
-						}
-						else {
-							Files.move(
-								fileResponse.getLocalFile(),
-								targetLocalFilePath,
-								StandardCopyOption.REPLACE_EXISTING);
-						}
-
-						if (populateCache) {
-							pathMap.put(remoteFilePath, targetLocalFilePath);
-						}
-
-						fileResponse.setLocalFile(targetLocalFilePath);
-					}
-
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							"Fetched remote file " + remoteFilePath + " to " +
-								targetLocalFilePath);
-					}
-
-					return targetLocalFilePath;
+					return null;
 				}
 
-			};
+				if (fileResponse.isFileNotModified()) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(
+							StringBundler.concat(
+								"Remote file ", remoteFilePath,
+								" is not modified, use cached local file ",
+								cachedLocalFilePath));
+					}
+
+					return cachedLocalFilePath;
+				}
+
+				Path targetLocalFilePath = localFilePath;
+
+				synchronized (fileResponse) {
+					Path recheckCacheLocalFilePath = pathMap.get(
+						remoteFilePath);
+
+					if (recheckCacheLocalFilePath != null) {
+						targetLocalFilePath = recheckCacheLocalFilePath;
+					}
+
+					Path tempLocalFilePath = fileResponse.getLocalFile();
+
+					if (tempLocalFilePath.startsWith(repositoryPath)) {
+						Files.copy(
+							fileResponse.getLocalFile(), targetLocalFilePath,
+							StandardCopyOption.REPLACE_EXISTING);
+					}
+					else {
+						Files.move(
+							fileResponse.getLocalFile(), targetLocalFilePath,
+							StandardCopyOption.REPLACE_EXISTING);
+					}
+
+					if (populateCache) {
+						pathMap.put(remoteFilePath, targetLocalFilePath);
+					}
+
+					fileResponse.setLocalFile(targetLocalFilePath);
+				}
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						StringBundler.concat(
+							"Fetched remote file ", remoteFilePath, " to ",
+							targetLocalFilePath));
+				}
+
+				return targetLocalFilePath;
+			}
+
+		};
 	}
 
 	protected final AsyncBroker<Path, FileResponse> asyncBroker =

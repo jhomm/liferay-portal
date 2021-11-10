@@ -14,18 +14,21 @@
 
 package com.liferay.portlet.expando.model.impl;
 
+import com.liferay.expando.kernel.exception.ValueDataException;
+import com.liferay.expando.kernel.model.ExpandoColumn;
+import com.liferay.expando.kernel.model.ExpandoColumnConstants;
+import com.liferay.expando.kernel.service.ExpandoColumnLocalServiceUtil;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.LocalizationUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portlet.expando.ValueDataException;
-import com.liferay.portlet.expando.model.ExpandoColumn;
-import com.liferay.portlet.expando.model.ExpandoColumnConstants;
-import com.liferay.portlet.expando.service.ExpandoColumnLocalServiceUtil;
 
 import java.io.Serializable;
 
@@ -152,6 +155,13 @@ public class ExpandoValueImpl extends ExpandoValueBaseImpl {
 	}
 
 	@Override
+	public JSONObject getGeolocationJSONObject() throws PortalException {
+		validate(ExpandoColumnConstants.GEOLOCATION);
+
+		return JSONFactoryUtil.createJSONObject(getData());
+	}
+
+	@Override
 	public int getInteger() throws PortalException {
 		validate(ExpandoColumnConstants.INTEGER);
 
@@ -256,9 +266,8 @@ public class ExpandoValueImpl extends ExpandoValueBaseImpl {
 		else if (type == ExpandoColumnConstants.STRING_LOCALIZED) {
 			return (Serializable)getStringMap();
 		}
-		else {
-			return getData();
-		}
+
+		return getData();
 	}
 
 	@Override
@@ -314,7 +323,7 @@ public class ExpandoValueImpl extends ExpandoValueBaseImpl {
 		Map<Locale, String> stringMap = LocalizationUtil.getLocalizationMap(
 			getData());
 
-		Map<Locale, String[]> stringArrayMap = new HashMap<>(stringMap.size());
+		Map<Locale, String[]> stringArrayMap = new HashMap<>();
 
 		for (Map.Entry<Locale, String> entry : stringMap.entrySet()) {
 			stringArrayMap.put(entry.getKey(), split(entry.getValue()));
@@ -405,6 +414,15 @@ public class ExpandoValueImpl extends ExpandoValueBaseImpl {
 		validate(ExpandoColumnConstants.FLOAT_ARRAY);
 
 		setData(StringUtil.merge(data));
+	}
+
+	@Override
+	public void setGeolocationJSONObject(JSONObject dataJSONObject)
+		throws PortalException {
+
+		validate(ExpandoColumnConstants.GEOLOCATION);
+
+		setData(dataJSONObject.toJSONString());
 	}
 
 	@Override
@@ -525,9 +543,10 @@ public class ExpandoValueImpl extends ExpandoValueBaseImpl {
 		String data, Locale locale, Locale defaultLocale) {
 
 		String languageId = LocaleUtil.toLanguageId(locale);
-		String defaultLanguageId = LocaleUtil.toLanguageId(defaultLocale);
 
 		if (Validator.isNotNull(data)) {
+			String defaultLanguageId = LocaleUtil.toLanguageId(defaultLocale);
+
 			data = LocalizationUtil.updateLocalization(
 				getData(), "Data", data, languageId, defaultLanguageId);
 		}
@@ -577,7 +596,7 @@ public class ExpandoValueImpl extends ExpandoValueBaseImpl {
 		if (data != null) {
 			for (int i = 0; i < data.length; i++) {
 				data[i] = StringUtil.replace(
-					data[i], StringPool.COMMA, _EXPANDO_COMMA);
+					data[i], CharPool.COMMA, _EXPANDO_COMMA);
 			}
 		}
 
@@ -598,24 +617,16 @@ public class ExpandoValueImpl extends ExpandoValueBaseImpl {
 	protected void validate(int type) throws PortalException {
 		ExpandoColumn column = getColumn();
 
-		if (column == null) {
+		if ((column == null) || (column.getType() == type)) {
 			return;
 		}
 
-		if (column.getType() == type) {
-			return;
-		}
-
-		StringBundler sb = new StringBundler(6);
-
-		sb.append("Column ");
-		sb.append(getColumnId());
-		sb.append(" has type ");
-		sb.append(ExpandoColumnConstants.getTypeLabel(column.getType()));
-		sb.append(" and is not compatible with type ");
-		sb.append(ExpandoColumnConstants.getTypeLabel(type));
-
-		throw new ValueDataException(sb.toString());
+		throw new ValueDataException(
+			StringBundler.concat(
+				"Column ", getColumnId(), " has type ",
+				ExpandoColumnConstants.getTypeLabel(column.getType()),
+				" and is not compatible with type ",
+				ExpandoColumnConstants.getTypeLabel(type)));
 	}
 
 	private static final String _EXPANDO_COMMA = "[$LIFERAY_EXPANDO_COMMA$]";

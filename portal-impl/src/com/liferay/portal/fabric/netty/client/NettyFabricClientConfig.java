@@ -14,10 +14,10 @@
 
 package com.liferay.portal.fabric.netty.client;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.fabric.netty.fileserver.CompressionLevel;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.SystemProperties;
 
 import java.io.File;
@@ -66,7 +66,8 @@ public class NettyFabricClientConfig implements Serializable {
 		return CompressionLevel.getCompressionLevel(
 			GetterUtil.getInteger(
 				_properties.getProperty(
-					PropsKeys.PORTAL_FABRIC_CLIENT_FILE_SERVER_FOLDER_COMPRESSION_LEVEL),
+					PropsKeys.
+						PORTAL_FABRIC_CLIENT_FILE_SERVER_FOLDER_COMPRESSION_LEVEL),
 				1));
 	}
 
@@ -135,41 +136,22 @@ public class NettyFabricClientConfig implements Serializable {
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(31);
-
-		sb.append("{eventLoopGroupThreadCount=");
-		sb.append(getEventLoopGroupThreadCount());
-		sb.append(", executionGroupThreadCount=");
-		sb.append(getExecutionGroupThreadCount());
-		sb.append(", executionTimeout=");
-		sb.append(getExecutionTimeout());
-		sb.append(", fileServerFolderCompressionLevel=");
-		sb.append(getFileServerFolderCompressionLevel());
-		sb.append(", fileServerGroupThreadCount=");
-		sb.append(getFileServerGroupThreadCount());
-		sb.append(", id=");
-		sb.append(_id);
-		sb.append(", nettyFabricServetHost=");
-		sb.append(getNettyFabricServerHost());
-		sb.append(", nettyFabricServerPort=");
-		sb.append(getNettyFabricServerPort());
-		sb.append(", reconnectCount=");
-		sb.append(getReconnectCount());
-		sb.append(", reconnectInterval=");
-		sb.append(getReconnectInterval());
-		sb.append(", repositoryGetFileTimeout=");
-		sb.append(getRepositoryGetFileTimeout());
-		sb.append(", repositoryPath=");
-		sb.append(getRepositoryPath());
-		sb.append(", rpcGroupThreadCount=");
-		sb.append(getRPCGroupThreadCount());
-		sb.append(", shutdownQuietPeriod=");
-		sb.append(getShutdownQuietPeriod());
-		sb.append(", shutdownTimeout=");
-		sb.append(getShutdownTimeout());
-		sb.append("}");
-
-		return sb.toString();
+		return StringBundler.concat(
+			"{eventLoopGroupThreadCount=", getEventLoopGroupThreadCount(),
+			", executionGroupThreadCount=", getExecutionGroupThreadCount(),
+			", executionTimeout=", getExecutionTimeout(),
+			", fileServerFolderCompressionLevel=",
+			getFileServerFolderCompressionLevel(),
+			", fileServerGroupThreadCount=", getFileServerGroupThreadCount(),
+			", id=", _id, ", nettyFabricServetHost=",
+			getNettyFabricServerHost(), ", nettyFabricServerPort=",
+			getNettyFabricServerPort(), ", reconnectCount=",
+			getReconnectCount(), ", reconnectInterval=", getReconnectInterval(),
+			", repositoryGetFileTimeout=", getRepositoryGetFileTimeout(),
+			", repositoryPath=", getRepositoryPath(), ", rpcGroupThreadCount=",
+			getRPCGroupThreadCount(), ", shutdownQuietPeriod=",
+			getShutdownQuietPeriod(), ", shutdownTimeout=",
+			getShutdownTimeout(), "}");
 	}
 
 	private static final long serialVersionUID = 1L;

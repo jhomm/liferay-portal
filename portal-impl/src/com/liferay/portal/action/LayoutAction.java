@@ -14,93 +14,92 @@
 
 package com.liferay.portal.action;
 
+import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.audit.AuditMessage;
 import com.liferay.portal.kernel.audit.AuditRouterUtil;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.model.LayoutTypePortlet;
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.PortletContainerUtil;
-import com.liferay.portal.kernel.servlet.MetaInfoCacheServletResponse;
+import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
+import com.liferay.portal.kernel.servlet.BufferCacheServletResponse;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.ServerDetector;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.model.LayoutConstants;
-import com.liferay.portal.model.Portlet;
-import com.liferay.portal.model.User;
-import com.liferay.portal.security.permission.ActionKeys;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.sso.SSOUtil;
-import com.liferay.portal.service.PortletLocalServiceUtil;
-import com.liferay.portal.struts.ActionConstants;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.struts.Action;
+import com.liferay.portal.struts.constants.ActionConstants;
+import com.liferay.portal.struts.model.ActionForward;
+import com.liferay.portal.struts.model.ActionMapping;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portal.util.WebKeys;
-import com.liferay.portlet.PortletRequestImpl;
+import com.liferay.portlet.LiferayPortletUtil;
 import com.liferay.portlet.RenderParametersPool;
-import com.liferay.portlet.login.util.LoginUtil;
+import com.liferay.portlet.internal.RenderData;
+import com.liferay.portlet.internal.RenderStateUtil;
 
+import java.io.PrintWriter;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.portlet.PortletMode;
 import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
+import javax.portlet.ResourceRequest;
+import javax.portlet.WindowState;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.apache.struts.action.Action;
-import org.apache.struts.action.ActionForm;
-import org.apache.struts.action.ActionForward;
-import org.apache.struts.action.ActionMapping;
-
 /**
  * @author Brian Wing Shun Chan
  * @author Shuyang Zhou
+ * @author Neil Griffin
  */
-public class LayoutAction extends Action {
+public class LayoutAction implements Action {
 
 	@Override
 	public ActionForward execute(
-			ActionMapping actionMapping, ActionForm actionForm,
-			HttpServletRequest request, HttpServletResponse response)
+			ActionMapping actionMapping, HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws Exception {
 
-		MetaInfoCacheServletResponse metaInfoCacheServletResponse =
-			new MetaInfoCacheServletResponse(response);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
-		try {
-			return doExecute(
-				actionMapping, actionForm, request,
-				metaInfoCacheServletResponse);
-		}
-		finally {
-			metaInfoCacheServletResponse.finishResponse(false);
-		}
-	}
-
-	protected ActionForward doExecute(
-			ActionMapping actionMapping, ActionForm actionForm,
-			HttpServletRequest request, HttpServletResponse response)
-		throws Exception {
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		Boolean layoutDefault = (Boolean)request.getAttribute(
+		Boolean layoutDefault = (Boolean)httpServletRequest.getAttribute(
 			WebKeys.LAYOUT_DEFAULT);
 
 		if (Boolean.TRUE.equals(layoutDefault)) {
-			Layout requestedLayout = (Layout)request.getAttribute(
+			Layout requestedLayout = (Layout)httpServletRequest.getAttribute(
 				WebKeys.REQUESTED_LAYOUT);
 
 			if (requestedLayout != null) {
 				String redirectParam = "redirect";
 
 				if (Validator.isNotNull(PropsValues.AUTH_LOGIN_PORTLET_NAME)) {
-					redirectParam =
-						PortalUtil.getPortletNamespace(
-							PropsValues.AUTH_LOGIN_PORTLET_NAME) +
-						redirectParam;
+					String portletNamespace = PortalUtil.getPortletNamespace(
+						PropsValues.AUTH_LOGIN_PORTLET_NAME);
+
+					redirectParam = portletNamespace + redirectParam;
 				}
 
 				String authLoginURL = SSOUtil.getSignInURL(
@@ -115,43 +114,50 @@ public class LayoutAction extends Action {
 				}
 
 				if (Validator.isNull(authLoginURL)) {
-					PortletURL loginURL = LoginUtil.getLoginURL(
-						request, themeDisplay.getPlid());
-
-					authLoginURL = loginURL.toString();
+					authLoginURL = PortletURLBuilder.create(
+						PortletURLFactoryUtil.create(
+							httpServletRequest, PortletKeys.LOGIN,
+							PortletRequest.RENDER_PHASE)
+					).setMVCRenderCommandName(
+						"/login/login"
+					).setParameter(
+						"saveLastPath", false
+					).setPortletMode(
+						PortletMode.VIEW
+					).setWindowState(
+						WindowState.MAXIMIZED
+					).buildString();
 				}
 
 				authLoginURL = HttpUtil.setParameter(
 					authLoginURL, "p_p_id",
 					PropsValues.AUTH_LOGIN_PORTLET_NAME);
 
-				String currentURL = PortalUtil.getCurrentURL(request);
-
 				authLoginURL = HttpUtil.setParameter(
-					authLoginURL, redirectParam, currentURL);
+					authLoginURL, redirectParam,
+					PortalUtil.getCurrentURL(httpServletRequest));
 
 				if (_log.isDebugEnabled()) {
 					_log.debug("Redirect requested layout to " + authLoginURL);
 				}
 
-				response.sendRedirect(authLoginURL);
+				httpServletResponse.sendRedirect(authLoginURL);
 			}
 			else {
-				Layout layout = themeDisplay.getLayout();
-
-				String redirect = PortalUtil.getLayoutURL(layout, themeDisplay);
+				String redirect = PortalUtil.getLayoutURL(
+					themeDisplay.getLayout(), themeDisplay);
 
 				if (_log.isDebugEnabled()) {
 					_log.debug("Redirect default layout to " + redirect);
 				}
 
-				response.sendRedirect(redirect);
+				httpServletResponse.sendRedirect(redirect);
 			}
 
 			return null;
 		}
 
-		long plid = ParamUtil.getLong(request, "p_l_id");
+		long plid = ParamUtil.getLong(httpServletRequest, "p_l_id");
 
 		if (_log.isDebugEnabled()) {
 			_log.debug("p_l_id is " + plid);
@@ -164,34 +170,39 @@ public class LayoutAction extends Action {
 				plid = layout.getPlid();
 			}
 
-			ActionForward actionForward = processLayout(
-				actionMapping, request, response, plid);
-
-			return actionForward;
+			if (!layout.isTypeLinkToLayout()) {
+				return processLayout(
+					actionMapping, httpServletRequest, httpServletResponse,
+					plid);
+			}
 		}
 
 		try {
-			forwardLayout(request);
+			forwardLayout(httpServletRequest);
 
-			return actionMapping.findForward(
+			return actionMapping.getActionForward(
 				ActionConstants.COMMON_FORWARD_JSP);
 		}
-		catch (Exception e) {
-			PortalUtil.sendError(e, request, response);
+		catch (Exception exception) {
+			PortalUtil.sendError(
+				exception, httpServletRequest, httpServletResponse);
 
 			return null;
 		}
 	}
 
-	protected void forwardLayout(HttpServletRequest request) throws Exception {
-		Layout layout = (Layout)request.getAttribute(WebKeys.LAYOUT);
+	protected void forwardLayout(HttpServletRequest httpServletRequest)
+		throws Exception {
+
+		Layout layout = (Layout)httpServletRequest.getAttribute(WebKeys.LAYOUT);
 
 		long plid = LayoutConstants.DEFAULT_PLID;
 
 		String layoutFriendlyURL = null;
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
 		if (layout != null) {
 			plid = layout.getPlid();
@@ -222,18 +233,56 @@ public class LayoutAction extends Action {
 			_log.debug("Forward layout to " + forwardURL);
 		}
 
-		request.setAttribute(WebKeys.FORWARD_URL, forwardURL);
+		httpServletRequest.setAttribute(WebKeys.FORWARD_URL, forwardURL);
+	}
+
+	protected String getRenderStateJSON(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, ThemeDisplay themeDisplay,
+			String portletId, LayoutTypePortlet layoutTypePortlet)
+		throws Exception {
+
+		Map<String, RenderData> renderDataMap = new HashMap<>();
+
+		List<Portlet> allPortlets = layoutTypePortlet.getAllPortlets();
+
+		for (Portlet curPortlet : allPortlets) {
+			String curPortletId = curPortlet.getPortletId();
+
+			if (curPortletId.equals(portletId) ||
+				curPortlet.isPartialActionServeResource()) {
+
+				BufferCacheServletResponse bufferCacheServletResponse =
+					new BufferCacheServletResponse(httpServletResponse);
+
+				PortletContainerUtil.preparePortlet(
+					httpServletRequest, curPortlet);
+
+				PortletContainerUtil.serveResource(
+					httpServletRequest, bufferCacheServletResponse, curPortlet);
+
+				RenderData renderData = new RenderData(
+					bufferCacheServletResponse.getContentType(),
+					bufferCacheServletResponse.getString());
+
+				renderDataMap.put(curPortletId, renderData);
+			}
+		}
+
+		return RenderStateUtil.generateJSON(
+			httpServletRequest, themeDisplay, renderDataMap);
 	}
 
 	protected ActionForward processLayout(
-			ActionMapping actionMapping, HttpServletRequest request,
-			HttpServletResponse response, long plid)
+			ActionMapping actionMapping, HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, long plid)
 		throws Exception {
 
-		HttpSession session = request.getSession();
+		HttpSession httpSession = httpServletRequest.getSession();
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
 		try {
 			Layout layout = themeDisplay.getLayout();
@@ -241,18 +290,18 @@ public class LayoutAction extends Action {
 			if ((layout != null) && layout.isTypeURL()) {
 				String redirect = PortalUtil.getLayoutActualURL(layout);
 
-				response.sendRedirect(redirect);
+				httpServletResponse.sendRedirect(redirect);
 
 				return null;
 			}
 
-			Long previousLayoutPlid = (Long)session.getAttribute(
+			Long previousLayoutPlid = (Long)httpSession.getAttribute(
 				WebKeys.PREVIOUS_LAYOUT_PLID);
 
 			if ((previousLayoutPlid == null) ||
 				(layout.getPlid() != previousLayoutPlid.longValue())) {
 
-				session.setAttribute(
+				httpSession.setAttribute(
 					WebKeys.PREVIOUS_LAYOUT_PLID, layout.getPlid());
 
 				if (themeDisplay.isSignedIn() &&
@@ -260,21 +309,38 @@ public class LayoutAction extends Action {
 						AUDIT_MESSAGE_COM_LIFERAY_PORTAL_MODEL_LAYOUT_VIEW &&
 					AuditRouterUtil.isDeployed()) {
 
+					User realUser = themeDisplay.getRealUser();
 					User user = themeDisplay.getUser();
 
+					JSONObject additionalInfoJSONObject = null;
+
+					if (Validator.isNotNull(themeDisplay.getDoAsUserId()) &&
+						(realUser.getUserId() != user.getUserId())) {
+
+						additionalInfoJSONObject = JSONUtil.put(
+							"userId", user.getUserId()
+						).put(
+							"userName", user.getFullName()
+						);
+					}
+
 					AuditMessage auditMessage = new AuditMessage(
-						ActionKeys.VIEW, user.getCompanyId(), user.getUserId(),
-						user.getFullName(), Layout.class.getName(),
-						String.valueOf(layout.getPlid()));
+						ActionKeys.VIEW, realUser.getCompanyId(),
+						realUser.getUserId(), realUser.getFullName(),
+						Layout.class.getName(),
+						String.valueOf(layout.getPlid()), null,
+						additionalInfoJSONObject);
 
 					AuditRouterUtil.route(auditMessage);
 				}
 			}
 
 			boolean resetLayout = ParamUtil.getBoolean(
-				request, "p_l_reset", PropsValues.LAYOUT_DEFAULT_P_L_RESET);
+				httpServletRequest, "p_l_reset",
+				PropsValues.LAYOUT_DEFAULT_P_L_RESET);
 
-			String portletId = ParamUtil.getString(request, "p_p_id");
+			String portletId = ParamUtil.getString(
+				httpServletRequest, "p_p_id");
 
 			if (resetLayout &&
 				(Validator.isNull(portletId) ||
@@ -284,32 +350,65 @@ public class LayoutAction extends Action {
 				// Always clear render parameters on a layout url, but do not
 				// clear on portlet urls invoked on the same layout
 
-				RenderParametersPool.clear(request, plid);
+				RenderParametersPool.clear(httpServletRequest, plid);
 			}
 
 			Portlet portlet = null;
 
 			if (Validator.isNotNull(portletId)) {
-				long companyId = PortalUtil.getCompanyId(request);
-
 				portlet = PortletLocalServiceUtil.getPortletById(
-					companyId, portletId);
+					PortalUtil.getCompanyId(httpServletRequest), portletId);
 			}
 
 			if (portlet != null) {
-				PortletContainerUtil.preparePortlet(request, portlet);
+				PortletContainerUtil.preparePortlet(
+					httpServletRequest, portlet);
 
 				if (themeDisplay.isLifecycleAction()) {
 					PortletContainerUtil.processAction(
-						request, response, portlet);
+						httpServletRequest, httpServletResponse, portlet);
 
-					if (response.isCommitted()) {
+					if (httpServletResponse.isCommitted()) {
+						return null;
+					}
+
+					String renderStateJSON = StringPool.BLANK;
+
+					if (themeDisplay.isHubAction()) {
+						renderStateJSON = RenderStateUtil.generateJSON(
+							httpServletRequest, themeDisplay);
+					}
+					else if (themeDisplay.isHubPartialAction()) {
+						LayoutTypePortlet layoutTypePortlet =
+							themeDisplay.getLayoutTypePortlet();
+
+						if (layoutTypePortlet != null) {
+							renderStateJSON = getRenderStateJSON(
+								httpServletRequest, httpServletResponse,
+								themeDisplay, portlet.getPortletId(),
+								layoutTypePortlet);
+						}
+					}
+
+					if (themeDisplay.isHubAction() ||
+						themeDisplay.isHubPartialAction()) {
+
+						httpServletResponse.setContentLength(
+							renderStateJSON.length());
+						httpServletResponse.setContentType(
+							ContentTypes.APPLICATION_JSON);
+
+						PrintWriter printWriter =
+							httpServletResponse.getWriter();
+
+						printWriter.write(renderStateJSON);
+
 						return null;
 					}
 				}
 				else if (themeDisplay.isLifecycleResource()) {
 					PortletContainerUtil.serveResource(
-						request, response, portlet);
+						httpServletRequest, httpServletResponse, portlet);
 
 					return null;
 				}
@@ -317,7 +416,11 @@ public class LayoutAction extends Action {
 
 			if (layout != null) {
 				if (themeDisplay.isStateExclusive()) {
-					PortletContainerUtil.render(request, response, portlet);
+					PortletContainerUtil.renderHeaders(
+						httpServletRequest, httpServletResponse, portlet);
+
+					PortletContainerUtil.render(
+						httpServletRequest, httpServletResponse, portlet);
 
 					return null;
 				}
@@ -325,30 +428,43 @@ public class LayoutAction extends Action {
 				// Include layout content before the page loads because portlets
 				// on the page can set the page title and page subtitle
 
-				if (layout.includeLayoutContent(request, response)) {
+				PortletContainerUtil.processPublicRenderParameters(
+					httpServletRequest, layout, portlet);
+
+				if (layout.includeLayoutContent(
+						httpServletRequest, httpServletResponse)) {
+
 					return null;
 				}
 			}
 
-			return actionMapping.findForward("portal.layout");
+			return actionMapping.getActionForward("portal.layout");
 		}
-		catch (Exception e) {
-			PortalUtil.sendError(e, request, response);
+		catch (Exception exception) {
+			PortalUtil.sendError(
+				exception, httpServletRequest, httpServletResponse);
 
 			return null;
 		}
 		finally {
-			if (!ServerDetector.isResin()) {
-				PortletRequest portletRequest =
-					(PortletRequest)request.getAttribute(
-						JavaConstants.JAVAX_PORTLET_REQUEST);
+			PortletRequest portletRequest =
+				(PortletRequest)httpServletRequest.getAttribute(
+					JavaConstants.JAVAX_PORTLET_REQUEST);
 
-				if (portletRequest != null) {
-					PortletRequestImpl portletRequestImpl =
-						PortletRequestImpl.getPortletRequestImpl(
-							portletRequest);
+			if (portletRequest != null) {
+				LiferayPortletRequest liferayPortletRequest =
+					LiferayPortletUtil.getLiferayPortletRequest(portletRequest);
 
-					portletRequestImpl.cleanUp();
+				if (liferayPortletRequest instanceof ResourceRequest) {
+					ResourceRequest resourceRequest =
+						(ResourceRequest)liferayPortletRequest;
+
+					if (!resourceRequest.isAsyncStarted()) {
+						liferayPortletRequest.cleanUp();
+					}
+				}
+				else {
+					liferayPortletRequest.cleanUp();
 				}
 			}
 		}

@@ -15,7 +15,7 @@
 package com.liferay.portal.service.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.ListType;
+import com.liferay.portal.kernel.model.ListType;
 import com.liferay.portal.service.base.ListTypeServiceBaseImpl;
 
 import java.util.List;
@@ -28,6 +28,11 @@ public class ListTypeServiceImpl extends ListTypeServiceBaseImpl {
 	@Override
 	public ListType getListType(long listTypeId) throws PortalException {
 		return listTypeLocalService.getListType(listTypeId);
+	}
+
+	@Override
+	public ListType getListType(String name, String type) {
+		return listTypeLocalService.getListType(name, type);
 	}
 
 	@Override

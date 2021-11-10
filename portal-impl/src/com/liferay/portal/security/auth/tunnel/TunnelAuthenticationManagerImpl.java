@@ -14,28 +14,30 @@
 
 package com.liferay.portal.security.auth.tunnel;
 
+import com.liferay.petra.encryptor.Encryptor;
+import com.liferay.petra.encryptor.EncryptorException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.AuthException;
+import com.liferay.portal.kernel.security.auth.RemoteAuthException;
 import com.liferay.portal.kernel.security.auth.http.HttpAuthManagerUtil;
 import com.liferay.portal.kernel.security.auth.http.HttpAuthorizationHeader;
 import com.liferay.portal.kernel.security.auth.tunnel.TunnelAuthenticationManager;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.User;
-import com.liferay.portal.security.auth.AuthException;
-import com.liferay.portal.security.auth.RemoteAuthException;
-import com.liferay.portal.service.UserLocalServiceUtil;
 import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.util.Encryptor;
-import com.liferay.util.EncryptorException;
 
 import java.net.HttpURLConnection;
 
 import java.security.Key;
+
+import java.util.Objects;
 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -56,6 +58,10 @@ public class TunnelAuthenticationManagerImpl
 
 		HttpAuthorizationHeader httpAuthorizationHeader =
 			HttpAuthManagerUtil.parse(httpServletRequest);
+
+		if (httpAuthorizationHeader == null) {
+			return 0;
+		}
 
 		String scheme = httpAuthorizationHeader.getScheme();
 
@@ -78,25 +84,27 @@ public class TunnelAuthenticationManagerImpl
 		try {
 			expectedPassword = Encryptor.encrypt(getSharedSecretKey(), login);
 		}
-		catch (EncryptorException ee) {
-			AuthException authException = new RemoteAuthException(ee);
+		catch (EncryptorException encryptorException) {
+			AuthException authException = new RemoteAuthException(
+				encryptorException);
 
 			authException.setType(AuthException.INTERNAL_SERVER_ERROR);
 
 			throw authException;
 		}
-		catch (AuthException ae) {
-			AuthException authException = new RemoteAuthException(ae);
+		catch (AuthException authException1) {
+			AuthException authException2 = new RemoteAuthException(
+				authException1);
 
-			authException.setType(ae.getType());
+			authException2.setType(authException1.getType());
 
-			throw authException;
+			throw authException2;
 		}
 
 		String password = httpAuthorizationHeader.getAuthParameter(
 			HttpAuthorizationHeader.AUTH_PARAMETER_NAME_PASSWORD);
 
-		if (!Validator.equals(expectedPassword, password)) {
+		if (!Objects.equals(expectedPassword, password)) {
 			AuthException authException = new RemoteAuthException();
 
 			authException.setType(RemoteAuthException.WRONG_SHARED_SECRET);
@@ -149,14 +157,13 @@ public class TunnelAuthenticationManagerImpl
 
 		httpAuthorizationHeader.setAuthParameter(
 			HttpAuthorizationHeader.AUTH_PARAMETER_NAME_USERNAME, login);
+
 		httpURLConnection.setRequestProperty(
 			HttpHeaders.AUTHORIZATION, httpAuthorizationHeader.toString());
 	}
 
 	protected Key getSharedSecretKey() throws AuthException {
 		String sharedSecret = PropsValues.TUNNELING_SERVLET_SHARED_SECRET;
-		boolean sharedSecretHex =
-			PropsValues.TUNNELING_SERVLET_SHARED_SECRET_HEX;
 
 		if (Validator.isNull(sharedSecret)) {
 			String message =
@@ -175,13 +182,13 @@ public class TunnelAuthenticationManagerImpl
 
 		byte[] key = null;
 
-		if (sharedSecretHex) {
+		if (PropsValues.TUNNELING_SERVLET_SHARED_SECRET_HEX) {
 			try {
 				key = Hex.decodeHex(sharedSecret.toCharArray());
 			}
-			catch (DecoderException e) {
+			catch (DecoderException decoderException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(e, e);
+					_log.warn(decoderException, decoderException);
 				}
 
 				AuthException authException = new AuthException();

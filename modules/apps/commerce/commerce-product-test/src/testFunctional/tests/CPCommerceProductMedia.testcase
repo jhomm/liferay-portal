@@ -1,0 +1,310 @@
+@component-name = "portal-commerce"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Product Info Management";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		CommerceConfiguration.commerceStoreFrontSetUp();
+	}
+
+	tearDown {
+		Navigator.openURL();
+
+		if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
+			User.logoutPG();
+		}
+
+		User.firstLoginPG();
+
+		CommerceConfiguration.commerceAdminTearDown();
+
+		CommerceConfiguration.commerceInitializersTearDown();
+	}
+
+	@description = "This is a test for COMMERCE-6030. AddAnAttachment"
+	@priority = "3"
+	test AddAnAttachment {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Media");
+
+		CommerceProductImages.addAttachmentImages(imageTitles = "Black");
+	}
+
+	@description = "This is a test for COMMERCE-6032. AddAnAttachmentToAnOption"
+	@ignore = "true"
+	@priority = "3"
+	test AddAnAttachmentToAnOption {
+		property portal.acceptance = "false";
+
+		// TODO COMMERCE-6032 AddAnAttachmentToAnOption
+
+	}
+
+	@description = "This is a test for COMMERCE-6025. AddAnImage"
+	@priority = "3"
+
+	test AddAnImage {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Media");
+
+		CommerceProductImages.addProductImages(
+			imageTitles = "Black",
+			validationImage = "true");
+	}
+
+	@description = "This is a test for COMMERCE-6028. AddAnImageToAnOption"
+	@priority = "3"
+	test AddAnImageToAnOption {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Options");
+
+		CPCommerceCatalog.newOptionsEntry(
+			optionDescription = "Option Description",
+			optionFieldType = "Select from List",
+			optionName = "Color");
+
+		Button.clickSave();
+
+		AssertElementPresent(locator1 = "Message#SUCCESS");
+
+		for (var toggleLabel : list "Faceted Navigation,Required,SKU Contributor") {
+			Check.checkToggleSwitch(
+				key_toggleSwitchLabel = "${toggleLabel}",
+				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+		}
+
+		CPCommerceCatalog.addOptionValues(
+			optionEntryName = "Color",
+			optionValuesList = "Black:1");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Options");
+
+		CommerceRelations.assignSingleRelationToProductsEntry(
+			entryName = "Color",
+			title = "Add Option");
+
+		Alert.viewSuccessMessage();
+
+		CommerceEntry.gotoMenuTab(menuTab = "Media");
+
+		CommerceProductImages.addProductImages(
+			imageTitles = "Black",
+			optionValue = "Black",
+			validationImage = "true");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@description = "This is a test for COMMERCE-6031. EditAnAttachment"
+	@priority = "3"
+	test EditAnAttachment {
+		property portal.acceptance = "false";
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Control Panel",
+			portlet = "Custom Fields");
+
+		CustomFields.addCP(
+			customFieldName = "Custom Field",
+			customFieldType = "Text",
+			customInputDataType = "Text",
+			resourceName = "Commerce Product Attachment");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Media");
+
+		CommerceProductImages.addAttachmentImages(imageTitles = "Black");
+
+		Click(
+			key_value = "Commerce_Black.jpg",
+			locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+
+		MenuItem.click(menuItem = "Edit");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Type(
+			locator1 = "TextInput#TITLE",
+			value1 = "Commerce_Black_Edit");
+
+		Type(
+			locator1 = "TextInput#CUSTOM_FIELD",
+			value1 = "Test");
+
+		Button.clickSaveAsDraft();
+
+		Alert.viewSuccessMessage();
+	}
+
+	@description = "This is a test for COMMERCE-6027. EditAnImage"
+	@priority = "3"
+	test EditAnImage {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Media");
+
+		CommerceProductImages.addProductImages(
+			imageTitles = "Black",
+			validationImage = "false");
+
+		Click(
+			key_value = "Commerce_Black",
+			locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+
+		MenuItem.click(menuItem = "Edit");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Type(
+			locator1 = "TextInput#TITLE",
+			value1 = "Commerce_Black_Edit");
+
+		Button.clickPublish();
+
+		Alert.viewSuccessMessage();
+
+		Click(locator1 = "Icon#CLOSE");
+
+		Refresh();
+
+		AssertElementNotPresent(
+			key_entryName = "Commerce_Black",
+			key_table = "Images",
+			locator1 = "CommerceEntry#TABLE_ENTRY_NAME_NOT_CONTAINS");
+
+		echo("Commerce_Black is not present");
+
+		AssertElementPresent(
+			key_entryName = "Commerce_Black_Edit",
+			key_table = "Images",
+			locator1 = "CommerceEntry#TABLE_ENTRY_NAME_NOT_CONTAINS");
+
+		echo("Commerce_Black_Edit is present");
+	}
+
+	@description = "This is a test for COMMERCE-6033. RemoveAnAttachment"
+	@priority = "3"
+	test RemoveAnAttachment {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Media");
+
+		CommerceProductImages.addAttachmentImages(imageTitles = "Black");
+
+		Alert.viewSuccessMessage();
+
+		Click(
+			key_value = "Commerce_Black",
+			locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+
+		MenuItem.click(menuItem = "Delete");
+
+		Alert.viewSuccessMessage();
+
+		AssertElementNotPresent(
+			key_entryName = "Commerce_Black",
+			key_table = "Attachments",
+			locator1 = "CommerceEntry#TABLE_ENTRY_NAME");
+
+		echo("Commerce_Black is not present");
+	}
+
+	@description = "This is a test for COMMERCE-6026. RemoveAnImage"
+	@priority = "3"
+	test RemoveAnImage {
+		property portal.acceptance = "false";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Media");
+
+		CommerceProductImages.addProductImages(
+			imageTitles = "Black",
+			validationImage = "true");
+
+		Click(
+			key_value = "Commerce_Black",
+			locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+
+		MenuItem.click(menuItem = "Delete");
+
+		Alert.viewSuccessMessage();
+
+		AssertElementNotPresent(
+			key_entryName = "Commerce_Black",
+			key_table = "Images",
+			locator1 = "CommerceEntry#TABLE_ENTRY_NAME");
+	}
+
+}

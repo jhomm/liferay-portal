@@ -1,0 +1,14 @@
+@default = "isVisible"
+definition {
+
+	function isVisible {
+		selenium.isVisible();
+	}
+
+	function waitForVisible {
+		selenium.waitForVisible();
+
+		IsVisible.isVisible();
+	}
+
+}

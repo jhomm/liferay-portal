@@ -14,6 +14,7 @@
 
 package com.liferay.portal.util;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -70,10 +71,8 @@ public class JavaFieldsParser {
 			try {
 				clazz = classLoader.loadClass(className);
 			}
-			catch (Exception e) {
-				if (_log.isWarnEnabled()) {
-					_log.warn("Unable to load class " + className);
-				}
+			catch (Exception exception) {
+				_log.error("Unable to load class " + className, exception);
 
 				break;
 			}
@@ -99,15 +98,13 @@ public class JavaFieldsParser {
 					_log.debug("Field value " + fieldValue);
 				}
 			}
-			catch (Exception e) {
-				if (_log.isWarnEnabled()) {
-					_log.warn("Unable to load field " + fieldName);
-				}
+			catch (Exception exception) {
+				_log.error("Unable to load field " + fieldName, exception);
 
 				break;
 			}
 
-			replaceFrom.add("${".concat(javaSnippet).concat("}"));
+			replaceFrom.add(StringBundler.concat("${", javaSnippet, "}"));
 			replaceWith.add(fieldValue);
 
 			x = s.indexOf("${", y);
@@ -118,8 +115,8 @@ public class JavaFieldsParser {
 		}
 
 		return StringUtil.replace(
-			s, replaceFrom.toArray(new String[replaceFrom.size()]),
-			replaceWith.toArray(new String[replaceWith.size()]));
+			s, replaceFrom.toArray(new String[0]),
+			replaceWith.toArray(new String[0]));
 	}
 
 	private static String _getClassName(String javaSnippet) {

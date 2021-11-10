@@ -14,9 +14,9 @@
 
 package com.liferay.portal.dao.orm.hibernate;
 
-import com.liferay.portal.kernel.util.CharPool;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
@@ -59,23 +59,12 @@ public class SQLServerLimitStringUtil {
 		String innerSelectFrom = _getInnerSelectFrom(
 			selectFrom, innerOrderBy, limit);
 
-		StringBundler sb = new StringBundler(15);
-
-		sb.append("select * from (");
-		sb.append("select *, row_number() over (");
-		sb.append(outerOrderBy);
-		sb.append(") as _page_row_num from (");
-		sb.append(innerSelectFrom);
-		sb.append(selectFromWhere);
-		sb.append(innerOrderBy);
-		sb.append(" ) _temp_table_1 ) _temp_table_2");
-		sb.append(" where _page_row_num between ");
-		sb.append(offset + 1);
-		sb.append(" and ");
-		sb.append(limit);
-		sb.append(" order by _page_row_num");
-
-		return sb.toString();
+		return StringBundler.concat(
+			"select * from (select *, row_number() over (", outerOrderBy,
+			") as _page_row_num from (", innerSelectFrom, selectFromWhere,
+			innerOrderBy,
+			" ) _temp_table_1 ) _temp_table_2 where _page_row_num between ",
+			offset + 1, " and ", limit, " order by _page_row_num");
 	}
 
 	private static String _getInnerSelectFrom(
@@ -87,16 +76,13 @@ public class SQLServerLimitStringUtil {
 			Matcher matcher = _selectPattern.matcher(innerSelectFrom);
 
 			innerSelectFrom = matcher.replaceAll(
-				"select top ".concat(String.valueOf(limit)).concat(
-					StringPool.SPACE));
+				StringBundler.concat("$1 top ", limit, StringPool.SPACE));
 		}
 
 		return innerSelectFrom;
 	}
 
-	private static final String[] _splitOrderBy(
-		String selectFrom, String orderBy) {
-
+	private static String[] _splitOrderBy(String selectFrom, String orderBy) {
 		StringBundler innerOrderBySB = new StringBundler();
 		StringBundler outerOrderBySB = new StringBundler();
 
@@ -106,6 +92,7 @@ public class SQLServerLimitStringUtil {
 			orderByColumn = orderByColumn.trim();
 
 			String orderByColumnName = orderByColumn;
+
 			String orderByType = "ASC";
 
 			int spacePos = orderByColumn.lastIndexOf(CharPool.SPACE);
@@ -120,8 +107,8 @@ public class SQLServerLimitStringUtil {
 				}
 			}
 
-			String patternString = "\\Q".concat(orderByColumnName).concat(
-				"\\E as (\\w+)");
+			String patternString = StringBundler.concat(
+				"\\Q", orderByColumnName, "\\E as (\\w+)");
 
 			Pattern pattern = Pattern.compile(
 				patternString, Pattern.CASE_INSENSITIVE);
@@ -145,6 +132,7 @@ public class SQLServerLimitStringUtil {
 				orderByColumnName = matcher.replaceAll("$1");
 
 				outerOrderBySB.append(orderByColumnName);
+
 				outerOrderBySB.append(StringPool.SPACE);
 				outerOrderBySB.append(orderByType);
 			}
@@ -154,6 +142,17 @@ public class SQLServerLimitStringUtil {
 				}
 				else {
 					innerOrderBySB.append(StringPool.COMMA);
+				}
+
+				if (orderByColumnName.endsWith("ASC")) {
+					orderByColumnName = orderByColumnName.substring(
+						0, orderByColumnName.lastIndexOf("ASC"));
+					orderByType = "ASC";
+				}
+				else if (orderByColumnName.endsWith("DESC")) {
+					orderByColumnName = orderByColumnName.substring(
+						0, orderByColumnName.lastIndexOf("DESC"));
+					orderByType = "DESC";
 				}
 
 				innerOrderBySB.append(orderByColumnName);
@@ -174,6 +173,6 @@ public class SQLServerLimitStringUtil {
 	private static final Pattern _qualifiedColumnPattern = Pattern.compile(
 		"\\w+\\.([\\w\\*]+)");
 	private static final Pattern _selectPattern = Pattern.compile(
-		"SELECT ", Pattern.CASE_INSENSITIVE);
+		"(SELECT(?: DISTINCT)?) ", Pattern.CASE_INSENSITIVE);
 
 }

@@ -14,16 +14,24 @@
  */
 --%>
 
-<%@ include file="/html/portal/layout/view/portlet_js.jspf" %>
+<c:if test="<%= (layout != null) && LayoutPermissionUtil.contains(permissionChecker, layout, ActionKeys.UPDATE) %>">
+	<aui:script>
+		Liferay.provide(
+			Liferay.Portlet,
+			'refreshLayout',
+			function(portletBound) {
+				if (!portletBound.isStatic) {
+					Liferay.Layout.refresh(portletBound);
+				}
+			},
+			['liferay-layout']
+		);
+	</aui:script>
+</c:if>
 
 <aui:script position="inline">
-
-	<%
-	String controlPanelCategory = ParamUtil.getString(request, "controlPanelCategory");
-	%>
-
 	<c:choose>
-		<c:when test="<%= themeDisplay.isStatePopUp() || Validator.isNotNull(controlPanelCategory) %>">
+		<c:when test="<%= themeDisplay.isStatePopUp() %>">
 			Liferay.Util.getTop().Liferay.fire(
 				'popupReady',
 				{
@@ -49,20 +57,41 @@
 			</c:if>
 		</c:otherwise>
 	</c:choose>
+</aui:script>
 
-	<%
-	OutputData outputData = (OutputData)request.getAttribute(WebKeys.OUTPUT_DATA);
-
-	if (outputData != null) {
-		Set<String> outputKeys = outputData.getOutputKeys();
-	%>
-
-		Liferay.Data.sharedResources.push('<%= StringUtil.merge(outputKeys.toArray(new String[outputKeys.size()]), "','") %>');
-
-	<%
+<aui:script>
+	if (window.svg4everybody && Liferay.Data.ICONS_INLINE_SVG) {
+		svg4everybody(
+			{
+				polyfill: true,
+				validate: function (src, svg, use) {
+					return !src || !src.startsWith('#');
+				}
+			}
+		);
 	}
-	%>
+</aui:script>
 
+<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule">
+	var delegate = delegateModule.default;
+
+	delegate(
+		document,
+		'focusin',
+		'.portlet',
+		function(event) {
+			event.delegateTarget.closest('.portlet').classList.add('open');
+		}
+	);
+
+	delegate(
+		document,
+		'focusout',
+		'.portlet',
+		function(event) {
+			event.delegateTarget.closest('.portlet').classList.remove('open');
+		}
+	);
 </aui:script>
 
 <aui:script use="aui-base">
@@ -83,32 +112,19 @@ if (layout != null) {
 }
 %>
 
-<c:if test="<%= !themeDisplay.isStatePopUp() && !group.isControlPanel() && (layout != null) && (!group.hasStagingGroup() || group.isStagingGroup() || layoutTypePortlet.isCustomizable()) && (GroupPermissionUtil.contains(permissionChecker, scopeGroupId, ActionKeys.ADD_LAYOUT) || LayoutPermissionUtil.contains(permissionChecker, layout, ActionKeys.UPDATE) || (layoutTypePortlet.isCustomizable() && LayoutPermissionUtil.contains(permissionChecker, layout, ActionKeys.CUSTOMIZE))) %>">
+<c:if test="<%= !themeDisplay.isStatePopUp() && !group.isControlPanel() && (layout != null) && (!group.hasStagingGroup() || group.isStagingGroup() || !PropsValues.STAGING_LIVE_GROUP_LOCKING_ENABLED || layoutTypePortlet.isCustomizable()) && (GroupPermissionUtil.contains(permissionChecker, scopeGroupId, ActionKeys.ADD_LAYOUT) || LayoutPermissionUtil.contains(permissionChecker, layout, ActionKeys.UPDATE) || (layoutTypePortlet.isCustomizable() && LayoutPermissionUtil.contains(permissionChecker, layout, ActionKeys.CUSTOMIZE))) %>">
 	<c:if test="<%= layout.isTypePortlet() %>">
-		<aui:script>
+		<aui:script position="inline">
 			Liferay.Data.layoutConfig = {
 				container: '#main-content',
-
-				<c:choose>
-					<c:when test="<%= !themeDisplay.isFreeformLayout() %>">
-						dropNodes: '.portlet-column',
-					</c:when>
-					<c:otherwise>
-						dropNodes: '.portlet-boundary',
-						freeForm: true,
-						freeformPlaceholderClass: 'lfr-freeform-layout-drag-indicator',
-					</c:otherwise>
-				</c:choose>
+				dropNodes: '.portlet-column',
 
 				<c:choose>
 					<c:when test="<%= BrowserSnifferUtil.isMobile(request) %>">
-						handles: Liferay.Data.PORTLET_TOUCH_DRAG_HANDLE_SELECTOR || ['.portlet-title-text'],
-					</c:when>
-					<c:when test="<%= !themeDisplay.isFreeformLayout() %>">
-						handles: Liferay.Data.PORTLET_DRAG_HANDLE_SELECTOR || ['.portlet-title-default', '.portlet-topper'],
+						handles: Liferay.Data.PORTLET_TOUCH_DRAG_HANDLE_SELECTOR || ['.portlet-title-default'],
 					</c:when>
 					<c:otherwise>
-						handles: Liferay.Data.PORTLET_FREEFORM_DRAG_HANDLE_SELECTOR || ['.portlet-header-bar', '.portlet-title-default', '.portlet-topper'],
+						handles: Liferay.Data.PORTLET_DRAG_HANDLE_SELECTOR || ['.portlet-title-default', '.portlet-topper'],
 					</c:otherwise>
 				</c:choose>
 
@@ -120,6 +136,8 @@ if (layout != null) {
 				nestedPortletId: '_<%= PortletKeys.NESTED_PORTLETS %>_INSTANCE',
 				portletBoundary: '.portlet-boundary'
 			};
+
+			Liferay.fire('dataLayoutConfigReady');
 		</aui:script>
 
 		<aui:script use="liferay-layout">
@@ -128,147 +146,75 @@ if (layout != null) {
 	</c:if>
 
 	<aui:script use="event-move,liferay-navigation">
+		var navBlock = A.one(Liferay.Data.NAV_SELECTOR);
+
 		Liferay.once(
 			'initNavigation',
 			function() {
 				new Liferay.Navigation(
 					{
-						hasAddLayoutPermission: <%= GroupPermissionUtil.contains(permissionChecker, scopeGroupId, ActionKeys.ADD_LAYOUT) %>,
-						layoutIds: [
-
-							<%
-							Group scopeGroup = GroupLocalServiceUtil.getGroup(scopeGroupId);
-
-							for (int i = 0; (layouts != null) && (i < layouts.size()); i++) {
-								Layout curLayout = (Layout)layouts.get(i);
-							%>
-
-								<c:if test="<%= (i > 0) %>">,</c:if>
-
-								{
-									deletable: !A.UA.touchMobile && <%= LayoutPermissionUtil.contains(permissionChecker, curLayout, ActionKeys.DELETE) %>,
-									id: <%= curLayout.getLayoutId() %>,
-									sortable: <%= GroupPermissionUtil.contains(permissionChecker, scopeGroup, ActionKeys.MANAGE_LAYOUTS) && SitesUtil.isLayoutSortable(curLayout) %>,
-									updateable: <%= !group.isLayoutPrototype() && LayoutPermissionUtil.contains(permissionChecker, curLayout, ActionKeys.UPDATE) %>
-								}
-
-							<%
-							}
-							%>
-
-							],
-
-						<c:if test="<%= layoutRevision != null %>">
-							layoutSetBranchId: '<%= layoutRevision.getLayoutSetBranchId() %>',
-						</c:if>
-
 						navBlock: navBlock
 					}
 				);
 			}
 		);
 
-		var navBlock = A.one(Liferay.Data.NAV_SELECTOR);
-
 		if (navBlock) {
-			navBlock.once(
-				['gesturemovestart', 'mousemove'],
-				function() {
-					Liferay.fire('initNavigation');
-				}
-			);
+			if (A.UA.touchMobile) {
+				var panel = document.querySelector(Liferay.Data.NAV_SELECTOR_MOBILE);
+
+				Liferay.on('liferay.collapse.shown',
+					function(event) {
+						var panelId = event.panel.geAttribute('id');
+
+						if (panelId === panel.geAttribute('id')) {
+							Liferay.fire('initNavigation');
+						}
+					}
+				);
+			}
+			else {
+				navBlock.once(
+					['gesturemovestart', 'mousemove'],
+					function() {
+						Liferay.fire('initNavigation');
+					}
+				);
+			}
 		}
+
+		A.on(
+			'io:complete',
+			function() {
+				Liferay.fire('io:complete');
+			}
+		);
 	</aui:script>
 </c:if>
 
-<aui:script use="liferay-menu,liferay-notice,liferay-poller">
+<aui:script use="liferay-menu">
 	new Liferay.Menu();
 
 	var liferayNotices = Liferay.Data.notices;
 
-	for (var i = 1; i < liferayNotices.length; i++) {
-		new Liferay.Notice(liferayNotices[i]);
+	for (var i = 0; i < liferayNotices.length; i++) {
+		Liferay.Util.openToast(liferayNotices[i]);
 	}
 
-	<c:if test="<%= themeDisplay.isSignedIn() %>">
-		Liferay.Poller.init(
-			{
-				encryptedUserId: '<%= Encryptor.encrypt(company.getKeyObj(), String.valueOf(themeDisplay.getUserId())) %>',
-				supportsComet: <%= ServerDetector.isSupportsComet() %>
-			}
-		);
-	</c:if>
 </aui:script>
 
-<c:if test="<%= PropsValues.JAVASCRIPT_SINGLE_PAGE_APPLICATION_ENABLED %>">
-	<div id="bottomJS">
-		<div id="bottomJS-defaultScreen">
-			<aui:script use="liferay-surface-app">
-				if (Liferay.Surface) {
+<script type="text/javascript">
+	// <![CDATA[
 
-					<%
-					List<Portlet> companyPortlets = PortletLocalServiceUtil.getPortlets(themeDisplay.getCompanyId());
+		<%
+		String currentURL = PortalUtil.getCurrentURL(request);
+		%>
 
-					for (Portlet portlet : companyPortlets) {
-						if (portlet.isActive() && portlet.isReady() && !portlet.isUndeployedPortlet() && !portlet.isSinglePageApplication()) {
-					%>
+		Liferay.currentURL = '<%= HtmlUtil.escapeJS(currentURL) %>';
+		Liferay.currentURLEncoded = '<%= HtmlUtil.escapeJS(URLCodec.encodeURL(currentURL)) %>';
 
-							Liferay.Surface.blacklist.route['<%= portlet.getPortletId() %>'] = true;
-
-					<%
-						}
-
-						boolean singlePageApplicationCacheable = GetterUtil.getBoolean(portlet.getInitParams().get("single-page-application-cacheable"), true);
-
-						if (!singlePageApplicationCacheable) {
-					%>
-
-							Liferay.Surface.blacklist.cache['<%= portlet.getPortletId() %>'] = true;
-
-					<%
-						}
-					}
-					%>
-
-					Liferay.Surface.blacklist.surface['<%= PortletKeys.NESTED_PORTLETS %>'] = true;
-				}
-			</aui:script>
-
-			<script type="text/surface-data-channel">
-
-				<%
-				String portletId = request.getParameter("p_p_id");
-				String singlePageApplicationLastPortletId = (String)session.getAttribute(WebKeys.SINGLE_PAGE_APPLICATION_LAST_PORTLET_ID);
-
-				String scrollElementId = HtmlUtil.escape(ParamUtil.getString(request, "scroll"));
-				%>
-
-				{
-					"clearScreensCache": <%= (Validator.isNotNull(portletId) && Validator.isNotNull(singlePageApplicationLastPortletId) && !Validator.equals(portletId, singlePageApplicationLastPortletId)) %>,
-					"scrollElementId": "<%= scrollElementId %>"
-				}
-
-				<%
-				session.setAttribute(WebKeys.SINGLE_PAGE_APPLICATION_LAST_PORTLET_ID, portletId);
-				%>
-
-			</script>
-
-			<script type="text/javascript">
-				// <![CDATA[
-
-					<%
-					String currentURL = PortalUtil.getCurrentURL(request);
-					%>
-
-					Liferay.currentURL = '<%= HtmlUtil.escapeJS(currentURL) %>';
-					Liferay.currentURLEncoded = '<%= HttpUtil.encodeURL(currentURL) %>';
-
-				// ]]>
-			</script>
-
-			<div class="lfr-surface-loading-bar"></div>
-</c:if>
+	// ]]>
+</script>
 
 <c:if test="<%= layout != null %>">
 
@@ -279,19 +225,28 @@ if (layout != null) {
 
 	UnicodeProperties layoutSetSettings = layoutSet.getSettingsProperties();
 
+	UnicodeProperties masterLayoutTypeSettings = new UnicodeProperties();
+
+	if (layout.getMasterLayoutPlid() > 0) {
+		Layout masterLayout = LayoutLocalServiceUtil.fetchLayout(layout.getMasterLayoutPlid());
+
+		if (masterLayout != null) {
+			masterLayoutTypeSettings = masterLayout.getTypeSettingsProperties();
+		}
+	}
+
 	UnicodeProperties layoutTypeSettings = layout.getTypeSettingsProperties();
 	%>
 
 	<script type="text/javascript">
 		// <![CDATA[
-			<%= GetterUtil.getString(layoutSetSettings.getProperty("javascript")) %>
+			<c:if test="<%= !layout.isTypeControlPanel() %>">
+				<%= GetterUtil.getString(layoutSetSettings.getProperty("javascript")) %>
 
-			<%= GetterUtil.getString(layoutTypeSettings.getProperty("javascript")) %>
+				<%= GetterUtil.getString(masterLayoutTypeSettings.getProperty("javascript")) %>
+
+				<%= GetterUtil.getString(layoutTypeSettings.getProperty("javascript")) %>
+			</c:if>
 		// ]]>
 	</script>
-</c:if>
-
-<c:if test="<%= PropsValues.JAVASCRIPT_SINGLE_PAGE_APPLICATION_ENABLED %>">
-		</div>
-	</div>
 </c:if>

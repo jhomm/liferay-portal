@@ -1,0 +1,40 @@
+@default = "clickAt"
+definition {
+
+	function checkToggleSwitch {
+		selenium.waitForElementPresent();
+
+		selenium.mouseOver();
+
+		if (selenium.isNotChecked()) {
+			selenium.clickAt();
+		}
+
+		AssertChecked.assertCheckedToggleSwitch();
+	}
+
+	function clickAt {
+		selenium.waitForVisible();
+
+		selenium.mouseOver();
+
+		if (selenium.isNotChecked()) {
+			selenium.clickAt();
+		}
+
+		AssertChecked.assertChecked();
+	}
+
+	function toggleSwitch {
+		selenium.waitForElementPresent();
+
+		selenium.mouseOver();
+
+		if (selenium.isNotChecked()) {
+			selenium.clickAt();
+		}
+
+		AssertElementPresent();
+	}
+
+}

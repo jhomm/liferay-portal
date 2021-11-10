@@ -14,85 +14,84 @@
 
 package com.liferay.portlet.usersadmin.util;
 
+import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Address;
+import com.liferay.portal.kernel.model.EmailAddress;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.OrgLabor;
+import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.model.Phone;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.model.UserGroupRole;
+import com.liferay.portal.kernel.model.Website;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicyUtil;
+import com.liferay.portal.kernel.security.membershippolicy.SiteMembershipPolicyUtil;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.AddressLocalServiceUtil;
+import com.liferay.portal.kernel.service.AddressServiceUtil;
+import com.liferay.portal.kernel.service.EmailAddressLocalServiceUtil;
+import com.liferay.portal.kernel.service.EmailAddressServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.OrgLaborLocalServiceUtil;
+import com.liferay.portal.kernel.service.OrgLaborServiceUtil;
+import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
+import com.liferay.portal.kernel.service.PhoneLocalServiceUtil;
+import com.liferay.portal.kernel.service.PhoneServiceUtil;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserGroupRoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.service.WebsiteLocalServiceUtil;
+import com.liferay.portal.kernel.service.WebsiteServiceUtil;
+import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
+import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
+import com.liferay.portal.kernel.service.permission.RolePermissionUtil;
+import com.liferay.portal.kernel.service.permission.UserGroupPermissionUtil;
+import com.liferay.portal.kernel.service.permission.UserGroupRolePermissionUtil;
+import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
 import com.liferay.portal.kernel.util.Accessor;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.SetUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Address;
-import com.liferay.portal.model.EmailAddress;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.OrgLabor;
-import com.liferay.portal.model.Organization;
-import com.liferay.portal.model.Phone;
-import com.liferay.portal.model.Role;
-import com.liferay.portal.model.RoleConstants;
-import com.liferay.portal.model.User;
-import com.liferay.portal.model.UserGroup;
-import com.liferay.portal.model.UserGroupRole;
-import com.liferay.portal.model.Website;
-import com.liferay.portal.security.auth.PrincipalThreadLocal;
-import com.liferay.portal.security.membershippolicy.OrganizationMembershipPolicyUtil;
-import com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil;
-import com.liferay.portal.security.permission.ActionKeys;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.security.permission.PermissionThreadLocal;
-import com.liferay.portal.service.AddressLocalServiceUtil;
-import com.liferay.portal.service.AddressServiceUtil;
-import com.liferay.portal.service.EmailAddressLocalServiceUtil;
-import com.liferay.portal.service.EmailAddressServiceUtil;
-import com.liferay.portal.service.GroupLocalServiceUtil;
-import com.liferay.portal.service.OrgLaborLocalServiceUtil;
-import com.liferay.portal.service.OrgLaborServiceUtil;
-import com.liferay.portal.service.OrganizationLocalServiceUtil;
-import com.liferay.portal.service.PhoneLocalServiceUtil;
-import com.liferay.portal.service.PhoneServiceUtil;
-import com.liferay.portal.service.RoleLocalServiceUtil;
-import com.liferay.portal.service.ServiceContext;
-import com.liferay.portal.service.UserGroupLocalServiceUtil;
-import com.liferay.portal.service.UserGroupRoleLocalServiceUtil;
-import com.liferay.portal.service.UserLocalServiceUtil;
-import com.liferay.portal.service.WebsiteLocalServiceUtil;
-import com.liferay.portal.service.WebsiteServiceUtil;
-import com.liferay.portal.service.permission.GroupPermissionUtil;
-import com.liferay.portal.service.permission.OrganizationPermissionUtil;
-import com.liferay.portal.service.permission.RolePermissionUtil;
-import com.liferay.portal.service.permission.UserGroupPermissionUtil;
-import com.liferay.portal.service.permission.UserGroupRolePermissionUtil;
-import com.liferay.portal.service.permission.UserPermissionUtil;
-import com.liferay.portal.service.persistence.UserGroupRolePK;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.util.comparator.GroupNameComparator;
+import com.liferay.portal.kernel.util.comparator.GroupTypeComparator;
+import com.liferay.portal.kernel.util.comparator.OrganizationNameComparator;
+import com.liferay.portal.kernel.util.comparator.OrganizationTypeComparator;
+import com.liferay.portal.kernel.util.comparator.RoleDescriptionComparator;
+import com.liferay.portal.kernel.util.comparator.RoleNameComparator;
+import com.liferay.portal.kernel.util.comparator.RoleTypeComparator;
+import com.liferay.portal.kernel.util.comparator.UserEmailAddressComparator;
+import com.liferay.portal.kernel.util.comparator.UserFirstNameComparator;
+import com.liferay.portal.kernel.util.comparator.UserGroupDescriptionComparator;
+import com.liferay.portal.kernel.util.comparator.UserGroupNameComparator;
+import com.liferay.portal.kernel.util.comparator.UserJobTitleComparator;
+import com.liferay.portal.kernel.util.comparator.UserLastNameComparator;
+import com.liferay.portal.kernel.util.comparator.UserScreenNameComparator;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portal.util.comparator.GroupNameComparator;
-import com.liferay.portal.util.comparator.GroupTypeComparator;
-import com.liferay.portal.util.comparator.OrganizationNameComparator;
-import com.liferay.portal.util.comparator.OrganizationTypeComparator;
-import com.liferay.portal.util.comparator.RoleDescriptionComparator;
-import com.liferay.portal.util.comparator.RoleNameComparator;
-import com.liferay.portal.util.comparator.RoleTypeComparator;
-import com.liferay.portal.util.comparator.UserEmailAddressComparator;
-import com.liferay.portal.util.comparator.UserFirstNameComparator;
-import com.liferay.portal.util.comparator.UserGroupDescriptionComparator;
-import com.liferay.portal.util.comparator.UserGroupNameComparator;
-import com.liferay.portal.util.comparator.UserJobTitleComparator;
-import com.liferay.portal.util.comparator.UserLastNameComparator;
-import com.liferay.portal.util.comparator.UserScreenNameComparator;
+import com.liferay.users.admin.kernel.util.UsersAdmin;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -114,18 +113,23 @@ import javax.servlet.http.HttpServletRequest;
  * @author Jorge Ferrer
  * @author Julio Camarero
  */
-@DoPrivileged
 public class UsersAdminImpl implements UsersAdmin {
 
 	@Override
 	public void addPortletBreadcrumbEntries(
-			Organization organization, HttpServletRequest request,
+			Organization organization, HttpServletRequest httpServletRequest,
 			RenderResponse renderResponse)
 		throws Exception {
 
-		PortletURL portletURL = renderResponse.createRenderURL();
-
-		portletURL.setParameter("mvcRenderCommandName", "/users_admin/view");
+		PortletURL portletURL = PortletURLBuilder.createRenderURL(
+			renderResponse
+		).setMVCRenderCommandName(
+			"/users_admin/view"
+		).setParameter(
+			"toolbarItem", "view-all-organizations"
+		).setParameter(
+			"usersListView", "tree"
+		).buildPortletURL();
 
 		List<Organization> ancestorOrganizations = organization.getAncestors();
 
@@ -137,7 +141,8 @@ public class UsersAdminImpl implements UsersAdmin {
 				String.valueOf(ancestorOrganization.getOrganizationId()));
 
 			PortalUtil.addPortletBreadcrumbEntry(
-				request, ancestorOrganization.getName(), portletURL.toString());
+				httpServletRequest, ancestorOrganization.getName(),
+				portletURL.toString());
 		}
 
 		Organization unescapedOrganization = organization.toUnescapedModel();
@@ -147,16 +152,15 @@ public class UsersAdminImpl implements UsersAdmin {
 			String.valueOf(unescapedOrganization.getOrganizationId()));
 
 		PortalUtil.addPortletBreadcrumbEntry(
-			request, unescapedOrganization.getName(), portletURL.toString());
+			httpServletRequest, unescapedOrganization.getName(),
+			portletURL.toString());
 	}
 
 	@Override
 	public long[] addRequiredRoles(long userId, long[] roleIds)
 		throws PortalException {
 
-		User user = UserLocalServiceUtil.getUser(userId);
-
-		return addRequiredRoles(user, roleIds);
+		return addRequiredRoles(UserLocalServiceUtil.getUser(userId), roleIds);
 	}
 
 	@Override
@@ -197,17 +201,17 @@ public class UsersAdminImpl implements UsersAdmin {
 
 		List<Role> filteredGroupRoles = ListUtil.copy(roles);
 
-		Iterator<Role> itr = filteredGroupRoles.iterator();
+		Iterator<Role> iterator = filteredGroupRoles.iterator();
 
-		while (itr.hasNext()) {
-			Role groupRole = itr.next();
+		while (iterator.hasNext()) {
+			Role groupRole = iterator.next();
 
 			String roleName = groupRole.getName();
 
 			if (roleName.equals(RoleConstants.ORGANIZATION_USER) ||
 				roleName.equals(RoleConstants.SITE_MEMBER)) {
 
-				itr.remove();
+				iterator.remove();
 			}
 		}
 
@@ -228,15 +232,14 @@ public class UsersAdminImpl implements UsersAdmin {
 			return Collections.emptyList();
 		}
 
-		itr = filteredGroupRoles.iterator();
+		iterator = filteredGroupRoles.iterator();
 
-		while (itr.hasNext()) {
-			Role groupRole = itr.next();
+		while (iterator.hasNext()) {
+			Role groupRole = iterator.next();
 
 			String roleName = groupRole.getName();
 
-			if (roleName.equals(
-					RoleConstants.ORGANIZATION_ADMINISTRATOR) ||
+			if (roleName.equals(RoleConstants.ORGANIZATION_ADMINISTRATOR) ||
 				roleName.equals(RoleConstants.ORGANIZATION_OWNER) ||
 				roleName.equals(RoleConstants.SITE_ADMINISTRATOR) ||
 				roleName.equals(RoleConstants.SITE_OWNER) ||
@@ -244,7 +247,7 @@ public class UsersAdminImpl implements UsersAdmin {
 					permissionChecker, groupId, groupRole.getRoleId(),
 					ActionKeys.ASSIGN_MEMBERS)) {
 
-				itr.remove();
+				iterator.remove();
 			}
 		}
 
@@ -262,15 +265,15 @@ public class UsersAdminImpl implements UsersAdmin {
 
 		List<Group> filteredGroups = ListUtil.copy(groups);
 
-		Iterator<Group> itr = filteredGroups.iterator();
+		Iterator<Group> iterator = filteredGroups.iterator();
 
-		while (itr.hasNext()) {
-			Group group = itr.next();
+		while (iterator.hasNext()) {
+			Group group = iterator.next();
 
 			if (!GroupPermissionUtil.contains(
 					permissionChecker, group, ActionKeys.ASSIGN_MEMBERS)) {
 
-				itr.remove();
+				iterator.remove();
 			}
 		}
 
@@ -289,16 +292,16 @@ public class UsersAdminImpl implements UsersAdmin {
 
 		List<Organization> filteredOrganizations = ListUtil.copy(organizations);
 
-		Iterator<Organization> itr = filteredOrganizations.iterator();
+		Iterator<Organization> iterator = filteredOrganizations.iterator();
 
-		while (itr.hasNext()) {
-			Organization organization = itr.next();
+		while (iterator.hasNext()) {
+			Organization organization = iterator.next();
 
 			if (!OrganizationPermissionUtil.contains(
 					permissionChecker, organization,
 					ActionKeys.ASSIGN_MEMBERS)) {
 
-				itr.remove();
+				iterator.remove();
 			}
 		}
 
@@ -311,10 +314,10 @@ public class UsersAdminImpl implements UsersAdmin {
 
 		List<Role> filteredRoles = ListUtil.copy(roles);
 
-		Iterator<Role> itr = filteredRoles.iterator();
+		Iterator<Role> iterator = filteredRoles.iterator();
 
-		while (itr.hasNext()) {
-			Role role = itr.next();
+		while (iterator.hasNext()) {
+			Role role = iterator.next();
 
 			String roleName = role.getName();
 
@@ -324,7 +327,7 @@ public class UsersAdminImpl implements UsersAdmin {
 				roleName.equals(RoleConstants.SITE_MEMBER) ||
 				roleName.equals(RoleConstants.USER)) {
 
-				itr.remove();
+				iterator.remove();
 			}
 		}
 
@@ -332,16 +335,16 @@ public class UsersAdminImpl implements UsersAdmin {
 			return filteredRoles;
 		}
 
-		itr = filteredRoles.iterator();
+		iterator = filteredRoles.iterator();
 
-		while (itr.hasNext()) {
-			Role role = itr.next();
+		while (iterator.hasNext()) {
+			Role role = iterator.next();
 
 			if (!RolePermissionUtil.contains(
 					permissionChecker, role.getRoleId(),
 					ActionKeys.ASSIGN_MEMBERS)) {
 
-				itr.remove();
+				iterator.remove();
 			}
 		}
 
@@ -394,10 +397,10 @@ public class UsersAdminImpl implements UsersAdmin {
 		List<UserGroupRole> filteredUserGroupRoles = ListUtil.copy(
 			userGroupRoles);
 
-		Iterator<UserGroupRole> itr = filteredUserGroupRoles.iterator();
+		Iterator<UserGroupRole> iterator = filteredUserGroupRoles.iterator();
 
-		while (itr.hasNext()) {
-			UserGroupRole userGroupRole = itr.next();
+		while (iterator.hasNext()) {
+			UserGroupRole userGroupRole = iterator.next();
 
 			Role role = userGroupRole.getRole();
 
@@ -406,7 +409,7 @@ public class UsersAdminImpl implements UsersAdmin {
 			if (roleName.equals(RoleConstants.ORGANIZATION_USER) ||
 				roleName.equals(RoleConstants.SITE_MEMBER)) {
 
-				itr.remove();
+				iterator.remove();
 			}
 		}
 
@@ -414,16 +417,16 @@ public class UsersAdminImpl implements UsersAdmin {
 			return filteredUserGroupRoles;
 		}
 
-		itr = filteredUserGroupRoles.iterator();
+		iterator = filteredUserGroupRoles.iterator();
 
-		while (itr.hasNext()) {
-			UserGroupRole userGroupRole = itr.next();
+		while (iterator.hasNext()) {
+			UserGroupRole userGroupRole = iterator.next();
 
 			if (!UserGroupRolePermissionUtil.contains(
 					permissionChecker, userGroupRole.getGroupId(),
 					userGroupRole.getRoleId())) {
 
-				itr.remove();
+				iterator.remove();
 			}
 		}
 
@@ -440,16 +443,16 @@ public class UsersAdminImpl implements UsersAdmin {
 
 		List<UserGroup> filteredUserGroups = ListUtil.copy(userGroups);
 
-		Iterator<UserGroup> itr = filteredUserGroups.iterator();
+		Iterator<UserGroup> iterator = filteredUserGroups.iterator();
 
-		while (itr.hasNext()) {
-			UserGroup userGroup = itr.next();
+		while (iterator.hasNext()) {
+			UserGroup userGroup = iterator.next();
 
 			if (!UserGroupPermissionUtil.contains(
 					permissionChecker, userGroup.getUserGroupId(),
 					ActionKeys.ASSIGN_MEMBERS)) {
 
-				itr.remove();
+				iterator.remove();
 			}
 		}
 
@@ -480,9 +483,6 @@ public class UsersAdminImpl implements UsersAdmin {
 			actionRequest, "addressPrimary");
 
 		for (int addressesIndex : addressesIndexes) {
-			long addressId = ParamUtil.getLong(
-				actionRequest, "addressId" + addressesIndex);
-
 			String street1 = ParamUtil.getString(
 				actionRequest, "addressStreet1_" + addressesIndex);
 			String street2 = ParamUtil.getString(
@@ -516,18 +516,21 @@ public class UsersAdminImpl implements UsersAdmin {
 				primary = true;
 			}
 
+			long addressId = ParamUtil.getLong(
+				actionRequest, "addressId" + addressesIndex);
+
 			Address address = AddressLocalServiceUtil.createAddress(addressId);
 
+			address.setCountryId(countryId);
+			address.setRegionId(regionId);
+			address.setTypeId(typeId);
+			address.setCity(city);
+			address.setMailing(mailing);
+			address.setPrimary(primary);
 			address.setStreet1(street1);
 			address.setStreet2(street2);
 			address.setStreet3(street3);
-			address.setCity(city);
 			address.setZip(zip);
-			address.setRegionId(regionId);
-			address.setCountryId(countryId);
-			address.setTypeId(typeId);
-			address.setMailing(mailing);
-			address.setPrimary(primary);
 
 			addresses.add(address);
 		}
@@ -561,9 +564,6 @@ public class UsersAdminImpl implements UsersAdmin {
 			actionRequest, "emailAddressPrimary");
 
 		for (int emailAddressesIndex : emailAddressesIndexes) {
-			long emailAddressId = ParamUtil.getLong(
-				actionRequest, "emailAddressId" + emailAddressesIndex);
-
 			String address = ParamUtil.getString(
 				actionRequest, "emailAddressAddress" + emailAddressesIndex);
 
@@ -579,6 +579,9 @@ public class UsersAdminImpl implements UsersAdmin {
 			if (emailAddressesIndex == emailAddressPrimary) {
 				primary = true;
 			}
+
+			long emailAddressId = ParamUtil.getLong(
+				actionRequest, "emailAddressId" + emailAddressesIndex);
 
 			EmailAddress emailAddress =
 				EmailAddressLocalServiceUtil.createEmailAddress(emailAddressId);
@@ -636,7 +639,7 @@ public class UsersAdminImpl implements UsersAdmin {
 
 	@Override
 	public Long[] getOrganizationIds(List<Organization> organizations) {
-		if ((organizations == null) || organizations.isEmpty()) {
+		if (ListUtil.isEmpty(organizations)) {
 			return new Long[0];
 		}
 
@@ -735,15 +738,15 @@ public class UsersAdminImpl implements UsersAdmin {
 			ParamUtil.getString(actionRequest, "orgLaborsIndexes"), 0);
 
 		for (int orgLaborsIndex : orgLaborsIndexes) {
-			long orgLaborId = ParamUtil.getLong(
-				actionRequest, "orgLaborId" + orgLaborsIndex);
-
 			long typeId = ParamUtil.getLong(
 				actionRequest, "orgLaborTypeId" + orgLaborsIndex, -1);
 
 			if (typeId == -1) {
 				continue;
 			}
+
+			long orgLaborId = ParamUtil.getLong(
+				actionRequest, "orgLaborId" + orgLaborsIndex);
 
 			int sunOpen = ParamUtil.getInteger(
 				actionRequest, "sunOpen" + orgLaborsIndex, -1);
@@ -822,9 +825,6 @@ public class UsersAdminImpl implements UsersAdmin {
 		int phonePrimary = ParamUtil.getInteger(actionRequest, "phonePrimary");
 
 		for (int phonesIndex : phonesIndexes) {
-			long phoneId = ParamUtil.getLong(
-				actionRequest, "phoneId" + phonesIndex);
-
 			String number = ParamUtil.getString(
 				actionRequest, "phoneNumber" + phonesIndex);
 			String extension = ParamUtil.getString(
@@ -842,6 +842,9 @@ public class UsersAdminImpl implements UsersAdmin {
 			if (phonesIndex == phonePrimary) {
 				primary = true;
 			}
+
+			long phoneId = ParamUtil.getLong(
+				actionRequest, "phoneId" + phonesIndex);
 
 			Phone phone = PhoneLocalServiceUtil.createPhone(phoneId);
 
@@ -909,9 +912,11 @@ public class UsersAdminImpl implements UsersAdmin {
 			list, accessor, StringPool.COMMA_AND_SPACE);
 
 		if (list.size() < count) {
-			result += StringPool.SPACE + LanguageUtil.format(
+			String message = LanguageUtil.format(
 				locale, "and-x-more", String.valueOf(count - list.size()),
 				false);
+
+			result += StringPool.SPACE + message;
 		}
 
 		return result;
@@ -1057,7 +1062,7 @@ public class UsersAdminImpl implements UsersAdmin {
 		List<User> users = new ArrayList<>(documents.size());
 
 		for (Document document : documents) {
-			long userId = UserIndexer.getUserId(document);
+			long userId = GetterUtil.getLong(document.get(Field.USER_ID));
 
 			User user = UserLocalServiceUtil.fetchUser(userId);
 
@@ -1104,9 +1109,6 @@ public class UsersAdminImpl implements UsersAdmin {
 			actionRequest, "websitePrimary");
 
 		for (int websitesIndex : websitesIndexes) {
-			long websiteId = ParamUtil.getLong(
-				actionRequest, "websiteId" + websitesIndex);
-
 			String url = ParamUtil.getString(
 				actionRequest, "websiteUrl" + websitesIndex);
 
@@ -1123,6 +1125,9 @@ public class UsersAdminImpl implements UsersAdmin {
 				primary = true;
 			}
 
+			long websiteId = ParamUtil.getLong(
+				actionRequest, "websiteId" + websitesIndex);
+
 			Website website = WebsiteLocalServiceUtil.createWebsite(websiteId);
 
 			website.setUrl(url);
@@ -1133,21 +1138,6 @@ public class UsersAdminImpl implements UsersAdmin {
 		}
 
 		return websites;
-	}
-
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link
-	 *             #hasUpdateFieldPermission(PermissionChecker, User, User,
-	 *             String)}
-	 */
-	@Deprecated
-	@Override
-	public boolean hasUpdateEmailAddress(
-			PermissionChecker permissionChecker, User user)
-		throws PortalException {
-
-		return hasUpdateFieldPermission(
-			permissionChecker, null, user, "emailAddress");
 	}
 
 	@Override
@@ -1223,44 +1213,12 @@ public class UsersAdminImpl implements UsersAdmin {
 		return false;
 	}
 
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link
-	 *             #hasUpdateFieldPermission(PermissionChecker, User, User,
-	 *             String)}
-	 */
-	@Deprecated
-	@Override
-	public boolean hasUpdateFieldPermission(User user, String field)
-		throws PortalException {
-
-		PermissionChecker permissionChecker =
-			PermissionThreadLocal.getPermissionChecker();
-
-		return hasUpdateFieldPermission(permissionChecker, null, user, field);
-	}
-
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link
-	 *             #hasUpdateFieldPermission(PermissionChecker, User, User,
-	 *             String)}
-	 */
-	@Deprecated
-	@Override
-	public boolean hasUpdateScreenName(
-			PermissionChecker permissionChecker, User user)
-		throws PortalException {
-
-		return hasUpdateFieldPermission(
-			permissionChecker, null, user, "screenName");
-	}
-
 	@Override
 	public long[] removeRequiredRoles(long userId, long[] roleIds)
 		throws PortalException {
 
-		User user = UserLocalServiceUtil.getUser(userId);
-
-		return removeRequiredRoles(user, roleIds);
+		return removeRequiredRoles(
+			UserLocalServiceUtil.getUser(userId), roleIds);
 	}
 
 	@Override
@@ -1270,9 +1228,7 @@ public class UsersAdminImpl implements UsersAdmin {
 		Role role = RoleLocalServiceUtil.getRole(
 			user.getCompanyId(), RoleConstants.USER);
 
-		roleIds = ArrayUtil.remove(roleIds, role.getRoleId());
-
-		return roleIds;
+		return ArrayUtil.remove(roleIds, role.getRoleId());
 	}
 
 	@Override
@@ -1538,12 +1494,12 @@ public class UsersAdminImpl implements UsersAdmin {
 				continue;
 			}
 
-			UserGroupRolePK userGroupRolePK = new UserGroupRolePK(
-				userId, groupRolesGroupIds[i], groupRolesRoleIds[i]);
-
 			UserGroupRole userGroupRole =
-				UserGroupRoleLocalServiceUtil.createUserGroupRole(
-					userGroupRolePK);
+				UserGroupRoleLocalServiceUtil.createUserGroupRole(0);
+
+			userGroupRole.setUserId(userId);
+			userGroupRole.setGroupId(groupRolesGroupIds[i]);
+			userGroupRole.setRoleId(groupRolesRoleIds[i]);
 
 			userGroupRoles.add(userGroupRole);
 		}

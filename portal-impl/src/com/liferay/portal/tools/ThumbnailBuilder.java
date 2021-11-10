@@ -47,8 +47,8 @@ public class ThumbnailBuilder {
 			new ThumbnailBuilder(
 				originalFile, thumbnailFile, height, width, overwrite);
 		}
-		catch (Exception e) {
-			ArgumentsUtil.processMainException(arguments, e);
+		catch (Exception exception) {
+			ArgumentsUtil.processMainException(arguments, exception);
 		}
 	}
 
@@ -57,16 +57,11 @@ public class ThumbnailBuilder {
 			boolean overwrite)
 		throws Exception {
 
-		if (!originalFile.exists()) {
+		if (!originalFile.exists() ||
+			(!overwrite &&
+			 (thumbnailFile.lastModified() > originalFile.lastModified()))) {
+
 			return;
-		}
-
-		if (!overwrite) {
-			if (thumbnailFile.lastModified() >
-					originalFile.lastModified()) {
-
-				return;
-			}
 		}
 
 		ImageBag imageBag = _imageToolUtil.read(originalFile);

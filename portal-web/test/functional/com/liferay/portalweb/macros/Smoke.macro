@@ -1,91 +1,140 @@
-<definition>
-	<var name="userFirstName" value="Test" />
-	<var name="userLastName" value="Test" />
+definition {
 
-	<command name="runSmoke" summary-ignore="true">
-		<execute macro="Page#addPG">
-			<var name="defaultURL" value="${defaultURL}" />
-			<var name="nodePort" value="${nodePort}" />
-			<var name="pageName" value="Test Page1" />
-			<var name="pageTemplateName" value="${pageTemplateName}" />
-			<var name="pageType" value="${pageType}" />
-		</execute>
+	var userFirstName = "Test";
+	var userLastName = "Test";
 
-		<execute macro="Page#addPG">
-			<var name="defaultURL" value="${defaultURL}" />
-			<var name="nodePort" value="${nodePort}" />
-			<var name="pageName" value="Test Page2" />
-			<var name="pageTemplateName" value="${pageTemplateName}" />
-			<var name="pageType" value="${pageType}" />
-		</execute>
+	@summary-ignore = "true"
+	macro runSmoke {
+		task ("Ensure that the super admin can add a Blank Site") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Sites",
+				panel = "Control Panel",
+				portlet = "Sites");
 
-		<execute macro="Page#addPG">
-			<var name="defaultURL" value="${defaultURL}" />
-			<var name="nodePort" value="${nodePort}" />
-			<var name="pageName" value="Test Page3" />
-			<var name="pageTemplateName" value="${pageTemplateName}" />
-			<var name="pageType" value="${pageType}" />
-		</execute>
+			Site.addBlankCP(siteName = "Site Name");
 
-		<var name="pageName" value="Test Page1" />
-		<var name="portletBody" value="Welcome to Liferay Portal" />
-		<var name="portletName" value="Hello World" />
+			ApplicationsMenu.gotoPortlet(
+				category = "Sites",
+				panel = "Control Panel",
+				portlet = "Sites");
 
-		<task summary="Add a '${portletName}' portlet to the page named '${pageName}'">
-			<execute macro="Navigator#gotoPage">
-				<var name="pageName" value="${pageName}" />
-			</execute>
+			Site.viewCP(siteName = "Site Name");
+		}
 
-			<execute macro="Portlet#addPG">
-				<var name="i" value="${i}" />
-				<var name="portletName" value="${portletName}" />
-			</execute>
+		ProductMenu.gotoPortlet(
+			category = "Site Builder",
+			portlet = "Pages",
+			site = "Site Name");
 
-			<execute macro="Portlet#viewTitle">
-				<var name="portletName" value="${portletName}" />
-			</execute>
+		SitePages.addPublicPage(pageName = "Test Page1");
 
-			<execute macro="Portlet#viewBody">
-				<var name="portletBody" value="${portletBody}" />
-				<var name="portletName" value="${portletName}" />
-			</execute>
+		SitePages.addPublicPage(pageName = "Test Page2");
 
-			<execute macro="Navigator#gotoPage">
-				<var name="pageName" value="${pageName}" />
-			</execute>
+		SitePages.addPublicPage(pageName = "Test Page3");
 
-			<execute macro="Portlet#viewTitle">
-				<var name="portletName" value="${portletName}" />
-			</execute>
+		var pageName = "Test Page1";
+		var portletBody = "Test Page1";
+		var portletName = "Navigation Menu";
+		var siteName = "Site Name";
 
-			<execute macro="Portlet#viewBody">
-				<var name="portletBody" value="${portletBody}" />
-				<var name="portletName" value="${portletName}" />
-			</execute>
-		</task>
+		task ("Add a '${portletName}' portlet to the page named '${pageName}'") {
+			Navigator.gotoSitePage(
+				pageName = "${pageName}",
+				siteName = "${siteName}");
 
-		<var name="portletName" value="Web Content" />
-		<var name="portletTitle" value="Web Content" />
+			Portlet.addPG(
+				i = "${i}",
+				portletName = "${portletName}");
 
-		<task macro-summary="Page#gotoContentCP">
-			<execute macro="Page#gotoContentCP">
-				<var name="portletName" value="${portletName}" />
-			</execute>
+			Portlet.viewTitle(portletName = "${portletName}");
 
-			<execute macro="SiteAdmin#viewPortletTitle">
-				<var name="portletTitle" value="${portletTitle}" />
-			</execute>
-		</task>
-	</command>
+			Portlet.viewBody(
+				portletBody = "${portletBody}",
+				portletName = "${portletName}");
 
-	<command name="viewWelcomePage" summary="View default welcome page while signed in as '${userFirstName} ${userLastName}'">
-		<execute function="Pause" locator1="1073" />
+			Navigator.gotoSitePage(
+				pageName = "${pageName}",
+				siteName = "${siteName}");
 
-		<execute function="AssertTextEquals#assertText" locator1="PGSignin#PORTLET_TITLE" value1="Sign In" />
-		<execute function="AssertTextEquals#assertPartialText" locator1="PGSignin#PORTLET_CONTENT" value1="You are signed in as" />
-		<execute function="AssertTextEquals" locator1="PGSignin#PORTLET_CONTENT_USER_NAME" value1="${userFirstName} ${userLastName}" />
+			Portlet.viewTitle(portletName = "${portletName}");
 
-		<execute function="AssertTextEquals#assertText" locator1="HelloWorld#PORTLET_TITLE" value1="Hello World" />
-		<execute function="AssertTextEquals#assertPartialText" locator1="HelloWorld#PORTLET_CONTENT" value1="Welcome to Liferay Portal" />
-	</command>
-</definition>
+			Portlet.viewBody(
+				portletBody = "${portletBody}",
+				portletName = "${portletName}");
+		}
+
+		var collectionName = "Basic Components";
+		var contentPageName = "Test Content Page";
+		var fragmentId = "Heading";
+		var fragmentName = "Heading";
+
+		task ("Add a '${fragmentName}' fragment to the content page named '${contentPageName}'") {
+			task ("Create a Content Page") {
+				SitePages.openPagesAdmin(siteURLKey = "${siteName}");
+
+				ContentPages.addPage(pageName = "${contentPageName}");
+			}
+
+			task ("Add a basic '${fragmentName}' component") {
+				PageEditor.addFragment(
+					collectionName = "${collectionName}",
+					fragmentName = "${fragmentName}");
+			}
+
+			task ("Publish Content Page") {
+				PageEditor.clickPublish();
+			}
+
+			task ("Navigate to the content page") {
+				Navigator.gotoSitePage(
+					pageName = "${contentPageName}",
+					siteName = "${siteName}");
+			}
+
+			task ("Assert the '${fragmentName}' fragment is present") {
+				AssertElementPresent(locator1 = "//h1[contains(.,'Heading Example')]");
+			}
+		}
+
+		var portlet = "Web Content";
+
+		task ("Navigate to Product Menu > Sites > Content > ${portlet}") {
+			Navigator.openSiteURL(siteName = "Site Name");
+
+			ProductMenu.gotoPortlet(
+				category = "Content &amp; Data",
+				portlet = "${portlet}");
+
+			SiteAdmin.viewPortletTitle(portletTitle = "${portlet}");
+		}
+
+		var webContentContent = "Web Content Content";
+		var webContentTitle = "Web Content Title";
+
+		task ("Add a web content article with '${webContentTitle}' as the title and '${webContentContent}' as the content") {
+			WebContentNavigator.gotoAddCP();
+
+			WebContent.addCP(
+				webContentContent = "${webContentContent}",
+				webContentTitle = "${webContentTitle}");
+
+			PortletEntry.publish();
+
+			WebContent.viewTitle(webContentTitle = "${webContentTitle}");
+		}
+	}
+
+	@summary = "View default welcome content page while signed in as '${userFirstName} ${userLastName}' and check that image is present"
+	macro viewWelcomeContentPage {
+		ContentPages.viewFragmentText(
+			fragmentName = "heading",
+			id = "element-text",
+			text = "Welcome to Liferay");
+
+		ContentPages.viewFragmentImage(
+			fragmentName = "image",
+			id = "image-square",
+			image = "tree.png");
+	}
+
+}

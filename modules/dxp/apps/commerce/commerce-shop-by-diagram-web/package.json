@@ -1,0 +1,36 @@
+{
+	"dependencies": {
+		"@clayui/button": "3.39.0",
+		"@clayui/drop-down": "3.39.0",
+		"@clayui/form": "3.39.0",
+		"@clayui/icon": "3.39.0",
+		"@clayui/loading-indicator": "3.39.0",
+		"@clayui/management-toolbar": "3.39.0",
+		"@clayui/slider": "3.39.0",
+		"@clayui/table": "3.39.0",
+		"@liferay/frontend-data-set-web": "*",
+		"@liferay/frontend-js-react-web": "*",
+		"classnames": "2.3.1",
+		"commerce-frontend-js": "*",
+		"d3": "5.9.3",
+		"frontend-js-web": "*",
+		"frontend-taglib-clay": "*",
+		"prop-types": "15.7.2"
+	},
+	"jest": {
+		"testPathIgnorePatterns": [
+			"<rootDir>/dev/"
+		]
+	},
+	"name": "@liferay/commerce-shop-by-diagram-web",
+	"private": true,
+	"scripts": {
+		"build": "liferay-npm-scripts build",
+		"checkFormat": "liferay-npm-scripts check",
+		"coverage": "liferay-npm-scripts test --coverage --silent --verbose",
+		"format": "liferay-npm-scripts fix",
+		"test": "liferay-npm-scripts test --passWithNoTests",
+		"watch": "liferay-npm-scripts webpack --watch"
+	},
+	"version": "1.0.22"
+}

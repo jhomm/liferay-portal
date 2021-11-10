@@ -1,117 +1,74 @@
-<definition>
-	<command name="gotoNotificationDelivery">
-		<execute macro="Notifications#gotoDockbar" />
+definition {
 
-		<execute macro="Notifications#navigateToViewAllNotifications">
-			<var name="notificationCount" value="${notificationCount}" />
-		</execute>
+	macro configureNotificationPG {
+		MouseOver.mouseOverNotVisible(locator1 = "Notifications#NOTIFICATIONS_PORTLET_VERTICAL_ELLIPSIS");
 
-		<execute function="AssertClick" locator1="Notifications#NAVIGATION_NOTIFICATION_DELIVERY" value1="Notification Delivery" />
-	</command>
+		Click(locator1 = "Notifications#NOTIFICATIONS_PORTLET_VERTICAL_ELLIPSIS");
 
-	<command name="setUserDeliveries">
-		<var name="key_actionType" value="${actionType}" />
-		<var name="key_contentType" value="${contentType}" />
-		<var name="key_notificationType" value="${notificationType}" />
+		var key_menuItem = "${menuItem}";
 
-		<if>
-			<equals arg1="${enableDelivery}" arg2="true" />
-			<then>
-				<execute function="Check" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX" />
-			</then>
-			<elseif>
-				<equals arg1="${enableDelivery}" arg2="false" />
-				<then>
-					<execute function="Uncheck" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX" />
-				</then>
-			</elseif>
-		</if>
-	</command>
+		AssertClick(
+			locator1 = "Notifications#NOTIFICATIONS_CONFIGURATION_MENUITEM",
+			value1 = "${menuItem}");
+	}
 
-	<command name="tearDownUserDeliveries">
-		<var name="actionList" value="adds,updates" />
-		<var name="contentList" value="Wiki,Message Boards,Comments,Documents and Media,Bookmarks,Web Content,Blogs" />
-		<var name="notificationList" value="Email,Website" />
+	macro disableUserDeliveries {
+		var key_contentType = "${contentType}";
+		var key_panel = "${contentType}";
 
-		<execute macro="NotificationsPortlet#gotoNotificationDelivery" />
+		if (IsElementPresent(locator1 = "Panel#PANEL_COLLAPSED")) {
+			AssertClick(
+				locator1 = "Panel#PANEL",
+				value1 = "${contentType}");
+		}
 
-		<for list="${actionList}" param="actionType" >
-			<var name="key_actionType" value="${actionType}" />
+		var key_actionType = "${actionType}";
+		var key_contentType = StringUtil.replace("${contentType}", " ", "-");
 
-			<for list="${contentList}" param="contentType" >
-				<var name="key_contentType" value="${contentType}" />
+		if ("${notificationType}" == "Website") {
+			ScrollWebElementIntoView(locator1 = "Notifications#NOTIFICATIONS_CONFIGURATION_WEBSITE_SWITCH");
 
-				<for list="${notificationList}" param="notificationType" >
-					<var name="key_notificationType" value="${notificationType}" />
+			Check.toggleSwitch(locator1 = "Notifications#NOTIFICATIONS_CONFIGURATION_WEBSITE_SWITCH");
+		}
 
-					<execute function="Check" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX" />
-				</for>
-			</for>
-		</for>
-	</command>
+		if ("${notificationType}" == "Email") {
+			Click(locator1 = "Notifications#NOTIFICATIONS_CONFIGURATION_EMAIL_SWITCH");
+		}
 
-	<command name="viewDefaultNotificationDeliveries">
-		<var name="key_contentType" value="Blogs" />
+		Button.clickSave();
+	}
 
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_1" value1="adds a new blog entry in a blog you are subscribed to." />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_2" value1="updates a blog entry you are subscribed to." />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_1" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_1" value1="Email" />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_2" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_2" value1="Website" />
+	macro gotoNotificationDelivery {
+		Navigator.gotoNotifications();
 
-		<var name="key_contentType" value="Bookmarks" />
+		if ("${notificationPG}" == "true") {
+			NotificationsPortlet.configureNotificationPG(menuItem = "Configuration");
+		}
+		else {
+			LexiconEntry.gotoHeaderMenuItem(menuItem = "Configuration");
+		}
+	}
 
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_1" value1="adds a new bookmark in a folder you are subscribed to." />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_2" value1="updates a bookmark you are subscribed to." />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_1" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_1" value1="Email" />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_2" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_2" value1="Website" />
+	macro tearDownUserDeliveries {
+		var actionList = "adds,updates";
+		var contentList = "Wiki,Message Boards,Comments,Documents and Media,Bookmarks,Web Content,Blogs";
+		var notificationList = "Email,Website";
 
-		<var name="key_contentType" value="Comments" />
+		NotificationsPortlet.gotoNotificationDelivery();
 
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_1" value1="adds a new comment to comments you are subscribed to." />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_2" value1="updates a comment you are subscribed to." />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_1" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_1" value1="Email" />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_2" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_2" value1="Website" />
+		for (var actionType : list "${actionList}") {
+			var key_actionType = "${actionType}";
 
-		<var name="key_contentType" value="Documents and Media " />
+			for (var contentType : list "${contentList}") {
+				var key_contentType = "${contentType}";
 
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_1" value1="adds a new document in a folder you are subscribed to." />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_2" value1="updates a document you are subscribed to." />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_1" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_1" value1="Email" />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_2" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_2" value1="Website" />
+				for (var notificationType : list "${notificationList}") {
+					var key_notificationType = "${notificationType}";
 
-		<var name="key_contentType" value="Message Boards" />
+					Check(locator1 = "Notifications#NOTIFICATION_DELIVERY_CHECKBOX");
+				}
+			}
+		}
+	}
 
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_1" value1="adds a new post in a thread or category you are subscribed to." />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_2" value1="updates a post you are subscribed to." />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_1" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_1" value1="Email" />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_2" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_2" value1="Website" />
-
-		<var name="key_contentType" value="Web Content" />
-
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_1" value1="adds a new content in a folder you are subscribed to." />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_2" value1="updates a web content you are subscribed to." />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_1" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_1" value1="Email" />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_2" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_2" value1="Website" />
-
-		<var name="key_contentType" value="Wiki" />
-
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_1" value1="adds a new wiki page in a wiki you are subscribed to." />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_TEXT_2" value1="updates a wiki page you are subscribed to." />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_1" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_1" value1="Email" />
-		<execute function="AssertChecked" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_2" />
-		<execute function="AssertTextEquals" locator1="Notifications#NOTIFICATION_DELIVERY_CHECKBOX_LABEL_2" value1="Website" />
-	</command>
-</definition>
+}

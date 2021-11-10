@@ -17,13 +17,13 @@ package com.liferay.portal.service.impl;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.BaseModelListener;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.model.LayoutSetPrototype;
+import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalServiceUtil;
+import com.liferay.portal.kernel.service.persistence.LayoutSetPrototypeUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.portal.model.BaseModelListener;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.LayoutSet;
-import com.liferay.portal.model.LayoutSetPrototype;
-import com.liferay.portal.service.LayoutSetPrototypeLocalServiceUtil;
-import com.liferay.portal.service.persistence.LayoutSetPrototypeUtil;
 
 import java.util.Date;
 
@@ -44,7 +44,9 @@ public class LayoutSetPrototypeLayoutSetModelListener
 	}
 
 	@Override
-	public void onAfterUpdate(LayoutSet layoutSet) {
+	public void onAfterUpdate(
+		LayoutSet originalLayoutSet, LayoutSet layoutSet) {
+
 		updateLayoutSetPrototype(layoutSet, layoutSet.getModifiedDate());
 	}
 
@@ -64,7 +66,14 @@ public class LayoutSetPrototypeLayoutSetModelListener
 				return;
 			}
 		}
-		catch (PortalException pe) {
+		catch (PortalException portalException) {
+
+			// LPS-52675
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException, portalException);
+			}
+
 			return;
 		}
 
@@ -75,15 +84,15 @@ public class LayoutSetPrototypeLayoutSetModelListener
 
 			layoutSetPrototype.setModifiedDate(modifiedDate);
 
-			UnicodeProperties settingsProperties =
+			UnicodeProperties settingsUnicodeProperties =
 				layoutSet.getSettingsProperties();
 
-			settingsProperties.remove("merge-fail-count");
+			settingsUnicodeProperties.remove("merge-fail-count");
 
 			LayoutSetPrototypeUtil.update(layoutSetPrototype);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 	}
 

@@ -14,44 +14,43 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.Region;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.Region;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
+import java.util.Date;
+
 /**
  * The cache model class for representing Region in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see Region
  * @generated
  */
-@ProviderType
-public class RegionCacheModel implements CacheModel<Region>, Externalizable,
-	MVCCModel {
+public class RegionCacheModel
+	implements CacheModel<Region>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof RegionCacheModel)) {
+		if (!(object instanceof RegionCacheModel)) {
 			return false;
 		}
 
-		RegionCacheModel regionCacheModel = (RegionCacheModel)obj;
+		RegionCacheModel regionCacheModel = (RegionCacheModel)object;
 
 		if ((regionId == regionCacheModel.regionId) &&
-				(mvccVersion == regionCacheModel.mvccVersion)) {
+			(mvccVersion == regionCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -77,20 +76,38 @@ public class RegionCacheModel implements CacheModel<Region>, Externalizable,
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(13);
+		StringBundler sb = new StringBundler(31);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", uuid=");
+		sb.append(uuid);
+		sb.append(", defaultLanguageId=");
+		sb.append(defaultLanguageId);
 		sb.append(", regionId=");
 		sb.append(regionId);
+		sb.append(", companyId=");
+		sb.append(companyId);
+		sb.append(", userId=");
+		sb.append(userId);
+		sb.append(", userName=");
+		sb.append(userName);
+		sb.append(", createDate=");
+		sb.append(createDate);
+		sb.append(", modifiedDate=");
+		sb.append(modifiedDate);
 		sb.append(", countryId=");
 		sb.append(countryId);
-		sb.append(", regionCode=");
-		sb.append(regionCode);
-		sb.append(", name=");
-		sb.append(name);
 		sb.append(", active=");
 		sb.append(active);
+		sb.append(", name=");
+		sb.append(name);
+		sb.append(", position=");
+		sb.append(position);
+		sb.append(", regionCode=");
+		sb.append(regionCode);
+		sb.append(", lastPublishDate=");
+		sb.append(lastPublishDate);
 		sb.append("}");
 
 		return sb.toString();
@@ -101,24 +118,71 @@ public class RegionCacheModel implements CacheModel<Region>, Externalizable,
 		RegionImpl regionImpl = new RegionImpl();
 
 		regionImpl.setMvccVersion(mvccVersion);
-		regionImpl.setRegionId(regionId);
-		regionImpl.setCountryId(countryId);
 
-		if (regionCode == null) {
-			regionImpl.setRegionCode(StringPool.BLANK);
+		if (uuid == null) {
+			regionImpl.setUuid("");
 		}
 		else {
-			regionImpl.setRegionCode(regionCode);
+			regionImpl.setUuid(uuid);
 		}
 
+		if (defaultLanguageId == null) {
+			regionImpl.setDefaultLanguageId("");
+		}
+		else {
+			regionImpl.setDefaultLanguageId(defaultLanguageId);
+		}
+
+		regionImpl.setRegionId(regionId);
+		regionImpl.setCompanyId(companyId);
+		regionImpl.setUserId(userId);
+
+		if (userName == null) {
+			regionImpl.setUserName("");
+		}
+		else {
+			regionImpl.setUserName(userName);
+		}
+
+		if (createDate == Long.MIN_VALUE) {
+			regionImpl.setCreateDate(null);
+		}
+		else {
+			regionImpl.setCreateDate(new Date(createDate));
+		}
+
+		if (modifiedDate == Long.MIN_VALUE) {
+			regionImpl.setModifiedDate(null);
+		}
+		else {
+			regionImpl.setModifiedDate(new Date(modifiedDate));
+		}
+
+		regionImpl.setCountryId(countryId);
+		regionImpl.setActive(active);
+
 		if (name == null) {
-			regionImpl.setName(StringPool.BLANK);
+			regionImpl.setName("");
 		}
 		else {
 			regionImpl.setName(name);
 		}
 
-		regionImpl.setActive(active);
+		regionImpl.setPosition(position);
+
+		if (regionCode == null) {
+			regionImpl.setRegionCode("");
+		}
+		else {
+			regionImpl.setRegionCode(regionCode);
+		}
+
+		if (lastPublishDate == Long.MIN_VALUE) {
+			regionImpl.setLastPublishDate(null);
+		}
+		else {
+			regionImpl.setLastPublishDate(new Date(lastPublishDate));
+		}
 
 		regionImpl.resetOriginalValues();
 
@@ -128,41 +192,99 @@ public class RegionCacheModel implements CacheModel<Region>, Externalizable,
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+		uuid = objectInput.readUTF();
+		defaultLanguageId = objectInput.readUTF();
+
 		regionId = objectInput.readLong();
+
+		companyId = objectInput.readLong();
+
+		userId = objectInput.readLong();
+		userName = objectInput.readUTF();
+		createDate = objectInput.readLong();
+		modifiedDate = objectInput.readLong();
+
 		countryId = objectInput.readLong();
-		regionCode = objectInput.readUTF();
-		name = objectInput.readUTF();
+
 		active = objectInput.readBoolean();
+		name = objectInput.readUTF();
+
+		position = objectInput.readDouble();
+		regionCode = objectInput.readUTF();
+		lastPublishDate = objectInput.readLong();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
-		objectOutput.writeLong(regionId);
-		objectOutput.writeLong(countryId);
 
-		if (regionCode == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+		if (uuid == null) {
+			objectOutput.writeUTF("");
 		}
 		else {
-			objectOutput.writeUTF(regionCode);
+			objectOutput.writeUTF(uuid);
 		}
 
+		if (defaultLanguageId == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(defaultLanguageId);
+		}
+
+		objectOutput.writeLong(regionId);
+
+		objectOutput.writeLong(companyId);
+
+		objectOutput.writeLong(userId);
+
+		if (userName == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(userName);
+		}
+
+		objectOutput.writeLong(createDate);
+		objectOutput.writeLong(modifiedDate);
+
+		objectOutput.writeLong(countryId);
+
+		objectOutput.writeBoolean(active);
+
 		if (name == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(name);
 		}
 
-		objectOutput.writeBoolean(active);
+		objectOutput.writeDouble(position);
+
+		if (regionCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(regionCode);
+		}
+
+		objectOutput.writeLong(lastPublishDate);
 	}
 
 	public long mvccVersion;
+	public String uuid;
+	public String defaultLanguageId;
 	public long regionId;
+	public long companyId;
+	public long userId;
+	public String userName;
+	public long createDate;
+	public long modifiedDate;
 	public long countryId;
-	public String regionCode;
-	public String name;
 	public boolean active;
+	public String name;
+	public double position;
+	public String regionCode;
+	public long lastPublishDate;
+
 }

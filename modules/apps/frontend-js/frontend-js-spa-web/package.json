@@ -1,0 +1,14 @@
+{
+	"dependencies": {
+		"frontend-js-web": "*"
+	},
+	"main": "init.js",
+	"name": "frontend-js-spa-web",
+	"scripts": {
+		"build": "liferay-npm-scripts build",
+		"checkFormat": "liferay-npm-scripts check",
+		"format": "liferay-npm-scripts fix",
+		"test": "liferay-npm-scripts test"
+	},
+	"version": "5.0.18"
+}

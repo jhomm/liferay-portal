@@ -14,14 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.Release;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.Release;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -34,26 +31,26 @@ import java.util.Date;
  * The cache model class for representing Release in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see Release
  * @generated
  */
-@ProviderType
-public class ReleaseCacheModel implements CacheModel<Release>, Externalizable,
-	MVCCModel {
+public class ReleaseCacheModel
+	implements CacheModel<Release>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof ReleaseCacheModel)) {
+		if (!(object instanceof ReleaseCacheModel)) {
 			return false;
 		}
 
-		ReleaseCacheModel releaseCacheModel = (ReleaseCacheModel)obj;
+		ReleaseCacheModel releaseCacheModel = (ReleaseCacheModel)object;
 
 		if ((releaseId == releaseCacheModel.releaseId) &&
-				(mvccVersion == releaseCacheModel.mvccVersion)) {
+			(mvccVersion == releaseCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -91,8 +88,8 @@ public class ReleaseCacheModel implements CacheModel<Release>, Externalizable,
 		sb.append(modifiedDate);
 		sb.append(", servletContextName=");
 		sb.append(servletContextName);
-		sb.append(", version=");
-		sb.append(version);
+		sb.append(", schemaVersion=");
+		sb.append(schemaVersion);
 		sb.append(", buildNumber=");
 		sb.append(buildNumber);
 		sb.append(", buildDate=");
@@ -130,17 +127,17 @@ public class ReleaseCacheModel implements CacheModel<Release>, Externalizable,
 		}
 
 		if (servletContextName == null) {
-			releaseImpl.setServletContextName(StringPool.BLANK);
+			releaseImpl.setServletContextName("");
 		}
 		else {
 			releaseImpl.setServletContextName(servletContextName);
 		}
 
-		if (version == null) {
-			releaseImpl.setVersion(StringPool.BLANK);
+		if (schemaVersion == null) {
+			releaseImpl.setSchemaVersion("");
 		}
 		else {
-			releaseImpl.setVersion(version);
+			releaseImpl.setSchemaVersion(schemaVersion);
 		}
 
 		releaseImpl.setBuildNumber(buildNumber);
@@ -156,7 +153,7 @@ public class ReleaseCacheModel implements CacheModel<Release>, Externalizable,
 		releaseImpl.setState(state);
 
 		if (testString == null) {
-			releaseImpl.setTestString(StringPool.BLANK);
+			releaseImpl.setTestString("");
 		}
 		else {
 			releaseImpl.setTestString(testString);
@@ -170,47 +167,53 @@ public class ReleaseCacheModel implements CacheModel<Release>, Externalizable,
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
 		releaseId = objectInput.readLong();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
 		servletContextName = objectInput.readUTF();
-		version = objectInput.readUTF();
+		schemaVersion = objectInput.readUTF();
+
 		buildNumber = objectInput.readInt();
 		buildDate = objectInput.readLong();
+
 		verified = objectInput.readBoolean();
+
 		state = objectInput.readInt();
 		testString = objectInput.readUTF();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
 		objectOutput.writeLong(releaseId);
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
 
 		if (servletContextName == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(servletContextName);
 		}
 
-		if (version == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+		if (schemaVersion == null) {
+			objectOutput.writeUTF("");
 		}
 		else {
-			objectOutput.writeUTF(version);
+			objectOutput.writeUTF(schemaVersion);
 		}
 
 		objectOutput.writeInt(buildNumber);
 		objectOutput.writeLong(buildDate);
+
 		objectOutput.writeBoolean(verified);
+
 		objectOutput.writeInt(state);
 
 		if (testString == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(testString);
@@ -222,10 +225,11 @@ public class ReleaseCacheModel implements CacheModel<Release>, Externalizable,
 	public long createDate;
 	public long modifiedDate;
 	public String servletContextName;
-	public String version;
+	public String schemaVersion;
 	public int buildNumber;
 	public long buildDate;
 	public boolean verified;
 	public int state;
 	public String testString;
+
 }

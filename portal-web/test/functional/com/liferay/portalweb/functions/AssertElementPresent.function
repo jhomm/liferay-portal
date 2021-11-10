@@ -1,31 +1,41 @@
-<definition default="assertElementPresent" summary="Assert that '${locator1}' is available">
-	<command name="assertElementPresent">
-		<execute selenium="waitForElementPresent" />
+@default = "assertElementPresent"
+@summary = "Assert that '${locator1}' is available"
+definition {
 
-		<execute selenium="assertElementPresent" />
+	function assertElementPresent {
+		WaitForSPARefresh();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.waitForElementPresent();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
+		selenium.assertElementPresent();
 
-	<command name="assertVisible">
-		<execute selenium="waitForVisible" />
+		selenium.assertJavaScriptErrors();
 
-		<execute selenium="assertVisible" />
+		selenium.assertLiferayErrors();
+	}
 
-		<execute selenium="assertJavaScriptErrors" />
+	function assertVisible {
+		WaitForSPARefresh();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
+		selenium.waitForVisible();
 
-	<command name="pauseAssertVisible">
-		<execute argument1="2000" selenium="pause" />
+		selenium.assertVisible();
 
-		<execute function="AssertElementPresent#assertVisible" />
+		selenium.assertJavaScriptErrors();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.assertLiferayErrors();
+	}
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+	function pauseAssertVisible {
+		WaitForSPARefresh();
+
+		selenium.pause("2000");
+
+		AssertElementPresent.assertVisible();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

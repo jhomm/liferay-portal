@@ -14,20 +14,21 @@
 
 package com.liferay.portal.service.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.NoSuchListTypeException;
+import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.exception.NoSuchListTypeException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.ClassName;
-import com.liferay.portal.model.ListType;
+import com.liferay.portal.kernel.model.ClassName;
+import com.liferay.portal.kernel.model.ListType;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.service.base.ListTypeLocalServiceBaseImpl;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
  */
-@ProviderType
 public class ListTypeLocalServiceImpl extends ListTypeLocalServiceBaseImpl {
 
 	@Override
@@ -46,9 +47,7 @@ public class ListTypeLocalServiceImpl extends ListTypeLocalServiceBaseImpl {
 		listType.setName(name);
 		listType.setType(type);
 
-		listTypePersistence.update(listType);
-
-		return listType;
+		return listTypePersistence.update(listType);
 	}
 
 	@Override
@@ -57,30 +56,41 @@ public class ListTypeLocalServiceImpl extends ListTypeLocalServiceBaseImpl {
 	}
 
 	@Override
+	public ListType getListType(String name, String type) {
+		return listTypePersistence.fetchByN_T(name, type);
+	}
+
+	@Override
 	public List<ListType> getListTypes(String type) {
 		return listTypePersistence.findByType(type);
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public void validate(long listTypeId, long classNameId, String type)
 		throws PortalException {
 
-		ClassName className = classNameLocalService.getClassName(classNameId);
+		ClassName className = _classNameLocalService.getClassName(classNameId);
 
 		validate(listTypeId, className.getValue() + type);
 	}
 
 	@Override
+	@Transactional(readOnly = true)
 	public void validate(long listTypeId, String type) throws PortalException {
 		ListType listType = listTypePersistence.fetchByPrimaryKey(listTypeId);
 
-		if ((listType == null) || !listType.getType().equals(type)) {
-			NoSuchListTypeException nslte = new NoSuchListTypeException();
+		if ((listType == null) || !Objects.equals(listType.getType(), type)) {
+			NoSuchListTypeException noSuchListTypeException =
+				new NoSuchListTypeException();
 
-			nslte.setType(type);
+			noSuchListTypeException.setType(type);
 
-			throw nslte;
+			throw noSuchListTypeException;
 		}
 	}
+
+	@BeanReference(type = ClassNameLocalService.class)
+	private ClassNameLocalService _classNameLocalService;
 
 }

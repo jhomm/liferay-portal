@@ -14,8 +14,9 @@
 
 package com.liferay.portal.dao.orm.hibernate;
 
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.kernel.util.Validator;
+import com.liferay.petra.string.StringPool;
+
+import java.util.Objects;
 
 /**
  * @author Shuyang Zhou
@@ -25,7 +26,7 @@ public class StringClobType extends org.hibernate.type.StringClobType {
 
 	@Override
 	public boolean equals(Object x, Object y) {
-		if (Validator.equals(x, y)) {
+		if (Objects.equals(x, y)) {
 			return true;
 		}
 		else if (((x == null) || x.equals(StringPool.BLANK)) &&
@@ -33,9 +34,8 @@ public class StringClobType extends org.hibernate.type.StringClobType {
 
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 }

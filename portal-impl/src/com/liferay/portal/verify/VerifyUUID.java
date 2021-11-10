@@ -14,22 +14,20 @@
 
 package com.liferay.portal.verify;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
-import com.liferay.portal.kernel.concurrent.ThrowableAwareRunnable;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
-import com.liferay.portal.kernel.dao.jdbc.DataAccess;
-import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
-import com.liferay.portal.verify.model.VerifiableUUIDModel;
+import com.liferay.portal.kernel.verify.model.VerifiableUUIDModel;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -37,105 +35,89 @@ import java.util.Map;
  */
 public class VerifyUUID extends VerifyProcess {
 
-	public static void verify(VerifiableUUIDModel ... verifiableUUIDModels)
+	public static void verify(VerifiableUUIDModel... verifiableUUIDModels)
 		throws Exception {
 
 		VerifyUUID verifyUUID = new VerifyUUID();
 
-		verifyUUID.doVerify(verifiableUUIDModels);
+		_verifiableUUIDModels = verifiableUUIDModels;
+
+		verifyUUID.verify();
 	}
 
 	@Override
 	protected void doVerify() throws Exception {
+		if (!ArrayUtil.isEmpty(_verifiableUUIDModels)) {
+			doVerify(_verifiableUUIDModels);
+		}
+
 		Map<String, VerifiableUUIDModel> verifiableUUIDModelsMap =
 			PortalBeanLocatorUtil.locate(VerifiableUUIDModel.class);
 
 		Collection<VerifiableUUIDModel> verifiableUUIDModels =
 			verifiableUUIDModelsMap.values();
 
-		doVerify(
-			verifiableUUIDModels.toArray(
-				new VerifiableUUIDModel[verifiableUUIDModels.size()]));
+		doVerify(verifiableUUIDModels.toArray(new VerifiableUUIDModel[0]));
 	}
 
 	protected void doVerify(VerifiableUUIDModel... verifiableUUIDModels)
 		throws Exception {
 
-		List<VerifyUUIDRunnable> verifyUUIDRunnables = new ArrayList<>(
-			verifiableUUIDModels.length);
-
-		for (VerifiableUUIDModel verifiableUUIDModel : verifiableUUIDModels) {
-			VerifyUUIDRunnable verifyUUIDRunnable = new VerifyUUIDRunnable(
-				verifiableUUIDModel);
-
-			verifyUUIDRunnables.add(verifyUUIDRunnable);
-		}
-
-		doVerify(verifyUUIDRunnables);
-	}
-
-	protected void updateUUID(
-			VerifiableUUIDModel verifiableUUIDModel, long primKey)
-		throws Exception {
-
-		DB db = DBFactoryUtil.getDB();
-
-		StringBundler sb = new StringBundler(8);
-
-		sb.append("update ");
-		sb.append(verifiableUUIDModel.getTableName());
-		sb.append(" set uuid_ = '");
-		sb.append(PortalUUIDUtil.generate());
-		sb.append("' where ");
-		sb.append(verifiableUUIDModel.getPrimaryKeyColumnName());
-		sb.append(" = ");
-		sb.append(primKey);
-
-		db.runSQL(sb.toString());
+		processConcurrently(verifiableUUIDModels, this::verifyUUID, null);
 	}
 
 	protected void verifyUUID(VerifiableUUIDModel verifiableUUIDModel)
 		throws Exception {
 
-		Connection con = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
+		DB db = DBManagerUtil.getDB();
 
-		try {
-			con = DataAccess.getUpgradeOptimizedConnection();
+		if (db.isSupportsNewUuidFunction()) {
+			try (LoggingTimer loggingTimer = new LoggingTimer(
+					verifiableUUIDModel.getTableName());
+				PreparedStatement preparedStatement =
+					connection.prepareStatement(
+						StringBundler.concat(
+							"update ", verifiableUUIDModel.getTableName(),
+							" set uuid_ = ", db.getNewUuidFunctionName(),
+							" where uuid_ is null or uuid_ = ''"))) {
 
-			ps = con.prepareStatement(
-				"select " + verifiableUUIDModel.getPrimaryKeyColumnName() +
-					" from " + verifiableUUIDModel.getTableName() +
-						" where uuid_ is null or uuid_ = ''");
+				preparedStatement.executeUpdate();
 
-			rs = ps.executeQuery();
-
-			while (rs.next()) {
-				long pk = rs.getLong(
-					verifiableUUIDModel.getPrimaryKeyColumnName());
-
-				updateUUID(verifiableUUIDModel, pk);
+				return;
 			}
 		}
-		finally {
-			DataAccess.cleanUp(con, ps, rs);
+
+		try (LoggingTimer loggingTimer = new LoggingTimer(
+				verifiableUUIDModel.getTableName());
+			PreparedStatement preparedStatement1 = connection.prepareStatement(
+				StringBundler.concat(
+					"select ", verifiableUUIDModel.getPrimaryKeyColumnName(),
+					" from ", verifiableUUIDModel.getTableName(),
+					" where uuid_ is null or uuid_ = ''"));
+			ResultSet resultSet = preparedStatement1.executeQuery();
+			PreparedStatement preparedStatement2 =
+				AutoBatchPreparedStatementUtil.autoBatch(
+					connection.prepareStatement(
+						StringBundler.concat(
+							"update ", verifiableUUIDModel.getTableName(),
+							" set uuid_ = ? where ",
+							verifiableUUIDModel.getPrimaryKeyColumnName(),
+							" = ?")))) {
+
+			while (resultSet.next()) {
+				long pk = resultSet.getLong(
+					verifiableUUIDModel.getPrimaryKeyColumnName());
+
+				preparedStatement2.setString(1, PortalUUIDUtil.generate());
+				preparedStatement2.setLong(2, pk);
+
+				preparedStatement2.addBatch();
+			}
+
+			preparedStatement2.executeBatch();
 		}
 	}
 
-	private class VerifyUUIDRunnable extends ThrowableAwareRunnable {
-
-		public VerifyUUIDRunnable(VerifiableUUIDModel verifiableUUIDModel) {
-			_verifiableUUIDModel = verifiableUUIDModel;
-		}
-
-		@Override
-		protected void doRun() throws Exception {
-			verifyUUID(_verifiableUUIDModel);
-		}
-
-		private final VerifiableUUIDModel _verifiableUUIDModel;
-
-	}
+	private static VerifiableUUIDModel[] _verifiableUUIDModels;
 
 }

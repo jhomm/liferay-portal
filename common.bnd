@@ -1,6 +1,4 @@
-Bundle-SymbolicName: ${ant.project.name}
 Bundle-Vendor: ${release.info.vendor}
-Bundle-Version: ${release.info.version}
 Git-Descriptor: ${system-allow-fail;git describe --dirty --always}
 Git-SHA: ${system-allow-fail;git rev-list -1 HEAD}
 Javac-Compiler: ${javac.compiler}
@@ -14,8 +12,8 @@ Liferay-Portal-Code-Name: ${release.info.code.name}
 Liferay-Portal-Parent-Build-Number: ${release.info.parent.build.number}
 Liferay-Portal-Release-Info: ${release.info.release.info}
 Liferay-Portal-Server-Info: ${release.info.server.info}
+Liferay-Portal-Version-Display-Name: ${release.info.version.display.name}
 Liferay-Portal-Version: ${release.info.version}
-
 -donotcopy: (\.touch)
--dsannotations: *
+-fixupmessages.deprecated=annotations are deprecated
 -sources: false

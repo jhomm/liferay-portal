@@ -1,0 +1,24 @@
+@default = "select"
+definition {
+
+	function pauseSelect {
+		selenium.select();
+	}
+
+	function select {
+		selenium.waitForVisible();
+
+		selenium.mouseOver();
+
+		selenium.select();
+	}
+
+	function selectByClick {
+		selenium.waitForVisible();
+
+		selenium.click("${locator1}");
+
+		selenium.click("//option[contains(.,'${value1}')]");
+	}
+
+}

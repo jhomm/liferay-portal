@@ -15,11 +15,11 @@
 package com.liferay.portal.servlet;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.model.User;
-import com.liferay.portal.security.auth.PrincipalThreadLocal;
-import com.liferay.portal.service.UserLocalServiceUtil;
 import com.liferay.portal.util.PortalInstances;
 
 import javax.servlet.http.HttpServletRequest;
@@ -29,11 +29,13 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class UserResolver {
 
-	public UserResolver(HttpServletRequest request) throws PortalException {
-		long companyId = ParamUtil.getLong(request, "companyId");
+	public UserResolver(HttpServletRequest httpServletRequest)
+		throws PortalException {
+
+		long companyId = ParamUtil.getLong(httpServletRequest, "companyId");
 		User user = null;
 
-		String remoteUser = request.getRemoteUser();
+		String remoteUser = httpServletRequest.getRemoteUser();
 
 		long userId = GetterUtil.getLong(remoteUser);
 
@@ -52,7 +54,7 @@ public class UserResolver {
 		}
 		else {
 			if (companyId == 0) {
-				companyId = PortalInstances.getCompanyId(request);
+				companyId = PortalInstances.getCompanyId(httpServletRequest);
 			}
 
 			if (companyId != 0) {

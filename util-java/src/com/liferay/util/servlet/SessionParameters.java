@@ -14,8 +14,10 @@
 
 package com.liferay.util.servlet;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 
@@ -39,16 +41,18 @@ public class SessionParameters {
 	public static final boolean USE_SESSION_PARAMETERS = GetterUtil.getBoolean(
 		SystemProperties.get(SessionParameters.class.getName()), true);
 
-	public static String get(HttpServletRequest request, String parameter) {
-		return get(request.getSession(), parameter);
+	public static String get(
+		HttpServletRequest httpServletRequest, String parameter) {
+
+		return get(httpServletRequest.getSession(), parameter);
 	}
 
-	public static String get(HttpSession session, String parameter) {
+	public static String get(HttpSession httpSession, String parameter) {
 		if (!USE_SESSION_PARAMETERS) {
 			return parameter;
 		}
 
-		Map<String, String> parameters = _getParameters(session);
+		Map<String, String> parameters = _getParameters(httpSession);
 
 		String newParameter = parameters.get(parameter);
 
@@ -85,19 +89,23 @@ public class SessionParameters {
 		return newParameter;
 	}
 
-	private static Map<String, String> _getParameters(HttpSession session) {
+	private static Map<String, String> _getParameters(HttpSession httpSession) {
 		Map<String, String> parameters = null;
 
 		try {
-			parameters = (Map<String, String>)session.getAttribute(KEY);
+			parameters = (Map<String, String>)httpSession.getAttribute(KEY);
 
 			if (parameters == null) {
 				parameters = new HashMap<>();
 
-				session.setAttribute(KEY, parameters);
+				httpSession.setAttribute(KEY, parameters);
 			}
 		}
-		catch (IllegalStateException ise) {
+		catch (IllegalStateException illegalStateException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(illegalStateException, illegalStateException);
+			}
+
 			parameters = new HashMap<>();
 		}
 
@@ -118,11 +126,18 @@ public class SessionParameters {
 				portletSession.setAttribute(KEY, parameters);
 			}
 		}
-		catch (IllegalStateException ise) {
+		catch (IllegalStateException illegalStateException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(illegalStateException, illegalStateException);
+			}
+
 			parameters = new LinkedHashMap<>();
 		}
 
 		return parameters;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		SessionParameters.class);
 
 }

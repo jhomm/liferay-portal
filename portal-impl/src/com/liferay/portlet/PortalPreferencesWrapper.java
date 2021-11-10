@@ -21,7 +21,6 @@ import java.util.Enumeration;
 import java.util.Map;
 
 import javax.portlet.PortletPreferences;
-import javax.portlet.ReadOnlyException;
 
 /**
  * @author Alexander Chow
@@ -42,12 +41,12 @@ public class PortalPreferencesWrapper
 
 	@Override
 	public Map<String, String[]> getMap() {
-		return _portalPreferencesImpl.getMap();
+		return _portalPreferencesImpl.getMap(null);
 	}
 
 	@Override
 	public Enumeration<String> getNames() {
-		return _portalPreferencesImpl.getNames();
+		return _portalPreferencesImpl.getNames(null);
 	}
 
 	public PortalPreferencesImpl getPortalPreferencesImpl() {
@@ -66,24 +65,22 @@ public class PortalPreferencesWrapper
 
 	@Override
 	public boolean isReadOnly(String key) {
-		return _portalPreferencesImpl.isReadOnly(key);
+		return false;
 	}
 
 	@Override
-	public void reset(String key) throws ReadOnlyException {
-		_portalPreferencesImpl.reset(key);
+	public void reset(String key) {
+		_portalPreferencesImpl.reset(null, key);
 	}
 
 	@Override
-	public void setValue(String key, String value) throws ReadOnlyException {
-		_portalPreferencesImpl.setValue(key, value);
+	public void setValue(String key, String value) {
+		_portalPreferencesImpl.setValue(null, key, value);
 	}
 
 	@Override
-	public void setValues(String key, String[] values)
-		throws ReadOnlyException {
-
-		_portalPreferencesImpl.setValues(key, values);
+	public void setValues(String key, String... values) {
+		_portalPreferencesImpl.setValues(null, key, values);
 	}
 
 	@Override

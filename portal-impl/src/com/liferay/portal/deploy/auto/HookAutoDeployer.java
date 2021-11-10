@@ -14,15 +14,13 @@
 
 package com.liferay.portal.deploy.auto;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.deploy.DeployUtil;
 import com.liferay.portal.kernel.deploy.auto.AutoDeployer;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.ServerDetector;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.tools.deploy.HookDeployer;
-import com.liferay.portal.util.PrefsPropsUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.util.ArrayList;
@@ -35,27 +33,17 @@ public class HookAutoDeployer extends HookDeployer implements AutoDeployer {
 
 	public HookAutoDeployer() {
 		try {
-			baseDir = PrefsPropsUtil.getString(
-				PropsKeys.AUTO_DEPLOY_DEPLOY_DIR,
-				PropsValues.AUTO_DEPLOY_DEPLOY_DIR);
+			baseDir = PropsValues.AUTO_DEPLOY_DEPLOY_DIR;
 			destDir = DeployUtil.getAutoDeployDestDir();
 			appServerType = ServerDetector.getServerId();
-			unpackWar = PrefsPropsUtil.getBoolean(
-				PropsKeys.AUTO_DEPLOY_UNPACK_WAR,
-				PropsValues.AUTO_DEPLOY_UNPACK_WAR);
+			unpackWar = PropsValues.AUTO_DEPLOY_UNPACK_WAR;
 			filePattern = StringPool.BLANK;
-			jbossPrefix = PrefsPropsUtil.getString(
-				PropsKeys.AUTO_DEPLOY_JBOSS_PREFIX,
-				PropsValues.AUTO_DEPLOY_JBOSS_PREFIX);
-			tomcatLibDir = PrefsPropsUtil.getString(
-				PropsKeys.AUTO_DEPLOY_TOMCAT_LIB_DIR,
-				PropsValues.AUTO_DEPLOY_TOMCAT_LIB_DIR);
+			jbossPrefix = PropsValues.AUTO_DEPLOY_JBOSS_PREFIX;
+			tomcatLibDir = PropsValues.AUTO_DEPLOY_TOMCAT_LIB_DIR;
+			wildflyPrefix = PropsValues.AUTO_DEPLOY_WILDFLY_PREFIX;
 
 			List<String> jars = new ArrayList<>();
 
-			addExtJar(jars, "ext-util-bridges.jar");
-			addExtJar(jars, "ext-util-java.jar");
-			addExtJar(jars, "ext-util-taglib.jar");
 			addRequiredJar(jars, "util-bridges.jar");
 			addRequiredJar(jars, "util-java.jar");
 			addRequiredJar(jars, "util-taglib.jar");
@@ -64,8 +52,8 @@ public class HookAutoDeployer extends HookDeployer implements AutoDeployer {
 
 			checkArguments();
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 	}
 

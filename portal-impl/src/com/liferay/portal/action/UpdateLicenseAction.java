@@ -14,18 +14,23 @@
 
 package com.liferay.portal.action;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.license.util.LicenseManagerUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.license.util.LicenseManagerUtil;
-import com.liferay.portal.license.util.LicenseUtil;
-import com.liferay.portal.model.User;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.struts.Action;
+import com.liferay.portal.struts.model.ActionForward;
+import com.liferay.portal.struts.model.ActionMapping;
+import com.liferay.portal.util.LicenseUtil;
 import com.liferay.portlet.admin.util.OmniadminUtil;
 
 import java.util.List;
@@ -34,20 +39,15 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.struts.action.Action;
-import org.apache.struts.action.ActionForm;
-import org.apache.struts.action.ActionForward;
-import org.apache.struts.action.ActionMapping;
-
 /**
  * @author Amos Fong
  */
-public class UpdateLicenseAction extends Action {
+public class UpdateLicenseAction implements Action {
 
 	@Override
 	public ActionForward execute(
-			ActionMapping actionMapping, ActionForm actionForm,
-			HttpServletRequest request, HttpServletResponse response)
+			ActionMapping actionMapping, HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws Exception {
 
 		// PLACEHOLDER 01
@@ -59,35 +59,36 @@ public class UpdateLicenseAction extends Action {
 		// PLACEHOLDER 07
 		// PLACEHOLDER 08
 
-		if (_isValidRequest(request)) {
-			String cmd = ParamUtil.getString(request, Constants.CMD);
+		if (_isValidRequest(httpServletRequest)) {
+			String cmd = ParamUtil.getString(httpServletRequest, Constants.CMD);
 
 			String clusterNodeId = ParamUtil.getString(
-				request, "clusterNodeId");
+				httpServletRequest, "clusterNodeId");
 
 			if (cmd.equals("licenseProperties")) {
-				String licenseProperties = _getLicenseProperties(clusterNodeId);
+				httpServletResponse.setContentType(
+					ContentTypes.APPLICATION_JSON);
 
-				response.setContentType(ContentTypes.APPLICATION_JSON);
-
-				ServletResponseUtil.write(response, licenseProperties);
+				ServletResponseUtil.write(
+					httpServletResponse, _getLicenseProperties(clusterNodeId));
 
 				return null;
 			}
 			else if (cmd.equals("serverInfo")) {
-				String serverInfo = _getServerInfo(clusterNodeId);
+				httpServletResponse.setContentType(
+					ContentTypes.APPLICATION_JSON);
 
-				response.setContentType(ContentTypes.APPLICATION_JSON);
-
-				ServletResponseUtil.write(response, serverInfo);
+				ServletResponseUtil.write(
+					httpServletResponse, _getServerInfo(clusterNodeId));
 
 				return null;
 			}
 
-			return actionMapping.findForward("portal.license");
+			return actionMapping.getActionForward("portal.license");
 		}
 
-		response.sendRedirect(PortalUtil.getPathContext() + "/c/portal/layout");
+		httpServletResponse.sendRedirect(
+			PortalUtil.getPathContext() + "/c/portal/layout");
 
 		return null;
 	}
@@ -130,24 +131,26 @@ public class UpdateLicenseAction extends Action {
 		return jsonObject.toString();
 	}
 
-	private boolean _isOmniAdmin(HttpServletRequest request) {
+	private boolean _isOmniAdmin(HttpServletRequest httpServletRequest) {
 		User user = null;
 
 		try {
-			user = PortalUtil.getUser(request);
+			user = PortalUtil.getUser(httpServletRequest);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
 		}
 
 		if ((user != null) && OmniadminUtil.isOmniadmin(user)) {
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
-	private boolean _isValidRequest(HttpServletRequest request) {
+	private boolean _isValidRequest(HttpServletRequest httpServletRequest) {
 
 		// PLACEHOLDER 09
 		// PLACEHOLDER 10
@@ -164,14 +167,16 @@ public class UpdateLicenseAction extends Action {
 		// PLACEHOLDER 21
 		// PLACEHOLDER 22
 
-		if (_isOmniAdmin(request)) {
-			LicenseUtil.registerOrder(request);
+		if (_isOmniAdmin(httpServletRequest)) {
+			LicenseUtil.registerOrder(httpServletRequest);
 
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		UpdateLicenseAction.class);
 
 }

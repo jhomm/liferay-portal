@@ -14,7 +14,8 @@
 
 package com.liferay.portal.sharepoint;
 
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 
 /**
  * @author Bruno Farache
@@ -30,7 +31,8 @@ public class GroupSharepointStorageImpl extends BaseSharepointStorageImpl {
 		String rootPath = sharepointRequest.getRootPath();
 
 		for (String token : SharepointUtil.getStorageTokens()) {
-			String path = rootPath.concat(StringPool.SLASH).concat(token);
+			String path = StringBundler.concat(
+				rootPath, StringPool.SLASH, token);
 
 			foldersTree.addChild(getFolderTree(path));
 		}

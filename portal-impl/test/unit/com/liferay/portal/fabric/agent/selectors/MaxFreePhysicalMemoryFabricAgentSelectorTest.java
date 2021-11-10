@@ -17,11 +17,13 @@ package com.liferay.portal.fabric.agent.selectors;
 import com.liferay.portal.fabric.agent.FabricAgent;
 import com.liferay.portal.fabric.status.AdvancedOperatingSystemMXBean;
 import com.liferay.portal.fabric.status.FabricStatus;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
-import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +33,7 @@ import java.util.Iterator;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -39,8 +42,10 @@ import org.junit.Test;
 public class MaxFreePhysicalMemoryFabricAgentSelectorTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Test
 	public void testSelect() {
@@ -65,7 +70,7 @@ public class MaxFreePhysicalMemoryFabricAgentSelectorTest {
 				Arrays.asList(fabricAgent1, fabricAgent2)),
 			null);
 
-		Assert.assertEquals(1, fabricAgents.size());
+		Assert.assertEquals(fabricAgents.toString(), 1, fabricAgents.size());
 
 		Iterator<FabricAgent> iterator = fabricAgents.iterator();
 
@@ -81,7 +86,7 @@ public class MaxFreePhysicalMemoryFabricAgentSelectorTest {
 				Arrays.asList(fabricAgent1, fabricAgent2)),
 			null);
 
-		Assert.assertEquals(1, fabricAgents.size());
+		Assert.assertEquals(fabricAgents.toString(), 1, fabricAgents.size());
 
 		iterator = fabricAgents.iterator();
 
@@ -97,7 +102,7 @@ public class MaxFreePhysicalMemoryFabricAgentSelectorTest {
 				Arrays.asList(fabricAgent1, fabricAgent2)),
 			null);
 
-		Assert.assertEquals(1, fabricAgents.size());
+		Assert.assertEquals(fabricAgents.toString(), 1, fabricAgents.size());
 
 		iterator = fabricAgents.iterator();
 
@@ -113,7 +118,7 @@ public class MaxFreePhysicalMemoryFabricAgentSelectorTest {
 				Arrays.asList(fabricAgent1, fabricAgent2)),
 			null);
 
-		Assert.assertEquals(1, fabricAgents.size());
+		Assert.assertEquals(fabricAgents.toString(), 1, fabricAgents.size());
 
 		iterator = fabricAgents.iterator();
 
@@ -121,7 +126,7 @@ public class MaxFreePhysicalMemoryFabricAgentSelectorTest {
 	}
 
 	protected FabricAgent createFabricAgent(Long freePhysicalMemorySize) {
-		return (FabricAgent)ProxyUtil.newProxyInstance(
+		return (FabricAgent)Proxy.newProxyInstance(
 			FabricAgent.class.getClassLoader(),
 			new Class<?>[] {FabricAgent.class},
 			new FabricAgentInvocationHandler(freePhysicalMemorySize));
@@ -140,11 +145,15 @@ public class MaxFreePhysicalMemoryFabricAgentSelectorTest {
 		public Object invoke(Object proxy, Method method, Object[] args) {
 			String methodName = method.getName();
 
-			if (!methodName.equals("getFreePhysicalMemorySize")) {
-				throw new UnsupportedOperationException();
+			if (methodName.equals("getFreePhysicalMemorySize")) {
+				return _freePhysicalMemorySize;
 			}
 
-			return _freePhysicalMemorySize;
+			if (methodName.equals("toString")) {
+				return String.valueOf(_freePhysicalMemorySize);
+			}
+
+			throw new UnsupportedOperationException();
 		}
 
 		private final Long _freePhysicalMemorySize;
@@ -162,14 +171,18 @@ public class MaxFreePhysicalMemoryFabricAgentSelectorTest {
 		public Object invoke(Object proxy, Method method, Object[] args) {
 			String methodName = method.getName();
 
-			if (!methodName.equals("getFabricStatus")) {
-				throw new UnsupportedOperationException();
+			if (methodName.equals("getFabricStatus")) {
+				return Proxy.newProxyInstance(
+					FabricStatus.class.getClassLoader(),
+					new Class<?>[] {FabricStatus.class},
+					new FabricStatusInvocationHandler(_freePhysicalMemorySize));
 			}
 
-			return ProxyUtil.newProxyInstance(
-				FabricStatus.class.getClassLoader(),
-				new Class<?>[] {FabricStatus.class},
-				new FabricStatusInvocationHandler(_freePhysicalMemorySize));
+			if (methodName.equals("toString")) {
+				return String.valueOf(_freePhysicalMemorySize);
+			}
+
+			throw new UnsupportedOperationException();
 		}
 
 		private final Long _freePhysicalMemorySize;
@@ -187,15 +200,19 @@ public class MaxFreePhysicalMemoryFabricAgentSelectorTest {
 		public Object invoke(Object proxy, Method method, Object[] args) {
 			String methodName = method.getName();
 
-			if (!methodName.equals("getAdvancedOperatingSystemMXBean")) {
-				throw new UnsupportedOperationException();
+			if (methodName.equals("getAdvancedOperatingSystemMXBean")) {
+				return Proxy.newProxyInstance(
+					AdvancedOperatingSystemMXBean.class.getClassLoader(),
+					new Class<?>[] {AdvancedOperatingSystemMXBean.class},
+					new AdvancedOperatingSystemMXBeanInvocationHandler(
+						_freePhysicalMemorySize));
 			}
 
-			return ProxyUtil.newProxyInstance(
-				AdvancedOperatingSystemMXBean.class.getClassLoader(),
-				new Class<?>[] {AdvancedOperatingSystemMXBean.class},
-				new AdvancedOperatingSystemMXBeanInvocationHandler(
-					_freePhysicalMemorySize));
+			if (methodName.equals("toString")) {
+				return String.valueOf(_freePhysicalMemorySize);
+			}
+
+			throw new UnsupportedOperationException();
 		}
 
 		private final Long _freePhysicalMemorySize;

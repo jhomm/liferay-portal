@@ -14,13 +14,17 @@
 
 package com.liferay.portal.dao.db;
 
-import com.liferay.portal.kernel.dao.db.DB;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.io.IOException;
+
+import java.sql.Types;
 
 /**
  * @author Alexander Chow
@@ -29,14 +33,13 @@ import java.io.IOException;
  */
 public class HypersonicDB extends BaseDB {
 
-	public static DB getInstance() {
-		return _instance;
+	public HypersonicDB(int majorVersion, int minorVersion) {
+		super(DBType.HYPERSONIC, majorVersion, minorVersion);
 	}
 
 	@Override
 	public String buildSQL(String template) throws IOException {
-		template = convertTimestamp(template);
-		template = replaceTemplate(template, getTemplate());
+		template = replaceTemplate(template);
 
 		template = reword(template);
 		template = StringUtil.replace(template, "\\'", "''");
@@ -44,20 +47,19 @@ public class HypersonicDB extends BaseDB {
 		return template;
 	}
 
-	protected HypersonicDB() {
-		super(TYPE_HYPERSONIC);
+	@Override
+	public String getPopulateSQL(String databaseName, String sqlContent) {
+		return StringPool.BLANK;
 	}
 
 	@Override
-	protected String buildCreateFileContent(
-		String sqlDir, String databaseName, int population) {
-
-		return null;
+	public String getRecreateSQL(String databaseName) {
+		return StringPool.BLANK;
 	}
 
 	@Override
-	protected String getServerName() {
-		return "hypersonic";
+	protected int[] getSQLTypes() {
+		return _SQL_TYPES;
 	}
 
 	@Override
@@ -79,17 +81,26 @@ public class HypersonicDB extends BaseDB {
 					String[] template = buildColumnNameTokens(line);
 
 					line = StringUtil.replace(
-						"alter table @table@ alter column @old-column@ rename" +
-							" to @new-column@;",
+						"alter table @table@ alter column @old-column@ " +
+							"rename to @new-column@;",
 						REWORD_TEMPLATE, template);
 				}
 				else if (line.startsWith(ALTER_COLUMN_TYPE)) {
 					String[] template = buildColumnTypeTokens(line);
 
 					line = StringUtil.replace(
-						"alter table @table@ alter column @old-column@ " +
-							"@type@ @nullable@;",
+						"alter table @table@ alter column @old-column@ @type@;",
 						REWORD_TEMPLATE, template);
+
+					String nullable = template[template.length - 1];
+
+					if (!Validator.isBlank(nullable)) {
+						line = line.concat(
+							StringUtil.replace(
+								"alter table @table@ alter column " +
+									"@old-column@ set @nullable@;",
+								REWORD_TEMPLATE, template));
+					}
 				}
 				else if (line.startsWith(ALTER_TABLE_NAME)) {
 					String[] template = buildTableNameTokens(line);
@@ -119,6 +130,9 @@ public class HypersonicDB extends BaseDB {
 		" longvarchar", " longvarchar", " varchar", "", "commit"
 	};
 
-	private static final HypersonicDB _instance = new HypersonicDB();
+	private static final int[] _SQL_TYPES = {
+		Types.BLOB, Types.BLOB, Types.BIT, Types.TIMESTAMP, Types.DOUBLE,
+		Types.INTEGER, Types.BIGINT, Types.VARCHAR, Types.VARCHAR, Types.VARCHAR
+	};
 
 }

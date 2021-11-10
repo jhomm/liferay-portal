@@ -16,8 +16,6 @@ package com.liferay.portal.spring.hibernate;
 
 import javax.sql.DataSource;
 
-import org.hibernate.dialect.Dialect;
-
 /**
  * @author Brian Wing Shun Chan
  * @author Ganesh Ram
@@ -25,17 +23,12 @@ import org.hibernate.dialect.Dialect;
 public class PortletHibernateConfiguration
 	extends PortalHibernateConfiguration {
 
-	public PortletHibernateConfiguration() {
-		this(null, null);
-	}
-
 	public PortletHibernateConfiguration(
 		ClassLoader classLoader, DataSource dataSource) {
 
 		_classLoader = classLoader;
 
 		setDataSource(dataSource);
-		setMvccEnabled(false);
 	}
 
 	@Override
@@ -45,14 +38,9 @@ public class PortletHibernateConfiguration
 
 	@Override
 	protected String[] getConfigurationResources() {
-		return new String[] {"META-INF/portlet-hbm.xml"};
-	}
-
-	@Override
-	protected void setDB(Dialect dialect) {
-
-		// Plugins should not update the default DB reference
-
+		return new String[] {
+			"META-INF/module-hbm.xml", "META-INF/portlet-hbm.xml"
+		};
 	}
 
 	private final ClassLoader _classLoader;

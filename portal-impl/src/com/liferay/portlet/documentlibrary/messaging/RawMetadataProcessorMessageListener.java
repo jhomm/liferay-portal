@@ -14,12 +14,12 @@
 
 package com.liferay.portlet.documentlibrary.messaging;
 
+import com.liferay.document.library.kernel.util.RawMetadataProcessorUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.BaseMessageListener;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.repository.model.FileVersion;
-import com.liferay.portlet.documentlibrary.util.RawMetadataProcessorUtil;
 
 /**
  * @author Miguel Pastor
@@ -33,12 +33,12 @@ public class RawMetadataProcessorMessageListener extends BaseMessageListener {
 		try {
 			RawMetadataProcessorUtil.saveMetadata(fileVersion);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
 				_log.warn(
 					"Unable to save metadata for file version " +
 						fileVersion.getFileVersionId(),
-					e);
+					exception);
 			}
 		}
 	}

@@ -1,0 +1,276 @@
+definition {
+
+	macro addPG {
+		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
+
+		Type(
+			locator1 = "CKEditor#BODY",
+			value1 = "${entryComment}");
+
+		SelectFrame(value1 = "relative=top");
+
+		if (IsElementNotPresent(locator1 = "Button#REPLY")) {
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+		}
+
+		AssertClick(
+			locator1 = "Button#REPLY",
+			value1 = "Reply");
+
+		Alert.viewSuccessMessage();
+	}
+
+	macro addPGAsGuest {
+		BlogsNavigator.gotoEntryPG(
+			entryContent = "${entryContent}",
+			entryTitle = "${entryTitle}");
+
+		var entryComment = "${entryComment}";
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
+
+		Type(
+			locator1 = "CKEditor#BODY",
+			value1 = "${entryComment}");
+
+		SelectFrame(value1 = "relative=top");
+
+		AssertElementPresent(locator1 = "UserBar#USER_SIGN_IN");
+
+		AssertClick(
+			locator1 = "Button#REPLY_AS",
+			value1 = "Reply as...");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		AssertClick(
+			locator1 = "Link#GUEST",
+			value1 = "Guest");
+
+		Type(
+			locator1 = "TextInput#FIRST_NAME",
+			value1 = "${userFirstName}");
+
+		Type(
+			locator1 = "TextInput#LAST_NAME",
+			value1 = "${userLastName}");
+
+		Type(
+			locator1 = "TextInput#EMAIL_ADDRESS",
+			value1 = "${userEmailAddress}");
+
+		Button.clickSave();
+
+		var uniqueSuccess = "Your comment has already been posted. Would you like to create an account with the provided information?";
+		var key_uniqueSuccess = "${uniqueSuccess}";
+
+		AssertTextEquals(
+			locator1 = "Message#UNIQUE_SUCCESS",
+			value1 = "${uniqueSuccess}");
+
+		AssertClick(
+			locator1 = "Button#CANCEL",
+			value1 = "Cancel");
+
+		SelectFrame(value1 = "relative=top");
+
+		Alert.viewSuccessMessage();
+	}
+
+	macro delete {
+		var key_entryComment = "${entryComment}";
+
+		MouseOver(
+			locator1 = "Comments#COMMENT_BODY_SPECIFIC",
+			value1 = "${entryComment}");
+
+		Click(locator1 = "Comments#COMMENT_ACTIONS");
+
+		AssertClickNoError(
+			key_menuItem = "Delete",
+			locator1 = "MenuItem#ANY_MENU_ITEM",
+			value1 = "Delete");
+
+		AssertConfirm(value1 = "Are you sure you want to delete this? It will be deleted immediately.");
+
+		Alert.viewSuccessMessage();
+
+		AssertTextNotPresent(value1 = "${entryComment}");
+	}
+
+	macro edit {
+		var key_entryComment = "${entryComment}";
+
+		Click.mouseOverClick(locator1 = "Comments#COMMENT_BODY_SPECIFIC");
+
+		Click.clickNoMouseOverNoWaitForVisible(locator1 = "Comments#COMMENT_ACTIONS");
+
+		AssertClick(
+			key_menuItem = "Edit",
+			locator1 = "MenuItem#ANY_MENU_ITEM",
+			value1 = "Edit");
+
+		AssertElementPresent.pauseAssertVisible(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
+
+		if (isSet(addMention)) {
+			Type.sendKeys(
+				locator1 = "CKEditor#BODY",
+				value1 = "${entryCommentEdit} @${mentionsUserScreenName}");
+
+			SelectFrame(value1 = "relative=top");
+
+			Click.clickNoMouseOver(
+				key_mentionsUserScreenName = "${mentionsUserScreenName}",
+				locator1 = "Mentions#MENTIONS_USER_DISPLAY_OPTION");
+
+			AssertClick(
+				key_text = "Save",
+				locator1 = "Comments#ANY_BUTTON_IN_COMMENT",
+				value1 = "Save");
+
+			Alert.viewSuccessMessage();
+		}
+		else {
+			Type(
+				locator1 = "CKEditor#BODY",
+				value1 = "${entryCommentEdit}");
+
+			SelectFrame(value1 = "relative=top");
+
+			AssertClick(
+				key_text = "Save",
+				locator1 = "Comments#ANY_BUTTON_IN_COMMENT",
+				value1 = "Save");
+
+			var key_entryComment = "${entryCommentEdit}";
+
+			Alert.viewSuccessMessage();
+
+			AssertTextEquals(
+				locator1 = "Comments#COMMENT_BODY_SPECIFIC",
+				value1 = "${entryCommentEdit}");
+		}
+	}
+
+	macro getCommentId {
+		var currentURL = selenium.getCurrentUrl();
+		var commentId = StringUtil.extractLast("${currentURL}", "message_");
+
+		echo("commentId: ${commentId}");
+
+		return "${commentId}";
+	}
+
+	macro replyToComment {
+		AssertClick(
+			key_entryComment = "Reply",
+			key_text = "Reply",
+			locator1 = "Comments#ANY_BUTTON_IN_COMMENT",
+			value1 = "Reply");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
+
+		Type(
+			locator1 = "CKEditor#BODY",
+			value1 = "${commentReply}");
+
+		SelectFrame(value1 = "relative=top");
+
+		AssertClick(
+			locator1 = "Button#REPLY_LAST",
+			value1 = "Reply");
+
+		Alert.viewSuccessMessage();
+	}
+
+	macro subscribePG {
+		AssertElementPresent.pauseAssertVisible(locator1 = "CKEditor#BODY_FIELD_IFRAME");
+
+		AssertClick(
+			locator1 = "Button#SUBSCRIBE",
+			value1 = "Subscribe");
+
+		Alert.viewSuccessMessage();
+	}
+
+	macro viewCommentReadOnly {
+		AssertElementNotPresent(locator1 = "Comments#COMMENT_FIELD");
+
+		AssertTextEquals(
+			locator1 = "Comments#COMMENT_INFO",
+			value1 = "INFO:Comments are unavailable in staged sites.");
+	}
+
+	macro viewNoComments {
+		AssertElementNotPresent(
+			locator1 = "Comments#ENTRY_COUNT_PANEL",
+			value1 = "0 COMMENTS");
+
+		AssertElementNotPresent(
+			key_entryComment = "${entryComment}",
+			locator1 = "Comments#COMMENT_BODY_SPECIFIC");
+	}
+
+	macro viewNoPG {
+		AssertTextEquals.assertPartialText(
+			locator1 = "Comments#ENTRY_COUNT_PANEL",
+			value1 = "0 COMMENTS");
+
+		AssertElementNotPresent(
+			key_userFullName = "${userFullName}",
+			locator1 = "Comments#USER_NAME");
+
+		AssertElementNotPresent(
+			key_entryComment = "${entryComment}",
+			locator1 = "Comments#COMMENT_BODY_SPECIFIC");
+	}
+
+	macro viewPG {
+		var key_entryComment = "${entryComment}";
+
+		Pause(locator1 = "1000");
+
+		if (isSet(noAddPermissions)) {
+			AssertTextNotPresent(
+				locator1 = "Comments#ENTRY_COUNT_PANEL",
+				value1 = "${commentCount} COMMENT");
+		}
+
+		else {
+			AssertTextEquals.assertPartialText(
+				locator1 = "Comments#ENTRY_COUNT_PANEL",
+				value1 = "${commentCount} COMMENT");
+		}
+
+		if (isSet(importedComment)) {
+			AssertTextEquals.assertPartialText(
+				key_userFullName = "${userFullName}",
+				locator1 = "Comments#USER_NAME_2",
+				value1 = "${userFullName}");
+
+			AssertElementPresent(locator1 = "Comments#COMMENT_BODY");
+		}
+
+		else {
+			var key_userFullName = "${userFullName}";
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "Comments#USER_NAME",
+				value1 = "${userFullName}");
+
+			AssertTextEquals(
+				locator1 = "Comments#COMMENT_BODY_SPECIFIC",
+				value1 = "${entryComment}");
+		}
+	}
+
+	macro viewSubscribedPG {
+		AssertTextEquals(
+			key_text = "Unsubscribe",
+			locator1 = "Button#ANY",
+			value1 = "Unsubscribe");
+	}
+
+}

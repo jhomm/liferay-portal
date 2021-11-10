@@ -19,32 +19,35 @@
 <%
 StringBundler sb = (StringBundler)request.getAttribute(WebKeys.LAYOUT_CONTENT);
 
-if ((sb != null) && (themeDisplay.isFacebook() || themeDisplay.isStateExclusive())) {
+if ((sb != null) && themeDisplay.isStateExclusive()) {
 	sb.writeTo(out);
 }
 else {
-	ComponentContext componentContext = (ComponentContext)request.getAttribute(ComponentConstants.COMPONENT_CONTEXT);
+	Definition definition = (Definition)request.getAttribute(TilesUtil.DEFINITION);
 
 	boolean tilesPopUp = false;
 
-	if (componentContext != null) {
-		tilesPopUp = GetterUtil.getBoolean(componentContext.getAttribute("pop_up"));
-	}
+	if (definition != null) {
+		Map<String, String> attributes = definition.getAttributes();
 
-	if (tilesPopUp || themeDisplay.isStatePopUp() || themeDisplay.isWidget()) {
+		tilesPopUp = GetterUtil.getBoolean(attributes.get("pop_up"));
+	}
 %>
 
-		<liferay-theme:include page="portal_pop_up.jsp" />
+	<c:choose>
+		<c:when test="<%= tilesPopUp || themeDisplay.isStatePopUp() || themeDisplay.isWidget() %>">
+			<liferay-theme:include
+				page="portal_pop_up.jsp"
+			/>
+		</c:when>
+		<c:otherwise>
+			<liferay-theme:include
+				page="portal_normal.jsp"
+			/>
+		</c:otherwise>
+	</c:choose>
 
 <%
-	}
-	else {
-%>
-
-		<liferay-theme:include page="portal_normal.jsp" />
-
-<%
-	}
 }
 
 request.removeAttribute(WebKeys.LAYOUT_CONTENT);

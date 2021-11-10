@@ -1,0 +1,18 @@
+definition {
+
+	macro addIFrameRemoteAppEntry {
+		Variables.assertDefined(parameterList = "${iFrameURL},${name}");
+
+		var response = JSONRemoteAppAPI._addIFrameRemoteAppEntry(
+			iFrameURL = "${iFrameURL}",
+			name = "${name}");
+		return "${response}";
+	}
+
+	macro deleteIFrameRemoteAppEntry {
+		Variables.assertDefined(parameterList = "${remoteAppEntryId}");
+
+		JSONRemoteAppAPI._deleteIFrameRemoteAppEntry(remoteAppEntryId = "${remoteAppEntryId}");
+	}
+
+}

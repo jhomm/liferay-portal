@@ -14,54 +14,38 @@
 
 package com.liferay.portal.service.base;
 
-import aQute.bnd.annotation.ProviderType;
-
+import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.bean.IdentifiableBean;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
+import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.model.Company;
-import com.liferay.portal.model.PersistedModel;
-import com.liferay.portal.service.BaseLocalServiceImpl;
-import com.liferay.portal.service.CompanyLocalService;
-import com.liferay.portal.service.PersistedModelLocalServiceRegistry;
-import com.liferay.portal.service.persistence.AccountPersistence;
-import com.liferay.portal.service.persistence.CompanyPersistence;
-import com.liferay.portal.service.persistence.ContactPersistence;
-import com.liferay.portal.service.persistence.GroupFinder;
-import com.liferay.portal.service.persistence.GroupPersistence;
-import com.liferay.portal.service.persistence.ImagePersistence;
-import com.liferay.portal.service.persistence.LayoutPrototypePersistence;
-import com.liferay.portal.service.persistence.LayoutSetPersistence;
-import com.liferay.portal.service.persistence.LayoutSetPrototypePersistence;
-import com.liferay.portal.service.persistence.OrganizationFinder;
-import com.liferay.portal.service.persistence.OrganizationPersistence;
-import com.liferay.portal.service.persistence.PasswordPolicyFinder;
-import com.liferay.portal.service.persistence.PasswordPolicyPersistence;
-import com.liferay.portal.service.persistence.PortalPreferencesPersistence;
-import com.liferay.portal.service.persistence.PortletPersistence;
-import com.liferay.portal.service.persistence.ResourcePermissionFinder;
-import com.liferay.portal.service.persistence.ResourcePermissionPersistence;
-import com.liferay.portal.service.persistence.RoleFinder;
-import com.liferay.portal.service.persistence.RolePersistence;
-import com.liferay.portal.service.persistence.UserFinder;
-import com.liferay.portal.service.persistence.UserPersistence;
-import com.liferay.portal.service.persistence.VirtualHostPersistence;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
+
+import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -76,20 +60,24 @@ import javax.sql.DataSource;
  *
  * @author Brian Wing Shun Chan
  * @see com.liferay.portal.service.impl.CompanyLocalServiceImpl
- * @see com.liferay.portal.service.CompanyLocalServiceUtil
  * @generated
  */
-@ProviderType
-public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
-	implements CompanyLocalService, IdentifiableBean {
+public abstract class CompanyLocalServiceBaseImpl
+	extends BaseLocalServiceImpl
+	implements CompanyLocalService, IdentifiableOSGiService {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Always use {@link com.liferay.portal.service.CompanyLocalServiceUtil} to access the company local service.
+	 * Never modify or reference this class directly. Use <code>CompanyLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>CompanyLocalServiceUtil</code>.
 	 */
 
 	/**
 	 * Adds the company to the database. Also notifies the appropriate model listeners.
+	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect CompanyLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
 	 *
 	 * @param company the company
 	 * @return the company that was added
@@ -109,12 +97,17 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @return the new company
 	 */
 	@Override
+	@Transactional(enabled = false)
 	public Company createCompany(long companyId) {
 		return companyPersistence.create(companyId);
 	}
 
 	/**
 	 * Deletes the company with the primary key from the database. Also notifies the appropriate model listeners.
+	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect CompanyLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
 	 *
 	 * @param companyId the primary key of the company
 	 * @return the company that was removed
@@ -129,6 +122,10 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 * Deletes the company from the database. Also notifies the appropriate model listeners.
 	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect CompanyLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
+	 *
 	 * @param company the company
 	 * @return the company that was removed
 	 * @throws PortalException
@@ -140,11 +137,23 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	}
 
 	@Override
+	public <T> T dslQuery(DSLQuery dslQuery) {
+		return companyPersistence.dslQuery(dslQuery);
+	}
+
+	@Override
+	public int dslQueryCount(DSLQuery dslQuery) {
+		Long count = dslQuery(dslQuery);
+
+		return count.intValue();
+	}
+
+	@Override
 	public DynamicQuery dynamicQuery() {
 		Class<?> clazz = getClass();
 
-		return DynamicQueryFactoryUtil.forClass(Company.class,
-			clazz.getClassLoader());
+		return DynamicQueryFactoryUtil.forClass(
+			Company.class, clazz.getClassLoader());
 	}
 
 	/**
@@ -162,7 +171,7 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * Performs a dynamic query on the database and returns a range of the matching rows.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link com.liferay.portal.model.impl.CompanyModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.CompanyModelImpl</code>.
 	 * </p>
 	 *
 	 * @param dynamicQuery the dynamic query
@@ -171,16 +180,18 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @return the range of matching rows
 	 */
 	@Override
-	public <T> List<T> dynamicQuery(DynamicQuery dynamicQuery, int start,
-		int end) {
-		return companyPersistence.findWithDynamicQuery(dynamicQuery, start, end);
+	public <T> List<T> dynamicQuery(
+		DynamicQuery dynamicQuery, int start, int end) {
+
+		return companyPersistence.findWithDynamicQuery(
+			dynamicQuery, start, end);
 	}
 
 	/**
 	 * Performs a dynamic query on the database and returns an ordered range of the matching rows.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link com.liferay.portal.model.impl.CompanyModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.CompanyModelImpl</code>.
 	 * </p>
 	 *
 	 * @param dynamicQuery the dynamic query
@@ -190,10 +201,12 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @return the ordered range of matching rows
 	 */
 	@Override
-	public <T> List<T> dynamicQuery(DynamicQuery dynamicQuery, int start,
-		int end, OrderByComparator<T> orderByComparator) {
-		return companyPersistence.findWithDynamicQuery(dynamicQuery, start,
-			end, orderByComparator);
+	public <T> List<T> dynamicQuery(
+		DynamicQuery dynamicQuery, int start, int end,
+		OrderByComparator<T> orderByComparator) {
+
+		return companyPersistence.findWithDynamicQuery(
+			dynamicQuery, start, end, orderByComparator);
 	}
 
 	/**
@@ -215,9 +228,11 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @return the number of rows matching the dynamic query
 	 */
 	@Override
-	public long dynamicQueryCount(DynamicQuery dynamicQuery,
-		Projection projection) {
-		return companyPersistence.countWithDynamicQuery(dynamicQuery, projection);
+	public long dynamicQueryCount(
+		DynamicQuery dynamicQuery, Projection projection) {
+
+		return companyPersistence.countWithDynamicQuery(
+			dynamicQuery, projection);
 	}
 
 	@Override
@@ -239,22 +254,41 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 
 	@Override
 	public ActionableDynamicQuery getActionableDynamicQuery() {
-		ActionableDynamicQuery actionableDynamicQuery = new DefaultActionableDynamicQuery();
+		ActionableDynamicQuery actionableDynamicQuery =
+			new DefaultActionableDynamicQuery();
 
-		actionableDynamicQuery.setBaseLocalService(com.liferay.portal.service.CompanyLocalServiceUtil.getService());
-		actionableDynamicQuery.setClass(Company.class);
+		actionableDynamicQuery.setBaseLocalService(companyLocalService);
 		actionableDynamicQuery.setClassLoader(getClassLoader());
+		actionableDynamicQuery.setModelClass(Company.class);
 
 		actionableDynamicQuery.setPrimaryKeyPropertyName("companyId");
 
 		return actionableDynamicQuery;
 	}
 
+	@Override
+	public IndexableActionableDynamicQuery
+		getIndexableActionableDynamicQuery() {
+
+		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
+			new IndexableActionableDynamicQuery();
+
+		indexableActionableDynamicQuery.setBaseLocalService(
+			companyLocalService);
+		indexableActionableDynamicQuery.setClassLoader(getClassLoader());
+		indexableActionableDynamicQuery.setModelClass(Company.class);
+
+		indexableActionableDynamicQuery.setPrimaryKeyPropertyName("companyId");
+
+		return indexableActionableDynamicQuery;
+	}
+
 	protected void initActionableDynamicQuery(
 		ActionableDynamicQuery actionableDynamicQuery) {
-		actionableDynamicQuery.setBaseLocalService(com.liferay.portal.service.CompanyLocalServiceUtil.getService());
-		actionableDynamicQuery.setClass(Company.class);
+
+		actionableDynamicQuery.setBaseLocalService(companyLocalService);
 		actionableDynamicQuery.setClassLoader(getClassLoader());
+		actionableDynamicQuery.setModelClass(Company.class);
 
 		actionableDynamicQuery.setPrimaryKeyPropertyName("companyId");
 	}
@@ -263,14 +297,34 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @throws PortalException
 	 */
 	@Override
+	public PersistedModel createPersistedModel(Serializable primaryKeyObj)
+		throws PortalException {
+
+		return companyPersistence.create(((Long)primaryKeyObj).longValue());
+	}
+
+	/**
+	 * @throws PortalException
+	 */
+	@Override
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
+
 		return companyLocalService.deleteCompany((Company)persistedModel);
 	}
 
 	@Override
+	public BasePersistence<Company> getBasePersistence() {
+		return companyPersistence;
+	}
+
+	/**
+	 * @throws PortalException
+	 */
+	@Override
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException {
+
 		return companyPersistence.findByPrimaryKey(primaryKeyObj);
 	}
 
@@ -278,7 +332,7 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * Returns a range of all the companies.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link com.liferay.portal.model.impl.CompanyModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.CompanyModelImpl</code>.
 	 * </p>
 	 *
 	 * @param start the lower bound of the range of companies
@@ -303,6 +357,10 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 * Updates the company in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect CompanyLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
+	 *
 	 * @param company the company
 	 * @return the company that was updated
 	 */
@@ -326,27 +384,10 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 *
 	 * @param companyLocalService the company local service
 	 */
-	public void setCompanyLocalService(CompanyLocalService companyLocalService) {
+	public void setCompanyLocalService(
+		CompanyLocalService companyLocalService) {
+
 		this.companyLocalService = companyLocalService;
-	}
-
-	/**
-	 * Returns the company remote service.
-	 *
-	 * @return the company remote service
-	 */
-	public com.liferay.portal.service.CompanyService getCompanyService() {
-		return companyService;
-	}
-
-	/**
-	 * Sets the company remote service.
-	 *
-	 * @param companyService the company remote service
-	 */
-	public void setCompanyService(
-		com.liferay.portal.service.CompanyService companyService) {
-		this.companyService = companyService;
 	}
 
 	/**
@@ -372,7 +413,9 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 *
 	 * @return the counter local service
 	 */
-	public com.liferay.counter.service.CounterLocalService getCounterLocalService() {
+	public com.liferay.counter.kernel.service.CounterLocalService
+		getCounterLocalService() {
+
 		return counterLocalService;
 	}
 
@@ -382,977 +425,34 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @param counterLocalService the counter local service
 	 */
 	public void setCounterLocalService(
-		com.liferay.counter.service.CounterLocalService counterLocalService) {
+		com.liferay.counter.kernel.service.CounterLocalService
+			counterLocalService) {
+
 		this.counterLocalService = counterLocalService;
 	}
 
-	/**
-	 * Returns the account local service.
-	 *
-	 * @return the account local service
-	 */
-	public com.liferay.portal.service.AccountLocalService getAccountLocalService() {
-		return accountLocalService;
-	}
-
-	/**
-	 * Sets the account local service.
-	 *
-	 * @param accountLocalService the account local service
-	 */
-	public void setAccountLocalService(
-		com.liferay.portal.service.AccountLocalService accountLocalService) {
-		this.accountLocalService = accountLocalService;
-	}
-
-	/**
-	 * Returns the account remote service.
-	 *
-	 * @return the account remote service
-	 */
-	public com.liferay.portal.service.AccountService getAccountService() {
-		return accountService;
-	}
-
-	/**
-	 * Sets the account remote service.
-	 *
-	 * @param accountService the account remote service
-	 */
-	public void setAccountService(
-		com.liferay.portal.service.AccountService accountService) {
-		this.accountService = accountService;
-	}
-
-	/**
-	 * Returns the account persistence.
-	 *
-	 * @return the account persistence
-	 */
-	public AccountPersistence getAccountPersistence() {
-		return accountPersistence;
-	}
-
-	/**
-	 * Sets the account persistence.
-	 *
-	 * @param accountPersistence the account persistence
-	 */
-	public void setAccountPersistence(AccountPersistence accountPersistence) {
-		this.accountPersistence = accountPersistence;
-	}
-
-	/**
-	 * Returns the contact local service.
-	 *
-	 * @return the contact local service
-	 */
-	public com.liferay.portal.service.ContactLocalService getContactLocalService() {
-		return contactLocalService;
-	}
-
-	/**
-	 * Sets the contact local service.
-	 *
-	 * @param contactLocalService the contact local service
-	 */
-	public void setContactLocalService(
-		com.liferay.portal.service.ContactLocalService contactLocalService) {
-		this.contactLocalService = contactLocalService;
-	}
-
-	/**
-	 * Returns the contact remote service.
-	 *
-	 * @return the contact remote service
-	 */
-	public com.liferay.portal.service.ContactService getContactService() {
-		return contactService;
-	}
-
-	/**
-	 * Sets the contact remote service.
-	 *
-	 * @param contactService the contact remote service
-	 */
-	public void setContactService(
-		com.liferay.portal.service.ContactService contactService) {
-		this.contactService = contactService;
-	}
-
-	/**
-	 * Returns the contact persistence.
-	 *
-	 * @return the contact persistence
-	 */
-	public ContactPersistence getContactPersistence() {
-		return contactPersistence;
-	}
-
-	/**
-	 * Sets the contact persistence.
-	 *
-	 * @param contactPersistence the contact persistence
-	 */
-	public void setContactPersistence(ContactPersistence contactPersistence) {
-		this.contactPersistence = contactPersistence;
-	}
-
-	/**
-	 * Returns the group local service.
-	 *
-	 * @return the group local service
-	 */
-	public com.liferay.portal.service.GroupLocalService getGroupLocalService() {
-		return groupLocalService;
-	}
-
-	/**
-	 * Sets the group local service.
-	 *
-	 * @param groupLocalService the group local service
-	 */
-	public void setGroupLocalService(
-		com.liferay.portal.service.GroupLocalService groupLocalService) {
-		this.groupLocalService = groupLocalService;
-	}
-
-	/**
-	 * Returns the group remote service.
-	 *
-	 * @return the group remote service
-	 */
-	public com.liferay.portal.service.GroupService getGroupService() {
-		return groupService;
-	}
-
-	/**
-	 * Sets the group remote service.
-	 *
-	 * @param groupService the group remote service
-	 */
-	public void setGroupService(
-		com.liferay.portal.service.GroupService groupService) {
-		this.groupService = groupService;
-	}
-
-	/**
-	 * Returns the group persistence.
-	 *
-	 * @return the group persistence
-	 */
-	public GroupPersistence getGroupPersistence() {
-		return groupPersistence;
-	}
-
-	/**
-	 * Sets the group persistence.
-	 *
-	 * @param groupPersistence the group persistence
-	 */
-	public void setGroupPersistence(GroupPersistence groupPersistence) {
-		this.groupPersistence = groupPersistence;
-	}
-
-	/**
-	 * Returns the group finder.
-	 *
-	 * @return the group finder
-	 */
-	public GroupFinder getGroupFinder() {
-		return groupFinder;
-	}
-
-	/**
-	 * Sets the group finder.
-	 *
-	 * @param groupFinder the group finder
-	 */
-	public void setGroupFinder(GroupFinder groupFinder) {
-		this.groupFinder = groupFinder;
-	}
-
-	/**
-	 * Returns the image local service.
-	 *
-	 * @return the image local service
-	 */
-	public com.liferay.portal.service.ImageLocalService getImageLocalService() {
-		return imageLocalService;
-	}
-
-	/**
-	 * Sets the image local service.
-	 *
-	 * @param imageLocalService the image local service
-	 */
-	public void setImageLocalService(
-		com.liferay.portal.service.ImageLocalService imageLocalService) {
-		this.imageLocalService = imageLocalService;
-	}
-
-	/**
-	 * Returns the image remote service.
-	 *
-	 * @return the image remote service
-	 */
-	public com.liferay.portal.service.ImageService getImageService() {
-		return imageService;
-	}
-
-	/**
-	 * Sets the image remote service.
-	 *
-	 * @param imageService the image remote service
-	 */
-	public void setImageService(
-		com.liferay.portal.service.ImageService imageService) {
-		this.imageService = imageService;
-	}
-
-	/**
-	 * Returns the image persistence.
-	 *
-	 * @return the image persistence
-	 */
-	public ImagePersistence getImagePersistence() {
-		return imagePersistence;
-	}
-
-	/**
-	 * Sets the image persistence.
-	 *
-	 * @param imagePersistence the image persistence
-	 */
-	public void setImagePersistence(ImagePersistence imagePersistence) {
-		this.imagePersistence = imagePersistence;
-	}
-
-	/**
-	 * Returns the layout prototype local service.
-	 *
-	 * @return the layout prototype local service
-	 */
-	public com.liferay.portal.service.LayoutPrototypeLocalService getLayoutPrototypeLocalService() {
-		return layoutPrototypeLocalService;
-	}
-
-	/**
-	 * Sets the layout prototype local service.
-	 *
-	 * @param layoutPrototypeLocalService the layout prototype local service
-	 */
-	public void setLayoutPrototypeLocalService(
-		com.liferay.portal.service.LayoutPrototypeLocalService layoutPrototypeLocalService) {
-		this.layoutPrototypeLocalService = layoutPrototypeLocalService;
-	}
-
-	/**
-	 * Returns the layout prototype remote service.
-	 *
-	 * @return the layout prototype remote service
-	 */
-	public com.liferay.portal.service.LayoutPrototypeService getLayoutPrototypeService() {
-		return layoutPrototypeService;
-	}
-
-	/**
-	 * Sets the layout prototype remote service.
-	 *
-	 * @param layoutPrototypeService the layout prototype remote service
-	 */
-	public void setLayoutPrototypeService(
-		com.liferay.portal.service.LayoutPrototypeService layoutPrototypeService) {
-		this.layoutPrototypeService = layoutPrototypeService;
-	}
-
-	/**
-	 * Returns the layout prototype persistence.
-	 *
-	 * @return the layout prototype persistence
-	 */
-	public LayoutPrototypePersistence getLayoutPrototypePersistence() {
-		return layoutPrototypePersistence;
-	}
-
-	/**
-	 * Sets the layout prototype persistence.
-	 *
-	 * @param layoutPrototypePersistence the layout prototype persistence
-	 */
-	public void setLayoutPrototypePersistence(
-		LayoutPrototypePersistence layoutPrototypePersistence) {
-		this.layoutPrototypePersistence = layoutPrototypePersistence;
-	}
-
-	/**
-	 * Returns the layout set local service.
-	 *
-	 * @return the layout set local service
-	 */
-	public com.liferay.portal.service.LayoutSetLocalService getLayoutSetLocalService() {
-		return layoutSetLocalService;
-	}
-
-	/**
-	 * Sets the layout set local service.
-	 *
-	 * @param layoutSetLocalService the layout set local service
-	 */
-	public void setLayoutSetLocalService(
-		com.liferay.portal.service.LayoutSetLocalService layoutSetLocalService) {
-		this.layoutSetLocalService = layoutSetLocalService;
-	}
-
-	/**
-	 * Returns the layout set remote service.
-	 *
-	 * @return the layout set remote service
-	 */
-	public com.liferay.portal.service.LayoutSetService getLayoutSetService() {
-		return layoutSetService;
-	}
-
-	/**
-	 * Sets the layout set remote service.
-	 *
-	 * @param layoutSetService the layout set remote service
-	 */
-	public void setLayoutSetService(
-		com.liferay.portal.service.LayoutSetService layoutSetService) {
-		this.layoutSetService = layoutSetService;
-	}
-
-	/**
-	 * Returns the layout set persistence.
-	 *
-	 * @return the layout set persistence
-	 */
-	public LayoutSetPersistence getLayoutSetPersistence() {
-		return layoutSetPersistence;
-	}
-
-	/**
-	 * Sets the layout set persistence.
-	 *
-	 * @param layoutSetPersistence the layout set persistence
-	 */
-	public void setLayoutSetPersistence(
-		LayoutSetPersistence layoutSetPersistence) {
-		this.layoutSetPersistence = layoutSetPersistence;
-	}
-
-	/**
-	 * Returns the layout set prototype local service.
-	 *
-	 * @return the layout set prototype local service
-	 */
-	public com.liferay.portal.service.LayoutSetPrototypeLocalService getLayoutSetPrototypeLocalService() {
-		return layoutSetPrototypeLocalService;
-	}
-
-	/**
-	 * Sets the layout set prototype local service.
-	 *
-	 * @param layoutSetPrototypeLocalService the layout set prototype local service
-	 */
-	public void setLayoutSetPrototypeLocalService(
-		com.liferay.portal.service.LayoutSetPrototypeLocalService layoutSetPrototypeLocalService) {
-		this.layoutSetPrototypeLocalService = layoutSetPrototypeLocalService;
-	}
-
-	/**
-	 * Returns the layout set prototype remote service.
-	 *
-	 * @return the layout set prototype remote service
-	 */
-	public com.liferay.portal.service.LayoutSetPrototypeService getLayoutSetPrototypeService() {
-		return layoutSetPrototypeService;
-	}
-
-	/**
-	 * Sets the layout set prototype remote service.
-	 *
-	 * @param layoutSetPrototypeService the layout set prototype remote service
-	 */
-	public void setLayoutSetPrototypeService(
-		com.liferay.portal.service.LayoutSetPrototypeService layoutSetPrototypeService) {
-		this.layoutSetPrototypeService = layoutSetPrototypeService;
-	}
-
-	/**
-	 * Returns the layout set prototype persistence.
-	 *
-	 * @return the layout set prototype persistence
-	 */
-	public LayoutSetPrototypePersistence getLayoutSetPrototypePersistence() {
-		return layoutSetPrototypePersistence;
-	}
-
-	/**
-	 * Sets the layout set prototype persistence.
-	 *
-	 * @param layoutSetPrototypePersistence the layout set prototype persistence
-	 */
-	public void setLayoutSetPrototypePersistence(
-		LayoutSetPrototypePersistence layoutSetPrototypePersistence) {
-		this.layoutSetPrototypePersistence = layoutSetPrototypePersistence;
-	}
-
-	/**
-	 * Returns the organization local service.
-	 *
-	 * @return the organization local service
-	 */
-	public com.liferay.portal.service.OrganizationLocalService getOrganizationLocalService() {
-		return organizationLocalService;
-	}
-
-	/**
-	 * Sets the organization local service.
-	 *
-	 * @param organizationLocalService the organization local service
-	 */
-	public void setOrganizationLocalService(
-		com.liferay.portal.service.OrganizationLocalService organizationLocalService) {
-		this.organizationLocalService = organizationLocalService;
-	}
-
-	/**
-	 * Returns the organization remote service.
-	 *
-	 * @return the organization remote service
-	 */
-	public com.liferay.portal.service.OrganizationService getOrganizationService() {
-		return organizationService;
-	}
-
-	/**
-	 * Sets the organization remote service.
-	 *
-	 * @param organizationService the organization remote service
-	 */
-	public void setOrganizationService(
-		com.liferay.portal.service.OrganizationService organizationService) {
-		this.organizationService = organizationService;
-	}
-
-	/**
-	 * Returns the organization persistence.
-	 *
-	 * @return the organization persistence
-	 */
-	public OrganizationPersistence getOrganizationPersistence() {
-		return organizationPersistence;
-	}
-
-	/**
-	 * Sets the organization persistence.
-	 *
-	 * @param organizationPersistence the organization persistence
-	 */
-	public void setOrganizationPersistence(
-		OrganizationPersistence organizationPersistence) {
-		this.organizationPersistence = organizationPersistence;
-	}
-
-	/**
-	 * Returns the organization finder.
-	 *
-	 * @return the organization finder
-	 */
-	public OrganizationFinder getOrganizationFinder() {
-		return organizationFinder;
-	}
-
-	/**
-	 * Sets the organization finder.
-	 *
-	 * @param organizationFinder the organization finder
-	 */
-	public void setOrganizationFinder(OrganizationFinder organizationFinder) {
-		this.organizationFinder = organizationFinder;
-	}
-
-	/**
-	 * Returns the password policy local service.
-	 *
-	 * @return the password policy local service
-	 */
-	public com.liferay.portal.service.PasswordPolicyLocalService getPasswordPolicyLocalService() {
-		return passwordPolicyLocalService;
-	}
-
-	/**
-	 * Sets the password policy local service.
-	 *
-	 * @param passwordPolicyLocalService the password policy local service
-	 */
-	public void setPasswordPolicyLocalService(
-		com.liferay.portal.service.PasswordPolicyLocalService passwordPolicyLocalService) {
-		this.passwordPolicyLocalService = passwordPolicyLocalService;
-	}
-
-	/**
-	 * Returns the password policy remote service.
-	 *
-	 * @return the password policy remote service
-	 */
-	public com.liferay.portal.service.PasswordPolicyService getPasswordPolicyService() {
-		return passwordPolicyService;
-	}
-
-	/**
-	 * Sets the password policy remote service.
-	 *
-	 * @param passwordPolicyService the password policy remote service
-	 */
-	public void setPasswordPolicyService(
-		com.liferay.portal.service.PasswordPolicyService passwordPolicyService) {
-		this.passwordPolicyService = passwordPolicyService;
-	}
-
-	/**
-	 * Returns the password policy persistence.
-	 *
-	 * @return the password policy persistence
-	 */
-	public PasswordPolicyPersistence getPasswordPolicyPersistence() {
-		return passwordPolicyPersistence;
-	}
-
-	/**
-	 * Sets the password policy persistence.
-	 *
-	 * @param passwordPolicyPersistence the password policy persistence
-	 */
-	public void setPasswordPolicyPersistence(
-		PasswordPolicyPersistence passwordPolicyPersistence) {
-		this.passwordPolicyPersistence = passwordPolicyPersistence;
-	}
-
-	/**
-	 * Returns the password policy finder.
-	 *
-	 * @return the password policy finder
-	 */
-	public PasswordPolicyFinder getPasswordPolicyFinder() {
-		return passwordPolicyFinder;
-	}
-
-	/**
-	 * Sets the password policy finder.
-	 *
-	 * @param passwordPolicyFinder the password policy finder
-	 */
-	public void setPasswordPolicyFinder(
-		PasswordPolicyFinder passwordPolicyFinder) {
-		this.passwordPolicyFinder = passwordPolicyFinder;
-	}
-
-	/**
-	 * Returns the portal preferences local service.
-	 *
-	 * @return the portal preferences local service
-	 */
-	public com.liferay.portal.service.PortalPreferencesLocalService getPortalPreferencesLocalService() {
-		return portalPreferencesLocalService;
-	}
-
-	/**
-	 * Sets the portal preferences local service.
-	 *
-	 * @param portalPreferencesLocalService the portal preferences local service
-	 */
-	public void setPortalPreferencesLocalService(
-		com.liferay.portal.service.PortalPreferencesLocalService portalPreferencesLocalService) {
-		this.portalPreferencesLocalService = portalPreferencesLocalService;
-	}
-
-	/**
-	 * Returns the portal preferences persistence.
-	 *
-	 * @return the portal preferences persistence
-	 */
-	public PortalPreferencesPersistence getPortalPreferencesPersistence() {
-		return portalPreferencesPersistence;
-	}
-
-	/**
-	 * Sets the portal preferences persistence.
-	 *
-	 * @param portalPreferencesPersistence the portal preferences persistence
-	 */
-	public void setPortalPreferencesPersistence(
-		PortalPreferencesPersistence portalPreferencesPersistence) {
-		this.portalPreferencesPersistence = portalPreferencesPersistence;
-	}
-
-	/**
-	 * Returns the portlet local service.
-	 *
-	 * @return the portlet local service
-	 */
-	public com.liferay.portal.service.PortletLocalService getPortletLocalService() {
-		return portletLocalService;
-	}
-
-	/**
-	 * Sets the portlet local service.
-	 *
-	 * @param portletLocalService the portlet local service
-	 */
-	public void setPortletLocalService(
-		com.liferay.portal.service.PortletLocalService portletLocalService) {
-		this.portletLocalService = portletLocalService;
-	}
-
-	/**
-	 * Returns the portlet remote service.
-	 *
-	 * @return the portlet remote service
-	 */
-	public com.liferay.portal.service.PortletService getPortletService() {
-		return portletService;
-	}
-
-	/**
-	 * Sets the portlet remote service.
-	 *
-	 * @param portletService the portlet remote service
-	 */
-	public void setPortletService(
-		com.liferay.portal.service.PortletService portletService) {
-		this.portletService = portletService;
-	}
-
-	/**
-	 * Returns the portlet persistence.
-	 *
-	 * @return the portlet persistence
-	 */
-	public PortletPersistence getPortletPersistence() {
-		return portletPersistence;
-	}
-
-	/**
-	 * Sets the portlet persistence.
-	 *
-	 * @param portletPersistence the portlet persistence
-	 */
-	public void setPortletPersistence(PortletPersistence portletPersistence) {
-		this.portletPersistence = portletPersistence;
-	}
-
-	/**
-	 * Returns the resource local service.
-	 *
-	 * @return the resource local service
-	 */
-	public com.liferay.portal.service.ResourceLocalService getResourceLocalService() {
-		return resourceLocalService;
-	}
-
-	/**
-	 * Sets the resource local service.
-	 *
-	 * @param resourceLocalService the resource local service
-	 */
-	public void setResourceLocalService(
-		com.liferay.portal.service.ResourceLocalService resourceLocalService) {
-		this.resourceLocalService = resourceLocalService;
-	}
-
-	/**
-	 * Returns the resource permission local service.
-	 *
-	 * @return the resource permission local service
-	 */
-	public com.liferay.portal.service.ResourcePermissionLocalService getResourcePermissionLocalService() {
-		return resourcePermissionLocalService;
-	}
-
-	/**
-	 * Sets the resource permission local service.
-	 *
-	 * @param resourcePermissionLocalService the resource permission local service
-	 */
-	public void setResourcePermissionLocalService(
-		com.liferay.portal.service.ResourcePermissionLocalService resourcePermissionLocalService) {
-		this.resourcePermissionLocalService = resourcePermissionLocalService;
-	}
-
-	/**
-	 * Returns the resource permission remote service.
-	 *
-	 * @return the resource permission remote service
-	 */
-	public com.liferay.portal.service.ResourcePermissionService getResourcePermissionService() {
-		return resourcePermissionService;
-	}
-
-	/**
-	 * Sets the resource permission remote service.
-	 *
-	 * @param resourcePermissionService the resource permission remote service
-	 */
-	public void setResourcePermissionService(
-		com.liferay.portal.service.ResourcePermissionService resourcePermissionService) {
-		this.resourcePermissionService = resourcePermissionService;
-	}
-
-	/**
-	 * Returns the resource permission persistence.
-	 *
-	 * @return the resource permission persistence
-	 */
-	public ResourcePermissionPersistence getResourcePermissionPersistence() {
-		return resourcePermissionPersistence;
-	}
-
-	/**
-	 * Sets the resource permission persistence.
-	 *
-	 * @param resourcePermissionPersistence the resource permission persistence
-	 */
-	public void setResourcePermissionPersistence(
-		ResourcePermissionPersistence resourcePermissionPersistence) {
-		this.resourcePermissionPersistence = resourcePermissionPersistence;
-	}
-
-	/**
-	 * Returns the resource permission finder.
-	 *
-	 * @return the resource permission finder
-	 */
-	public ResourcePermissionFinder getResourcePermissionFinder() {
-		return resourcePermissionFinder;
-	}
-
-	/**
-	 * Sets the resource permission finder.
-	 *
-	 * @param resourcePermissionFinder the resource permission finder
-	 */
-	public void setResourcePermissionFinder(
-		ResourcePermissionFinder resourcePermissionFinder) {
-		this.resourcePermissionFinder = resourcePermissionFinder;
-	}
-
-	/**
-	 * Returns the role local service.
-	 *
-	 * @return the role local service
-	 */
-	public com.liferay.portal.service.RoleLocalService getRoleLocalService() {
-		return roleLocalService;
-	}
-
-	/**
-	 * Sets the role local service.
-	 *
-	 * @param roleLocalService the role local service
-	 */
-	public void setRoleLocalService(
-		com.liferay.portal.service.RoleLocalService roleLocalService) {
-		this.roleLocalService = roleLocalService;
-	}
-
-	/**
-	 * Returns the role remote service.
-	 *
-	 * @return the role remote service
-	 */
-	public com.liferay.portal.service.RoleService getRoleService() {
-		return roleService;
-	}
-
-	/**
-	 * Sets the role remote service.
-	 *
-	 * @param roleService the role remote service
-	 */
-	public void setRoleService(
-		com.liferay.portal.service.RoleService roleService) {
-		this.roleService = roleService;
-	}
-
-	/**
-	 * Returns the role persistence.
-	 *
-	 * @return the role persistence
-	 */
-	public RolePersistence getRolePersistence() {
-		return rolePersistence;
-	}
-
-	/**
-	 * Sets the role persistence.
-	 *
-	 * @param rolePersistence the role persistence
-	 */
-	public void setRolePersistence(RolePersistence rolePersistence) {
-		this.rolePersistence = rolePersistence;
-	}
-
-	/**
-	 * Returns the role finder.
-	 *
-	 * @return the role finder
-	 */
-	public RoleFinder getRoleFinder() {
-		return roleFinder;
-	}
-
-	/**
-	 * Sets the role finder.
-	 *
-	 * @param roleFinder the role finder
-	 */
-	public void setRoleFinder(RoleFinder roleFinder) {
-		this.roleFinder = roleFinder;
-	}
-
-	/**
-	 * Returns the user local service.
-	 *
-	 * @return the user local service
-	 */
-	public com.liferay.portal.service.UserLocalService getUserLocalService() {
-		return userLocalService;
-	}
-
-	/**
-	 * Sets the user local service.
-	 *
-	 * @param userLocalService the user local service
-	 */
-	public void setUserLocalService(
-		com.liferay.portal.service.UserLocalService userLocalService) {
-		this.userLocalService = userLocalService;
-	}
-
-	/**
-	 * Returns the user remote service.
-	 *
-	 * @return the user remote service
-	 */
-	public com.liferay.portal.service.UserService getUserService() {
-		return userService;
-	}
-
-	/**
-	 * Sets the user remote service.
-	 *
-	 * @param userService the user remote service
-	 */
-	public void setUserService(
-		com.liferay.portal.service.UserService userService) {
-		this.userService = userService;
-	}
-
-	/**
-	 * Returns the user persistence.
-	 *
-	 * @return the user persistence
-	 */
-	public UserPersistence getUserPersistence() {
-		return userPersistence;
-	}
-
-	/**
-	 * Sets the user persistence.
-	 *
-	 * @param userPersistence the user persistence
-	 */
-	public void setUserPersistence(UserPersistence userPersistence) {
-		this.userPersistence = userPersistence;
-	}
-
-	/**
-	 * Returns the user finder.
-	 *
-	 * @return the user finder
-	 */
-	public UserFinder getUserFinder() {
-		return userFinder;
-	}
-
-	/**
-	 * Sets the user finder.
-	 *
-	 * @param userFinder the user finder
-	 */
-	public void setUserFinder(UserFinder userFinder) {
-		this.userFinder = userFinder;
-	}
-
-	/**
-	 * Returns the virtual host local service.
-	 *
-	 * @return the virtual host local service
-	 */
-	public com.liferay.portal.service.VirtualHostLocalService getVirtualHostLocalService() {
-		return virtualHostLocalService;
-	}
-
-	/**
-	 * Sets the virtual host local service.
-	 *
-	 * @param virtualHostLocalService the virtual host local service
-	 */
-	public void setVirtualHostLocalService(
-		com.liferay.portal.service.VirtualHostLocalService virtualHostLocalService) {
-		this.virtualHostLocalService = virtualHostLocalService;
-	}
-
-	/**
-	 * Returns the virtual host persistence.
-	 *
-	 * @return the virtual host persistence
-	 */
-	public VirtualHostPersistence getVirtualHostPersistence() {
-		return virtualHostPersistence;
-	}
-
-	/**
-	 * Sets the virtual host persistence.
-	 *
-	 * @param virtualHostPersistence the virtual host persistence
-	 */
-	public void setVirtualHostPersistence(
-		VirtualHostPersistence virtualHostPersistence) {
-		this.virtualHostPersistence = virtualHostPersistence;
-	}
-
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register("com.liferay.portal.model.Company",
-			companyLocalService);
+		persistedModelLocalServiceRegistry.register(
+			"com.liferay.portal.kernel.model.Company", companyLocalService);
+
+		_setLocalServiceUtilService(companyLocalService);
 	}
 
 	public void destroy() {
 		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.portal.model.Company");
+			"com.liferay.portal.kernel.model.Company");
+
+		_setLocalServiceUtilService(null);
 	}
 
 	/**
-	 * Returns the Spring bean ID for this bean.
+	 * Returns the OSGi service identifier.
 	 *
-	 * @return the Spring bean ID for this bean
+	 * @return the OSGi service identifier
 	 */
 	@Override
-	public String getBeanIdentifier() {
-		return _beanIdentifier;
-	}
-
-	/**
-	 * Sets the Spring bean ID for this bean.
-	 *
-	 * @param beanIdentifier the Spring bean ID for this bean
-	 */
-	@Override
-	public void setBeanIdentifier(String beanIdentifier) {
-		_beanIdentifier = beanIdentifier;
+	public String getOSGiServiceIdentifier() {
+		return CompanyLocalService.class.getName();
 	}
 
 	protected Class<?> getModelClass() {
@@ -1372,130 +472,51 @@ public abstract class CompanyLocalServiceBaseImpl extends BaseLocalServiceImpl
 		try {
 			DataSource dataSource = companyPersistence.getDataSource();
 
-			DB db = DBFactoryUtil.getDB();
+			DB db = DBManagerUtil.getDB();
 
 			sql = db.buildSQL(sql);
 			sql = PortalUtil.transformSQL(sql);
 
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(dataSource,
-					sql, new int[0]);
+			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
+				dataSource, sql);
 
 			sqlUpdate.update();
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 	}
 
-	@BeanReference(type = com.liferay.portal.service.CompanyLocalService.class)
+	private void _setLocalServiceUtilService(
+		CompanyLocalService companyLocalService) {
+
+		try {
+			Field field = CompanyLocalServiceUtil.class.getDeclaredField(
+				"_service");
+
+			field.setAccessible(true);
+
+			field.set(null, companyLocalService);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new RuntimeException(reflectiveOperationException);
+		}
+	}
+
+	@BeanReference(type = CompanyLocalService.class)
 	protected CompanyLocalService companyLocalService;
-	@BeanReference(type = com.liferay.portal.service.CompanyService.class)
-	protected com.liferay.portal.service.CompanyService companyService;
+
 	@BeanReference(type = CompanyPersistence.class)
 	protected CompanyPersistence companyPersistence;
-	@BeanReference(type = com.liferay.counter.service.CounterLocalService.class)
-	protected com.liferay.counter.service.CounterLocalService counterLocalService;
-	@BeanReference(type = com.liferay.portal.service.AccountLocalService.class)
-	protected com.liferay.portal.service.AccountLocalService accountLocalService;
-	@BeanReference(type = com.liferay.portal.service.AccountService.class)
-	protected com.liferay.portal.service.AccountService accountService;
-	@BeanReference(type = AccountPersistence.class)
-	protected AccountPersistence accountPersistence;
-	@BeanReference(type = com.liferay.portal.service.ContactLocalService.class)
-	protected com.liferay.portal.service.ContactLocalService contactLocalService;
-	@BeanReference(type = com.liferay.portal.service.ContactService.class)
-	protected com.liferay.portal.service.ContactService contactService;
-	@BeanReference(type = ContactPersistence.class)
-	protected ContactPersistence contactPersistence;
-	@BeanReference(type = com.liferay.portal.service.GroupLocalService.class)
-	protected com.liferay.portal.service.GroupLocalService groupLocalService;
-	@BeanReference(type = com.liferay.portal.service.GroupService.class)
-	protected com.liferay.portal.service.GroupService groupService;
-	@BeanReference(type = GroupPersistence.class)
-	protected GroupPersistence groupPersistence;
-	@BeanReference(type = GroupFinder.class)
-	protected GroupFinder groupFinder;
-	@BeanReference(type = com.liferay.portal.service.ImageLocalService.class)
-	protected com.liferay.portal.service.ImageLocalService imageLocalService;
-	@BeanReference(type = com.liferay.portal.service.ImageService.class)
-	protected com.liferay.portal.service.ImageService imageService;
-	@BeanReference(type = ImagePersistence.class)
-	protected ImagePersistence imagePersistence;
-	@BeanReference(type = com.liferay.portal.service.LayoutPrototypeLocalService.class)
-	protected com.liferay.portal.service.LayoutPrototypeLocalService layoutPrototypeLocalService;
-	@BeanReference(type = com.liferay.portal.service.LayoutPrototypeService.class)
-	protected com.liferay.portal.service.LayoutPrototypeService layoutPrototypeService;
-	@BeanReference(type = LayoutPrototypePersistence.class)
-	protected LayoutPrototypePersistence layoutPrototypePersistence;
-	@BeanReference(type = com.liferay.portal.service.LayoutSetLocalService.class)
-	protected com.liferay.portal.service.LayoutSetLocalService layoutSetLocalService;
-	@BeanReference(type = com.liferay.portal.service.LayoutSetService.class)
-	protected com.liferay.portal.service.LayoutSetService layoutSetService;
-	@BeanReference(type = LayoutSetPersistence.class)
-	protected LayoutSetPersistence layoutSetPersistence;
-	@BeanReference(type = com.liferay.portal.service.LayoutSetPrototypeLocalService.class)
-	protected com.liferay.portal.service.LayoutSetPrototypeLocalService layoutSetPrototypeLocalService;
-	@BeanReference(type = com.liferay.portal.service.LayoutSetPrototypeService.class)
-	protected com.liferay.portal.service.LayoutSetPrototypeService layoutSetPrototypeService;
-	@BeanReference(type = LayoutSetPrototypePersistence.class)
-	protected LayoutSetPrototypePersistence layoutSetPrototypePersistence;
-	@BeanReference(type = com.liferay.portal.service.OrganizationLocalService.class)
-	protected com.liferay.portal.service.OrganizationLocalService organizationLocalService;
-	@BeanReference(type = com.liferay.portal.service.OrganizationService.class)
-	protected com.liferay.portal.service.OrganizationService organizationService;
-	@BeanReference(type = OrganizationPersistence.class)
-	protected OrganizationPersistence organizationPersistence;
-	@BeanReference(type = OrganizationFinder.class)
-	protected OrganizationFinder organizationFinder;
-	@BeanReference(type = com.liferay.portal.service.PasswordPolicyLocalService.class)
-	protected com.liferay.portal.service.PasswordPolicyLocalService passwordPolicyLocalService;
-	@BeanReference(type = com.liferay.portal.service.PasswordPolicyService.class)
-	protected com.liferay.portal.service.PasswordPolicyService passwordPolicyService;
-	@BeanReference(type = PasswordPolicyPersistence.class)
-	protected PasswordPolicyPersistence passwordPolicyPersistence;
-	@BeanReference(type = PasswordPolicyFinder.class)
-	protected PasswordPolicyFinder passwordPolicyFinder;
-	@BeanReference(type = com.liferay.portal.service.PortalPreferencesLocalService.class)
-	protected com.liferay.portal.service.PortalPreferencesLocalService portalPreferencesLocalService;
-	@BeanReference(type = PortalPreferencesPersistence.class)
-	protected PortalPreferencesPersistence portalPreferencesPersistence;
-	@BeanReference(type = com.liferay.portal.service.PortletLocalService.class)
-	protected com.liferay.portal.service.PortletLocalService portletLocalService;
-	@BeanReference(type = com.liferay.portal.service.PortletService.class)
-	protected com.liferay.portal.service.PortletService portletService;
-	@BeanReference(type = PortletPersistence.class)
-	protected PortletPersistence portletPersistence;
-	@BeanReference(type = com.liferay.portal.service.ResourceLocalService.class)
-	protected com.liferay.portal.service.ResourceLocalService resourceLocalService;
-	@BeanReference(type = com.liferay.portal.service.ResourcePermissionLocalService.class)
-	protected com.liferay.portal.service.ResourcePermissionLocalService resourcePermissionLocalService;
-	@BeanReference(type = com.liferay.portal.service.ResourcePermissionService.class)
-	protected com.liferay.portal.service.ResourcePermissionService resourcePermissionService;
-	@BeanReference(type = ResourcePermissionPersistence.class)
-	protected ResourcePermissionPersistence resourcePermissionPersistence;
-	@BeanReference(type = ResourcePermissionFinder.class)
-	protected ResourcePermissionFinder resourcePermissionFinder;
-	@BeanReference(type = com.liferay.portal.service.RoleLocalService.class)
-	protected com.liferay.portal.service.RoleLocalService roleLocalService;
-	@BeanReference(type = com.liferay.portal.service.RoleService.class)
-	protected com.liferay.portal.service.RoleService roleService;
-	@BeanReference(type = RolePersistence.class)
-	protected RolePersistence rolePersistence;
-	@BeanReference(type = RoleFinder.class)
-	protected RoleFinder roleFinder;
-	@BeanReference(type = com.liferay.portal.service.UserLocalService.class)
-	protected com.liferay.portal.service.UserLocalService userLocalService;
-	@BeanReference(type = com.liferay.portal.service.UserService.class)
-	protected com.liferay.portal.service.UserService userService;
-	@BeanReference(type = UserPersistence.class)
-	protected UserPersistence userPersistence;
-	@BeanReference(type = UserFinder.class)
-	protected UserFinder userFinder;
-	@BeanReference(type = com.liferay.portal.service.VirtualHostLocalService.class)
-	protected com.liferay.portal.service.VirtualHostLocalService virtualHostLocalService;
-	@BeanReference(type = VirtualHostPersistence.class)
-	protected VirtualHostPersistence virtualHostPersistence;
+
+	@BeanReference(
+		type = com.liferay.counter.kernel.service.CounterLocalService.class
+	)
+	protected com.liferay.counter.kernel.service.CounterLocalService
+		counterLocalService;
+
 	@BeanReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry persistedModelLocalServiceRegistry;
-	private String _beanIdentifier;
+	protected PersistedModelLocalServiceRegistry
+		persistedModelLocalServiceRegistry;
+
 }

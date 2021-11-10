@@ -14,12 +14,26 @@
 
 package com.liferay.portal.tools;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.db.DBType;
+import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
+import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 
+import java.io.File;
 import java.io.IOException;
+
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import java.sql.SQLException;
 
 import java.util.Map;
 
@@ -40,30 +54,34 @@ public class DBBuilder {
 
 		String databaseTypesString = arguments.get("db.database.types");
 
-		String[] databaseTypes = null;
+		DBType[] dbTypes = DBType.values();
 
-		if (databaseTypesString == null) {
-			databaseTypes = DB.TYPE_ALL;
-		}
-		else {
-			databaseTypes = StringUtil.split(databaseTypesString);
+		if (databaseTypesString != null) {
+			String[] databaseTypeValues = StringUtil.split(databaseTypesString);
+
+			dbTypes = new DBType[databaseTypeValues.length];
+
+			for (int i = 0; i < dbTypes.length; i++) {
+				dbTypes[i] = DBType.valueOf(
+					StringUtil.toUpperCase(databaseTypeValues[i]));
+			}
 		}
 
 		String sqlDir = arguments.get("db.sql.dir");
 
 		try {
-			new DBBuilder(databaseName, databaseTypes, sqlDir);
+			new DBBuilder(databaseName, dbTypes, sqlDir);
 		}
-		catch (Exception e) {
-			ArgumentsUtil.processMainException(arguments, e);
+		catch (Exception exception) {
+			ArgumentsUtil.processMainException(arguments, exception);
 		}
 	}
 
-	public DBBuilder(String databaseName, String[] databaseTypes, String sqlDir)
+	public DBBuilder(String databaseName, DBType[] dbTypes, String sqlDir)
 		throws Exception {
 
 		_databaseName = databaseName;
-		_databaseTypes = databaseTypes;
+		_dbTypes = dbTypes;
 
 		if (!sqlDir.endsWith("/META-INF/sql") &&
 			!sqlDir.endsWith("/WEB-INF/sql")) {
@@ -77,68 +95,232 @@ public class DBBuilder {
 
 		_buildSQLFile(sqlDir, "indexes");
 		_buildSQLFile(sqlDir, "sequences");
-		_buildSQLFile(sqlDir, "update-5.0.1-5.1.0");
-		_buildSQLFile(sqlDir, "update-5.1.1-5.1.2");
-		_buildSQLFile(sqlDir, "update-5.1.2-5.2.0");
-		_buildSQLFile(sqlDir, "update-5.2.0-5.2.1");
-		_buildSQLFile(sqlDir, "update-5.2.2-5.2.3");
-		_buildSQLFile(sqlDir, "update-5.2.3-6.0.0");
-		_buildSQLFile(sqlDir, "update-5.2.5-6.0.0");
-		_buildSQLFile(sqlDir, "update-5.2.7-6.0.0");
-		_buildSQLFile(sqlDir, "update-5.2.8-6.0.5");
-		_buildSQLFile(sqlDir, "update-6.0.0-6.0.1");
-		_buildSQLFile(sqlDir, "update-6.0.1-6.0.2");
-		_buildSQLFile(sqlDir, "update-6.0.2-6.0.3");
-		_buildSQLFile(sqlDir, "update-6.0.4-6.0.5");
-		_buildSQLFile(sqlDir, "update-6.0.5-6.0.6");
-		_buildSQLFile(sqlDir, "update-6.0.6-6.1.0");
-		_buildSQLFile(sqlDir, "update-6.0.12-6.1.0");
 		_buildSQLFile(sqlDir, "update-6.1.0-6.1.1");
-		_buildSQLFile(sqlDir, "update-6.1.1-6.2.0");
+		_buildSQLFiles(sqlDir, "update-6.1.1-6.2.0*");
+		_buildSQLFiles(sqlDir, "update-6.2.0-7.0.0*");
+		_buildSQLFiles(sqlDir, "update-7.0.0-7.0.1*");
 
 		_buildCreateFile(sqlDir);
 	}
 
-	private void _buildCreateFile(String sqlDir) throws IOException {
-		for (String databaseType : _databaseTypes) {
-			if (databaseType.equals(DB.TYPE_HYPERSONIC) ||
-				databaseType.equals(DB.TYPE_INTERBASE) ||
-				databaseType.equals(DB.TYPE_JDATASTORE) ||
-				databaseType.equals(DB.TYPE_SAP)) {
+	private void _appendFile(
+			StringBundler sb, String sqlDir, String pathPrefix, DBType dbType)
+		throws Exception {
 
+		String fileName = StringBundler.concat(
+			sqlDir, pathPrefix, dbType, ".sql");
+
+		if (FileUtil.exists(fileName)) {
+			sb.append(FileUtil.read(fileName));
+		}
+	}
+
+	private void _buildCreateFile(String sqlDir) throws Exception {
+		for (DBType dbType : _dbTypes) {
+			if (dbType == DBType.HYPERSONIC) {
 				continue;
 			}
 
-			DB db = DBFactoryUtil.getDB(databaseType);
+			DB db = DBManagerUtil.getDB(dbType, null);
 
 			if (db != null) {
+				String recreateSQL = db.getRecreateSQL(_databaseName);
+
 				if (!sqlDir.endsWith("/WEB-INF/sql")) {
-					db.buildCreateFile(sqlDir, _databaseName);
+					FileUtil.write(
+						StringBundler.concat(
+							sqlDir, "/create-bare/create-bare-", db.getDBType(),
+							".sql"),
+						recreateSQL);
 				}
-				else {
-					db.buildCreateFile(sqlDir, _databaseName, DB.DEFAULT);
+
+				StringBundler sb = new StringBundler(6);
+
+				String tablesPrefix = "/portal/portal-";
+
+				if (sqlDir.endsWith("/WEB-INF/sql")) {
+					tablesPrefix = "/tables/tables-";
+				}
+
+				_appendFile(sb, sqlDir, tablesPrefix, db.getDBType());
+
+				sb.append("\n\n");
+
+				_appendFile(sb, sqlDir, "/indexes/indexes-", db.getDBType());
+
+				sb.append("\n\n");
+
+				_appendFile(
+					sb, sqlDir, "/sequences/sequences-", db.getDBType());
+
+				sb.append("\n");
+
+				String content = db.getPopulateSQL(
+					_databaseName, sb.toString());
+
+				if (!content.isEmpty()) {
+					FileUtil.write(
+						StringBundler.concat(
+							sqlDir, "/create/create-", db.getDBType(), ".sql"),
+						recreateSQL.concat(content));
 				}
 			}
 		}
 	}
 
 	private void _buildSQLFile(String sqlDir, String fileName)
-		throws IOException {
+		throws Exception {
 
-		if (!FileUtil.exists(sqlDir + "/" + fileName + ".sql")) {
+		if (!FileUtil.exists(
+				StringBundler.concat(sqlDir, "/", fileName, ".sql"))) {
+
 			return;
 		}
 
-		for (String _databaseType : _databaseTypes) {
-			DB db = DBFactoryUtil.getDB(_databaseType);
+		_generateSQLFile(sqlDir, fileName);
+	}
 
-			if (db != null) {
-				db.buildSQLFile(sqlDir, fileName);
+	private void _buildSQLFiles(String sqlDir, String regex) throws Exception {
+		try (DirectoryStream<Path> paths = Files.newDirectoryStream(
+				Paths.get(sqlDir), regex)) {
+
+			for (Path path : paths) {
+				String fileName = String.valueOf(path.getFileName());
+
+				_generateSQLFile(
+					sqlDir, StringUtil.removeSubstring(fileName, ".sql"));
 			}
 		}
 	}
 
+	private void _generateSQLFile(String sqlDir, String fileName)
+		throws IOException, SQLException {
+
+		for (DBType dbType : _dbTypes) {
+			DB db = DBManagerUtil.getDB(dbType, null);
+
+			if (db == null) {
+				continue;
+			}
+
+			String template = FileUtil.read(
+				StringBundler.concat(sqlDir, "/", fileName, ".sql"));
+
+			if (fileName.equals("portal")) {
+				StringBundler sb = new StringBundler();
+
+				try (UnsyncBufferedReader unsyncBufferedReader =
+						new UnsyncBufferedReader(
+							new UnsyncStringReader(template))) {
+
+					String line = null;
+
+					while ((line = unsyncBufferedReader.readLine()) != null) {
+						if (line.startsWith("@include ")) {
+							int pos = line.indexOf(" ");
+
+							String includeFileName = line.substring(pos + 1);
+
+							File includeFile = new File(
+								sqlDir + "/" + includeFileName);
+
+							if (!includeFile.exists()) {
+								continue;
+							}
+
+							sb.append(FileUtil.read(includeFile));
+
+							sb.append("\n\n");
+						}
+						else {
+							sb.append(line);
+							sb.append("\n");
+						}
+					}
+				}
+
+				template = sb.toString();
+			}
+			else if (fileName.equals("indexes")) {
+				if (dbType == DBType.SYBASE) {
+					template = _removeBooleanIndexes(sqlDir, template);
+				}
+			}
+
+			if (Validator.isNull(template)) {
+				return;
+			}
+
+			template = db.buildSQL(template);
+
+			FileUtil.write(
+				StringBundler.concat(
+					sqlDir, "/", fileName, "/", fileName, "-", db.getDBType(),
+					".sql"),
+				template);
+		}
+	}
+
+	private String _removeBooleanIndexes(String sqlDir, String data)
+		throws IOException {
+
+		String portalData = FileUtil.read(sqlDir + "/portal-tables.sql");
+
+		if (Validator.isNull(portalData)) {
+			return StringPool.BLANK;
+		}
+
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
+
+			StringBundler sb = new StringBundler();
+
+			String line = null;
+
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				boolean append = true;
+
+				int x = line.indexOf(" on ");
+
+				if (x != -1) {
+					int y = line.indexOf(" (", x);
+
+					String table = line.substring(x + 4, y);
+
+					x = y + 2;
+
+					y = line.indexOf(")", x);
+
+					String[] columns = StringUtil.split(line.substring(x, y));
+
+					x = portalData.indexOf("create table " + table + " (");
+
+					y = portalData.indexOf(");", x);
+
+					String portalTableData = portalData.substring(x, y);
+
+					for (String column : columns) {
+						if (portalTableData.contains(
+								column.trim() + " BOOLEAN")) {
+
+							append = false;
+
+							break;
+						}
+					}
+				}
+
+				if (append) {
+					sb.append(line);
+					sb.append("\n");
+				}
+			}
+
+			return sb.toString();
+		}
+	}
+
 	private final String _databaseName;
-	private final String[] _databaseTypes;
+	private final DBType[] _dbTypes;
 
 }

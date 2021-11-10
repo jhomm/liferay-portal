@@ -1,0 +1,30 @@
+html#{$cadmin-selector} {
+	.cadmin {
+		.sidebar-body__add-panel__content-options {
+			display: flex;
+
+			&-add {
+				margin-left: 16px;
+			}
+
+			&-list {
+				margin-left: auto;
+			}
+
+			&-select {
+				background-color: white;
+				border: 0;
+				color: $cadmin-gray-600;
+				font-weight: 600;
+				width: 140px;
+			}
+
+			&-add,
+			&-list {
+				.lexicon-icon {
+					fill: $cadmin-gray-600;
+				}
+			}
+		}
+	}
+}

@@ -14,11 +14,9 @@
 
 package com.liferay.portal.webdav.methods;
 
-import com.liferay.portal.kernel.flash.FlashMagicBytesUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
-import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.webdav.Resource;
 import com.liferay.portal.kernel.webdav.WebDAVException;
 import com.liferay.portal.kernel.webdav.WebDAVRequest;
@@ -27,7 +25,6 @@ import com.liferay.portal.kernel.webdav.methods.Method;
 
 import java.io.InputStream;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
@@ -38,13 +35,10 @@ public class GetMethodImpl implements Method {
 
 	@Override
 	public int process(WebDAVRequest webDAVRequest) throws WebDAVException {
-		InputStream is = null;
+		InputStream inputStream = null;
 
 		try {
 			WebDAVStorage storage = webDAVRequest.getWebDAVStorage();
-			HttpServletRequest request = webDAVRequest.getHttpServletRequest();
-			HttpServletResponse response =
-				webDAVRequest.getHttpServletResponse();
 
 			Resource resource = storage.getResource(webDAVRequest);
 
@@ -53,34 +47,25 @@ public class GetMethodImpl implements Method {
 			}
 
 			try {
-				is = resource.getContentAsStream();
+				inputStream = resource.getContentAsStream();
 			}
-			catch (Exception e) {
-				if (_log.isErrorEnabled()) {
-					_log.error(e.getMessage());
-				}
+			catch (Exception exception) {
+				_log.error(exception.getMessage());
 			}
 
-			if (is != null) {
+			if (inputStream != null) {
 				String fileName = resource.getDisplayName();
-
-				FlashMagicBytesUtil.Result flashMagicBytesUtilResult =
-					FlashMagicBytesUtil.check(is);
-
-				if (flashMagicBytesUtilResult.isFlash()) {
-					fileName = FileUtil.stripExtension(fileName) + ".swf";
-				}
-
-				is = flashMagicBytesUtilResult.getInputStream();
 
 				try {
 					ServletResponseUtil.sendFileWithRangeHeader(
-						request, response, fileName, is, resource.getSize(),
+						webDAVRequest.getHttpServletRequest(),
+						webDAVRequest.getHttpServletResponse(), fileName,
+						inputStream, resource.getSize(),
 						resource.getContentType());
 				}
-				catch (Exception e) {
+				catch (Exception exception) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(e);
+						_log.warn(exception, exception);
 					}
 				}
 
@@ -89,8 +74,8 @@ public class GetMethodImpl implements Method {
 
 			return HttpServletResponse.SC_NOT_FOUND;
 		}
-		catch (Exception e) {
-			throw new WebDAVException(e);
+		catch (Exception exception) {
+			throw new WebDAVException(exception);
 		}
 	}
 

@@ -14,6 +14,8 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -24,17 +26,18 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.Message;
-import com.liferay.portal.kernel.messaging.sender.SingleDestinationMessageSenderFactoryUtil;
 import com.liferay.portal.kernel.messaging.sender.SynchronousMessageSender;
+import com.liferay.portal.kernel.model.ClassName;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.PortalService;
+import com.liferay.portal.kernel.service.persistence.ClassNamePersistence;
 import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.transaction.Transactional;
-import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.ReleaseInfo;
-import com.liferay.portal.model.ClassName;
-import com.liferay.portal.model.impl.ClassNameImpl;
-import com.liferay.portal.service.PortalService;
+import com.liferay.portal.kernel.util.ServiceProxyFactory;
 import com.liferay.portal.service.base.PortalServiceBaseImpl;
-import com.liferay.portal.util.PrefsPropsUtil;
 import com.liferay.portal.util.PropsValues;
 
 /**
@@ -45,9 +48,7 @@ public class PortalServiceImpl extends PortalServiceBaseImpl {
 
 	@Override
 	public String getAutoDeployDirectory() {
-		return PrefsPropsUtil.getString(
-			PropsKeys.AUTO_DEPLOY_DEPLOY_DIR,
-			PropsValues.AUTO_DEPLOY_DEPLOY_DIR);
+		return PropsValues.AUTO_DEPLOY_DEPLOY_DIR;
 	}
 
 	@JSONWebService
@@ -109,7 +110,7 @@ public class PortalServiceImpl extends PortalServiceBaseImpl {
 
 		// Add in new transaction
 
-		ClassName className = classNameLocalService.addClassName(
+		ClassName className = _classNameLocalService.addClassName(
 			"testAutoSyncHibernateSessionStateOnTxCreation1");
 
 		try {
@@ -121,10 +122,10 @@ public class PortalServiceImpl extends PortalServiceBaseImpl {
 
 			EntityCacheUtil.clearCache();
 
-			className = classNamePersistence.fetchByPrimaryKey(
+			className = _classNamePersistence.fetchByPrimaryKey(
 				className.getClassNameId());
 
-			Session currentSession = classNamePersistence.getCurrentSession();
+			Session currentSession = _classNamePersistence.getCurrentSession();
 
 			if (!currentSession.contains(className)) {
 				throw new IllegalStateException(
@@ -132,17 +133,29 @@ public class PortalServiceImpl extends PortalServiceBaseImpl {
 						"cache");
 			}
 
-			ClassName newClassName = new ClassNameImpl();
-
-			newClassName.setPrimaryKey(className.getClassNameId());
-
 			String newValue = "testAutoSyncHibernateSessionStateOnTxCreation2";
-
-			newClassName.setValue(newValue);
 
 			// Update in new transaction
 
-			classNameLocalService.updateClassName(newClassName);
+			long classNameId = className.getClassNameId();
+
+			try {
+				TransactionInvokerUtil.invoke(
+					_transactionConfig,
+					() -> {
+						ClassName localClassName =
+							_classNamePersistence.findByPrimaryKey(classNameId);
+
+						localClassName.setValue(newValue);
+
+						_classNameLocalService.updateClassName(localClassName);
+
+						return null;
+					});
+			}
+			catch (Throwable throwable) {
+				throw new RuntimeException(throwable);
+			}
 
 			if (currentSession.contains(className)) {
 				throw new IllegalStateException(
@@ -157,26 +170,27 @@ public class PortalServiceImpl extends PortalServiceBaseImpl {
 
 			EntityCacheUtil.clearCache();
 
-			className = classNamePersistence.fetchByPrimaryKey(
+			className = _classNamePersistence.fetchByPrimaryKey(
 				className.getClassNameId());
 
 			if (!newValue.equals(className.getValue())) {
 				throw new IllegalStateException(
-					"Expected " + newValue + " but found " +
-						className.getClassName());
+					StringBundler.concat(
+						"Expected ", newValue, " but found ",
+						className.getClassName()));
 			}
 		}
 		finally {
 
 			// Clean up
 
-			classNameLocalService.deleteClassName(className);
+			_classNameLocalService.deleteClassName(className);
 		}
 	}
 
 	@Override
 	public void testDeleteClassName() throws PortalException {
-		classNamePersistence.removeByValue(PortalService.class.getName());
+		_classNamePersistence.removeByValue(PortalService.class.getName());
 	}
 
 	@Override
@@ -191,8 +205,8 @@ public class PortalServiceImpl extends PortalServiceBaseImpl {
 		try {
 			userId = getUserId();
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 
 		if (_log.isInfoEnabled()) {
@@ -202,25 +216,24 @@ public class PortalServiceImpl extends PortalServiceBaseImpl {
 
 	@Override
 	public boolean testHasClassName() {
-		int count = classNamePersistence.countByValue(
+		int count = _classNamePersistence.countByValue(
 			PortalService.class.getName());
 
 		if (count > 0) {
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	protected void addClassName(String classNameValue) {
 		long classNameId = counterLocalService.increment();
 
-		ClassName className = classNamePersistence.create(classNameId);
+		ClassName className = _classNamePersistence.create(classNameId);
 
 		className.setValue(classNameValue);
 
-		classNamePersistence.update(className);
+		_classNamePersistence.update(className);
 	}
 
 	protected void addTransactionPortletBar(
@@ -232,20 +245,30 @@ public class PortalServiceImpl extends PortalServiceBaseImpl {
 			message.put("rollback", rollback);
 			message.put("text", transactionPortletBarText);
 
-			SynchronousMessageSender synchronousMessageSender =
-				SingleDestinationMessageSenderFactoryUtil.
-					getSynchronousMessageSender(
-						SynchronousMessageSender.Mode.DIRECT);
-
-			synchronousMessageSender.send(
+			_directSynchronousMessageSender.send(
 				DestinationNames.TEST_TRANSACTION, message);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		PortalServiceImpl.class);
+
+	private static volatile SynchronousMessageSender
+		_directSynchronousMessageSender =
+			ServiceProxyFactory.newServiceTrackedInstance(
+				SynchronousMessageSender.class, PortalServiceImpl.class,
+				"_directSynchronousMessageSender", "(mode=DIRECT)", true);
+	private static final TransactionConfig _transactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.REQUIRES_NEW, new Class<?>[0]);
+
+	@BeanReference(type = ClassNameLocalService.class)
+	private ClassNameLocalService _classNameLocalService;
+
+	@BeanReference(type = ClassNamePersistence.class)
+	private ClassNamePersistence _classNamePersistence;
 
 }

@@ -14,61 +14,82 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.RequiredUserException;
-import com.liferay.portal.UserEmailAddressException;
-import com.liferay.portal.UserFieldException;
+import com.liferay.announcements.kernel.model.AnnouncementsDelivery;
+import com.liferay.announcements.kernel.service.AnnouncementsDeliveryService;
+import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.RequiredUserException;
+import com.liferay.portal.kernel.exception.UserEmailAddressException;
+import com.liferay.portal.kernel.exception.UserFieldException;
+import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
+import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceMode;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Address;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.CompanyConstants;
+import com.liferay.portal.kernel.model.Contact;
+import com.liferay.portal.kernel.model.EmailAddress;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.model.Phone;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.model.UserGroupRole;
+import com.liferay.portal.kernel.model.Website;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicyUtil;
+import com.liferay.portal.kernel.security.membershippolicy.RoleMembershipPolicyUtil;
+import com.liferay.portal.kernel.security.membershippolicy.SiteMembershipPolicyUtil;
+import com.liferay.portal.kernel.security.membershippolicy.UserGroupMembershipPolicyUtil;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.OrganizationLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
+import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
+import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
+import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
+import com.liferay.portal.kernel.service.permission.PasswordPolicyPermissionUtil;
+import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
+import com.liferay.portal.kernel.service.permission.RolePermissionUtil;
+import com.liferay.portal.kernel.service.permission.TeamPermissionUtil;
+import com.liferay.portal.kernel.service.permission.UserGroupPermissionUtil;
+import com.liferay.portal.kernel.service.permission.UserGroupRolePermissionUtil;
+import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
+import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
+import com.liferay.portal.kernel.service.persistence.GroupPersistence;
+import com.liferay.portal.kernel.service.persistence.OrganizationPersistence;
+import com.liferay.portal.kernel.service.persistence.RolePersistence;
+import com.liferay.portal.kernel.service.persistence.UserGroupPersistence;
+import com.liferay.portal.kernel.service.persistence.UserGroupRolePersistence;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.comparator.UserIdComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowThreadLocal;
-import com.liferay.portal.model.Address;
-import com.liferay.portal.model.Company;
-import com.liferay.portal.model.CompanyConstants;
-import com.liferay.portal.model.Contact;
-import com.liferay.portal.model.EmailAddress;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.GroupConstants;
-import com.liferay.portal.model.Organization;
-import com.liferay.portal.model.Phone;
-import com.liferay.portal.model.Role;
-import com.liferay.portal.model.RoleConstants;
-import com.liferay.portal.model.User;
-import com.liferay.portal.model.UserGroup;
-import com.liferay.portal.model.UserGroupRole;
-import com.liferay.portal.model.Website;
-import com.liferay.portal.security.auth.PrincipalException;
-import com.liferay.portal.security.membershippolicy.OrganizationMembershipPolicyUtil;
-import com.liferay.portal.security.membershippolicy.RoleMembershipPolicyUtil;
-import com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil;
-import com.liferay.portal.security.membershippolicy.UserGroupMembershipPolicyUtil;
-import com.liferay.portal.security.permission.ActionKeys;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.service.ServiceContext;
 import com.liferay.portal.service.base.UserServiceBaseImpl;
-import com.liferay.portal.service.permission.GroupPermissionUtil;
-import com.liferay.portal.service.permission.OrganizationPermissionUtil;
-import com.liferay.portal.service.permission.PasswordPolicyPermissionUtil;
-import com.liferay.portal.service.permission.PortalPermissionUtil;
-import com.liferay.portal.service.permission.RolePermissionUtil;
-import com.liferay.portal.service.permission.TeamPermissionUtil;
-import com.liferay.portal.service.permission.UserGroupPermissionUtil;
-import com.liferay.portal.service.permission.UserGroupRolePermissionUtil;
-import com.liferay.portal.service.permission.UserPermissionUtil;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portlet.announcements.model.AnnouncementsDelivery;
-import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
+import com.liferay.portlet.admin.util.OmniadminUtil;
+import com.liferay.users.admin.kernel.util.UsersAdminUtil;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -88,14 +109,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Adds the users to the group.
 	 *
-	 * @param  groupId the primary key of the group
-	 * @param  userIds the primary keys of the users
-	 * @param  serviceContext the service context to be applied (optionally
-	 *         <code>null</code>)
-	 * @throws PortalException if a group or user with the primary key could not
-	 *         be found, if the user did not have permission to assign group
-	 *         members, or if the operation was not allowed by the membership
-	 *         policy
+	 * @param groupId the primary key of the group
+	 * @param userIds the primary keys of the users
+	 * @param serviceContext the service context to be applied (optionally
+	 *        <code>null</code>)
 	 */
 	@Override
 	public void addGroupUsers(
@@ -119,7 +136,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				User user = getUser();
 
 				if (user.getUserId() == userIds[0]) {
-					Group group = groupPersistence.findByPrimaryKey(groupId);
+					Group group = _groupPersistence.findByPrimaryKey(groupId);
 
 					if (user.getCompanyId() == group.getCompanyId()) {
 						int type = group.getType();
@@ -150,13 +167,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Adds the users to the organization.
 	 *
-	 * @param  organizationId the primary key of the organization
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if an organization or user with the primary key
-	 *         could not be found, if the user did not have permission to assign
-	 *         organization members, if current user did not have an
-	 *         organization in common with a given user, or if the operation was
-	 *         not allowed by the membership policy
+	 * @param organizationId the primary key of the organization
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void addOrganizationUsers(long organizationId, long[] userIds)
@@ -180,14 +192,97 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			userIds, new long[] {organizationId}, null);
 	}
 
+	@Override
+	public User addOrUpdateUser(
+			String externalReferenceCode, long creatorUserId, long companyId,
+			boolean autoPassword, String password1, String password2,
+			boolean autoScreenName, String screenName, String emailAddress,
+			Locale locale, String firstName, String middleName, String lastName,
+			long prefixId, long suffixId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String jobTitle,
+			List<Address> addresses, List<EmailAddress> emailAddresses,
+			List<Phone> phones, List<Website> websites, boolean sendEmail,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		boolean workflowEnabled = WorkflowThreadLocal.isEnabled();
+
+		try {
+			WorkflowThreadLocal.setEnabled(false);
+
+			User user = userLocalService.fetchUserByExternalReferenceCode(
+				companyId, externalReferenceCode);
+
+			if (user == null) {
+				checkAddUserPermission(
+					creatorUserId, companyId, emailAddress, new long[0],
+					new long[0], new long[0], new long[0], serviceContext);
+			}
+			else {
+				UserPermissionUtil.check(
+					getPermissionChecker(), user.getUserId(), null,
+					ActionKeys.UPDATE);
+
+				validateUpdatePermission(
+					user, screenName, emailAddress, firstName, middleName,
+					lastName, prefixId, suffixId, birthdayMonth, birthdayDay,
+					birthdayYear, male, jobTitle);
+
+				long curUserId = getUserId();
+
+				if (curUserId == user.getUserId()) {
+					emailAddress = StringUtil.toLowerCase(
+						StringUtil.trim(emailAddress));
+
+					if (!StringUtil.equalsIgnoreCase(
+							emailAddress, user.getEmailAddress())) {
+
+						validateEmailAddress(user, emailAddress);
+					}
+				}
+			}
+
+			user = userLocalService.addOrUpdateUser(
+				externalReferenceCode, creatorUserId, companyId, autoPassword,
+				password1, password2, autoScreenName, screenName, emailAddress,
+				locale, firstName, middleName, lastName, prefixId, suffixId,
+				male, birthdayMonth, birthdayDay, birthdayYear, jobTitle,
+				sendEmail, serviceContext);
+
+			if (addresses != null) {
+				UsersAdminUtil.updateAddresses(
+					Contact.class.getName(), user.getContactId(), addresses);
+			}
+
+			if (emailAddresses != null) {
+				UsersAdminUtil.updateEmailAddresses(
+					Contact.class.getName(), user.getContactId(),
+					emailAddresses);
+			}
+
+			if (phones != null) {
+				UsersAdminUtil.updatePhones(
+					Contact.class.getName(), user.getContactId(), phones);
+			}
+
+			if (websites != null) {
+				UsersAdminUtil.updateWebsites(
+					Contact.class.getName(), user.getContactId(), websites);
+			}
+
+			return user;
+		}
+		finally {
+			WorkflowThreadLocal.setEnabled(workflowEnabled);
+		}
+	}
+
 	/**
 	 * Assigns the password policy to the users, removing any other currently
 	 * assigned password policies.
 	 *
-	 * @param  passwordPolicyId the primary key of the password policy
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if the user did not have permission to assign
-	 *         policy members
+	 * @param passwordPolicyId the primary key of the password policy
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void addPasswordPolicyUsers(long passwordPolicyId, long[] userIds)
@@ -207,12 +302,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Adds the users to the role.
 	 *
-	 * @param  roleId the primary key of the role
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if a role or user with the primary key could not
-	 *         be found, if the user did not have permission to assign role
-	 *         members, or if the operation was not allowed by the membership
-	 *         policy
+	 * @param roleId the primary key of the role
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void addRoleUsers(long roleId, long[] userIds)
@@ -236,11 +327,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Adds the users to the team.
 	 *
-	 * @param  teamId the primary key of the team
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if a team or user with the primary key could not
-	 *         be found or if the user did not have permission to assign team
-	 *         members
+	 * @param teamId the primary key of the team
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void addTeamUsers(long teamId, long[] userIds)
@@ -275,8 +363,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *         generated for the user
 	 * @param  screenName the user's screen name
 	 * @param  emailAddress the user's email address
-	 * @param  facebookId the user's facebook ID
-	 * @param  openId the user's OpenID
 	 * @param  locale the user's locale
 	 * @param  firstName the user's first name
 	 * @param  middleName the user's middle name
@@ -300,11 +386,168 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *         attribute), asset category IDs, asset tag names, and expando
 	 *         bridge attributes for the user.
 	 * @return the new user
-	 * @throws PortalException if the user's information was invalid, if the
-	 *         operation was not allowed by the membership policy, if the
-	 *         creator did not have permission to add users, or if the email
-	 *         address was reserved
 	 */
+	@Override
+	public User addUser(
+			long companyId, boolean autoPassword, String password1,
+			String password2, boolean autoScreenName, String screenName,
+			String emailAddress, Locale locale, String firstName,
+			String middleName, String lastName, long prefixId, long suffixId,
+			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, boolean sendEmail,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		boolean workflowEnabled = WorkflowThreadLocal.isEnabled();
+
+		try {
+			WorkflowThreadLocal.setEnabled(false);
+
+			return addUserWithWorkflow(
+				companyId, autoPassword, password1, password2, autoScreenName,
+				screenName, emailAddress, locale, firstName, middleName,
+				lastName, prefixId, suffixId, male, birthdayMonth, birthdayDay,
+				birthdayYear, jobTitle, groupIds, organizationIds, roleIds,
+				userGroupIds, sendEmail, serviceContext);
+		}
+		finally {
+			WorkflowThreadLocal.setEnabled(workflowEnabled);
+		}
+	}
+
+	/**
+	 * Adds a user with additional parameters.
+	 *
+	 * <p>
+	 * This method handles the creation and bookkeeping of the user including
+	 * its resources, metadata, and internal data structures. It is not
+	 * necessary to make subsequent calls to any methods to setup default
+	 * groups, resources, etc.
+	 * </p>
+	 *
+	 * @param  companyId the primary key of the user's company
+	 * @param  autoPassword whether a password should be automatically generated
+	 *         for the user
+	 * @param  password1 the user's password
+	 * @param  password2 the user's password confirmation
+	 * @param  autoScreenName whether a screen name should be automatically
+	 *         generated for the user
+	 * @param  screenName the user's screen name
+	 * @param  emailAddress the user's email address
+	 * @param  locale the user's locale
+	 * @param  firstName the user's first name
+	 * @param  middleName the user's middle name
+	 * @param  lastName the user's last name
+	 * @param  prefixId the user's name prefix ID
+	 * @param  suffixId the user's name suffix ID
+	 * @param  male whether the user is male
+	 * @param  birthdayMonth the user's birthday month (0-based, meaning 0 for
+	 *         January)
+	 * @param  birthdayDay the user's birthday day
+	 * @param  birthdayYear the user's birthday year
+	 * @param  jobTitle the user's job title
+	 * @param  groupIds the primary keys of the user's groups
+	 * @param  organizationIds the primary keys of the user's organizations
+	 * @param  roleIds the primary keys of the roles this user possesses
+	 * @param  userGroupIds the primary keys of the user's user groups
+	 * @param  addresses the user's addresses
+	 * @param  emailAddresses the user's email addresses
+	 * @param  phones the user's phone numbers
+	 * @param  websites the user's websites
+	 * @param  announcementsDelivers the announcements deliveries
+	 * @param  sendEmail whether to send the user an email notification about
+	 *         their new account
+	 * @param  serviceContext the service context to be applied (optionally
+	 *         <code>null</code>). Can set the UUID (with the <code>uuid</code>
+	 *         attribute), asset category IDs, asset tag names, and expando
+	 *         bridge attributes for the user.
+	 * @return the new user
+	 */
+	@Override
+	public User addUser(
+			long companyId, boolean autoPassword, String password1,
+			String password2, boolean autoScreenName, String screenName,
+			String emailAddress, Locale locale, String firstName,
+			String middleName, String lastName, long prefixId, long suffixId,
+			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, List<Address> addresses,
+			List<EmailAddress> emailAddresses, List<Phone> phones,
+			List<Website> websites,
+			List<AnnouncementsDelivery> announcementsDelivers,
+			boolean sendEmail, ServiceContext serviceContext)
+		throws PortalException {
+
+		boolean workflowEnabled = WorkflowThreadLocal.isEnabled();
+
+		try {
+			WorkflowThreadLocal.setEnabled(false);
+
+			return addUserWithWorkflow(
+				companyId, autoPassword, password1, password2, autoScreenName,
+				screenName, emailAddress, locale, firstName, middleName,
+				lastName, prefixId, suffixId, male, birthdayMonth, birthdayDay,
+				birthdayYear, jobTitle, groupIds, organizationIds, roleIds,
+				userGroupIds, addresses, emailAddresses, phones, websites,
+				announcementsDelivers, sendEmail, serviceContext);
+		}
+		finally {
+			WorkflowThreadLocal.setEnabled(workflowEnabled);
+		}
+	}
+
+	/**
+	 * Adds a user.
+	 *
+	 * <p>
+	 * This method handles the creation and bookkeeping of the user including
+	 * its resources, metadata, and internal data structures. It is not
+	 * necessary to make subsequent calls to any methods to setup default
+	 * groups, resources, etc.
+	 * </p>
+	 *
+	 * @param      companyId the primary key of the user's company
+	 * @param      autoPassword whether a password should be automatically
+	 *             generated for the user
+	 * @param      password1 the user's password
+	 * @param      password2 the user's password confirmation
+	 * @param      autoScreenName whether a screen name should be automatically
+	 *             generated for the user
+	 * @param      screenName the user's screen name
+	 * @param      emailAddress the user's email address
+	 * @param      facebookId the user's facebook ID
+	 * @param      openId the user's OpenID
+	 * @param      locale the user's locale
+	 * @param      firstName the user's first name
+	 * @param      middleName the user's middle name
+	 * @param      lastName the user's last name
+	 * @param      prefixId the user's name prefix ID
+	 * @param      suffixId the user's name suffix ID
+	 * @param      male whether the user is male
+	 * @param      birthdayMonth the user's birthday month (0-based, meaning 0
+	 *             for January)
+	 * @param      birthdayDay the user's birthday day
+	 * @param      birthdayYear the user's birthday year
+	 * @param      jobTitle the user's job title
+	 * @param      groupIds the primary keys of the user's groups
+	 * @param      organizationIds the primary keys of the user's organizations
+	 * @param      roleIds the primary keys of the roles this user possesses
+	 * @param      userGroupIds the primary keys of the user's user groups
+	 * @param      sendEmail whether to send the user an email notification
+	 *             about their new account
+	 * @param      serviceContext the service context to be applied (optionally
+	 *             <code>null</code>). Can set the UUID (with the
+	 *             <code>uuid</code> attribute), asset category IDs, asset tag
+	 *             names, and expando bridge attributes for the user.
+	 * @return     the new user
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #addUser(long,
+	 *             boolean, String, String, boolean, String, String, Locale,
+	 *             String, String, String, long, long, boolean, int, int, int,
+	 *             String, long[], long[], long[], long[], boolean,
+	 *             ServiceContext)}
+	 */
+	@Deprecated
 	@Override
 	public User addUser(
 			long companyId, boolean autoPassword, String password1,
@@ -344,50 +587,52 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * groups, resources, etc.
 	 * </p>
 	 *
-	 * @param  companyId the primary key of the user's company
-	 * @param  autoPassword whether a password should be automatically generated
-	 *         for the user
-	 * @param  password1 the user's password
-	 * @param  password2 the user's password confirmation
-	 * @param  autoScreenName whether a screen name should be automatically
-	 *         generated for the user
-	 * @param  screenName the user's screen name
-	 * @param  emailAddress the user's email address
-	 * @param  facebookId the user's facebook ID
-	 * @param  openId the user's OpenID
-	 * @param  locale the user's locale
-	 * @param  firstName the user's first name
-	 * @param  middleName the user's middle name
-	 * @param  lastName the user's last name
-	 * @param  prefixId the user's name prefix ID
-	 * @param  suffixId the user's name suffix ID
-	 * @param  male whether the user is male
-	 * @param  birthdayMonth the user's birthday month (0-based, meaning 0 for
-	 *         January)
-	 * @param  birthdayDay the user's birthday day
-	 * @param  birthdayYear the user's birthday year
-	 * @param  jobTitle the user's job title
-	 * @param  groupIds the primary keys of the user's groups
-	 * @param  organizationIds the primary keys of the user's organizations
-	 * @param  roleIds the primary keys of the roles this user possesses
-	 * @param  userGroupIds the primary keys of the user's user groups
-	 * @param  addresses the user's addresses
-	 * @param  emailAddresses the user's email addresses
-	 * @param  phones the user's phone numbers
-	 * @param  websites the user's websites
-	 * @param  announcementsDelivers the announcements deliveries
-	 * @param  sendEmail whether to send the user an email notification about
-	 *         their new account
-	 * @param  serviceContext the service context to be applied (optionally
-	 *         <code>null</code>). Can set the UUID (with the <code>uuid</code>
-	 *         attribute), asset category IDs, asset tag names, and expando
-	 *         bridge attributes for the user.
-	 * @return the new user
-	 * @throws PortalException if the user's information was invalid, if the
-	 *         creator did not have permission to add users, if the email
-	 *         address was reserved, if the operation was not allowed by the
-	 *         membership policy, or if some other portal exception occurred
+	 * @param      companyId the primary key of the user's company
+	 * @param      autoPassword whether a password should be automatically
+	 *             generated for the user
+	 * @param      password1 the user's password
+	 * @param      password2 the user's password confirmation
+	 * @param      autoScreenName whether a screen name should be automatically
+	 *             generated for the user
+	 * @param      screenName the user's screen name
+	 * @param      emailAddress the user's email address
+	 * @param      facebookId the user's facebook ID
+	 * @param      openId the user's OpenID
+	 * @param      locale the user's locale
+	 * @param      firstName the user's first name
+	 * @param      middleName the user's middle name
+	 * @param      lastName the user's last name
+	 * @param      prefixId the user's name prefix ID
+	 * @param      suffixId the user's name suffix ID
+	 * @param      male whether the user is male
+	 * @param      birthdayMonth the user's birthday month (0-based, meaning 0
+	 *             for January)
+	 * @param      birthdayDay the user's birthday day
+	 * @param      birthdayYear the user's birthday year
+	 * @param      jobTitle the user's job title
+	 * @param      groupIds the primary keys of the user's groups
+	 * @param      organizationIds the primary keys of the user's organizations
+	 * @param      roleIds the primary keys of the roles this user possesses
+	 * @param      userGroupIds the primary keys of the user's user groups
+	 * @param      addresses the user's addresses
+	 * @param      emailAddresses the user's email addresses
+	 * @param      phones the user's phone numbers
+	 * @param      websites the user's websites
+	 * @param      announcementsDelivers the announcements deliveries
+	 * @param      sendEmail whether to send the user an email notification
+	 *             about their new account
+	 * @param      serviceContext the service context to be applied (optionally
+	 *             <code>null</code>). Can set the UUID (with the
+	 *             <code>uuid</code> attribute), asset category IDs, asset tag
+	 *             names, and expando bridge attributes for the user.
+	 * @return     the new user
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #addUser(long,
+	 *             boolean, String, String, boolean, String, String, Locale,
+	 *             String, String, String, long, long, boolean, int, int, int,
+	 *             String, long[], long[], long[], long[], List, List, List,
+	 *             List, List, boolean, ServiceContext)}
 	 */
+	@Deprecated
 	@Override
 	public User addUser(
 			long companyId, boolean autoPassword, String password1,
@@ -424,12 +669,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Adds the users to the user group.
 	 *
-	 * @param  userGroupId the primary key of the user group
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if a user group or user with the primary could
-	 *         could not be found, if the current user did not have permission
-	 *         to assign group members, or if the operation was not allowed by
-	 *         the membership policy
+	 * @param userGroupId the primary key of the user group
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void addUserGroupUsers(long userGroupId, long[] userIds)
@@ -470,8 +711,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *         generated for the user
 	 * @param  screenName the user's screen name
 	 * @param  emailAddress the user's email address
-	 * @param  facebookId the user's facebook ID
-	 * @param  openId the user's OpenID
 	 * @param  locale the user's locale
 	 * @param  firstName the user's first name
 	 * @param  middleName the user's middle name
@@ -495,11 +734,215 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *         attribute), asset category IDs, asset tag names, and expando
 	 *         bridge attributes for the user.
 	 * @return the new user
-	 * @throws PortalException if the user's information was invalid, if the
-	 *         operation was not allowed by the membership policy, if the
-	 *         creator did not have permission to add users, or if the email
-	 *         address was reserved
 	 */
+	@Override
+	public User addUserWithWorkflow(
+			long companyId, boolean autoPassword, String password1,
+			String password2, boolean autoScreenName, String screenName,
+			String emailAddress, Locale locale, String firstName,
+			String middleName, String lastName, long prefixId, long suffixId,
+			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, boolean sendEmail,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		long creatorUserId = 0;
+
+		try {
+			creatorUserId = getGuestOrUserId();
+		}
+		catch (PrincipalException principalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to get guest or current user ID",
+					principalException);
+			}
+		}
+
+		checkAddUserPermission(
+			creatorUserId, companyId, emailAddress, groupIds, organizationIds,
+			roleIds, userGroupIds, serviceContext);
+
+		User user = userLocalService.addUserWithWorkflow(
+			creatorUserId, companyId, autoPassword, password1, password2,
+			autoScreenName, screenName, emailAddress, locale, firstName,
+			middleName, lastName, prefixId, suffixId, male, birthdayMonth,
+			birthdayDay, birthdayYear, jobTitle, groupIds, organizationIds,
+			roleIds, userGroupIds, sendEmail, serviceContext);
+
+		checkMembership(
+			new long[] {user.getUserId()}, groupIds, organizationIds, roleIds,
+			userGroupIds);
+
+		propagateMembership(
+			new long[] {user.getUserId()}, groupIds, organizationIds, roleIds,
+			userGroupIds);
+
+		return user;
+	}
+
+	/**
+	 * Adds a user with workflow and additional parameters.
+	 *
+	 * <p>
+	 * This method handles the creation and bookkeeping of the user including
+	 * its resources, metadata, and internal data structures. It is not
+	 * necessary to make subsequent calls to any methods to setup default
+	 * groups, resources, etc.
+	 * </p>
+	 *
+	 * @param  companyId the primary key of the user's company
+	 * @param  autoPassword whether a password should be automatically generated
+	 *         for the user
+	 * @param  password1 the user's password
+	 * @param  password2 the user's password confirmation
+	 * @param  autoScreenName whether a screen name should be automatically
+	 *         generated for the user
+	 * @param  screenName the user's screen name
+	 * @param  emailAddress the user's email address
+	 * @param  locale the user's locale
+	 * @param  firstName the user's first name
+	 * @param  middleName the user's middle name
+	 * @param  lastName the user's last name
+	 * @param  prefixId the user's name prefix ID
+	 * @param  suffixId the user's name suffix ID
+	 * @param  male whether the user is male
+	 * @param  birthdayMonth the user's birthday month (0-based, meaning 0 for
+	 *         January)
+	 * @param  birthdayDay the user's birthday day
+	 * @param  birthdayYear the user's birthday year
+	 * @param  jobTitle the user's job title
+	 * @param  groupIds the primary keys of the user's groups
+	 * @param  organizationIds the primary keys of the user's organizations
+	 * @param  roleIds the primary keys of the roles this user possesses
+	 * @param  userGroupIds the primary keys of the user's user groups
+	 * @param  addresses the user's addresses
+	 * @param  emailAddresses the user's email addresses
+	 * @param  phones the user's phone numbers
+	 * @param  websites the user's websites
+	 * @param  announcementsDelivers the announcements deliveries
+	 * @param  sendEmail whether to send the user an email notification about
+	 *         their new account
+	 * @param  serviceContext the service context to be applied (optionally
+	 *         <code>null</code>). Can set the UUID (with the <code>uuid</code>
+	 *         attribute), asset category IDs, asset tag names, and expando
+	 *         bridge attributes for the user.
+	 * @return the new user
+	 */
+	@Override
+	public User addUserWithWorkflow(
+			long companyId, boolean autoPassword, String password1,
+			String password2, boolean autoScreenName, String screenName,
+			String emailAddress, Locale locale, String firstName,
+			String middleName, String lastName, long prefixId, long suffixId,
+			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, List<Address> addresses,
+			List<EmailAddress> emailAddresses, List<Phone> phones,
+			List<Website> websites,
+			List<AnnouncementsDelivery> announcementsDelivers,
+			boolean sendEmail, ServiceContext serviceContext)
+		throws PortalException {
+
+		boolean indexingEnabled = true;
+
+		if (serviceContext != null) {
+			indexingEnabled = serviceContext.isIndexingEnabled();
+
+			serviceContext.setIndexingEnabled(false);
+		}
+
+		try {
+			User user = addUserWithWorkflow(
+				companyId, autoPassword, password1, password2, autoScreenName,
+				screenName, emailAddress, locale, firstName, middleName,
+				lastName, prefixId, suffixId, male, birthdayMonth, birthdayDay,
+				birthdayYear, jobTitle, groupIds, organizationIds, roleIds,
+				userGroupIds, sendEmail, serviceContext);
+
+			UsersAdminUtil.updateAddresses(
+				Contact.class.getName(), user.getContactId(), addresses);
+
+			UsersAdminUtil.updateEmailAddresses(
+				Contact.class.getName(), user.getContactId(), emailAddresses);
+
+			UsersAdminUtil.updatePhones(
+				Contact.class.getName(), user.getContactId(), phones);
+
+			UsersAdminUtil.updateWebsites(
+				Contact.class.getName(), user.getContactId(), websites);
+
+			updateAnnouncementsDeliveries(
+				user.getUserId(), announcementsDelivers);
+
+			if (indexingEnabled) {
+				Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+					User.class);
+
+				indexer.reindex(user);
+			}
+
+			return user;
+		}
+		finally {
+			if (serviceContext != null) {
+				serviceContext.setIndexingEnabled(indexingEnabled);
+			}
+		}
+	}
+
+	/**
+	 * Adds a user with workflow.
+	 *
+	 * <p>
+	 * This method handles the creation and bookkeeping of the user including
+	 * its resources, metadata, and internal data structures. It is not
+	 * necessary to make subsequent calls to any methods to setup default
+	 * groups, resources, etc.
+	 * </p>
+	 *
+	 * @param      companyId the primary key of the user's company
+	 * @param      autoPassword whether a password should be automatically
+	 *             generated for the user
+	 * @param      password1 the user's password
+	 * @param      password2 the user's password confirmation
+	 * @param      autoScreenName whether a screen name should be automatically
+	 *             generated for the user
+	 * @param      screenName the user's screen name
+	 * @param      emailAddress the user's email address
+	 * @param      facebookId the user's facebook ID
+	 * @param      openId the user's OpenID
+	 * @param      locale the user's locale
+	 * @param      firstName the user's first name
+	 * @param      middleName the user's middle name
+	 * @param      lastName the user's last name
+	 * @param      prefixId the user's name prefix ID
+	 * @param      suffixId the user's name suffix ID
+	 * @param      male whether the user is male
+	 * @param      birthdayMonth the user's birthday month (0-based, meaning 0
+	 *             for January)
+	 * @param      birthdayDay the user's birthday day
+	 * @param      birthdayYear the user's birthday year
+	 * @param      jobTitle the user's job title
+	 * @param      groupIds the primary keys of the user's groups
+	 * @param      organizationIds the primary keys of the user's organizations
+	 * @param      roleIds the primary keys of the roles this user possesses
+	 * @param      userGroupIds the primary keys of the user's user groups
+	 * @param      sendEmail whether to send the user an email notification
+	 *             about their new account
+	 * @param      serviceContext the service context to be applied (optionally
+	 *             <code>null</code>). Can set the UUID (with the
+	 *             <code>uuid</code> attribute), asset category IDs, asset tag
+	 *             names, and expando bridge attributes for the user.
+	 * @return     the new user
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #addUserWithWorkflow(long, boolean, String, String, boolean,
+	 *             String, String, Locale, String, String, String, long, long,
+	 *             boolean, int, int, int, String, long[], long[], long[],
+	 *             long[], boolean, ServiceContext)}
+	 */
+	@Deprecated
 	@Override
 	public User addUserWithWorkflow(
 			long companyId, boolean autoPassword, String password1,
@@ -517,9 +960,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		try {
 			creatorUserId = getGuestOrUserId();
 		}
-		catch (PrincipalException pe) {
+		catch (PrincipalException principalException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn("Unable to get guest or current user ID", pe);
+				_log.warn(
+					"Unable to get guest or current user ID",
+					principalException);
 			}
 		}
 
@@ -555,50 +1000,53 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * groups, resources, etc.
 	 * </p>
 	 *
-	 * @param  companyId the primary key of the user's company
-	 * @param  autoPassword whether a password should be automatically generated
-	 *         for the user
-	 * @param  password1 the user's password
-	 * @param  password2 the user's password confirmation
-	 * @param  autoScreenName whether a screen name should be automatically
-	 *         generated for the user
-	 * @param  screenName the user's screen name
-	 * @param  emailAddress the user's email address
-	 * @param  facebookId the user's facebook ID
-	 * @param  openId the user's OpenID
-	 * @param  locale the user's locale
-	 * @param  firstName the user's first name
-	 * @param  middleName the user's middle name
-	 * @param  lastName the user's last name
-	 * @param  prefixId the user's name prefix ID
-	 * @param  suffixId the user's name suffix ID
-	 * @param  male whether the user is male
-	 * @param  birthdayMonth the user's birthday month (0-based, meaning 0 for
-	 *         January)
-	 * @param  birthdayDay the user's birthday day
-	 * @param  birthdayYear the user's birthday year
-	 * @param  jobTitle the user's job title
-	 * @param  groupIds the primary keys of the user's groups
-	 * @param  organizationIds the primary keys of the user's organizations
-	 * @param  roleIds the primary keys of the roles this user possesses
-	 * @param  userGroupIds the primary keys of the user's user groups
-	 * @param  addresses the user's addresses
-	 * @param  emailAddresses the user's email addresses
-	 * @param  phones the user's phone numbers
-	 * @param  websites the user's websites
-	 * @param  announcementsDelivers the announcements deliveries
-	 * @param  sendEmail whether to send the user an email notification about
-	 *         their new account
-	 * @param  serviceContext the service context to be applied (optionally
-	 *         <code>null</code>). Can set the UUID (with the <code>uuid</code>
-	 *         attribute), asset category IDs, asset tag names, and expando
-	 *         bridge attributes for the user.
-	 * @return the new user
-	 * @throws PortalException if the user's information was invalid, if the
-	 *         operation was not allowed by the membership policy, if the
-	 *         creator did not have permission to add users, if the email
-	 *         address was reserved, or if some other portal exception occurred
+	 * @param      companyId the primary key of the user's company
+	 * @param      autoPassword whether a password should be automatically
+	 *             generated for the user
+	 * @param      password1 the user's password
+	 * @param      password2 the user's password confirmation
+	 * @param      autoScreenName whether a screen name should be automatically
+	 *             generated for the user
+	 * @param      screenName the user's screen name
+	 * @param      emailAddress the user's email address
+	 * @param      facebookId the user's facebook ID
+	 * @param      openId the user's OpenID
+	 * @param      locale the user's locale
+	 * @param      firstName the user's first name
+	 * @param      middleName the user's middle name
+	 * @param      lastName the user's last name
+	 * @param      prefixId the user's name prefix ID
+	 * @param      suffixId the user's name suffix ID
+	 * @param      male whether the user is male
+	 * @param      birthdayMonth the user's birthday month (0-based, meaning 0
+	 *             for January)
+	 * @param      birthdayDay the user's birthday day
+	 * @param      birthdayYear the user's birthday year
+	 * @param      jobTitle the user's job title
+	 * @param      groupIds the primary keys of the user's groups
+	 * @param      organizationIds the primary keys of the user's organizations
+	 * @param      roleIds the primary keys of the roles this user possesses
+	 * @param      userGroupIds the primary keys of the user's user groups
+	 * @param      addresses the user's addresses
+	 * @param      emailAddresses the user's email addresses
+	 * @param      phones the user's phone numbers
+	 * @param      websites the user's websites
+	 * @param      announcementsDelivers the announcements deliveries
+	 * @param      sendEmail whether to send the user an email notification
+	 *             about their new account
+	 * @param      serviceContext the service context to be applied (optionally
+	 *             <code>null</code>). Can set the UUID (with the
+	 *             <code>uuid</code> attribute), asset category IDs, asset tag
+	 *             names, and expando bridge attributes for the user.
+	 * @return     the new user
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #addUserWithWorkflow(long, boolean, String, String, boolean,
+	 *             String, String, Locale, String, String, String, long, long,
+	 *             boolean, int, int, int, String, long[], long[], long[],
+	 *             long[], List, List, List, List, List, boolean, ServiceContext
+	 *             )}
 	 */
+	@Deprecated
 	@Override
 	public User addUserWithWorkflow(
 			long companyId, boolean autoPassword, String password1,
@@ -664,10 +1112,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Deletes the user's portrait image.
 	 *
-	 * @param  userId the primary key of the user
-	 * @throws PortalException if a user with the primary key could not be
-	 *         found, if the user's portrait could not be found, or if the
-	 *         current user did not have permission to update the user
+	 * @param userId the primary key of the user
 	 */
 	@Override
 	public void deletePortrait(long userId) throws PortalException {
@@ -680,11 +1125,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Removes the user from the role.
 	 *
-	 * @param  roleId the primary key of the role
-	 * @param  userId the primary key of the user
-	 * @throws PortalException if a role or user with the primary key could not
-	 *         be found, or if the current user did not have permission to
-	 *         assign role members
+	 * @param roleId the primary key of the role
+	 * @param userId the primary key of the user
 	 */
 	@Override
 	public void deleteRoleUser(long roleId, long userId)
@@ -699,9 +1141,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Deletes the user.
 	 *
-	 * @param  userId the primary key of the user
-	 * @throws PortalException if a user with the primary key could not be found
-	 *         or if the current user did not have permission to delete the user
+	 * @param userId the primary key of the user
 	 */
 	@Override
 	public void deleteUser(long userId) throws PortalException {
@@ -721,8 +1161,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		PermissionChecker permissionChecker = getPermissionChecker();
 
-		if (!permissionChecker.isCompanyAdmin(companyId)) {
-			throw new PrincipalException.MustBeCompanyAdmin(permissionChecker);
+		if (!permissionChecker.hasPermission(
+				null, User.class.getName(), companyId, ActionKeys.VIEW)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, User.class.getName(), 0, ActionKeys.VIEW);
 		}
 
 		return userPersistence.findByCompanyId(companyId, start, end);
@@ -732,8 +1175,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	public int getCompanyUsersCount(long companyId) throws PortalException {
 		PermissionChecker permissionChecker = getPermissionChecker();
 
-		if (!permissionChecker.isCompanyAdmin(companyId)) {
-			throw new PrincipalException.MustBeCompanyAdmin(permissionChecker);
+		if (!permissionChecker.hasPermission(
+				null, User.class.getName(), companyId, ActionKeys.VIEW)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, User.class.getName(), 0, ActionKeys.VIEW);
 		}
 
 		return userPersistence.countByCompanyId(companyId);
@@ -749,8 +1195,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @return the primary keys of the users belonging to the group
-	 * @throws PortalException if the current user did not have permission to
-	 *         view group assignments
 	 */
 	@Override
 	public long[] getGroupUserIds(long groupId) throws PortalException {
@@ -765,8 +1209,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *
 	 * @param  groupId the primary key of the group
 	 * @return the users belonging to the group
-	 * @throws PortalException if the current user did not have permission to
-	 *         view group assignments
 	 */
 	@Override
 	public List<User> getGroupUsers(long groupId) throws PortalException {
@@ -777,12 +1219,162 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	}
 
 	/**
+	 * Returns the users belonging to a group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  status the workflow status
+	 * @param  start the lower bound of the range of users
+	 * @param  end the upper bound of the range of users (not inclusive)
+	 * @param  orderByComparator the comparator to order the users by
+	 *         (optionally <code>null</code>)
+	 * @return the matching users
+	 */
+	@Override
+	public List<User> getGroupUsers(
+			long groupId, int status, int start, int end,
+			OrderByComparator<User> orderByComparator)
+		throws PortalException {
+
+		GroupPermissionUtil.check(
+			getPermissionChecker(), groupId, ActionKeys.VIEW_MEMBERS);
+
+		return userLocalService.getGroupUsers(
+			groupId, status, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns the users belonging to a group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  status the workflow status
+	 * @param  orderByComparator the comparator to order the users by
+	 *         (optionally <code>null</code>)
+	 * @return the matching users
+	 */
+	@Override
+	public List<User> getGroupUsers(
+			long groupId, int status, OrderByComparator<User> orderByComparator)
+		throws PortalException {
+
+		return getGroupUsers(
+			groupId, status, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the number of users with the status belonging to the group.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  status the workflow status
+	 * @return the number of users with the status belonging to the group
+	 */
+	@Override
+	public int getGroupUsersCount(long groupId, int status)
+		throws PortalException {
+
+		GroupPermissionUtil.check(
+			getPermissionChecker(), groupId, ActionKeys.VIEW);
+
+		return userLocalService.getGroupUsersCount(groupId, status);
+	}
+
+	@Override
+	public List<User> getGtCompanyUsers(long gtUserId, long companyId, int size)
+		throws PortalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.hasPermission(
+				null, User.class.getName(), companyId, ActionKeys.VIEW)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, User.class.getName(), 0, ActionKeys.VIEW);
+		}
+
+		return userPersistence.findByGtU_C(
+			gtUserId, companyId, 0, size, new UserIdComparator(true));
+	}
+
+	@Override
+	public List<User> getGtOrganizationUsers(
+			long gtUserId, long organizationId, int size)
+		throws PortalException {
+
+		Organization organization = _organizationPersistence.findByPrimaryKey(
+			organizationId);
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.hasPermission(
+				null, Organization.class.getName(), organization.getCompanyId(),
+				ActionKeys.VIEW_MEMBERS)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, Organization.class.getName(), 0,
+				ActionKeys.VIEW_MEMBERS);
+		}
+
+		return userFinder.findByUsersOrgsGtUserId(
+			organization.getCompanyId(), organizationId, gtUserId, size);
+	}
+
+	@Override
+	public List<User> getGtUserGroupUsers(
+			long gtUserId, long userGroupId, int size)
+		throws PortalException {
+
+		UserGroup userGroup = _userGroupPersistence.findByPrimaryKey(
+			userGroupId);
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.hasPermission(
+				null, UserGroup.class.getName(), userGroup.getCompanyId(),
+				ActionKeys.VIEW_MEMBERS)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, UserGroup.class.getName(), 0,
+				ActionKeys.VIEW_MEMBERS);
+		}
+
+		return userFinder.findByUsersUserGroupsGtUserId(
+			userGroup.getCompanyId(), userGroupId, gtUserId, size);
+	}
+
+	@Override
+	public int getOrganizationsAndUserGroupsUsersCount(
+			long[] organizationIds, long[] userGroupIds)
+		throws PrincipalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		if (!permissionChecker.hasPermission(
+				null, Organization.class.getName(),
+				CompanyThreadLocal.getCompanyId(), ActionKeys.VIEW_MEMBERS)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, Organization.class.getName(), 0,
+				ActionKeys.VIEW_MEMBERS);
+		}
+
+		if (!permissionChecker.hasPermission(
+				null, UserGroup.class.getName(),
+				CompanyThreadLocal.getCompanyId(), ActionKeys.VIEW_MEMBERS)) {
+
+			throw new PrincipalException.MustHavePermission(
+				permissionChecker, UserGroup.class.getName(), 0,
+				ActionKeys.VIEW_MEMBERS);
+		}
+
+		return userLocalService.getOrganizationsAndUserGroupsUsersCount(
+			organizationIds, userGroupIds);
+	}
+
+	/**
 	 * Returns the primary keys of all the users belonging to the organization.
 	 *
 	 * @param  organizationId the primary key of the organization
 	 * @return the primary keys of the users belonging to the organization
-	 * @throws PortalException if the current user did not have permission to
-	 *         view organization assignments
 	 */
 	@Override
 	public long[] getOrganizationUserIds(long organizationId)
@@ -799,8 +1391,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *
 	 * @param  organizationId the primary key of the organization
 	 * @return users belonging to the organization
-	 * @throws PortalException if the current user did not have permission to
-	 *         view organization assignments
 	 */
 	@Override
 	public List<User> getOrganizationUsers(long organizationId)
@@ -813,12 +1403,75 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	}
 
 	/**
+	 * Returns the users belonging to the organization with the status.
+	 *
+	 * @param  organizationId the primary key of the organization
+	 * @param  status the workflow status
+	 * @param  start the lower bound of the range of users
+	 * @param  end the upper bound of the range of users (not inclusive)
+	 * @param  orderByComparator the comparator to order the users by
+	 *         (optionally <code>null</code>)
+	 * @return the matching users
+	 */
+	@Override
+	public List<User> getOrganizationUsers(
+			long organizationId, int status, int start, int end,
+			OrderByComparator<User> orderByComparator)
+		throws PortalException {
+
+		OrganizationPermissionUtil.check(
+			getPermissionChecker(), organizationId, ActionKeys.VIEW_MEMBERS);
+
+		return userLocalService.getOrganizationUsers(
+			organizationId, status, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns the users belonging to the organization with the status.
+	 *
+	 * @param  organizationId the primary key of the organization
+	 * @param  status the workflow status
+	 * @param  orderByComparator the comparator to order the users by
+	 *         (optionally <code>null</code>)
+	 * @return the matching users
+	 */
+	@Override
+	public List<User> getOrganizationUsers(
+			long organizationId, int status,
+			OrderByComparator<User> orderByComparator)
+		throws PortalException {
+
+		OrganizationPermissionUtil.check(
+			getPermissionChecker(), organizationId, ActionKeys.VIEW_MEMBERS);
+
+		return userLocalService.getOrganizationUsers(
+			organizationId, status, orderByComparator);
+	}
+
+	/**
+	 * Returns the number of users with the status belonging to the
+	 * organization.
+	 *
+	 * @param  organizationId the primary key of the organization
+	 * @param  status the workflow status
+	 * @return the number of users with the status belonging to the organization
+	 */
+	@Override
+	public int getOrganizationUsersCount(long organizationId, int status)
+		throws PortalException {
+
+		OrganizationPermissionUtil.check(
+			getPermissionChecker(), organizationId, ActionKeys.VIEW);
+
+		return userLocalService.getOrganizationUsersCount(
+			organizationId, status);
+	}
+
+	/**
 	 * Returns the primary keys of all the users belonging to the role.
 	 *
 	 * @param  roleId the primary key of the role
 	 * @return the primary keys of the users belonging to the role
-	 * @throws PortalException if the current user did not have permission to
-	 *         view role members
 	 */
 	@Override
 	public long[] getRoleUserIds(long roleId) throws PortalException {
@@ -834,9 +1487,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  companyId the primary key of the user's company
 	 * @param  emailAddress the user's email address
 	 * @return the user with the email address
-	 * @throws PortalException if a user with the email address could not be
-	 *         found or if the current user did not have permission to view the
-	 *         user
 	 */
 	@Override
 	public User getUserByEmailAddress(long companyId, String emailAddress)
@@ -852,12 +1502,31 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	}
 
 	/**
+	 * Returns the user with the external reference code.
+	 *
+	 * @param  companyId the primary key of the user's company
+	 * @param  externalReferenceCode the user's external reference code
+	 * @return the user with the external reference code
+	 */
+	@Override
+	public User getUserByExternalReferenceCode(
+			long companyId, String externalReferenceCode)
+		throws PortalException {
+
+		User user = userLocalService.getUserByExternalReferenceCode(
+			companyId, externalReferenceCode);
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), user.getUserId(), ActionKeys.VIEW);
+
+		return user;
+	}
+
+	/**
 	 * Returns the user with the primary key.
 	 *
 	 * @param  userId the primary key of the user
 	 * @return the user with the primary key
-	 * @throws PortalException if a user with the primary key could not be found
-	 *         or if the current user did not have permission to view the user
 	 */
 	@Override
 	public User getUserById(long userId) throws PortalException {
@@ -875,8 +1544,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  companyId the primary key of the user's company
 	 * @param  screenName the user's screen name
 	 * @return the user with the screen name
-	 * @throws PortalException if a user with the screen name could not be found
-	 *         or if the current user did not have permission to view the user
 	 */
 	@Override
 	public User getUserByScreenName(long companyId, String screenName)
@@ -897,7 +1564,17 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		UserGroupPermissionUtil.check(
 			getPermissionChecker(), userGroupId, ActionKeys.VIEW_MEMBERS);
 
-		return userGroupPersistence.getUsers(userGroupId);
+		return _userGroupPersistence.getUsers(userGroupId);
+	}
+
+	@Override
+	public List<User> getUserGroupUsers(long userGroupId, int start, int end)
+		throws PortalException {
+
+		UserGroupPermissionUtil.check(
+			getPermissionChecker(), userGroupId, ActionKeys.VIEW_MEMBERS);
+
+		return userLocalService.getUserGroupUsers(userGroupId, start, end);
 	}
 
 	/**
@@ -906,8 +1583,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  companyId the primary key of the user's company
 	 * @param  emailAddress the user's email address
 	 * @return the primary key of the user with the email address
-	 * @throws PortalException if a user with the email address could not be
-	 *         found
 	 */
 	@Override
 	public long getUserIdByEmailAddress(long companyId, String emailAddress)
@@ -927,7 +1602,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  companyId the primary key of the user's company
 	 * @param  screenName the user's screen name
 	 * @return the primary key of the user with the screen name
-	 * @throws PortalException if a user with the screen name could not be found
 	 */
 	@Override
 	public long getUserIdByScreenName(long companyId, String screenName)
@@ -948,8 +1622,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @return <code>true</code> if the user is a member of the group;
 	 *         <code>false</code> otherwise
-	 * @throws PortalException if the current user did not have permission to
-	 *         view the user or group members
 	 */
 	@Override
 	public boolean hasGroupUser(long groupId, long userId)
@@ -972,8 +1644,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @return <code>true</code> if the user is a member of the role;
 	 *         <code>false</code> otherwise
-	 * @throws PortalException if the current user did not have permission to
-	 *         view the user or role members
 	 */
 	@Override
 	public boolean hasRoleUser(long roleId, long userId)
@@ -1001,7 +1671,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *         sites, etc.
 	 * @return <code>true</code> if the user has the role; <code>false</code>
 	 *         otherwise
-	 * @throws PortalException if a role with the name could not be found
 	 */
 	@Override
 	public boolean hasRoleUser(
@@ -1011,7 +1680,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		if (!UserPermissionUtil.contains(
 				getPermissionChecker(), userId, ActionKeys.VIEW)) {
 
-			Role role = roleLocalService.getRole(companyId, name);
+			Role role = _roleLocalService.getRole(companyId, name);
 
 			RolePermissionUtil.check(
 				getPermissionChecker(), role.getRoleId(),
@@ -1040,9 +1709,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @return <code>true</code> if the notification email includes a new
 	 *         password; <code>false</code> if the notification email only
 	 *         contains a reset link
-	 * @throws PortalException if a user with the email address could not be
-	 *         found
 	 */
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
 	@Override
 	public boolean sendPasswordByEmailAddress(
 			long companyId, String emailAddress)
@@ -1070,8 +1738,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @return <code>true</code> if the notification email includes a new
 	 *         password; <code>false</code> if the notification email only
 	 *         contains a reset link
-	 * @throws PortalException if a user with the screen name could not be found
 	 */
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
 	@Override
 	public boolean sendPasswordByScreenName(long companyId, String screenName)
 		throws PortalException {
@@ -1096,8 +1764,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @return <code>true</code> if the notification email includes a new
 	 *         password; <code>false</code> if the notification email only
 	 *         contains a reset link
-	 * @throws PortalException if a user with the user ID could not be found
 	 */
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
 	@Override
 	public boolean sendPasswordByUserId(long userId) throws PortalException {
 		return userLocalService.sendPasswordByUserId(userId);
@@ -1107,11 +1775,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * Sets the users in the role, removing and adding users to the role as
 	 * necessary.
 	 *
-	 * @param  roleId the primary key of the role
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if the current user did not have permission to
-	 *         assign role members or if the operation was not allowed by the
-	 *         membership policy
+	 * @param roleId the primary key of the role
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void setRoleUsers(long roleId, long[] userIds)
@@ -1121,7 +1786,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			getPermissionChecker(), roleId, ActionKeys.ASSIGN_MEMBERS);
 
 		Set<Long> unsetUserIds = SetUtil.fromArray(
-			rolePersistence.getUserPrimaryKeys(roleId));
+			_rolePersistence.getUserPrimaryKeys(roleId));
 
 		unsetUserIds.removeAll(SetUtil.fromArray(userIds));
 
@@ -1152,10 +1817,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * Sets the users in the user group, removing and adding users to the user
 	 * group as necessary.
 	 *
-	 * @param  userGroupId the primary key of the user group
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if the current user did not have permission to
-	 *         assign group members
+	 * @param userGroupId the primary key of the user group
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void setUserGroupUsers(long userGroupId, long[] userIds)
@@ -1165,7 +1828,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			getPermissionChecker(), userGroupId, ActionKeys.ASSIGN_MEMBERS);
 
 		Set<Long> unsetUserIds = SetUtil.fromArray(
-			userGroupPersistence.getUserPrimaryKeys(userGroupId));
+			_userGroupPersistence.getUserPrimaryKeys(userGroupId));
 
 		unsetUserIds.removeAll(SetUtil.fromArray(userIds));
 
@@ -1197,10 +1860,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Removes the users from the teams of a group.
 	 *
-	 * @param  groupId the primary key of the group
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if the current user did not have permission to
-	 *         modify user group assignments
+	 * @param groupId the primary key of the group
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void unsetGroupTeamsUsers(long groupId, long[] userIds)
@@ -1219,13 +1880,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Removes the users from the group.
 	 *
-	 * @param  groupId the primary key of the group
-	 * @param  userIds the primary keys of the users
-	 * @param  serviceContext the service context to be applied (optionally
-	 *         <code>null</code>)
-	 * @throws PortalException if the current user did not have permission to
-	 *         modify group assignments or if the operation was not allowed by
-	 *         the membership policy
+	 * @param groupId the primary key of the group
+	 * @param userIds the primary keys of the users
+	 * @param serviceContext the service context to be applied (optionally
+	 *        <code>null</code>)
 	 */
 	@Override
 	public void unsetGroupUsers(
@@ -1252,7 +1910,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				User user = getUser();
 
 				if (user.getUserId() == userIds[0]) {
-					Group group = groupPersistence.findByPrimaryKey(groupId);
+					Group group = _groupPersistence.findByPrimaryKey(groupId);
 
 					if (user.getCompanyId() == group.getCompanyId()) {
 						int type = group.getType();
@@ -1285,11 +1943,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Removes the users from the organization.
 	 *
-	 * @param  organizationId the primary key of the organization
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if the current user did not have permission to
-	 *         modify organization assignments or if the operation was not
-	 *         allowed by the membership policy
+	 * @param organizationId the primary key of the organization
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void unsetOrganizationUsers(long organizationId, long[] userIds)
@@ -1317,10 +1972,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Removes the users from the password policy.
 	 *
-	 * @param  passwordPolicyId the primary key of the password policy
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if the current user did not have permission to
-	 *         modify policy assignments
+	 * @param passwordPolicyId the primary key of the password policy
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void unsetPasswordPolicyUsers(long passwordPolicyId, long[] userIds)
@@ -1340,11 +1993,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Removes the users from the role.
 	 *
-	 * @param  roleId the primary key of the role
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if the current user did not have permission to
-	 *         modify role assignments or if the operation was not allowed by
-	 *         the membership policy
+	 * @param roleId the primary key of the role
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void unsetRoleUsers(long roleId, long[] userIds)
@@ -1368,10 +2018,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Removes the users from the team.
 	 *
-	 * @param  teamId the primary key of the team
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if the current user did not have permission to
-	 *         modify team assignments
+	 * @param teamId the primary key of the team
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void unsetTeamUsers(long teamId, long[] userIds)
@@ -1390,11 +2038,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Removes the users from the user group.
 	 *
-	 * @param  userGroupId the primary key of the user group
-	 * @param  userIds the primary keys of the users
-	 * @throws PortalException if the current user did not have permission to
-	 *         modify user group assignments or if the operation was not allowed
-	 *         by the membership policy
+	 * @param userGroupId the primary key of the user group
+	 * @param userIds the primary keys of the users
 	 */
 	@Override
 	public void unsetUserGroupUsers(long userGroupId, long[] userIds)
@@ -1422,8 +2067,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @param  agreedToTermsOfUse whether the user has agree to the terms of use
 	 * @return the user
-	 * @throws PortalException if the current user did not have permission to
-	 *         update the user's agreement to terms-of-use
 	 */
 	@Override
 	public User updateAgreedToTermsOfUse(
@@ -1448,8 +2091,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *         portal URL, main path, primary key of the layout, remote address,
 	 *         remote host, and agent for the user.
 	 * @return the user
-	 * @throws PortalException if a user with the primary key could not be found
-	 *         or if the current user did not have permission to update the user
 	 */
 	@Override
 	public User updateEmailAddress(
@@ -1482,8 +2123,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *         generated for the user
 	 * @param  screenName the user's screen name
 	 * @param  emailAddress the user's email address
-	 * @param  facebookId the user's facebook ID
-	 * @param  openId the user's OpenID
 	 * @param  locale the user's locale
 	 * @param  firstName the user's first name
 	 * @param  middleName the user's middle name
@@ -1503,9 +2142,86 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *         <code>null</code>). Can set the expando bridge attributes for the
 	 *         user.
 	 * @return the user
-	 * @throws PortalException if the user's information was invalid or if the
-	 *         email address was reserved
 	 */
+	@Override
+	public User updateIncompleteUser(
+			long companyId, boolean autoPassword, String password1,
+			String password2, boolean autoScreenName, String screenName,
+			String emailAddress, Locale locale, String firstName,
+			String middleName, String lastName, long prefixId, long suffixId,
+			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, boolean updateUserInformation, boolean sendEmail,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		long creatorUserId = 0;
+
+		try {
+			creatorUserId = getGuestOrUserId();
+		}
+		catch (PrincipalException principalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to get guest or current user ID",
+					principalException);
+			}
+		}
+
+		checkAddUserPermission(
+			creatorUserId, companyId, emailAddress, null, null, null, null,
+			serviceContext);
+
+		return userLocalService.updateIncompleteUser(
+			creatorUserId, companyId, autoPassword, password1, password2,
+			autoScreenName, screenName, emailAddress, locale, firstName,
+			middleName, lastName, prefixId, suffixId, male, birthdayMonth,
+			birthdayDay, birthdayYear, jobTitle, updateUserInformation,
+			sendEmail, serviceContext);
+	}
+
+	/**
+	 * Updates a user account that was automatically created when a guest user
+	 * participated in an action (e.g. posting a comment) and only provided his
+	 * name and email address.
+	 *
+	 * @param      companyId the primary key of the user's company
+	 * @param      autoPassword whether a password should be automatically
+	 *             generated for the user
+	 * @param      password1 the user's password
+	 * @param      password2 the user's password confirmation
+	 * @param      autoScreenName whether a screen name should be automatically
+	 *             generated for the user
+	 * @param      screenName the user's screen name
+	 * @param      emailAddress the user's email address
+	 * @param      facebookId the user's facebook ID
+	 * @param      openId the user's OpenID
+	 * @param      locale the user's locale
+	 * @param      firstName the user's first name
+	 * @param      middleName the user's middle name
+	 * @param      lastName the user's last name
+	 * @param      prefixId the user's name prefix ID
+	 * @param      suffixId the user's name suffix ID
+	 * @param      male whether the user is male
+	 * @param      birthdayMonth the user's birthday month (0-based, meaning 0
+	 *             for January)
+	 * @param      birthdayDay the user's birthday day
+	 * @param      birthdayYear the user's birthday year
+	 * @param      jobTitle the user's job title
+	 * @param      updateUserInformation whether to update the user's
+	 *             information
+	 * @param      sendEmail whether to send the user an email notification
+	 *             about their new account
+	 * @param      serviceContext the service context to be applied (optionally
+	 *             <code>null</code>). Can set the expando bridge attributes for
+	 *             the user.
+	 * @return     the user
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #updateIncompleteUser(long, long, boolean, String, String,
+	 *             boolean, String, String, Locale, String, String, String,
+	 *             long, long, boolean, int, int, int, String, boolean, boolean,
+	 *             ServiceContext)}
+	 */
+	@Deprecated
 	@Override
 	public User updateIncompleteUser(
 			long companyId, boolean autoPassword, String password1,
@@ -1522,9 +2238,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		try {
 			creatorUserId = getGuestOrUserId();
 		}
-		catch (PrincipalException pe) {
+		catch (PrincipalException principalException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn("Unable to get guest or current user ID", pe);
+				_log.warn(
+					"Unable to get guest or current user ID",
+					principalException);
 			}
 		}
 
@@ -1546,8 +2264,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @param  lockout whether the user is locked out
 	 * @return the user
-	 * @throws PortalException if the user did not have permission to lock out
-	 *         the user
 	 */
 	@Override
 	public User updateLockoutById(long userId, boolean lockout)
@@ -1562,12 +2278,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Updates the user's OpenID.
 	 *
-	 * @param  userId the primary key of the user
-	 * @param  openId the new OpenID
-	 * @return the user
-	 * @throws PortalException if a user with the primary key could not be found
-	 *         or if the current user did not have permission to update the user
+	 * @param      userId the primary key of the user
+	 * @param      openId the new OpenID
+	 * @return     the user
+	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
+	@Deprecated
 	@Override
 	public User updateOpenId(long userId, String openId)
 		throws PortalException {
@@ -1582,12 +2298,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * Sets the organizations that the user is in, removing and adding
 	 * organizations as necessary.
 	 *
-	 * @param  userId the primary key of the user
-	 * @param  organizationIds the primary keys of the organizations
-	 * @param  serviceContext the service context to be applied. Must set
-	 *         whether user indexing is enabled.
-	 * @throws PortalException if a user with the primary key could not be found
-	 *         or if the current user did not have permission to update the user
+	 * @param userId the primary key of the user
+	 * @param organizationIds the primary keys of the organizations
+	 * @param serviceContext the service context to be applied. Must set whether
+	 *        user indexing is enabled.
 	 */
 	@Override
 	public void updateOrganizations(
@@ -1612,8 +2326,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  passwordReset whether the user should be asked to reset their
 	 *         password the next time they log in
 	 * @return the user
-	 * @throws PortalException if a user with the primary key could not be found
-	 *         or if the current user did not have permission to update the user
 	 */
 	@Override
 	public User updatePassword(
@@ -1634,9 +2346,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @param  bytes the new portrait image data
 	 * @return the user
-	 * @throws PortalException if a user with the primary key could not be
-	 *         found, if the new portrait was invalid, or if the current user
-	 *         did not have permission to update the user
 	 */
 	@Override
 	public User updatePortrait(long userId, byte[] bytes)
@@ -1655,9 +2364,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  question the user's new password reset question
 	 * @param  answer the user's new password reset answer
 	 * @return the user
-	 * @throws PortalException if a user with the primary key could not be
-	 *         found, if the new question or answer were invalid, or if the
-	 *         current user did not have permission to update the user
 	 */
 	@Override
 	public User updateReminderQuery(long userId, String question, String answer)
@@ -1675,9 +2381,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  userId the primary key of the user
 	 * @param  screenName the user's new screen name
 	 * @return the user
-	 * @throws PortalException if a user with the primary key could not be
-	 *         found, if the new screen name was invalid, or if the current user
-	 *         did not have permission to update the user
 	 */
 	@Override
 	public User updateScreenName(long userId, String screenName)
@@ -1692,37 +2395,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	/**
 	 * Updates the user's workflow status.
 	 *
-	 * @param      userId the primary key of the user
-	 * @param      status the user's new workflow status
-	 * @return     the user
-	 * @throws     PortalException if a user with the primary key could not be
-	 *             found, if the current user was updating her own status to
-	 *             anything but {@link WorkflowConstants#STATUS_APPROVED}, or if
-	 *             the current user did not have permission to update the user's
-	 *             workflow status.
-	 * @deprecated As of 7.0.0, replaced by {@link #updateStatus(long, int,
-	 *             ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public User updateStatus(long userId, int status) throws PortalException {
-		return updateStatus(userId, status, new ServiceContext());
-	}
-
-	/**
-	 * Updates the user's workflow status.
-	 *
 	 * @param  userId the primary key of the user
 	 * @param  status the user's new workflow status
 	 * @param  serviceContext the service context to be applied. You can specify
 	 *         an unencrypted custom password (used by an LDAP listener) for the
 	 *         user via attribute <code>passwordUnencrypted</code>.
 	 * @return the user
-	 * @throws PortalException if a user with the primary key could not be
-	 *         found, if the current user was updating her own status to
-	 *         anything but {@link WorkflowConstants#STATUS_APPROVED}, or if the
-	 *         current user did not have permission to update the user's
-	 *         workflow status.
 	 */
 	@Override
 	public User updateStatus(
@@ -1756,9 +2434,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  reminderQueryAnswer the user's new password reset answer
 	 * @param  screenName the user's new screen name
 	 * @param  emailAddress the user's new email address
-	 * @param  facebookId the user's new Facebook ID
-	 * @param  openId the user's new OpenID
-	 * @param  portrait whether to update the user's portrait image
+	 * @param  hasPortrait if the user has a custom portrait image
 	 * @param  portraitBytes the new portrait image data
 	 * @param  languageId the user's new language ID
 	 * @param  timeZoneId the user's new time zone ID
@@ -1775,15 +2451,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  birthdayDay the user's new birthday day
 	 * @param  birthdayYear the user's birthday year
 	 * @param  smsSn the user's new SMS screen name
-	 * @param  aimSn the user's new AIM screen name
 	 * @param  facebookSn the user's new Facebook screen name
-	 * @param  icqSn the user's new ICQ screen name
 	 * @param  jabberSn the user's new Jabber screen name
-	 * @param  msnSn the user's new MSN screen name
-	 * @param  mySpaceSn the user's new MySpace screen name
 	 * @param  skypeSn the user's new Skype screen name
 	 * @param  twitterSn the user's new Twitter screen name
-	 * @param  ymSn the user's new Yahoo! Messenger screen name
 	 * @param  jobTitle the user's new job title
 	 * @param  groupIds the primary keys of the user's groups
 	 * @param  organizationIds the primary keys of the user's organizations
@@ -1800,25 +2471,19 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *         attribute), asset category IDs, asset tag names, and expando
 	 *         bridge attributes for the user.
 	 * @return the user
-	 * @throws PortalException if a user with the primary key could not be
-	 *         found, if the new information was invalid, if the current user
-	 *         did not have permission to update the user, or if the operation
-	 *         was not allowed by the membership policy
 	 */
 	@Override
 	public User updateUser(
 			long userId, String oldPassword, String newPassword1,
 			String newPassword2, boolean passwordReset,
 			String reminderQueryQuestion, String reminderQueryAnswer,
-			String screenName, String emailAddress, long facebookId,
-			String openId, boolean portrait, byte[] portraitBytes,
-			String languageId, String timeZoneId, String greeting,
-			String comments, String firstName, String middleName,
-			String lastName, long prefixId, long suffixId, boolean male,
-			int birthdayMonth, int birthdayDay, int birthdayYear, String smsSn,
-			String aimSn, String facebookSn, String icqSn, String jabberSn,
-			String msnSn, String mySpaceSn, String skypeSn, String twitterSn,
-			String ymSn, String jobTitle, long[] groupIds,
+			String screenName, String emailAddress, boolean hasPortrait,
+			byte[] portraitBytes, String languageId, String timeZoneId,
+			String greeting, String comments, String firstName,
+			String middleName, String lastName, long prefixId, long suffixId,
+			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
+			String smsSn, String facebookSn, String jabberSn, String skypeSn,
+			String twitterSn, String jobTitle, long[] groupIds,
 			long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
 			List<Address> addresses, List<EmailAddress> emailAddresses,
@@ -1860,7 +2525,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		long curUserId = getUserId();
 
 		if (curUserId == userId) {
-			emailAddress = StringUtil.toLowerCase(emailAddress.trim());
+			emailAddress = StringUtil.toLowerCase(
+				StringUtil.trim(emailAddress));
 
 			if (!StringUtil.equalsIgnoreCase(
 					emailAddress, user.getEmailAddress())) {
@@ -1876,12 +2542,14 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		// Group membership policy
 
-		long[] oldGroupIds = user.getGroupIds();
-
 		List<Long> addGroupIds = new ArrayList<>();
-		List<Long> removeGroupIds = ListUtil.toList(oldGroupIds);
+		List<Long> removeGroupIds = Collections.emptyList();
 
 		if (groupIds != null) {
+			long[] oldGroupIds = user.getGroupIds();
+
+			removeGroupIds = ListUtil.fromArray(oldGroupIds);
+
 			groupIds = checkGroups(userId, groupIds);
 
 			for (long groupId : groupIds) {
@@ -1902,12 +2570,14 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		// Organization membership policy
 
-		long[] oldOrganizationIds = user.getOrganizationIds();
-
 		List<Long> addOrganizationIds = new ArrayList<>();
-		List<Long> removeOrganizationIds = ListUtil.toList(oldOrganizationIds);
+		List<Long> removeOrganizationIds = Collections.emptyList();
 
 		if (organizationIds != null) {
+			long[] oldOrganizationIds = user.getOrganizationIds();
+
+			removeOrganizationIds = ListUtil.fromArray(oldOrganizationIds);
+
 			organizationIds = checkOrganizations(userId, organizationIds);
 
 			for (long organizationId : organizationIds) {
@@ -1931,12 +2601,14 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		// Role membership policy
 
-		long[] oldRoleIds = user.getRoleIds();
-
 		List<Long> addRoleIds = new ArrayList<>();
-		List<Long> removeRoleIds = ListUtil.toList(oldRoleIds);
+		List<Long> removeRoleIds = Collections.emptyList();
 
 		if (roleIds != null) {
+			long[] oldRoleIds = user.getRoleIds();
+
+			removeRoleIds = ListUtil.fromArray(oldRoleIds);
+
 			roleIds = checkRoles(userId, roleIds);
 
 			for (long roleId : roleIds) {
@@ -1959,7 +2631,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		List<UserGroupRole> oldSiteUserGroupRoles = new ArrayList<>();
 
 		List<UserGroupRole> oldUserGroupRoles =
-			userGroupRolePersistence.findByUserId(userId);
+			_userGroupRolePersistence.findByUserId(userId);
 
 		for (UserGroupRole oldUserGroupRole : oldUserGroupRoles) {
 			Role role = oldUserGroupRole.getRole();
@@ -1973,14 +2645,17 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		}
 
 		List<UserGroupRole> addOrganizationUserGroupRoles = new ArrayList<>();
-		List<UserGroupRole> removeOrganizationUserGroupRoles = ListUtil.copy(
-			oldOrganizationUserGroupRoles);
+		List<UserGroupRole> removeOrganizationUserGroupRoles =
+			Collections.emptyList();
 		List<UserGroupRole> addSiteUserGroupRoles = new ArrayList<>();
-		List<UserGroupRole> removeSiteUserGroupRoles = ListUtil.copy(
-			oldSiteUserGroupRoles);
+		List<UserGroupRole> removeSiteUserGroupRoles = Collections.emptyList();
 
 		if (userGroupRoles != null) {
 			userGroupRoles = checkUserGroupRoles(userId, userGroupRoles);
+
+			removeOrganizationUserGroupRoles = ListUtil.copy(
+				oldOrganizationUserGroupRoles);
+			removeSiteUserGroupRoles = ListUtil.copy(oldSiteUserGroupRoles);
 
 			for (UserGroupRole userGroupRole : userGroupRoles) {
 				Role role = userGroupRole.getRole();
@@ -2021,12 +2696,14 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		// User group membership policy
 
-		long[] oldUserGroupIds = user.getUserGroupIds();
-
 		List<Long> addUserGroupIds = new ArrayList<>();
-		List<Long> removeUserGroupIds = ListUtil.toList(oldUserGroupIds);
+		List<Long> removeUserGroupIds = Collections.emptyList();
 
 		if (userGroupIds != null) {
+			long[] oldUserGroupIds = user.getUserGroupIds();
+
+			removeUserGroupIds = ListUtil.fromArray(oldUserGroupIds);
+
 			userGroupIds = checkUserGroupIds(userId, userGroupIds);
 
 			for (long userGroupId : userGroupIds) {
@@ -2048,11 +2725,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		user = userLocalService.updateUser(
 			userId, oldPassword, newPassword1, newPassword2, passwordReset,
 			reminderQueryQuestion, reminderQueryAnswer, screenName,
-			emailAddress, facebookId, openId, portrait, portraitBytes,
-			languageId, timeZoneId, greeting, comments, firstName, middleName,
-			lastName, prefixId, suffixId, male, birthdayMonth, birthdayDay,
-			birthdayYear, smsSn, aimSn, facebookSn, icqSn, jabberSn, msnSn,
-			mySpaceSn, skypeSn, twitterSn, ymSn, jobTitle, groupIds,
+			emailAddress, hasPortrait, portraitBytes, languageId, timeZoneId,
+			greeting, comments, firstName, middleName, lastName, prefixId,
+			suffixId, male, birthdayMonth, birthdayDay, birthdayYear, smsSn,
+			facebookSn, jabberSn, skypeSn, twitterSn, jobTitle, groupIds,
 			organizationIds, roleIds, userGroupRoles, userGroupIds,
 			serviceContext);
 
@@ -2092,7 +2768,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				removeOrganizationUserGroupRoles);
 		}
 
-		if (!addUserGroupIds.isEmpty() || !removeGroupIds.isEmpty()) {
+		if (!addUserGroupIds.isEmpty() || !removeUserGroupIds.isEmpty()) {
 			UserGroupMembershipPolicyUtil.propagateMembership(
 				new long[] {user.getUserId()},
 				ArrayUtil.toLongArray(addUserGroupIds),
@@ -2117,8 +2793,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param      reminderQueryAnswer the user's new password reset answer
 	 * @param      screenName the user's new screen name
 	 * @param      emailAddress the user's new email address
-	 * @param      facebookId the user's new Facebook ID
-	 * @param      openId the user's new OpenID
+	 * @param      hasPortrait if the user has a custom portrait image
+	 * @param      portraitBytes the new portrait image data
 	 * @param      languageId the user's new language ID
 	 * @param      timeZoneId the user's new time zone ID
 	 * @param      greeting the user's new greeting
@@ -2134,15 +2810,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param      birthdayDay the user's new birthday day
 	 * @param      birthdayYear the user's birthday year
 	 * @param      smsSn the user's new SMS screen name
-	 * @param      aimSn the user's new AIM screen name
 	 * @param      facebookSn the user's new Facebook screen name
-	 * @param      icqSn the user's new ICQ screen name
 	 * @param      jabberSn the user's new Jabber screen name
-	 * @param      msnSn the user's new MSN screen name
-	 * @param      mySpaceSn the user's new MySpace screen name
 	 * @param      skypeSn the user's new Skype screen name
 	 * @param      twitterSn the user's new Twitter screen name
-	 * @param      ymSn the user's new Yahoo! Messenger screen name
 	 * @param      jobTitle the user's new job title
 	 * @param      groupIds the primary keys of the user's groups
 	 * @param      organizationIds the primary keys of the user's organizations
@@ -2159,17 +2830,373 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *             <code>uuid</code> attribute), asset category IDs, asset tag
 	 *             names, and expando bridge attributes for the user.
 	 * @return     the user
-	 * @throws     PortalException if a user with the primary key could not be
-	 *             found, if the new information was invalid, if the current
-	 *             user did not have permission to update the user, or if the
-	 *             operation was not allowed by the membership policy
-	 * @deprecated As of 7.0.0, replaced by {@link #updateUser(long, String,
-	 *             String, String, boolean, String, String, String, String,
-	 *             long, String, boolean, byte[], String, String, String,
-	 *             String, String, String, String, int, int, boolean, int, int,
-	 *             int, String, String, String, String, String, String, String,
-	 *             String, String, String, String, long[], long[], long[], List,
-	 *             long[], List, List, List, List, List, ServiceContext)}
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #updateUser(long, String, String, String, boolean, String,
+	 *             String, String, String, boolean, byte[], String, String,
+	 *             String, String, String, String, String, long, long, boolean,
+	 *             int, int, int, String, String, String, String, String,
+	 *             String, long[], long[], long[], List, long[], List, List,
+	 *             List, List, List, ServiceContext)}
+	 */
+	@Deprecated
+	@Override
+	public User updateUser(
+			long userId, String oldPassword, String newPassword1,
+			String newPassword2, boolean passwordReset,
+			String reminderQueryQuestion, String reminderQueryAnswer,
+			String screenName, String emailAddress, long facebookId,
+			String openId, boolean hasPortrait, byte[] portraitBytes,
+			String languageId, String timeZoneId, String greeting,
+			String comments, String firstName, String middleName,
+			String lastName, long prefixId, long suffixId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear, String smsSn,
+			String facebookSn, String jabberSn, String skypeSn,
+			String twitterSn, String jobTitle, long[] groupIds,
+			long[] organizationIds, long[] roleIds,
+			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
+			List<Address> addresses, List<EmailAddress> emailAddresses,
+			List<Phone> phones, List<Website> websites,
+			List<AnnouncementsDelivery> announcementsDelivers,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), userId, organizationIds, ActionKeys.UPDATE);
+
+		User user = userPersistence.findByPrimaryKey(userId);
+
+		if (addresses != null) {
+			UsersAdminUtil.updateAddresses(
+				Contact.class.getName(), user.getContactId(), addresses);
+		}
+
+		if (emailAddresses != null) {
+			UsersAdminUtil.updateEmailAddresses(
+				Contact.class.getName(), user.getContactId(), emailAddresses);
+		}
+
+		if (phones != null) {
+			UsersAdminUtil.updatePhones(
+				Contact.class.getName(), user.getContactId(), phones);
+		}
+
+		if (websites != null) {
+			UsersAdminUtil.updateWebsites(
+				Contact.class.getName(), user.getContactId(), websites);
+		}
+
+		if (announcementsDelivers != null) {
+			updateAnnouncementsDeliveries(
+				user.getUserId(), announcementsDelivers);
+		}
+
+		long curUserId = getUserId();
+
+		if (curUserId == userId) {
+			emailAddress = StringUtil.toLowerCase(
+				StringUtil.trim(emailAddress));
+
+			if (!StringUtil.equalsIgnoreCase(
+					emailAddress, user.getEmailAddress())) {
+
+				validateEmailAddress(user, emailAddress);
+			}
+		}
+
+		validateUpdatePermission(
+			user, screenName, emailAddress, firstName, middleName, lastName,
+			prefixId, suffixId, birthdayMonth, birthdayDay, birthdayYear, male,
+			jobTitle);
+
+		// Group membership policy
+
+		List<Long> addGroupIds = new ArrayList<>();
+		List<Long> removeGroupIds = Collections.emptyList();
+
+		if (groupIds != null) {
+			long[] oldGroupIds = user.getGroupIds();
+
+			removeGroupIds = ListUtil.fromArray(oldGroupIds);
+
+			groupIds = checkGroups(userId, groupIds);
+
+			for (long groupId : groupIds) {
+				if (ArrayUtil.contains(oldGroupIds, groupId)) {
+					removeGroupIds.remove(groupId);
+				}
+				else {
+					addGroupIds.add(groupId);
+				}
+			}
+
+			if (!addGroupIds.isEmpty() || !removeGroupIds.isEmpty()) {
+				SiteMembershipPolicyUtil.checkMembership(
+					new long[] {userId}, ArrayUtil.toLongArray(addGroupIds),
+					ArrayUtil.toLongArray(removeGroupIds));
+			}
+		}
+
+		// Organization membership policy
+
+		List<Long> addOrganizationIds = new ArrayList<>();
+		List<Long> removeOrganizationIds = Collections.emptyList();
+
+		if (organizationIds != null) {
+			long[] oldOrganizationIds = user.getOrganizationIds();
+
+			removeOrganizationIds = ListUtil.fromArray(oldOrganizationIds);
+
+			organizationIds = checkOrganizations(userId, organizationIds);
+
+			for (long organizationId : organizationIds) {
+				if (ArrayUtil.contains(oldOrganizationIds, organizationId)) {
+					removeOrganizationIds.remove(organizationId);
+				}
+				else {
+					addOrganizationIds.add(organizationId);
+				}
+			}
+
+			if (!addOrganizationIds.isEmpty() ||
+				!removeOrganizationIds.isEmpty()) {
+
+				OrganizationMembershipPolicyUtil.checkMembership(
+					new long[] {userId},
+					ArrayUtil.toLongArray(addOrganizationIds),
+					ArrayUtil.toLongArray(removeOrganizationIds));
+			}
+		}
+
+		// Role membership policy
+
+		List<Long> addRoleIds = new ArrayList<>();
+		List<Long> removeRoleIds = Collections.emptyList();
+
+		if (roleIds != null) {
+			long[] oldRoleIds = user.getRoleIds();
+
+			removeRoleIds = ListUtil.fromArray(oldRoleIds);
+
+			roleIds = checkRoles(userId, roleIds);
+
+			for (long roleId : roleIds) {
+				if (ArrayUtil.contains(oldRoleIds, roleId)) {
+					removeRoleIds.remove(roleId);
+				}
+				else {
+					addRoleIds.add(roleId);
+				}
+			}
+
+			if (!addRoleIds.isEmpty() || !removeRoleIds.isEmpty()) {
+				RoleMembershipPolicyUtil.checkRoles(
+					new long[] {userId}, ArrayUtil.toLongArray(addRoleIds),
+					ArrayUtil.toLongArray(removeRoleIds));
+			}
+		}
+
+		List<UserGroupRole> oldOrganizationUserGroupRoles = new ArrayList<>();
+		List<UserGroupRole> oldSiteUserGroupRoles = new ArrayList<>();
+
+		List<UserGroupRole> oldUserGroupRoles =
+			_userGroupRolePersistence.findByUserId(userId);
+
+		for (UserGroupRole oldUserGroupRole : oldUserGroupRoles) {
+			Role role = oldUserGroupRole.getRole();
+
+			if (role.getType() == RoleConstants.TYPE_ORGANIZATION) {
+				oldOrganizationUserGroupRoles.add(oldUserGroupRole);
+			}
+			else if (role.getType() == RoleConstants.TYPE_SITE) {
+				oldSiteUserGroupRoles.add(oldUserGroupRole);
+			}
+		}
+
+		List<UserGroupRole> addOrganizationUserGroupRoles = new ArrayList<>();
+		List<UserGroupRole> removeOrganizationUserGroupRoles =
+			Collections.emptyList();
+		List<UserGroupRole> addSiteUserGroupRoles = new ArrayList<>();
+		List<UserGroupRole> removeSiteUserGroupRoles = Collections.emptyList();
+
+		if (userGroupRoles != null) {
+			userGroupRoles = checkUserGroupRoles(userId, userGroupRoles);
+
+			removeOrganizationUserGroupRoles = ListUtil.copy(
+				oldOrganizationUserGroupRoles);
+			removeSiteUserGroupRoles = ListUtil.copy(oldSiteUserGroupRoles);
+
+			for (UserGroupRole userGroupRole : userGroupRoles) {
+				Role role = userGroupRole.getRole();
+
+				if (role.getType() == RoleConstants.TYPE_ORGANIZATION) {
+					if (oldOrganizationUserGroupRoles.contains(userGroupRole)) {
+						removeOrganizationUserGroupRoles.remove(userGroupRole);
+					}
+					else {
+						addOrganizationUserGroupRoles.add(userGroupRole);
+					}
+				}
+				else if (role.getType() == RoleConstants.TYPE_SITE) {
+					if (oldSiteUserGroupRoles.contains(userGroupRole)) {
+						removeSiteUserGroupRoles.remove(userGroupRole);
+					}
+					else {
+						addSiteUserGroupRoles.add(userGroupRole);
+					}
+				}
+			}
+
+			if (!addOrganizationUserGroupRoles.isEmpty() ||
+				!removeOrganizationUserGroupRoles.isEmpty()) {
+
+				OrganizationMembershipPolicyUtil.checkRoles(
+					addOrganizationUserGroupRoles,
+					removeOrganizationUserGroupRoles);
+			}
+
+			if (!addSiteUserGroupRoles.isEmpty() ||
+				!removeSiteUserGroupRoles.isEmpty()) {
+
+				SiteMembershipPolicyUtil.checkRoles(
+					addSiteUserGroupRoles, removeSiteUserGroupRoles);
+			}
+		}
+
+		// User group membership policy
+
+		List<Long> addUserGroupIds = new ArrayList<>();
+		List<Long> removeUserGroupIds = Collections.emptyList();
+
+		if (userGroupIds != null) {
+			long[] oldUserGroupIds = user.getUserGroupIds();
+
+			removeUserGroupIds = ListUtil.fromArray(oldUserGroupIds);
+
+			userGroupIds = checkUserGroupIds(userId, userGroupIds);
+
+			for (long userGroupId : userGroupIds) {
+				if (ArrayUtil.contains(oldUserGroupIds, userGroupId)) {
+					removeUserGroupIds.remove(userGroupId);
+				}
+				else {
+					addUserGroupIds.add(userGroupId);
+				}
+			}
+
+			if (!addUserGroupIds.isEmpty() || !removeUserGroupIds.isEmpty()) {
+				UserGroupMembershipPolicyUtil.checkMembership(
+					new long[] {userId}, ArrayUtil.toLongArray(addUserGroupIds),
+					ArrayUtil.toLongArray(removeUserGroupIds));
+			}
+		}
+
+		user = userLocalService.updateUser(
+			userId, oldPassword, newPassword1, newPassword2, passwordReset,
+			reminderQueryQuestion, reminderQueryAnswer, screenName,
+			emailAddress, facebookId, openId, hasPortrait, portraitBytes,
+			languageId, timeZoneId, greeting, comments, firstName, middleName,
+			lastName, prefixId, suffixId, male, birthdayMonth, birthdayDay,
+			birthdayYear, smsSn, facebookSn, jabberSn, skypeSn, twitterSn,
+			jobTitle, groupIds, organizationIds, roleIds, userGroupRoles,
+			userGroupIds, serviceContext);
+
+		if (!addGroupIds.isEmpty() || !removeGroupIds.isEmpty()) {
+			SiteMembershipPolicyUtil.propagateMembership(
+				new long[] {user.getUserId()},
+				ArrayUtil.toLongArray(addGroupIds),
+				ArrayUtil.toLongArray(removeGroupIds));
+		}
+
+		if (!addOrganizationIds.isEmpty() || !removeOrganizationIds.isEmpty()) {
+			OrganizationMembershipPolicyUtil.propagateMembership(
+				new long[] {user.getUserId()},
+				ArrayUtil.toLongArray(addOrganizationIds),
+				ArrayUtil.toLongArray(removeOrganizationIds));
+		}
+
+		if (!addRoleIds.isEmpty() || !removeRoleIds.isEmpty()) {
+			RoleMembershipPolicyUtil.propagateRoles(
+				new long[] {user.getUserId()},
+				ArrayUtil.toLongArray(addRoleIds),
+				ArrayUtil.toLongArray(removeRoleIds));
+		}
+
+		if (!addSiteUserGroupRoles.isEmpty() ||
+			!removeSiteUserGroupRoles.isEmpty()) {
+
+			SiteMembershipPolicyUtil.propagateRoles(
+				addSiteUserGroupRoles, removeSiteUserGroupRoles);
+		}
+
+		if (!addOrganizationUserGroupRoles.isEmpty() ||
+			!removeOrganizationUserGroupRoles.isEmpty()) {
+
+			OrganizationMembershipPolicyUtil.propagateRoles(
+				addOrganizationUserGroupRoles,
+				removeOrganizationUserGroupRoles);
+		}
+
+		if (!addUserGroupIds.isEmpty() || !removeUserGroupIds.isEmpty()) {
+			UserGroupMembershipPolicyUtil.propagateMembership(
+				new long[] {user.getUserId()},
+				ArrayUtil.toLongArray(addUserGroupIds),
+				ArrayUtil.toLongArray(removeUserGroupIds));
+		}
+
+		return user;
+	}
+
+	/**
+	 * Updates the user.
+	 *
+	 * @param      userId the primary key of the user
+	 * @param      oldPassword the user's old password
+	 * @param      newPassword1 the user's new password (optionally
+	 *             <code>null</code>)
+	 * @param      newPassword2 the user's new password confirmation (optionally
+	 *             <code>null</code>)
+	 * @param      passwordReset whether the user should be asked to reset their
+	 *             password the next time they login
+	 * @param      reminderQueryQuestion the user's new password reset question
+	 * @param      reminderQueryAnswer the user's new password reset answer
+	 * @param      screenName the user's new screen name
+	 * @param      emailAddress the user's new email address
+	 * @param      languageId the user's new language ID
+	 * @param      timeZoneId the user's new time zone ID
+	 * @param      greeting the user's new greeting
+	 * @param      comments the user's new comments
+	 * @param      firstName the user's new first name
+	 * @param      middleName the user's new middle name
+	 * @param      lastName the user's new last name
+	 * @param      prefixId the user's new name prefix ID
+	 * @param      suffixId the user's new name suffix ID
+	 * @param      male whether user is male
+	 * @param      birthdayMonth the user's new birthday month (0-based, meaning
+	 *             0 for January)
+	 * @param      birthdayDay the user's new birthday day
+	 * @param      birthdayYear the user's birthday year
+	 * @param      smsSn the user's new SMS screen name
+	 * @param      facebookSn the user's new Facebook screen name
+	 * @param      jabberSn the user's new Jabber screen name
+	 * @param      skypeSn the user's new Skype screen name
+	 * @param      twitterSn the user's new Twitter screen name
+	 * @param      jobTitle the user's new job title
+	 * @param      groupIds the primary keys of the user's groups
+	 * @param      organizationIds the primary keys of the user's organizations
+	 * @param      roleIds the primary keys of the user's roles
+	 * @param      userGroupRoles the user user's group roles
+	 * @param      userGroupIds the primary keys of the user's user groups
+	 * @param      serviceContext the service context to be applied (optionally
+	 *             <code>null</code>). Can set the UUID (with the
+	 *             <code>uuid</code> attribute), asset category IDs, asset tag
+	 *             names, and expando bridge attributes for the user.
+	 * @return     the user
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #updateUser(long, String, String, String, boolean, String,
+	 *             String, String, String, String, String, String, String,
+	 *             String, String, String, long, long, boolean, int, int, int,
+	 *             String, String, String, String, String, String, long[],
+	 *             long[], long[], List, long[], ServiceContext)}
 	 */
 	@Deprecated
 	@Override
@@ -2182,14 +3209,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			String greeting, String comments, String firstName,
 			String middleName, String lastName, long prefixId, long suffixId,
 			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String smsSn, String aimSn, String facebookSn, String icqSn,
-			String jabberSn, String msnSn, String mySpaceSn, String skypeSn,
-			String twitterSn, String ymSn, String jobTitle, long[] groupIds,
+			String smsSn, String facebookSn, String jabberSn, String skypeSn,
+			String twitterSn, String jobTitle, long[] groupIds,
 			long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
-			List<Address> addresses, List<EmailAddress> emailAddresses,
-			List<Phone> phones, List<Website> websites,
-			List<AnnouncementsDelivery> announcementsDelivers,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -2199,10 +3222,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			emailAddress, facebookId, openId, true, null, languageId,
 			timeZoneId, greeting, comments, firstName, middleName, lastName,
 			prefixId, suffixId, male, birthdayMonth, birthdayDay, birthdayYear,
-			smsSn, aimSn, facebookSn, icqSn, jabberSn, msnSn, mySpaceSn,
-			skypeSn, twitterSn, ymSn, jobTitle, groupIds, organizationIds,
-			roleIds, userGroupRoles, userGroupIds, addresses, emailAddresses,
-			phones, websites, announcementsDelivers, serviceContext);
+			smsSn, facebookSn, jabberSn, skypeSn, twitterSn, jobTitle, groupIds,
+			organizationIds, roleIds, userGroupRoles, userGroupIds, null, null,
+			null, null, null, serviceContext);
 	}
 
 	/**
@@ -2220,8 +3242,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  reminderQueryAnswer the user's new password reset answer
 	 * @param  screenName the user's new screen name
 	 * @param  emailAddress the user's new email address
-	 * @param  facebookId the user's new Facebook ID
-	 * @param  openId the user's new OpenID
 	 * @param  languageId the user's new language ID
 	 * @param  timeZoneId the user's new time zone ID
 	 * @param  greeting the user's new greeting
@@ -2237,15 +3257,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  birthdayDay the user's new birthday day
 	 * @param  birthdayYear the user's birthday year
 	 * @param  smsSn the user's new SMS screen name
-	 * @param  aimSn the user's new AIM screen name
 	 * @param  facebookSn the user's new Facebook screen name
-	 * @param  icqSn the user's new ICQ screen name
 	 * @param  jabberSn the user's new Jabber screen name
-	 * @param  msnSn the user's new MSN screen name
-	 * @param  mySpaceSn the user's new MySpace screen name
 	 * @param  skypeSn the user's new Skype screen name
 	 * @param  twitterSn the user's new Twitter screen name
-	 * @param  ymSn the user's new Yahoo! Messenger screen name
 	 * @param  jobTitle the user's new job title
 	 * @param  groupIds the primary keys of the user's groups
 	 * @param  organizationIds the primary keys of the user's organizations
@@ -2257,24 +3272,18 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *         attribute), asset category IDs, asset tag names, and expando
 	 *         bridge attributes for the user.
 	 * @return the user
-	 * @throws PortalException if a user with the primary key could not be
-	 *         found, if the new information was invalid, if the current user
-	 *         did not have permission to update the user, or if the operation
-	 *         was not allowed by the membership policy
 	 */
 	@Override
 	public User updateUser(
 			long userId, String oldPassword, String newPassword1,
 			String newPassword2, boolean passwordReset,
 			String reminderQueryQuestion, String reminderQueryAnswer,
-			String screenName, String emailAddress, long facebookId,
-			String openId, String languageId, String timeZoneId,
-			String greeting, String comments, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String smsSn, String aimSn, String facebookSn, String icqSn,
-			String jabberSn, String msnSn, String mySpaceSn, String skypeSn,
-			String twitterSn, String ymSn, String jobTitle, long[] groupIds,
+			String screenName, String emailAddress, String languageId,
+			String timeZoneId, String greeting, String comments,
+			String firstName, String middleName, String lastName, long prefixId,
+			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
+			int birthdayYear, String smsSn, String facebookSn, String jabberSn,
+			String skypeSn, String twitterSn, String jobTitle, long[] groupIds,
 			long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
 			ServiceContext serviceContext)
@@ -2283,11 +3292,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		return updateUser(
 			userId, oldPassword, newPassword1, newPassword2, passwordReset,
 			reminderQueryQuestion, reminderQueryAnswer, screenName,
-			emailAddress, facebookId, openId, true, null, languageId,
-			timeZoneId, greeting, comments, firstName, middleName, lastName,
-			prefixId, suffixId, male, birthdayMonth, birthdayDay, birthdayYear,
-			smsSn, aimSn, facebookSn, icqSn, jabberSn, msnSn, mySpaceSn,
-			skypeSn, twitterSn, ymSn, jobTitle, groupIds, organizationIds,
+			emailAddress, true, null, languageId, timeZoneId, greeting,
+			comments, firstName, middleName, lastName, prefixId, suffixId, male,
+			birthdayMonth, birthdayDay, birthdayYear, smsSn, facebookSn,
+			jabberSn, skypeSn, twitterSn, jobTitle, groupIds, organizationIds,
 			roleIds, userGroupRoles, userGroupIds, null, null, null, null, null,
 			serviceContext);
 	}
@@ -2298,7 +3306,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long[] userGroupIds, ServiceContext serviceContext)
 		throws PortalException {
 
-		Company company = companyPersistence.findByPrimaryKey(companyId);
+		Company company = _companyPersistence.findByPrimaryKey(companyId);
 
 		if (groupIds != null) {
 			checkGroups(0, groupIds);
@@ -2338,13 +3346,21 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			}
 		}
 
-		if ((creatorUserId == 0) || (creatorUserId == defaultUserId)) {
-			if (!company.isStrangersWithMx() &&
-				company.hasCompanyMx(emailAddress)) {
+		if (((creatorUserId == 0) || (creatorUserId == defaultUserId)) &&
+			!company.isStrangersWithMx() &&
+			company.hasCompanyMx(emailAddress)) {
 
-				throw new UserEmailAddressException.MustNotUseCompanyMx(
-					emailAddress);
-			}
+			throw new UserEmailAddressException.MustNotUseCompanyMx(
+				emailAddress);
+		}
+
+		User creatorUser = getUserById(creatorUserId);
+
+		if (!OmniadminUtil.isOmniadmin(creatorUserId) &&
+			(creatorUser.getCompanyId() != companyId)) {
+
+			throw new PrincipalException(
+				"Only the omniadmin can add users to another company");
 		}
 	}
 
@@ -2355,17 +3371,15 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		PermissionChecker permissionChecker = getPermissionChecker();
 
-		User user = null;
-
 		if (userId != CompanyConstants.SYSTEM) {
 
 			// Add back any mandatory groups or groups that the administrator
 			// does not have the rights to remove and check that he has the
 			// permission to add a new group
 
-			user = userPersistence.findByPrimaryKey(userId);
+			User user = userPersistence.findByPrimaryKey(userId);
 
-			List<Group> oldGroups = groupLocalService.getUserGroups(userId);
+			List<Group> oldGroups = _groupLocalService.getUserGroups(userId);
 
 			oldGroupIds = new long[oldGroups.size()];
 
@@ -2398,7 +3412,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 				continue;
 			}
 
-			Group group = groupPersistence.findByPrimaryKey(groupId);
+			Group group = _groupPersistence.findByPrimaryKey(groupId);
 
 			GroupPermissionUtil.check(
 				permissionChecker, group, ActionKeys.ASSIGN_MEMBERS);
@@ -2445,7 +3459,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			// he has the permission to add a new organization
 
 			List<Organization> oldOrganizations =
-				organizationLocalService.getUserOrganizations(userId);
+				_organizationLocalService.getUserOrganizations(userId);
 
 			oldOrganizationIds = new long[oldOrganizations.size()];
 
@@ -2482,7 +3496,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			}
 
 			Organization organization =
-				organizationPersistence.findByPrimaryKey(organizationId);
+				_organizationPersistence.findByPrimaryKey(organizationId);
 
 			OrganizationPermissionUtil.check(
 				permissionChecker, organization, ActionKeys.ASSIGN_MEMBERS);
@@ -2504,7 +3518,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			// not have the rights to remove and check that he has the
 			// permission to add a new role
 
-			List<Role> oldRoles = roleLocalService.getUserRoles(userId);
+			List<Role> oldRoles = _roleLocalService.getUserRoles(userId);
 
 			oldRoleIds = new long[oldRoles.size()];
 
@@ -2559,7 +3573,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			// rights to remove or that have a mandatory membership
 
 			List<UserGroup> oldUserGroups =
-				userGroupLocalService.getUserUserGroups(userId);
+				_userGroupLocalService.getUserUserGroups(userId);
 
 			oldUserGroupIds = new long[oldUserGroups.size()];
 
@@ -2610,7 +3624,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			// Add back any user group roles that the administrator does not
 			// have the rights to remove or that have a mandatory membership
 
-			oldUserGroupRoles = userGroupRoleLocalService.getUserGroupRoles(
+			oldUserGroupRoles = _userGroupRoleLocalService.getUserGroupRoles(
 				userId);
 
 			for (UserGroupRole oldUserGroupRole : oldUserGroupRoles) {
@@ -2623,7 +3637,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 				if (role.getType() == RoleConstants.TYPE_ORGANIZATION) {
 					Organization organization =
-						organizationPersistence.findByPrimaryKey(
+						_organizationPersistence.findByPrimaryKey(
 							group.getOrganizationId());
 
 					if (!UserGroupRolePermissionUtil.contains(
@@ -2703,11 +3717,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		for (AnnouncementsDelivery announcementsDelivery :
 				announcementsDeliveries) {
 
-			announcementsDeliveryService.updateDelivery(
+			_announcementsDeliveryService.updateDelivery(
 				userId, announcementsDelivery.getType(),
-				announcementsDelivery.getEmail(),
-				announcementsDelivery.getSms(),
-				announcementsDelivery.getWebsite());
+				announcementsDelivery.isEmail(), announcementsDelivery.isSms());
 		}
 	}
 
@@ -2715,10 +3727,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		throws PortalException {
 
 		if (!user.hasCompanyMx() && user.hasCompanyMx(emailAddress)) {
-			Company company = companyPersistence.findByPrimaryKey(
+			Company company = _companyPersistence.findByPrimaryKey(
 				user.getCompanyId());
 
-			if (!company.isStrangersWithMx()) {
+			if (company.isStrangers() && !company.isStrangersWithMx()) {
 				throw new UserEmailAddressException.MustNotUseCompanyMx(
 					emailAddress);
 			}
@@ -2740,7 +3752,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			boolean allowed = false;
 
 			List<Organization> organizations =
-				organizationLocalService.getUserOrganizations(userId);
+				_organizationLocalService.getUserOrganizations(userId);
 
 			for (Organization organization : organizations) {
 				if (OrganizationPermissionUtil.contains(
@@ -2793,7 +3805,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			fields.add("firstName");
 		}
 
-		if (male != contact.getMale()) {
+		if (male != contact.isMale()) {
 			fields.add("gender");
 		}
 
@@ -2821,22 +3833,58 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			fields.add("suffix");
 		}
 
-		UserFieldException ufe = new UserFieldException();
+		UserFieldException userFieldException = new UserFieldException();
 
 		for (String field : fields) {
 			if (!UsersAdminUtil.hasUpdateFieldPermission(
 					getPermissionChecker(), getUser(), user, field)) {
 
-				ufe.addField(field);
+				userFieldException.addField(field);
 			}
 		}
 
-		if (ufe.hasFields()) {
-			throw ufe;
+		if (userFieldException.hasFields()) {
+			throw userFieldException;
 		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		UserServiceImpl.class);
+
+	@BeanReference(type = AnnouncementsDeliveryService.class)
+	private AnnouncementsDeliveryService _announcementsDeliveryService;
+
+	@BeanReference(type = CompanyPersistence.class)
+	private CompanyPersistence _companyPersistence;
+
+	@BeanReference(type = GroupLocalService.class)
+	private GroupLocalService _groupLocalService;
+
+	@BeanReference(type = GroupPersistence.class)
+	private GroupPersistence _groupPersistence;
+
+	@BeanReference(type = OrganizationLocalService.class)
+	private OrganizationLocalService _organizationLocalService;
+
+	@BeanReference(type = OrganizationPersistence.class)
+	private OrganizationPersistence _organizationPersistence;
+
+	@BeanReference(type = RoleLocalService.class)
+	private RoleLocalService _roleLocalService;
+
+	@BeanReference(type = RolePersistence.class)
+	private RolePersistence _rolePersistence;
+
+	@BeanReference(type = UserGroupLocalService.class)
+	private UserGroupLocalService _userGroupLocalService;
+
+	@BeanReference(type = UserGroupPersistence.class)
+	private UserGroupPersistence _userGroupPersistence;
+
+	@BeanReference(type = UserGroupRoleLocalService.class)
+	private UserGroupRoleLocalService _userGroupRoleLocalService;
+
+	@BeanReference(type = UserGroupRolePersistence.class)
+	private UserGroupRolePersistence _userGroupRolePersistence;
 
 }

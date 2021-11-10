@@ -1,11 +1,32 @@
-<definition default="assertEditable">
-	<command name="assertEditable">
-		<execute selenium="waitForVisible" />
+@default = "assertEditable"
+definition {
 
-		<execute selenium="assertEditable" />
+	function assertEditable {
+		WaitForSPARefresh();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.waitForVisible();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.waitForEditable();
+
+		selenium.assertEditable();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+	function assertEditableNotVisible {
+		WaitForSPARefresh();
+
+		selenium.waitForElementPresent();
+
+		selenium.waitForEditable();
+
+		selenium.assertEditable();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

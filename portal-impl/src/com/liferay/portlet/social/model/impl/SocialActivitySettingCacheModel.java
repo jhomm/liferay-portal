@@ -14,14 +14,11 @@
 
 package com.liferay.portlet.social.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-
-import com.liferay.portlet.social.model.SocialActivitySetting;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.social.kernel.model.SocialActivitySetting;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -32,25 +29,28 @@ import java.io.ObjectOutput;
  * The cache model class for representing SocialActivitySetting in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see SocialActivitySetting
  * @generated
  */
-@ProviderType
-public class SocialActivitySettingCacheModel implements CacheModel<SocialActivitySetting>,
-	Externalizable {
+public class SocialActivitySettingCacheModel
+	implements CacheModel<SocialActivitySetting>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof SocialActivitySettingCacheModel)) {
+		if (!(object instanceof SocialActivitySettingCacheModel)) {
 			return false;
 		}
 
-		SocialActivitySettingCacheModel socialActivitySettingCacheModel = (SocialActivitySettingCacheModel)obj;
+		SocialActivitySettingCacheModel socialActivitySettingCacheModel =
+			(SocialActivitySettingCacheModel)object;
 
-		if (activitySettingId == socialActivitySettingCacheModel.activitySettingId) {
+		if ((activitySettingId ==
+				socialActivitySettingCacheModel.activitySettingId) &&
+			(mvccVersion == socialActivitySettingCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -59,14 +59,30 @@ public class SocialActivitySettingCacheModel implements CacheModel<SocialActivit
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, activitySettingId);
+		int hashCode = HashUtil.hash(0, activitySettingId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(15);
+		StringBundler sb = new StringBundler(19);
 
-		sb.append("{activitySettingId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
+		sb.append(", activitySettingId=");
 		sb.append(activitySettingId);
 		sb.append(", groupId=");
 		sb.append(groupId);
@@ -87,8 +103,11 @@ public class SocialActivitySettingCacheModel implements CacheModel<SocialActivit
 
 	@Override
 	public SocialActivitySetting toEntityModel() {
-		SocialActivitySettingImpl socialActivitySettingImpl = new SocialActivitySettingImpl();
+		SocialActivitySettingImpl socialActivitySettingImpl =
+			new SocialActivitySettingImpl();
 
+		socialActivitySettingImpl.setMvccVersion(mvccVersion);
+		socialActivitySettingImpl.setCtCollectionId(ctCollectionId);
 		socialActivitySettingImpl.setActivitySettingId(activitySettingId);
 		socialActivitySettingImpl.setGroupId(groupId);
 		socialActivitySettingImpl.setCompanyId(companyId);
@@ -96,14 +115,14 @@ public class SocialActivitySettingCacheModel implements CacheModel<SocialActivit
 		socialActivitySettingImpl.setActivityType(activityType);
 
 		if (name == null) {
-			socialActivitySettingImpl.setName(StringPool.BLANK);
+			socialActivitySettingImpl.setName("");
 		}
 		else {
 			socialActivitySettingImpl.setName(name);
 		}
 
 		if (value == null) {
-			socialActivitySettingImpl.setValue(StringPool.BLANK);
+			socialActivitySettingImpl.setValue("");
 		}
 		else {
 			socialActivitySettingImpl.setValue(value);
@@ -116,39 +135,56 @@ public class SocialActivitySettingCacheModel implements CacheModel<SocialActivit
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
+
 		activitySettingId = objectInput.readLong();
+
 		groupId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
+
 		classNameId = objectInput.readLong();
+
 		activityType = objectInput.readInt();
 		name = objectInput.readUTF();
 		value = objectInput.readUTF();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
+
 		objectOutput.writeLong(activitySettingId);
+
 		objectOutput.writeLong(groupId);
+
 		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(classNameId);
+
 		objectOutput.writeInt(activityType);
 
 		if (name == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(name);
 		}
 
 		if (value == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(value);
 		}
 	}
 
+	public long mvccVersion;
+	public long ctCollectionId;
 	public long activitySettingId;
 	public long groupId;
 	public long companyId;
@@ -156,4 +192,5 @@ public class SocialActivitySettingCacheModel implements CacheModel<SocialActivit
 	public int activityType;
 	public String name;
 	public String value;
+
 }

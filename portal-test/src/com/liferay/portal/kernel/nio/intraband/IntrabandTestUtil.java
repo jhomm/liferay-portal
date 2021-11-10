@@ -16,7 +16,7 @@ package com.liferay.portal.kernel.nio.intraband;
 
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SocketUtil;
-import com.liferay.portal.kernel.util.SocketUtil.ServerSocketConfigurator;
+import com.liferay.portal.test.log.LogEntry;
 
 import java.io.IOException;
 
@@ -32,8 +32,6 @@ import java.nio.channels.ScatteringByteChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
-import java.util.logging.LogRecord;
-
 import org.junit.Assert;
 
 /**
@@ -42,9 +40,9 @@ import org.junit.Assert;
 public class IntrabandTestUtil {
 
 	public static void assertMessageStartWith(
-		LogRecord logRecord, String messagePrefix) {
+		LogEntry logEntry, String messagePrefix) {
 
-		String message = logRecord.getMessage();
+		String message = logEntry.getMessage();
 
 		Assert.assertTrue(message.startsWith(messagePrefix));
 	}
@@ -96,23 +94,23 @@ public class IntrabandTestUtil {
 			ScatteringByteChannel scatteringByteChannel)
 		throws IOException {
 
-		Datagram datagram = DatagramHelper.createReceiveDatagram();
+		Datagram datagram = DatagramUtil.createReceiveDatagram();
 
-		while (!DatagramHelper.readFrom(datagram, scatteringByteChannel));
+		while (!DatagramUtil.readFrom(datagram, scatteringByteChannel));
 
 		return datagram;
 	}
 
-	private static final ServerSocketConfigurator _serverSocketConfigurator =
-		new ServerSocketConfigurator() {
+	private static final SocketUtil.ServerSocketConfigurator
+		_serverSocketConfigurator = new SocketUtil.ServerSocketConfigurator() {
 
-		@Override
-		public void configure(ServerSocket serverSocket)
-			throws SocketException {
+			@Override
+			public void configure(ServerSocket serverSocket)
+				throws SocketException {
 
-			serverSocket.setReuseAddress(true);
-		}
+				serverSocket.setReuseAddress(true);
+			}
 
-	};
+		};
 
 }

@@ -14,12 +14,12 @@
 
 package com.liferay.portal.fabric.netty.rpc;
 
+import com.liferay.petra.concurrent.AsyncBroker;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.fabric.netty.handlers.NettyChannelAttributes;
-import com.liferay.portal.kernel.concurrent.AsyncBroker;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.StringBundler;
 
 import io.netty.channel.Channel;
 
@@ -75,27 +75,18 @@ public class RPCResponse<T extends Serializable> extends RPCSerializable {
 		else {
 			if (!asyncBroker.takeWithResult(id, _result)) {
 				_log.error(
-					"Unable to place result " + _result +
-						" because no future exists with ID " + id);
+					StringBundler.concat(
+						"Unable to place result ", _result,
+						" because no future exists with ID ", id));
 			}
 		}
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(9);
-
-		sb.append("{cancelled=");
-		sb.append(_cancelled);
-		sb.append(", id=");
-		sb.append(id);
-		sb.append(", result=");
-		sb.append(_result);
-		sb.append(", throwable=");
-		sb.append(_throwable);
-		sb.append("}");
-
-		return sb.toString();
+		return StringBundler.concat(
+			"{cancelled=", _cancelled, ", id=", id, ", result=", _result,
+			", throwable=", _throwable, "}");
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(RPCResponse.class);

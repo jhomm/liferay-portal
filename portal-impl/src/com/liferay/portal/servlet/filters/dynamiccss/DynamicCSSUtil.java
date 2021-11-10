@@ -14,20 +14,20 @@
 
 package com.liferay.portal.servlet.filters.dynamiccss;
 
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.CharPool;
+import com.liferay.portal.kernel.model.PortletConstants;
+import com.liferay.portal.kernel.model.Theme;
+import com.liferay.portal.kernel.service.ThemeLocalServiceUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.model.PortletConstants;
-import com.liferay.portal.model.Theme;
-import com.liferay.portal.service.ThemeLocalServiceUtil;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortalUtil;
 
 import java.net.URLDecoder;
 
@@ -45,45 +45,45 @@ import javax.servlet.http.HttpServletRequest;
 public class DynamicCSSUtil {
 
 	public static String replaceToken(
-			ServletContext servletContext, HttpServletRequest request,
-			String content)
+			ServletContext servletContext,
+			HttpServletRequest httpServletRequest, String content)
 		throws Exception {
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		Theme theme = _getTheme(request);
+		Theme theme = _getTheme(httpServletRequest);
 
 		if (theme == null) {
 			return content;
 		}
 
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
 		return replaceToken(
-			servletContext, request, themeDisplay, theme, content);
+			servletContext, httpServletRequest, themeDisplay, theme, content);
 	}
 
 	public static String replaceToken(
-			ServletContext servletContext, HttpServletRequest request,
-			ThemeDisplay themeDisplay, Theme theme, String parsedContent)
+			ServletContext servletContext,
+			HttpServletRequest httpServletRequest, ThemeDisplay themeDisplay,
+			Theme theme, String parsedContent)
 		throws Exception {
 
-		String portalContextPath = PortalUtil.getPathContext();
+		String proxyPath = PortalUtil.getPathProxy();
 
-		String baseURL = servletContext.getContextPath();
+		String baseURL = proxyPath.concat(servletContext.getContextPath());
 
 		if (baseURL.endsWith(StringPool.SLASH)) {
 			baseURL = baseURL.substring(0, baseURL.length() - 1);
 		}
 
-		parsedContent = StringUtil.replace(
+		return StringUtil.replace(
 			parsedContent,
 			new String[] {"@base_url@", "@portal_ctx@", "@theme_image_path@"},
 			new String[] {
-				baseURL, portalContextPath,
-				_getThemeImagesPath(request, themeDisplay, theme)
+				baseURL, PortalUtil.getPathContext(),
+				_getThemeImagesPath(httpServletRequest, themeDisplay, theme)
 			});
-
-		return parsedContent;
 	}
 
 	/**
@@ -93,12 +93,13 @@ public class DynamicCSSUtil {
 	protected static String propagateQueryString(
 		String content, String queryString) {
 
-		StringBuilder sb = new StringBuilder(content.length());
+		StringBundler sb = new StringBundler(content.length());
 
 		int pos = 0;
 
 		while (true) {
 			int importX = content.indexOf(_CSS_IMPORT_BEGIN, pos);
+
 			int importY = content.indexOf(
 				_CSS_IMPORT_END, importX + _CSS_IMPORT_BEGIN.length());
 
@@ -151,27 +152,24 @@ public class DynamicCSSUtil {
 		return sb.toString();
 	}
 
-	private static Theme _getTheme(HttpServletRequest request)
+	private static Theme _getTheme(HttpServletRequest httpServletRequest)
 		throws Exception {
 
-		long companyId = PortalUtil.getCompanyId(request);
+		long companyId = PortalUtil.getCompanyId(httpServletRequest);
 
-		String themeId = ParamUtil.getString(request, "themeId");
+		String themeId = ParamUtil.getString(httpServletRequest, "themeId");
 
 		if (Validator.isNotNull(themeId)) {
 			try {
-				Theme theme = ThemeLocalServiceUtil.getTheme(
-					companyId, themeId, false);
-
-				return theme;
+				return ThemeLocalServiceUtil.getTheme(companyId, themeId);
 			}
-			catch (Exception e) {
-				_log.error(e, e);
+			catch (Exception exception) {
+				_log.error(exception, exception);
 			}
 		}
 
 		String requestURI = URLDecoder.decode(
-			request.getRequestURI(), StringPool.UTF8);
+			httpServletRequest.getRequestURI(), StringPool.UTF8);
 
 		Matcher portalThemeMatcher = _portalThemePattern.matcher(requestURI);
 
@@ -179,7 +177,7 @@ public class DynamicCSSUtil {
 			String themePathId = portalThemeMatcher.group(1);
 
 			themePathId = StringUtil.replace(
-				themePathId, StringPool.UNDERLINE, StringPool.BLANK);
+				themePathId, CharPool.UNDERLINE, StringPool.BLANK);
 
 			themeId = PortalUtil.getJsSafePortletId(themePathId);
 		}
@@ -191,16 +189,11 @@ public class DynamicCSSUtil {
 				String themePathId = pluginThemeMatcher.group(1);
 
 				themePathId = StringUtil.replace(
-					themePathId, StringPool.UNDERLINE, StringPool.BLANK);
+					themePathId, CharPool.UNDERLINE, StringPool.BLANK);
 
-				StringBundler sb = new StringBundler(4);
-
-				sb.append(themePathId);
-				sb.append(PortletConstants.WAR_SEPARATOR);
-				sb.append(themePathId);
-				sb.append("theme");
-
-				themePathId = sb.toString();
+				themePathId = StringBundler.concat(
+					themePathId, PortletConstants.WAR_SEPARATOR, themePathId,
+					"theme");
 
 				themeId = PortalUtil.getJsSafePortletId(themePathId);
 			}
@@ -211,20 +204,18 @@ public class DynamicCSSUtil {
 		}
 
 		try {
-			Theme theme = ThemeLocalServiceUtil.getTheme(
-				companyId, themeId, false);
-
-			return theme;
+			return ThemeLocalServiceUtil.getTheme(companyId, themeId);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 
 		return null;
 	}
 
 	private static String _getThemeImagesPath(
-			HttpServletRequest request, ThemeDisplay themeDisplay, Theme theme)
+			HttpServletRequest httpServletRequest, ThemeDisplay themeDisplay,
+			Theme theme)
 		throws Exception {
 
 		String themeImagesPath = null;
@@ -233,7 +224,7 @@ public class DynamicCSSUtil {
 			themeImagesPath = themeDisplay.getPathThemeImages();
 		}
 		else {
-			String cdnHost = PortalUtil.getCDNHost(request);
+			String cdnHost = PortalUtil.getCDNHost(httpServletRequest);
 			String themeStaticResourcePath = theme.getStaticResourcePath();
 
 			themeImagesPath =

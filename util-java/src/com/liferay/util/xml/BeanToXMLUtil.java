@@ -14,10 +14,10 @@
 
 package com.liferay.util.xml;
 
+import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.CharPool;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TextFormatter;
 import com.liferay.portal.kernel.xml.Element;
@@ -31,50 +31,53 @@ import java.util.List;
  */
 public class BeanToXMLUtil {
 
-	public static void addBean(Object obj, Element parentEl) {
+	public static void addBean(Object object, Element parentEl) {
+		Class<?> clazz = object.getClass();
+
 		String classNameWithoutPackage = getClassNameWithoutPackage(
-			obj.getClass().getName());
+			clazz.getName());
 
 		Element el = parentEl.addElement(classNameWithoutPackage);
 
-		addFields(obj, el);
+		addFields(object, el);
 	}
 
-	public static void addFields(Object obj, Element parentEl) {
-		Method[] methods = obj.getClass().getMethods();
+	public static void addFields(Object object, Element parentEl) {
+		Class<?> clazz = object.getClass();
 
-		for (int i = 0; i < methods.length; i++) {
-			Method method = methods[i];
+		Method[] methods = clazz.getMethods();
 
-			if (method.getName().startsWith("get") &&
-				!method.getName().equals("getClass")) {
+		for (Method method : methods) {
+			String methodName = method.getName();
 
-				String memberName = StringUtil.replace(
-					method.getName(), "get", StringPool.BLANK);
+			if (methodName.startsWith("get") &&
+				!methodName.equals("getClass")) {
+
+				String memberName = StringUtil.removeSubstring(
+					methodName, "get");
 
 				memberName = TextFormatter.format(memberName, TextFormatter.I);
 				memberName = TextFormatter.format(memberName, TextFormatter.K);
 
 				try {
-					Object returnValue = method.invoke(obj, new Object[] {});
+					Object returnValue = method.invoke(object, new Object[0]);
 
 					if (returnValue instanceof List<?>) {
 						List<Object> list = (List<Object>)returnValue;
 
 						Element listEl = parentEl.addElement(memberName);
 
-						for (int j = 0; j < list.size(); j++) {
-							addBean(list.get(j), listEl);
+						for (Object curObject : list) {
+							addBean(curObject, listEl);
 						}
 					}
 					else {
-						DocUtil.add(
-							parentEl, memberName, returnValue.toString());
+						_add(parentEl, memberName, returnValue.toString());
 					}
 				}
-				catch (Exception e) {
+				catch (Exception exception) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(e.getMessage());
+						_log.warn(exception.getMessage());
 					}
 				}
 			}
@@ -93,6 +96,14 @@ public class BeanToXMLUtil {
 			classNameWithoutPackage, TextFormatter.K);
 
 		return classNameWithoutPackage;
+	}
+
+	private static Element _add(Element element, String name, String text) {
+		Element childElement = element.addElement(name);
+
+		childElement.addText(GetterUtil.getString(text));
+
+		return childElement;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(BeanToXMLUtil.class);

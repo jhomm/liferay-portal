@@ -1,8 +1,5 @@
 dependencies {
-	compile group: "org.freemarker", name: "freemarker", version: "2.3.17"
-	compile group: "org.osgi", name: "org.osgi.core", version: "5.0.0"
-}
-
-liferay {
-	deployDir = file("${liferayHome}/osgi/modules")
+	compile group: "com.liferay", name: "org.freemarker", version: "2.3.29.LIFERAY-PATCHED-2"
+	compile group: "org.apache.felix", name: "org.apache.felix.http.servlet-api", version: "1.1.2"
+	compile group: "org.osgi", name: "osgi.core", version: "6.0.0"
 }

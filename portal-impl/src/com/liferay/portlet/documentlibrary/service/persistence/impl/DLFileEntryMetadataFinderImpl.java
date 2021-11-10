@@ -14,13 +14,12 @@
 
 package com.liferay.portlet.documentlibrary.service.persistence.impl;
 
+import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
+import com.liferay.document.library.kernel.service.persistence.DLFileEntryMetadataFinder;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.service.persistence.impl.BasePersistenceImpl;
-import com.liferay.portlet.documentlibrary.model.DLFileEntryMetadata;
 import com.liferay.portlet.documentlibrary.model.impl.DLFileEntryMetadataImpl;
-import com.liferay.portlet.documentlibrary.service.persistence.DLFileEntryMetadataFinder;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
 import java.util.List;
@@ -29,7 +28,7 @@ import java.util.List;
  * @author Michael C. Han
  */
 public class DLFileEntryMetadataFinderImpl
-	extends BasePersistenceImpl<DLFileEntryMetadata>
+	extends DLFileEntryMetadataFinderBaseImpl
 	implements DLFileEntryMetadataFinder {
 
 	public static final String FIND_BY_MISMATCHED_COMPANY_ID =
@@ -48,16 +47,16 @@ public class DLFileEntryMetadataFinderImpl
 
 			String sql = CustomSQLUtil.get(FIND_BY_MISMATCHED_COMPANY_ID);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addEntity(
+			sqlQuery.addEntity(
 				DLFileEntryMetadataImpl.TABLE_NAME,
 				DLFileEntryMetadataImpl.class);
 
-			return q.list(true);
+			return sqlQuery.list(true);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -73,16 +72,16 @@ public class DLFileEntryMetadataFinderImpl
 
 			String sql = CustomSQLUtil.get(FIND_BY_NO_STRUCTURES);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addEntity(
+			sqlQuery.addEntity(
 				DLFileEntryMetadataImpl.TABLE_NAME,
 				DLFileEntryMetadataImpl.class);
 
-			return q.list(true);
+			return sqlQuery.list(true);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);

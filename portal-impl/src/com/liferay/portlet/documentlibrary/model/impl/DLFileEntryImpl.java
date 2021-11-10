@@ -14,40 +14,44 @@
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.model.DLFileEntryConstants;
+import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
+import com.liferay.document.library.kernel.model.DLFileEntryType;
+import com.liferay.document.library.kernel.model.DLFileShortcut;
+import com.liferay.document.library.kernel.model.DLFileVersion;
+import com.liferay.document.library.kernel.model.DLFolder;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileEntryServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileShortcutLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileVersionLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileVersionServiceUtil;
+import com.liferay.document.library.kernel.service.DLFolderLocalServiceUtil;
+import com.liferay.document.library.kernel.util.DLUtil;
+import com.liferay.dynamic.data.mapping.kernel.DDMFormValues;
+import com.liferay.dynamic.data.mapping.kernel.DDMStructure;
+import com.liferay.dynamic.data.mapping.kernel.StorageEngineManagerUtil;
+import com.liferay.expando.kernel.model.ExpandoBridge;
+import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.lock.Lock;
 import com.liferay.portal.kernel.lock.LockManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Repository;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
+import com.liferay.portal.kernel.service.RepositoryLocalServiceUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.view.count.ViewCountManagerUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.model.Repository;
-import com.liferay.portal.service.RepositoryLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.model.DLFileEntry;
-import com.liferay.portlet.documentlibrary.model.DLFileEntryConstants;
-import com.liferay.portlet.documentlibrary.model.DLFileEntryMetadata;
-import com.liferay.portlet.documentlibrary.model.DLFileEntryType;
-import com.liferay.portlet.documentlibrary.model.DLFileShortcut;
-import com.liferay.portlet.documentlibrary.model.DLFileVersion;
-import com.liferay.portlet.documentlibrary.model.DLFolder;
-import com.liferay.portlet.documentlibrary.model.DLFolderConstants;
-import com.liferay.portlet.documentlibrary.service.DLFileEntryMetadataLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLFileEntryServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLFileEntryTypeLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLFileShortcutLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLFileVersionLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLFileVersionServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLFolderLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.util.DLUtil;
-import com.liferay.portlet.dynamicdatamapping.DDMFormValues;
-import com.liferay.portlet.dynamicdatamapping.DDMStructure;
-import com.liferay.portlet.dynamicdatamapping.StorageEngineManagerUtil;
-import com.liferay.portlet.expando.model.ExpandoBridge;
-import com.liferay.portlet.exportimport.lar.StagedModelType;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,6 +59,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Brian Wing Shun Chan
@@ -80,7 +85,7 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 
 	@Override
 	public InputStream getContentStream(String version) throws PortalException {
-		return DLFileEntryServiceUtil.getFileAsStream(
+		return DLFileEntryLocalServiceUtil.getFileAsStream(
 			getFileEntryId(), version);
 	}
 
@@ -140,9 +145,9 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 
 			return dlFileVersion.getExpandoBridge();
 		}
-		catch (Exception e) {
+		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
+				_log.warn(portalException, portalException);
 			}
 		}
 
@@ -151,28 +156,27 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 
 	@Override
 	public String getExtraSettings() {
-		if (_extraSettingsProperties == null) {
+		if (_extraSettingsUnicodeProperties == null) {
 			return super.getExtraSettings();
 		}
-		else {
-			return _extraSettingsProperties.toString();
-		}
+
+		return _extraSettingsUnicodeProperties.toString();
 	}
 
 	@Override
 	public UnicodeProperties getExtraSettingsProperties() {
-		if (_extraSettingsProperties == null) {
-			_extraSettingsProperties = new UnicodeProperties(true);
+		if (_extraSettingsUnicodeProperties == null) {
+			_extraSettingsUnicodeProperties = new UnicodeProperties(true);
 
 			try {
-				_extraSettingsProperties.load(super.getExtraSettings());
+				_extraSettingsUnicodeProperties.load(super.getExtraSettings());
 			}
-			catch (IOException ioe) {
-				_log.error(ioe, ioe);
+			catch (IOException ioException) {
+				_log.error(ioException, ioException);
 			}
 		}
 
-		return _extraSettingsProperties;
+		return _extraSettingsUnicodeProperties;
 	}
 
 	@Override
@@ -231,46 +235,52 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 			return DLFileVersionLocalServiceUtil.getLatestFileVersion(
 				getFileEntryId(), false);
 		}
-		else {
-			return DLFileVersionServiceUtil.getLatestFileVersion(
-				getFileEntryId());
-		}
+
+		return DLFileVersionServiceUtil.getLatestFileVersion(getFileEntryId());
 	}
 
 	@Override
 	public Lock getLock() {
-		try {
-			return LockManagerUtil.getLock(
-				DLFileEntry.class.getName(), getFileEntryId());
-		}
-		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
-			}
-		}
-
-		return null;
+		return LockManagerUtil.fetchLock(
+			DLFileEntry.class.getName(), getFileEntryId());
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x)
+	 */
+	@Deprecated
 	@Override
 	public String getLuceneProperties() {
-		UnicodeProperties extraSettingsProps = getExtraSettingsProperties();
+		UnicodeProperties extraSettingsUnicodeProperties =
+			getExtraSettingsProperties();
 
-		StringBundler sb = new StringBundler(
-			extraSettingsProps.entrySet().size() + 4);
+		Set<Map.Entry<String, String>> entrySet =
+			extraSettingsUnicodeProperties.entrySet();
+
+		StringBundler sb = new StringBundler(entrySet.size() + 4);
 
 		sb.append(FileUtil.stripExtension(getTitle()));
 		sb.append(StringPool.SPACE);
 		sb.append(getDescription());
 		sb.append(StringPool.SPACE);
 
-		for (Map.Entry<String, String> entry : extraSettingsProps.entrySet()) {
+		for (Map.Entry<String, String> entry :
+				extraSettingsUnicodeProperties.entrySet()) {
+
 			String value = GetterUtil.getString(entry.getValue());
 
 			sb.append(value);
 		}
 
 		return sb.toString();
+	}
+
+	@Override
+	public long getReadCount() {
+		return ViewCountManagerUtil.getViewCount(
+			getCompanyId(),
+			ClassNameLocalServiceUtil.getClassNameId(DLFileEntry.class),
+			getPrimaryKey());
 	}
 
 	@Override
@@ -285,87 +295,19 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 
 			return dlFileVersion.getStatus();
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
+
 			return WorkflowConstants.STATUS_APPROVED;
 		}
 	}
 
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link DLFileVersion#getUserId()}
-	 */
-	@Deprecated
-	@Override
-	public long getVersionUserId() {
-		long versionUserId = 0;
-
-		try {
-			DLFileVersion dlFileVersion = getFileVersion();
-
-			versionUserId = dlFileVersion.getUserId();
-		}
-		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
-			}
-		}
-
-		return versionUserId;
-	}
-
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link DLFileVersion#getUserName()}
-	 */
-	@Deprecated
-	@Override
-	public String getVersionUserName() {
-		String versionUserName = StringPool.BLANK;
-
-		try {
-			DLFileVersion dlFileVersion = getFileVersion();
-
-			versionUserName = dlFileVersion.getUserName();
-		}
-		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
-			}
-		}
-
-		return versionUserName;
-	}
-
-	/**
-	 * @deprecated As of 6.2.0, replaced by {@link DLFileVersion#getUserUuid()}
-	 */
-	@Deprecated
-	@Override
-	public String getVersionUserUuid() {
-		String versionUserUuid = StringPool.BLANK;
-
-		try {
-			DLFileVersion dlFileVersion = getFileVersion();
-
-			versionUserUuid = dlFileVersion.getUserUuid();
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-		}
-
-		return versionUserUuid;
-	}
-
 	@Override
 	public boolean hasLock() {
-		try {
-			return DLFileEntryServiceUtil.hasFileEntryLock(getFileEntryId());
-		}
-		catch (Exception e) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
-			}
-		}
-
-		return false;
+		return DLFileEntryLocalServiceUtil.hasFileEntryLock(
+			PrincipalThreadLocal.getUserId(), getFileEntryId(), getFolderId());
 	}
 
 	@Override
@@ -374,9 +316,9 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 			return DLFileEntryServiceUtil.isFileEntryCheckedOut(
 				getFileEntryId());
 		}
-		catch (Exception e) {
+		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
+				_log.warn(portalException, portalException);
 			}
 		}
 
@@ -388,18 +330,21 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 		try {
 			long repositoryId = getRepositoryId();
 
+			if (getGroupId() == repositoryId) {
+				return false;
+			}
+
 			Repository repository = RepositoryLocalServiceUtil.getRepository(
 				repositoryId);
 
-			long dlFolderId = repository.getDlFolderId();
-
-			DLFolder dlFolder = DLFolderLocalServiceUtil.getFolder(dlFolderId);
+			DLFolder dlFolder = DLFolderLocalServiceUtil.getFolder(
+				repository.getDlFolderId());
 
 			return dlFolder.isHidden();
 		}
-		catch (Exception e) {
+		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
+				_log.warn(portalException, portalException);
 			}
 		}
 
@@ -411,30 +356,29 @@ public class DLFileEntryImpl extends DLFileEntryBaseImpl {
 		if (getStatus() == WorkflowConstants.STATUS_IN_TRASH) {
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	@Override
 	public void setExtraSettings(String extraSettings) {
-		_extraSettingsProperties = null;
+		_extraSettingsUnicodeProperties = null;
 
 		super.setExtraSettings(extraSettings);
 	}
 
 	@Override
 	public void setExtraSettingsProperties(
-		UnicodeProperties extraSettingsProperties) {
+		UnicodeProperties extraSettingsUnicodeProperties) {
 
-		_extraSettingsProperties = extraSettingsProperties;
+		_extraSettingsUnicodeProperties = extraSettingsUnicodeProperties;
 
-		super.setExtraSettings(_extraSettingsProperties.toString());
+		super.setExtraSettings(_extraSettingsUnicodeProperties.toString());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DLFileEntryImpl.class);
 
-	private UnicodeProperties _extraSettingsProperties;
+	private UnicodeProperties _extraSettingsUnicodeProperties;
 
 }

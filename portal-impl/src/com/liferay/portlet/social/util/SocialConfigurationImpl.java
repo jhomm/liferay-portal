@@ -14,6 +14,7 @@
 
 package com.liferay.portlet.social.util;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -27,11 +28,12 @@ import com.liferay.portal.kernel.xml.DocumentType;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.util.JavaFieldsParser;
-import com.liferay.portlet.social.model.SocialAchievement;
-import com.liferay.portlet.social.model.SocialActivityCounterConstants;
-import com.liferay.portlet.social.model.SocialActivityCounterDefinition;
-import com.liferay.portlet.social.model.SocialActivityDefinition;
-import com.liferay.portlet.social.model.SocialActivityProcessor;
+import com.liferay.social.kernel.model.SocialAchievement;
+import com.liferay.social.kernel.model.SocialActivityCounterConstants;
+import com.liferay.social.kernel.model.SocialActivityCounterDefinition;
+import com.liferay.social.kernel.model.SocialActivityDefinition;
+import com.liferay.social.kernel.model.SocialActivityProcessor;
+import com.liferay.social.kernel.util.SocialConfiguration;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -127,8 +129,7 @@ public class SocialConfigurationImpl implements SocialConfiguration {
 	public String[] getActivityModelNames() {
 		Set<String> activityModelNames = _activityDefinitions.keySet();
 
-		return activityModelNames.toArray(
-			new String[activityModelNames.size()]);
+		return activityModelNames.toArray(new String[0]);
 	}
 
 	@Override
@@ -174,7 +175,11 @@ public class SocialConfigurationImpl implements SocialConfiguration {
 
 		if (!publicId.equals("-//Liferay//DTD Social 6.1.0//EN") &&
 			!publicId.equals("-//Liferay//DTD Social 6.2.0//EN") &&
-			!publicId.equals("-//Liferay//DTD Social 7.0.0//EN")) {
+			!publicId.equals("-//Liferay//DTD Social 7.0.0//EN") &&
+			!publicId.equals("-//Liferay//DTD Social 7.1.0//EN") &&
+			!publicId.equals("-//Liferay//DTD Social 7.2.0//EN") &&
+			!publicId.equals("-//Liferay//DTD Social 7.3.0//EN") &&
+			!publicId.equals("-//Liferay//DTD Social 7.4.0//EN")) {
 
 			throw new DocumentException(
 				"Unsupported document type " + publicId);
@@ -479,9 +484,8 @@ public class SocialConfigurationImpl implements SocialConfiguration {
 
 		activityCounterDefinition.setEnabled(enabled);
 
-		String name = GetterUtil.getString(counterElement.elementText("name"));
-
-		activityCounterDefinition.setName(name);
+		activityCounterDefinition.setName(
+			GetterUtil.getString(counterElement.elementText("name")));
 
 		String ownerType = GetterUtil.getString(
 			counterElement.elementText("owner-type"));
@@ -491,8 +495,9 @@ public class SocialConfigurationImpl implements SocialConfiguration {
 		if (activityCounterDefinition.getOwnerType() == 0) {
 			if (_log.isWarnEnabled()) {
 				_log.warn(
-					"Invalid owner type " + ownerType + " for model " +
-						activityDefinition.getModelName());
+					StringBundler.concat(
+						"Invalid owner type ", ownerType, " for model ",
+						activityDefinition.getModelName()));
 			}
 
 			return;

@@ -1,0 +1,864 @@
+@component-name = "portal-workflow"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Workflow";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			var siteName = TestCase.getSiteName(siteName = "${siteName}");
+
+			User.logoutAndLoginPG(
+				userLoginEmailAddress = "test@liferay.com",
+				userLoginFullName = "Test Test");
+
+			DMDocument.tearDownCP();
+
+			Navigator.openURL();
+
+			ProductMenu.gotoPortlet(
+				category = "Content &amp; Data",
+				panel = "Site Administration",
+				portlet = "Documents and Media",
+				site = "${siteName}");
+
+			Workflow.configureWorkflowViaPortlet(workflowDefinition = "No Workflow");
+
+			DMDocumentType.tearDownCP();
+		}
+	}
+
+	@description = "This is a test for LRQA-69298. Verify the changes to pending when a file is edited"
+	@priority = "3"
+	test AfterEditFileStatusBecomePending {
+		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		Workflow.configureWorkflowViaPortlet(workflowDefinition = "Single Approver");
+
+		LexiconEntry.changeDisplayStyle(displayStyle = "cards");
+
+		DMDocument.addWithWorkflowCP(
+			dmDocumentFile = "Document_1.jpg",
+			dmDocumentTitle = "Document_1.jpg");
+
+		Navigator.openURL();
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
+
+		Workflow.assignToMeTaskByActions(
+			workflowAssetTitle = "Document_1",
+			workflowAssetType = "Document",
+			workflowTask = "Review");
+
+		Workflow.approveTaskByActions(
+			workflowAssetTitle = "Document_1",
+			workflowAssetType = "Document",
+			workflowTask = "Review");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media");
+
+		DepotNavigator.gotoEdit(depotName = "Document_1");
+
+		DMDocument.editDocument(
+			dmDocumentDescription = "Document_2.pdf",
+			dmDocumentFile = "Document_2.pdf",
+			dmDocumentTitle = "Document_2");
+
+		Button.clickSubmitForPublication();
+
+		DMDocument.viewStatus(
+			dmDocumentStatus = "Pending",
+			dmDocumentTitle = "Document_2");
+	}
+
+	@priority = "5"
+	test ApproveInDMFolderCustomWorkflow {
+		property test.name.skip.portal.instance = "WorkflowDocumentsAndMedia#ApproveInDMFolderCustomWorkflow";
+
+		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		Organization.addCP(
+			orgName = "Space Program Academy of Continuing Education",
+			orgType = "Organization");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		UsersAndOrganizationsNavigator.gotoOrganizations();
+
+		Organization.addSiteCP(orgName = "Space Program Academy of Continuing Education");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Sites",
+			panel = "Control Panel",
+			portlet = "Sites");
+
+		Site.viewCP(
+			siteMember = "Organization",
+			siteName = "Space Program Academy of Continuing Education",
+			siteType = "Private");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		User.addCP(
+			userEmailAddress = "userea@liferay.com",
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		User.editPasswordCP(
+			userEmailAddress = "userea@liferay.com",
+			userScreenName = "usersn");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		UsersAndOrganizationsNavigator.gotoOrganizations();
+
+		Organization.assignUser(
+			orgName = "Space Program Academy of Continuing Education",
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Workflow",
+			panel = "Applications",
+			portlet = "Process Builder");
+
+		Workflow.uploadDefinition(
+			workflowDefinitionFile = "advanced-governors-review-workflow-definition.xml",
+			workflowDefinitionTitle = "Quarterly Reports Review Process");
+
+		Workflow.viewDefinition(
+			workflowDefinitionName = "Quarterly Reports Review Process",
+			workflowDefinitionTitle = "Quarterly Reports Review Process",
+			workflowDefinitionVersionNumber = "1");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		User.assignRegularRoleCP(
+			roleTitle = "Board Member",
+			userScreenName = "usersn");
+
+		ApplicationsMenu.gotoSite(site = "${siteName}");
+
+		ProductMenu.gotoSite(site = "Space Program Academy of Continuing Education");
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		DMFolder.addCP(
+			dmFolderDescription = "Financial Reports Description",
+			dmFolderName = "Financial Reports");
+
+		DMFolder.configureWorkflowCP(
+			dmFolderName = "Financial Reports",
+			workflowDefinition = "Quarterly Reports Review Process",
+			workflowRestriction = "Default Workflow");
+
+		for (var entryCount : list "1,2,3") {
+			ProductMenu.gotoPortlet(
+				category = "Content &amp; Data",
+				panel = "Site Administration",
+				portlet = "Documents and Media",
+				site = "${siteName}");
+
+			DMFolder.viewCP(dmFolderName = "Financial Reports");
+
+			DMDocument.addWithWorkflowCP(
+				dmDocumentDescription = "DM Document Description",
+				dmDocumentFile = "Document_${entryCount}.doc",
+				dmDocumentTitle = "Document_${entryCount}.doc");
+		}
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "userea@liferay.com",
+			userLoginFullName = "userfn userln");
+
+		Navigator.openURL();
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+		for (var i : list "1,2,3,4") {
+			Workflow.assignToMeTaskByActions(
+				workflowAssetTitle = "Document_1.doc",
+				workflowAssetType = "Document",
+				workflowTask = "Board Member Review ${i}");
+
+			Workflow.approveTaskByActions(
+				boardWorkflowTask = "${i}",
+				workflowAssetTitle = "Document",
+				workflowAssetType = "Document",
+				workflowTask = "Board Member Review ${i}");
+		}
+
+		for (var i : list "1,2,3,4") {
+			Workflow.assignToMeTaskByActions(
+				workflowAssetTitle = "Document_2.doc",
+				workflowAssetType = "Document",
+				workflowTask = "Board Member Review ${i}");
+
+			Workflow.approveTaskByActions(
+				boardWorkflowTask = "${i}",
+				workflowAssetTitle = "Document",
+				workflowAssetType = "Document",
+				workflowTask = "Board Member Review ${i}");
+		}
+
+		for (var i : list "1,2,3,4") {
+			Workflow.assignToMeTaskByActions(
+				workflowAssetTitle = "Document_3.doc",
+				workflowAssetType = "Document",
+				workflowTask = "Board Member Review ${i}");
+
+			Workflow.approveTaskByActions(
+				boardWorkflowTask = "${i}",
+				workflowAssetTitle = "Document",
+				workflowAssetType = "Document",
+				workflowTask = "Board Member Review ${i}");
+		}
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "test@liferay.com",
+			userLoginFullName = "Test Test");
+
+		ApplicationsMenu.gotoSite(site = "${siteName}");
+
+		ProductMenu.gotoSite(site = "Space Program Academy of Continuing Education");
+
+		for (var entryCount : list "1,2,3") {
+			ProductMenu.gotoPortlet(
+				category = "Content &amp; Data",
+				panel = "Site Administration",
+				portlet = "Documents and Media",
+				site = "${siteName}");
+
+			DMFolder.viewCP(dmFolderName = "Financial Reports");
+
+			DMDocument.viewStatus(
+				dmDocumentStatus = "Approved",
+				dmDocumentTitle = "Document_${entryCount}.doc");
+		}
+	}
+
+	@description = "This is a test for LRQA-69296. Assert that a file can be published"
+	@priority = "3"
+	test CanPublishFile {
+		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		Workflow.configureWorkflowViaPortlet(workflowDefinition = "Single Approver");
+
+		DMDocument.addWithWorkflowCP(
+			dmDocumentFile = "Document_1.jpg",
+			dmDocumentTitle = "Document_1.jpg");
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
+
+		Workflow.assignToMeTaskByActions(
+			workflowAssetTitle = "Document_1",
+			workflowAssetType = "Document",
+			workflowTask = "Review");
+
+		Workflow.approveTaskByActions(
+			workflowAssetTitle = "Document_1",
+			workflowAssetType = "Document",
+			workflowTask = "Review");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media");
+
+		DMDocument.viewStatus(
+			dmDocumentStatus = "Approved",
+			dmDocumentTitle = "Document_1.jpg");
+	}
+
+	@description = "This is a test for LRQA-69297. Assert that the user can publish multiple files"
+	@priority = "3"
+	test CanPublishMultipleFiles {
+		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		Workflow.configureWorkflowViaPortlet(workflowDefinition = "Single Approver");
+
+		WorkflowDocumentsAndMedia.addMultipleCP(dmDocumentFileList = "Document_1.jpg,Document_2.pdf,Document_3.xls");
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+		for (var i : list "Document_2,Document_3") {
+			Navigator.gotoNavTab(navTab = "Assigned to My Roles");
+
+			Workflow.assignToMeTaskByActions(
+				workflowAssetTitle = "${i}",
+				workflowAssetType = "Document",
+				workflowTask = "Review");
+		}
+
+		for (var i : list "Document_2,Document_3") {
+			Workflow.approveTaskByActions(
+				workflowAssetTitle = "${i}",
+				workflowAssetType = "Document",
+				workflowTask = "Review");
+		}
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media");
+
+		for (var i : list "Document_2,Document_3") {
+			DMDocument.viewStatus(
+				dmDocumentStatus = "Approved",
+				dmDocumentTitle = "${i}");
+		}
+
+		DMDocument.viewStatus(
+			dmDocumentStatus = "Pending",
+			dmDocumentTitle = "Document_1");
+	}
+
+	@description = "This is a test for LRQA-69303. Verify created file can be shared. "
+	@priority = "3"
+	test CanShareAFile {
+		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		var user = "DXP";
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		Workflow.configureWorkflowViaPortlet(workflowDefinition = "Single Approver");
+
+		DMDocument.addWithWorkflowCP(
+			dmDocumentFile = "Document_1.jpg",
+			dmDocumentTitle = "Document_1.jpg");
+
+		DMDocument.viewStatus(
+			dmDocumentStatus = "Pending",
+			dmDocumentTitle = "Document_1.jpg");
+
+		JSONUser.addUser(
+			userEmailAddress = "${user}@liferay.com",
+			userFirstName = "${user}",
+			userLastName = "${user}",
+			userScreenName = "${user}");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "${user}@liferay.com");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media");
+
+		DepotNavigator.gotoShare(dmDocumentTitle = "Document_1");
+
+		Asset.share(
+			sharingPermissions = "Update",
+			userEmailAddress = "${user}@liferay.com",
+			userName = "${user} ${user}");
+
+		Navigator.openURL();
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "${user}@liferay.com",
+			userLoginFullName = "${user} ${user}");
+
+		UserBar.gotoDropdownItem(dropdownItem = "Shared Content");
+
+		AssertElementPresent(
+			key_status = "Not Visible",
+			locator1 = "Sharing#SHARED_CONTENT_CONTENT_STATUS");
+	}
+
+	@priority = "4"
+	test ConfigureFolderWorkflow {
+		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		Workflow.configureDMWorkflowViaFolderInfo(workflowDefinition = "Single Approver");
+
+		DMFolder.addCP(
+			dmFolderDescription = "DM Folder Description",
+			dmFolderName = "DM Folder Name");
+
+		DMFolder.configureWorkflowCP(
+			dmFolderName = "DM Folder Name",
+			workflowDefinition = "Single Approver",
+			workflowRestriction = "Default Workflow");
+
+		DMFolder.configureWorkflowCP(
+			dmFolderName = "DM Folder Name",
+			workflowRestriction = "Parent Folder");
+
+		DMNavigator.gotoDocumentType();
+
+		DMDocumentType.add(
+			dmDocumentTypeDescription = "DM Document Type Description",
+			dmDocumentTypeFieldNames = "Text",
+			dmDocumentTypeName = "DM Document Type Name");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMFolder.configureWorkflowCP(
+			dmDocumentTypeName = "DM Document Type Name",
+			dmFolderName = "DM Folder Name",
+			workflowDefinition = "Single Approver",
+			workflowRestriction = "Specific Restrictions");
+
+		DMFolder.configureWorkflowCP(
+			dmFolderName = "DM Folder Name",
+			workflowDefinition = "No Workflow",
+			workflowRestriction = "Default Workflow");
+	}
+
+	@description = "This test covers LPS-90346. It ensures that the document preview displays correctly after submitting an edit."
+	@priority = "4"
+	test PreviewSubmittedEdit {
+		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		DMFolder.addCP(
+			dmFolderDescription = "DM Folder Description",
+			dmFolderName = "DM Folder Name");
+
+		DMFolder.configureWorkflowCP(
+			dmFolderName = "DM Folder Name",
+			workflowDefinition = "Single Approver",
+			workflowRestriction = "Default Workflow");
+
+		DMNavigator.gotoFolder(dmFolderName = "DM Folder Name");
+
+		DMDocument.addWithWorkflowCP(
+			dmDocumentFile = "Document_1.jpg",
+			dmDocumentTitle = "Document_1.jpg");
+
+		Navigator.openURL();
+
+		Notifications.viewBadgeCount(notificationCount = "1");
+
+		WorkflowAsset.gotoViaNotification(
+			assetType = "Document",
+			user = "Test Test");
+
+		Workflow.gotoPreviewView();
+
+		AssertElementPresent(locator1 = "//img[contains(@src,'Document_1.jpg') and contains(@src,'version=1.0')]");
+
+		Navigator.gotoBack();
+
+		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+
+		Workflow.confirmWorkflowAction();
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+		Workflow.viewTaskAssignedToMeDetails(
+			workflowAssetContent = "Document_1.jpg",
+			workflowAssetTitle = "Document_1.jpg",
+			workflowAssetType = "Document",
+			workflowTask = "Review");
+
+		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Approve");
+
+		Workflow.confirmWorkflowAction();
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMNavigator.gotoFolder(dmFolderName = "DM Folder Name");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "Document_1.jpg");
+
+		DMDocument.editDocument(
+			dmDocumentFile = "Document_2.jpg",
+			dmDocumentTitle = "Document_2.jpg");
+
+		Button.clickSubmitForPublication();
+
+		Navigator.openURL();
+
+		Notifications.viewBadgeCount(notificationCount = "1");
+
+		WorkflowAsset.gotoViaNotification(
+			assetType = "Document",
+			user = "Test Test");
+
+		Workflow.gotoPreviewView();
+
+		AssertElementPresent(locator1 = "//img[contains(@src,'Document_1.jpg') and contains(@src,'version=2.0')]");
+	}
+
+	@description = "This is a use case for LPS-60870."
+	@priority = "5"
+	test SaveAsDraftAndViewCategories {
+		property custom.properties = "dl.file.entry.drafts.enabled=true";
+		property portal.acceptance = "true";
+
+		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Categorization",
+			panel = "Site Administration",
+			portlet = "Categories",
+			site = "${siteName}");
+
+		Vocabulary.addCP(vocabularyName = "Vocabulary Name");
+
+		Category.addCP(
+			categoryName = "legal",
+			vocabularyName = "Vocabulary Name");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Categorization",
+			panel = "Site Administration",
+			portlet = "Categories",
+			site = "${siteName}");
+
+		Category.addCP(
+			categoryName = "Other",
+			vocabularyName = "Vocabulary Name");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		DMFolder.addCP(
+			dmFolderDescription = "DM Folder Description",
+			dmFolderName = "DM Folder Name");
+
+		DMFolder.configureWorkflowCP(
+			dmFolderName = "DM Folder Name",
+			workflowDefinition = "Single Approver",
+			workflowRestriction = "Default Workflow");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		DMFolder.viewCP(
+			dmDocumentTitle = "DM Folder Name",
+			dmFolderName = "DM Folder Name");
+
+		DMNavigator.gotoAddDocumentTypeCP();
+
+		DMDocument.editDocument(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentFile = "Document_1.doc",
+			dmDocumentTitle = "DM Document Title");
+
+		DMDocument.addCategories(
+			categoryNameList = "legal,Other",
+			vocabularyName = "Vocabulary Name");
+
+		Button.clickSubmitForPublication();
+
+		Alert.viewSuccessMessage();
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+		Workflow.assignToMeTaskByActions(
+			workflowAssetTitle = "DM Document Title",
+			workflowAssetType = "Document",
+			workflowTask = "Review");
+
+		Workflow.approveTaskByActions(
+			workflowAssetTitle = "DM Document Title",
+			workflowAssetType = "Document",
+			workflowTask = "Review");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		DMFolder.viewCP(
+			dmDocumentTitle = "DM Folder Name",
+			dmFolderName = "DM Folder Name");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "DM Document Title");
+
+		DMDocument.viewCategories(categoryNameList = "legal,Other");
+
+		Button.click(button = "Checkout");
+
+		Alert.viewSuccessMessage();
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		DMFolder.gotoEntry(dmFolderName = "DM Folder Name");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "DM Document Title");
+
+		DMDocument.viewCategories(categoryNameList = "legal,Other");
+
+		Button.click(button = "Save and Check In");
+
+		Button.click(button = "Save");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "DM Document Title");
+
+		DMDocument.viewCategories(categoryNameList = "legal,Other");
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+		Workflow.assignToMeTaskByActions(
+			workflowAssetTitle = "DM Document Title",
+			workflowAssetType = "Document",
+			workflowTask = "Review");
+
+		Workflow.viewTaskAssignedToMeDetails(
+			workflowAssetContent = "DM Document Title",
+			workflowAssetTitle = "DM Document Title",
+			workflowAssetType = "Document",
+			workflowTask = "Review");
+
+		Workflow.gotoPreviewEdit();
+
+		DMDocument.viewCategories(categoryNameList = "legal,Other");
+	}
+
+	@description = "This is a test for LRQA-69299. Verify that the user can set Single Approver Workflow to Documents and Media"
+	@priority = "3"
+	test SetSingleApproverToDocumentsAndMedia {
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media");
+
+		Workflow.configureWorkflowViaPortlet(workflowDefinition = "Single Approver");
+
+		Alert.viewSuccessMessageText(successMessage = "Your request completed successfully.");
+	}
+
+	@description = "This is a test for LRQA-69300. Verify the status as Draft after file checkout"
+	@priority = "3"
+	test StatusBecomeDraftAfterCheckout {
+		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		var documentTitle = "Document_1";
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		Workflow.configureWorkflowViaPortlet(workflowDefinition = "Single Approver");
+
+		DMDocument.addWithWorkflowCP(
+			dmDocumentFile = "Document_1.jpg",
+			dmDocumentTitle = "${documentTitle}");
+
+		Navigator.openURL();
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
+
+		Workflow.assignToMeTaskByActions(
+			workflowAssetTitle = "${documentTitle}",
+			workflowAssetType = "Document",
+			workflowTask = "Review");
+
+		Workflow.approveTaskByActions(
+			workflowAssetTitle = "${documentTitle}",
+			workflowAssetType = "Document",
+			workflowTask = "Review");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Checkout",
+			rowEntry = "${documentTitle}");
+
+		DMDocument.viewStatus(
+			dmDocumentStatus = "Draft",
+			dmDocumentTitle = "${documentTitle}");
+	}
+
+	@description = "This is a test for LRQA-69301. Verify the status is changed to pending after a checkout is cancelled"
+	@priority = "3"
+	test StatusPendingAfterCheckoutCancel {
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media");
+
+		Workflow.configureWorkflowViaPortlet(workflowDefinition = "Single Approver");
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media");
+
+		WorkflowDocumentsAndMedia.addFileWithWorkflow(
+			dmDocumentTitle = "DM Document Title",
+			workflowPNGFile = "workflow.png");
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media");
+
+		DMDocument.checkoutCP(dmDocumentTitle = "DM Document Title");
+
+		Navigator.gotoBack();
+
+		DMDocument.viewStatus(
+			dmDocumentStatus = "Draft",
+			dmDocumentTitle = "DM Document Title");
+
+		Navigator.gotoBack();
+
+		Click(
+			key_dmDocumentTitle = "DM Document Title",
+			locator1 = "DocumentsAndMedia#DESCRIPTIVE_LIST_DOCUMENT_VERTICAL_ELLIPSIS_SPECIFIC");
+
+		MenuItem.click(menuItem = "Cancel Checkout");
+
+		DMDocument.viewStatus(
+			dmDocumentStatus = "Pending",
+			dmDocumentTitle = "DM Document Title");
+	}
+
+	@description = "This is a test for LRQA-69302. Verify created file shows message about publication in process"
+	@priority = "3"
+	test ViewPublicationInProcessMessage {
+		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media",
+			site = "${siteName}");
+
+		Workflow.configureWorkflowViaPortlet(workflowDefinition = "Single Approver");
+
+		WorkflowDocumentsAndMedia.videoShortcutAddCP(
+			videoShortcutTitle = "test",
+			videoURL = "Test");
+
+		LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+		DepotNavigator.gotoEdit(depotName = "test");
+
+		WorkflowDocumentsAndMedia.viewWorkflowInProcessMessage(errorMessage = "There is a publication workflow in process. Some actions may be disabled depending on the status and your role through this process.");
+	}
+
+}

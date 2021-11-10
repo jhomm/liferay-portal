@@ -1,0 +1,31 @@
+definition {
+
+	macro addCustomElement {
+		Type(
+			key_text = "Name",
+			locator1 = "TextInput#ANY",
+			value1 = "${entryName}");
+
+		Type(
+			key_text = "HTML Element Name",
+			locator1 = "TextInput#ANY",
+			value1 = "${entryHTMLName}");
+
+		Type(
+			locator1 = "RemoteAppsEntry#CUSTOM_ELEMENT_URL",
+			value1 = "${entryURL}");
+	}
+
+	macro addEntry {
+		Type(
+			key_text = "Name",
+			locator1 = "TextInput#ANY",
+			value1 = "${entryName}");
+
+		Type(
+			key_text = "URL",
+			locator1 = "TextInput#ANY",
+			value1 = "${entryURL}");
+	}
+
+}

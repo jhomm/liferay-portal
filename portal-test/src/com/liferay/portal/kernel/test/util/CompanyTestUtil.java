@@ -15,19 +15,21 @@
 package com.liferay.portal.kernel.test.util;
 
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TimeZoneUtil;
-import com.liferay.portal.model.Company;
-import com.liferay.portal.model.User;
-import com.liferay.portal.security.auth.CompanyThreadLocal;
-import com.liferay.portal.service.CompanyLocalServiceUtil;
-import com.liferay.portal.service.UserLocalServiceUtil;
 
 import java.util.Collection;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import javax.portlet.PortletPreferences;
 
@@ -44,7 +46,7 @@ public class CompanyTestUtil {
 		String virtualHostname = name + "." + RandomTestUtil.randomString(3);
 
 		return CompanyLocalServiceUtil.addCompany(
-			name, virtualHostname, virtualHostname, false, 0, true);
+			null, name, virtualHostname, virtualHostname, false, 0, true);
 	}
 
 	public static void resetCompanyLocales(
@@ -68,7 +70,10 @@ public class CompanyTestUtil {
 		User user = UserLocalServiceUtil.loadGetDefaultUser(companyId);
 
 		user.setLanguageId(defaultLanguageId);
-		user.setTimeZoneId(TimeZoneUtil.getDefault().getID());
+
+		TimeZone timeZone = TimeZoneUtil.getDefault();
+
+		user.setTimeZoneId(timeZone.getID());
 
 		UserLocalServiceUtil.updateUser(user);
 
@@ -88,6 +93,9 @@ public class CompanyTestUtil {
 		// Reset thread locals
 
 		CompanyThreadLocal.setCompanyId(companyId);
+
+		LocaleThreadLocal.setDefaultLocale(
+			LocaleUtil.fromLanguageId(defaultLanguageId));
 	}
 
 }

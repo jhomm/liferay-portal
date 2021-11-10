@@ -14,17 +14,12 @@
 
 package com.liferay.portal.servlet.filters.weblogic;
 
-import com.liferay.portal.kernel.servlet.MetaInfoCacheServletResponse;
 import com.liferay.portal.kernel.servlet.WrapHttpServletResponseFilter;
-import com.liferay.portal.kernel.servlet.filters.invoker.InvokerFilterHelper;
-import com.liferay.portal.kernel.util.ServerDetector;
+import com.liferay.portal.kernel.util.ServiceProxyFactory;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
 
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
 /**
  * @author Minhchau Dang
@@ -34,55 +29,35 @@ public class WebLogicIncludeFilter
 
 	@Override
 	public HttpServletResponse getWrappedHttpServletResponse(
-		HttpServletRequest request, HttpServletResponse response) {
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
-		if (!ServerDetector.isWebLogic()) {
-			ServletContext servletContext = request.getServletContext();
+		WebLogicIncludeServletResponseFactory
+			webLogicIncludeServletResponseFactory =
+				_webLogicIncludeServletResponseFactory;
 
-			InvokerFilterHelper invokerFilterHelper =
-				(InvokerFilterHelper)servletContext.getAttribute(
-					InvokerFilterHelper.class.getName());
-
-			FilterConfig filterConfig = getFilterConfig();
-
-			invokerFilterHelper.unregisterFilterMappings(
-				filterConfig.getFilterName());
+		if (webLogicIncludeServletResponseFactory != null) {
+			return webLogicIncludeServletResponseFactory.create(
+				httpServletResponse);
 		}
 
-		if (isWrap(response)) {
-			return new WebLogicIncludeServletResponse(response);
-		}
-
-		return response;
+		return httpServletResponse;
 	}
 
-	protected boolean isWrap(HttpServletResponse response) {
-		if (response instanceof WebLogicIncludeServletResponse) {
+	@Override
+	public boolean isFilterEnabled() {
+		if (_webLogicIncludeServletResponseFactory == null) {
 			return false;
 		}
 
-		boolean wrap = false;
-
-		HttpServletResponseWrapper previousResponseWrapper = null;
-
-		while (response instanceof HttpServletResponseWrapper) {
-			if (!wrap && (response instanceof MetaInfoCacheServletResponse)) {
-				wrap = true;
-			}
-
-			HttpServletResponseWrapper responseWrapper =
-				(HttpServletResponseWrapper)response;
-
-			response = (HttpServletResponse)responseWrapper.getResponse();
-
-			if (responseWrapper instanceof WebLogicIncludeServletResponse) {
-				previousResponseWrapper.setResponse(response);
-			}
-
-			previousResponseWrapper = responseWrapper;
-		}
-
-		return wrap;
+		return true;
 	}
+
+	private static volatile WebLogicIncludeServletResponseFactory
+		_webLogicIncludeServletResponseFactory =
+			ServiceProxyFactory.newServiceTrackedInstance(
+				WebLogicIncludeServletResponseFactory.class,
+				WebLogicIncludeFilter.class,
+				"_webLogicIncludeServletResponseFactory", false, true);
 
 }

@@ -14,30 +14,36 @@
 
 package com.liferay.portal.model.impl;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.ColorScheme;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.model.LayoutSetPrototype;
+import com.liferay.portal.kernel.model.Theme;
+import com.liferay.portal.kernel.model.VirtualHost;
+import com.liferay.portal.kernel.model.cache.CacheField;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalServiceUtil;
+import com.liferay.portal.kernel.service.ThemeLocalServiceUtil;
+import com.liferay.portal.kernel.service.VirtualHostLocalServiceUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.CacheField;
-import com.liferay.portal.model.ColorScheme;
-import com.liferay.portal.model.Company;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.LayoutSet;
-import com.liferay.portal.model.LayoutSetPrototype;
-import com.liferay.portal.model.Theme;
-import com.liferay.portal.model.VirtualHost;
-import com.liferay.portal.service.CompanyLocalServiceUtil;
-import com.liferay.portal.service.GroupLocalServiceUtil;
-import com.liferay.portal.service.LayoutSetPrototypeLocalServiceUtil;
-import com.liferay.portal.service.ThemeLocalServiceUtil;
-import com.liferay.portal.service.VirtualHostLocalServiceUtil;
 import com.liferay.portal.util.PrefsPropsUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.IOException;
+
+import java.util.List;
+import java.util.TreeMap;
 
 /**
  * Represents a portal layout set, providing access to the layout set's color
@@ -67,7 +73,7 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 	@Override
 	public ColorScheme getColorScheme() {
 		return ThemeLocalServiceUtil.getColorScheme(
-			getCompanyId(), getTheme().getThemeId(), getColorSchemeId(), false);
+			getCompanyId(), getThemeId(), getColorSchemeId());
 	}
 
 	@Override
@@ -78,8 +84,7 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 
 		_companyFallbackVirtualHostname = StringPool.BLANK;
 
-		if (Validator.isNotNull(
-				PropsValues.VIRTUAL_HOSTS_DEFAULT_SITE_NAME) &&
+		if (Validator.isNotNull(PropsValues.VIRTUAL_HOSTS_DEFAULT_SITE_NAME) &&
 			!isPrivateLayout()) {
 
 			Group group = GroupLocalServiceUtil.fetchGroup(
@@ -103,8 +108,6 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 	 * Returns the layout set's group.
 	 *
 	 * @return the layout set's group
-	 * @throws PortalException if a group with the primary key could not be
-	 *         found
 	 */
 	@Override
 	public Group getGroup() throws PortalException {
@@ -121,8 +124,6 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 	 *
 	 * @return the layout set prototype's ID, or <code>0</code> if it has no
 	 *         layout set prototype
-	 * @throws PortalException if a matching layout set prototype could not be
-	 *         found
 	 */
 	@Override
 	public long getLayoutSetPrototypeId() throws PortalException {
@@ -153,7 +154,11 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 				return logoId;
 			}
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
+
 			return logoId;
 		}
 
@@ -181,103 +186,137 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 	}
 
 	@Override
+	public int getPageCount() {
+		return LayoutSetLocalServiceUtil.getPageCount(
+			getGroupId(), getPrivateLayout());
+	}
+
+	@Override
 	public String getSettings() {
-		if (_settingsProperties == null) {
+		if (_settingsUnicodeProperties == null) {
 			return super.getSettings();
 		}
-		else {
-			return _settingsProperties.toString();
-		}
+
+		return _settingsUnicodeProperties.toString();
 	}
 
 	@Override
 	public UnicodeProperties getSettingsProperties() {
-		if (_settingsProperties == null) {
-			_settingsProperties = new UnicodeProperties(true);
+		if (_settingsUnicodeProperties == null) {
+			_settingsUnicodeProperties = new UnicodeProperties(true);
 
 			try {
-				_settingsProperties.load(super.getSettings());
+				_settingsUnicodeProperties.load(super.getSettings());
 			}
-			catch (IOException ioe) {
-				_log.error(ioe, ioe);
+			catch (IOException ioException) {
+				_log.error(ioException, ioException);
 			}
 		}
 
-		return _settingsProperties;
+		return _settingsUnicodeProperties;
 	}
 
 	@Override
 	public String getSettingsProperty(String key) {
-		UnicodeProperties settingsProperties = getSettingsProperties();
+		UnicodeProperties settingsUnicodeProperties = getSettingsProperties();
 
-		return settingsProperties.getProperty(key);
+		return settingsUnicodeProperties.getProperty(key);
 	}
 
 	@Override
 	public Theme getTheme() {
-		return ThemeLocalServiceUtil.getTheme(
-			getCompanyId(), getThemeId(), false);
+		return ThemeLocalServiceUtil.getTheme(getCompanyId(), getThemeId());
 	}
 
 	@Override
 	public String getThemeSetting(String key, String device) {
-		UnicodeProperties settingsProperties = getSettingsProperties();
+		if (!Validator.isBlank(super.getSettings())) {
+			UnicodeProperties settingsUnicodeProperties =
+				getSettingsProperties();
 
-		String value = settingsProperties.getProperty(
-			ThemeSettingImpl.namespaceProperty(device, key));
+			String value = settingsUnicodeProperties.getProperty(
+				ThemeSettingImpl.namespaceProperty(device, key));
 
-		if (value != null) {
-			return value;
+			if (value != null) {
+				return value;
+			}
 		}
 
 		Theme theme = getTheme(device);
 
-		value = theme.getSetting(key);
-
-		return value;
+		return theme.getSetting(key);
 	}
 
 	/**
-	 * Returns the name of the layout set's virtual host.
+	 * Returns the name of the layout set's default virtual host.
 	 *
 	 * <p>
-	 * When accessing a layout set that has a the virtual host, the URL elements
+	 * When accessing a layout set that has a virtual host, the URL elements
 	 * "/web/sitename" or "/group/sitename" can be omitted.
 	 * </p>
 	 *
-	 * @return the layout set's virtual host name, or an empty string if the
-	 *         layout set has no virtual host configured
+	 * @return     the layout set's default virtual host name, or an empty
+	 *             string if the layout set has no virtual hosts configured
+	 * @deprecated As of Mueller (7.2.x), replaced by {@link
+	 *             #getVirtualHostnames()}
 	 */
+	@Deprecated
 	@Override
 	public String getVirtualHostname() {
-		if (_virtualHostname != null) {
-			return _virtualHostname;
+		TreeMap<String, String> virtualHostnames = getVirtualHostnames();
+
+		if (virtualHostnames.isEmpty()) {
+			return StringPool.BLANK;
 		}
 
-		VirtualHost virtualHost = VirtualHostLocalServiceUtil.fetchVirtualHost(
-			getCompanyId(), getLayoutSetId());
+		return virtualHostnames.firstKey();
+	}
 
-		if (virtualHost == null) {
-			_virtualHostname = StringPool.BLANK;
+	/**
+	 * Returns the names of the layout set's virtual hosts.
+	 *
+	 * <p>
+	 * When accessing a layout set that has a virtual host, the URL elements
+	 * "/web/sitename" or "/group/sitename" can be omitted.
+	 * </p>
+	 *
+	 * @return a map from the layout set's virtual host names to the language
+	 *         ids configured for them. If the virtual host is configured
+	 *         for the default language, it will map to the empty string instead
+	 *         of a language id. If the layout set has no virtual hosts
+	 *         configured, the returned map will be empty.
+	 */
+	@Override
+	public TreeMap<String, String> getVirtualHostnames() {
+		if (_virtualHostnames != null) {
+			return new TreeMap<>(_virtualHostnames);
+		}
+
+		List<VirtualHost> virtualHosts = null;
+
+		try {
+			virtualHosts = VirtualHostLocalServiceUtil.getVirtualHosts(
+				getCompanyId(), getLayoutSetId());
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException, portalException);
+		}
+
+		if (ListUtil.isEmpty(virtualHosts)) {
+			_virtualHostnames = new TreeMap<>();
 		}
 		else {
-			_virtualHostname = virtualHost.getHostname();
+			TreeMap<String, String> virtualHostnames = new TreeMap<>();
+
+			for (VirtualHost virtualHost : virtualHosts) {
+				virtualHostnames.put(
+					virtualHost.getHostname(), virtualHost.getLanguageId());
+			}
+
+			_virtualHostnames = virtualHostnames;
 		}
 
-		return _virtualHostname;
-	}
-
-	@Override
-	public ColorScheme getWapColorScheme() {
-		return ThemeLocalServiceUtil.getColorScheme(
-			getCompanyId(), getWapTheme().getThemeId(), getWapColorSchemeId(),
-			true);
-	}
-
-	@Override
-	public Theme getWapTheme() {
-		return ThemeLocalServiceUtil.getTheme(
-			getCompanyId(), getWapThemeId(), true);
+		return new TreeMap<>(_virtualHostnames);
 	}
 
 	@Override
@@ -310,27 +349,46 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 
 	@Override
 	public void setSettings(String settings) {
-		_settingsProperties = null;
+		_settingsUnicodeProperties = null;
 
 		super.setSettings(settings);
 	}
 
 	@Override
-	public void setSettingsProperties(UnicodeProperties settingsProperties) {
-		_settingsProperties = settingsProperties;
+	public void setSettingsProperties(
+		UnicodeProperties settingsUnicodeProperties) {
 
-		super.setSettings(_settingsProperties.toString());
+		_settingsUnicodeProperties = settingsUnicodeProperties;
+
+		super.setSettings(_settingsUnicodeProperties.toString());
 	}
 
 	/**
 	 * Sets the name of the layout set's virtual host.
 	 *
-	 * @param virtualHostname the name of the layout set's virtual host
-	 * @see   #getVirtualHostname()
+	 * @param      virtualHostname the name of the layout set's virtual host
+	 * @see        #getVirtualHostname()
+	 * @deprecated As of Mueller (7.2.x), replaced by {@link
+	 *             #setVirtualHostnames(TreeMap)}
 	 */
+	@Deprecated
 	@Override
 	public void setVirtualHostname(String virtualHostname) {
-		_virtualHostname = virtualHostname;
+		_virtualHostnames = TreeMapBuilder.put(
+			virtualHostname, StringPool.BLANK
+		).build();
+	}
+
+	/**
+	 * Sets the names of the layout set's virtual host name and language IDs.
+	 *
+	 * @param virtualHostnames the map of the layout set's virtual host name and
+	 *        language IDs
+	 * @see   #getVirtualHostnames()
+	 */
+	@Override
+	public void setVirtualHostnames(TreeMap<String, String> virtualHostnames) {
+		_virtualHostnames = virtualHostnames;
 	}
 
 	protected Theme getTheme(String device) {
@@ -341,7 +399,10 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 
 			controlPanel = group.isControlPanel();
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
 		}
 
 		if (controlPanel) {
@@ -349,25 +410,20 @@ public class LayoutSetImpl extends LayoutSetBaseImpl {
 				getCompanyId(),
 				PropsKeys.CONTROL_PANEL_LAYOUT_REGULAR_THEME_ID);
 
-			return ThemeLocalServiceUtil.getTheme(
-				getCompanyId(), themeId, !device.equals("regular"));
+			return ThemeLocalServiceUtil.getTheme(getCompanyId(), themeId);
 		}
-		else if (device.equals("regular")) {
-			return getTheme();
-		}
-		else {
-			return getWapTheme();
-		}
+
+		return getTheme();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(LayoutSetImpl.class);
 
-	@CacheField
+	@CacheField(propagateToInterface = true)
 	private String _companyFallbackVirtualHostname;
 
-	private UnicodeProperties _settingsProperties;
+	private UnicodeProperties _settingsUnicodeProperties;
 
-	@CacheField
-	private String _virtualHostname;
+	@CacheField(propagateToInterface = true)
+	private TreeMap<String, String> _virtualHostnames;
 
 }

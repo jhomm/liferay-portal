@@ -14,11 +14,13 @@
 
 package com.liferay.portal.template;
 
-import com.liferay.portal.bean.BeanLocatorImpl;
-import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
-import com.liferay.portal.kernel.bean.PortletBeanLocatorUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.service.BaseLocalService;
+import com.liferay.portal.kernel.service.BaseService;
+import com.liferay.portal.util.PropsValues;
 
 /**
  * @author Brian Wing Shun Chan
@@ -26,49 +28,43 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 public class ServiceLocator {
 
 	public static ServiceLocator getInstance() {
-		return _instance;
+		return _serviceLocator;
 	}
 
 	public Object findService(String serviceName) {
-		Object bean = null;
+		Object object = SystemBundleUtil.callService(serviceName, obj -> obj);
 
-		try {
-			bean = PortalBeanLocatorUtil.locate(_getServiceName(serviceName));
-		}
-		catch (Exception e) {
-			_log.error(e, e);
+		if (PropsValues.TEMPLATE_ENGINE_SERVICE_LOCATOR_RESTRICT &&
+			!(object instanceof BaseLocalService) &&
+			!(object instanceof BaseService)) {
+
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					StringBundler.concat(
+						"Denied access to service \"", serviceName,
+						"\" because it is not a Service Builder generated ",
+						"service"));
+			}
+
+			object = null;
 		}
 
-		return bean;
+		return object;
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
+	 */
+	@Deprecated
 	public Object findService(String servletContextName, String serviceName) {
-		Object bean = null;
-
-		try {
-			bean = PortletBeanLocatorUtil.locate(
-				servletContextName, _getServiceName(serviceName));
-		}
-		catch (Exception e) {
-			_log.error(e, e);
-		}
-
-		return bean;
+		return findService(serviceName);
 	}
 
 	private ServiceLocator() {
 	}
 
-	private String _getServiceName(String serviceName) {
-		if (!serviceName.endsWith(BeanLocatorImpl.VELOCITY_SUFFIX)) {
-			serviceName += BeanLocatorImpl.VELOCITY_SUFFIX;
-		}
-
-		return serviceName;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(ServiceLocator.class);
 
-	private static final ServiceLocator _instance = new ServiceLocator();
+	private static final ServiceLocator _serviceLocator = new ServiceLocator();
 
 }

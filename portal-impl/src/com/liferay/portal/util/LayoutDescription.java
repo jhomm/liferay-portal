@@ -14,8 +14,8 @@
 
 package com.liferay.portal.util;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.StringBundler;
 
 import java.io.Serializable;
 
@@ -56,17 +56,8 @@ public class LayoutDescription implements Serializable {
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(7);
-
-		sb.append("{depth=");
-		sb.append(_depth);
-		sb.append(", name=");
-		sb.append(_name);
-		sb.append(", plid=");
-		sb.append(_plid);
-		sb.append("}");
-
-		return sb.toString();
+		return StringBundler.concat(
+			"{depth=", _depth, ", name=", _name, ", plid=", _plid, "}");
 	}
 
 	private final int _depth;

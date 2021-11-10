@@ -20,8 +20,7 @@ import com.liferay.portal.kernel.notifications.ChannelHub;
 import com.liferay.portal.kernel.notifications.ChannelListener;
 import com.liferay.portal.kernel.notifications.NotificationEvent;
 import com.liferay.portal.kernel.notifications.UnknownChannelException;
-import com.liferay.portal.model.CompanyConstants;
-import com.liferay.portal.service.UserNotificationEventLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserNotificationEventLocalServiceUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.util.ArrayList;
@@ -41,6 +40,10 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class ChannelHubImpl implements ChannelHub {
 
+	public ChannelHubImpl(long companyId) {
+		_companyId = companyId;
+	}
+
 	@Override
 	public void cleanUp() throws ChannelException {
 		for (Channel channel : _channels.values()) {
@@ -53,16 +56,6 @@ public class ChannelHubImpl implements ChannelHub {
 		Channel channel = getChannel(userId);
 
 		channel.cleanUp();
-	}
-
-	@Override
-	public ChannelHub clone(long companyId) {
-		ChannelHubImpl channelHubImpl = new ChannelHubImpl();
-
-		channelHubImpl.setChannelPrototype(_channel);
-		channelHubImpl.setCompanyId(companyId);
-
-		return channelHubImpl;
 	}
 
 	@Override
@@ -107,7 +100,7 @@ public class ChannelHubImpl implements ChannelHub {
 			return _channels.get(userId);
 		}
 
-		Channel channel = _channel.clone(_companyId, userId);
+		Channel channel = new ChannelImpl(_companyId, userId);
 
 		Channel oldChannel = _channels.putIfAbsent(userId, channel);
 
@@ -144,14 +137,16 @@ public class ChannelHubImpl implements ChannelHub {
 	public void destroy() throws ChannelException {
 		Set<Map.Entry<Long, Channel>> channels = _channels.entrySet();
 
-		Iterator<Map.Entry<Long, Channel>> itr = channels.iterator();
+		Iterator<Map.Entry<Long, Channel>> iterator = channels.iterator();
 
-		while (itr.hasNext()) {
-			Channel channel = itr.next().getValue();
+		while (iterator.hasNext()) {
+			Map.Entry<Long, Channel> entry = iterator.next();
+
+			Channel channel = entry.getValue();
 
 			channel.close();
 
-			itr.remove();
+			iterator.remove();
 		}
 	}
 
@@ -181,10 +176,8 @@ public class ChannelHubImpl implements ChannelHub {
 			synchronized (_channels) {
 				channel = _channels.get(userId);
 
-				if (channel == null) {
-					if (createIfAbsent) {
-						channel = createChannel(userId);
-					}
+				if ((channel == null) && createIfAbsent) {
+					channel = createChannel(userId);
 				}
 			}
 		}
@@ -341,8 +334,8 @@ public class ChannelHubImpl implements ChannelHub {
 			UserNotificationEventLocalServiceUtil.addUserNotificationEvent(
 				userId, notificationEvent);
 		}
-		catch (Exception e) {
-			throw new ChannelException("Unable to send event", e);
+		catch (Exception exception) {
+			throw new ChannelException("Unable to send event", exception);
 		}
 	}
 
@@ -376,17 +369,9 @@ public class ChannelHubImpl implements ChannelHub {
 			UserNotificationEventLocalServiceUtil.addUserNotificationEvents(
 				userId, persistedNotificationEvents);
 		}
-		catch (Exception e) {
-			throw new ChannelException("Unable to send events", e);
+		catch (Exception exception) {
+			throw new ChannelException("Unable to send events", exception);
 		}
-	}
-
-	public void setChannelPrototype(Channel channel) {
-		_channel = channel;
-	}
-
-	public void setCompanyId(long companyId) {
-		_companyId = companyId;
 	}
 
 	@Override
@@ -412,9 +397,8 @@ public class ChannelHubImpl implements ChannelHub {
 		channel.unregisterChannelListener(channelListener);
 	}
 
-	private Channel _channel;
 	private final ConcurrentMap<Long, Channel> _channels =
 		new ConcurrentHashMap<>();
-	private long _companyId = CompanyConstants.SYSTEM;
+	private final long _companyId;
 
 }

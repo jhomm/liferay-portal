@@ -17,6 +17,14 @@
 <%@ include file="/html/portal/init.jsp" %>
 
 <%
+if (_log.isWarnEnabled()) {
+	String requestedSessionId = request.getRequestedSessionId();
+
+	if (Validator.isNotNull(requestedSessionId) && !StringUtil.equals(requestedSessionId, session.getId())) {
+		_log.warn("Unable to extend the HTTP session. Review the portal property \"session.timeout\" if this warning is displayed frequently.");
+	}
+}
+
 for (String servletContextName : ServletContextPool.keySet()) {
 	ServletContext servletContext = ServletContextPool.get(servletContextName);
 
@@ -26,9 +34,7 @@ for (String servletContextName : ServletContextPool.keySet()) {
 
 	PortletApp portletApp = PortletLocalServiceUtil.getPortletApp(servletContextName);
 
-	List<Portlet> portlets = portletApp.getPortlets();
-
-	for (Portlet portlet : portlets) {
+	for (Portlet portlet : portletApp.getPortlets()) {
 		PortletConfig portletConfig = PortletConfigFactoryUtil.create(portlet, servletContext);
 
 		String invokerPortletName = portletConfig.getInitParameter(InvokerPortlet.INIT_INVOKER_PORTLET_NAME);
@@ -37,9 +43,7 @@ for (String servletContextName : ServletContextPool.keySet()) {
 			invokerPortletName = portletConfig.getPortletName();
 		}
 
-		String portletName = PortalUtil.getJsSafePortletId(invokerPortletName);
-
-		String path = StringPool.SLASH.concat(portletName).concat("/invoke");
+		String path = StringBundler.concat(StringPool.SLASH, invokerPortletName, "/invoke");
 
 		RequestDispatcher requestDispatcher = servletContext.getRequestDispatcher(path);
 
@@ -62,5 +66,5 @@ for (String servletContextName : ServletContextPool.keySet()) {
 %>
 
 <%!
-private static Log _log = LogFactoryUtil.getLog("portal-web.docroot.html.portal.extend_session_jsp");
+private static final Log _log = LogFactoryUtil.getLog("portal_web.docroot.html.portal.extend_session_jsp");
 %>

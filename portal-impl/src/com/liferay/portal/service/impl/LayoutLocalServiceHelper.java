@@ -14,61 +14,65 @@
 
 package com.liferay.portal.service.impl;
 
-import com.liferay.portal.LayoutFriendlyURLException;
-import com.liferay.portal.LayoutFriendlyURLsException;
-import com.liferay.portal.LayoutNameException;
-import com.liferay.portal.LayoutParentLayoutIdException;
-import com.liferay.portal.LayoutTypeException;
-import com.liferay.portal.NoSuchLayoutException;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.bean.IdentifiableBean;
+import com.liferay.portal.kernel.exception.LayoutFriendlyURLException;
+import com.liferay.portal.kernel.exception.LayoutFriendlyURLsException;
+import com.liferay.portal.kernel.exception.LayoutNameException;
+import com.liferay.portal.kernel.exception.LayoutParentLayoutIdException;
+import com.liferay.portal.kernel.exception.LayoutTypeException;
+import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.model.LayoutFriendlyURL;
+import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.model.LayoutSetPrototype;
+import com.liferay.portal.kernel.model.LayoutType;
+import com.liferay.portal.kernel.model.LayoutTypeController;
+import com.liferay.portal.kernel.model.ModelHintsUtil;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.portlet.FriendlyURLMapper;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.persistence.LayoutFriendlyURLPersistence;
+import com.liferay.portal.kernel.service.persistence.LayoutPersistence;
+import com.liferay.portal.kernel.service.persistence.LayoutSetPersistence;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.model.LayoutConstants;
-import com.liferay.portal.model.LayoutFriendlyURL;
-import com.liferay.portal.model.LayoutSet;
-import com.liferay.portal.model.LayoutSetPrototype;
-import com.liferay.portal.model.LayoutType;
-import com.liferay.portal.model.LayoutTypeController;
-import com.liferay.portal.model.ResourceConstants;
-import com.liferay.portal.model.Role;
-import com.liferay.portal.model.RoleConstants;
+import com.liferay.portal.kernel.util.comparator.LayoutPriorityComparator;
 import com.liferay.portal.model.impl.LayoutImpl;
-import com.liferay.portal.security.permission.ActionKeys;
-import com.liferay.portal.service.PortletLocalServiceUtil;
-import com.liferay.portal.service.ResourcePermissionLocalService;
-import com.liferay.portal.service.RoleLocalServiceUtil;
-import com.liferay.portal.service.persistence.LayoutFriendlyURLPersistence;
-import com.liferay.portal.service.persistence.LayoutPersistence;
-import com.liferay.portal.service.persistence.LayoutSetPersistence;
 import com.liferay.portal.util.LayoutTypeControllerTracker;
-import com.liferay.portal.util.Portal;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.comparator.LayoutPriorityComparator;
-import com.liferay.portlet.sites.util.SitesUtil;
+import com.liferay.sites.kernel.util.SitesUtil;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Raymond Augé
  */
-public class LayoutLocalServiceHelper implements IdentifiableBean {
-
-	@Override
-	public String getBeanIdentifier() {
-		return _beanIdentifier;
-	}
+public class LayoutLocalServiceHelper implements IdentifiableOSGiService {
 
 	public String getFriendlyURL(
 			long groupId, boolean privateLayout, long layoutId, String name,
@@ -92,8 +96,8 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 
 				break;
 			}
-			catch (LayoutFriendlyURLException lfurle) {
-				int type = lfurle.getType();
+			catch (LayoutFriendlyURLException layoutFriendlyURLException) {
+				int type = layoutFriendlyURLException.getType();
 
 				if (type == LayoutFriendlyURLException.DUPLICATE) {
 					friendlyURL = originalFriendlyURL + i;
@@ -110,7 +114,7 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 	}
 
 	public String getFriendlyURL(String friendlyURL) {
-		return FriendlyURLNormalizerUtil.normalize(friendlyURL);
+		return FriendlyURLNormalizerUtil.normalizeWithEncoding(friendlyURL);
 	}
 
 	public Map<Locale, String> getFriendlyURLMap(
@@ -176,9 +180,21 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 
 			return priority;
 		}
-		catch (NoSuchLayoutException nsle) {
+		catch (NoSuchLayoutException noSuchLayoutException) {
+
+			// LPS-52675
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchLayoutException, noSuchLayoutException);
+			}
+
 			return 0;
 		}
+	}
+
+	@Override
+	public String getOSGiServiceIdentifier() {
+		return LayoutLocalServiceHelper.class.getName();
 	}
 
 	public long getParentLayoutId(
@@ -213,15 +229,10 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 		return false;
 	}
 
-	@Override
-	public void setBeanIdentifier(String beanIdentifier) {
-		_beanIdentifier = beanIdentifier;
-	}
-
 	public void validate(
 			long groupId, boolean privateLayout, long layoutId,
 			long parentLayoutId, String name, String type, boolean hidden,
-			Map<Locale, String> friendlyURLMap)
+			Map<Locale, String> friendlyURLMap, ServiceContext serviceContext)
 		throws PortalException {
 
 		validateName(name);
@@ -236,7 +247,9 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 				firstLayout = true;
 			}
 			else {
-				long firstLayoutId = layouts.get(0).getLayoutId();
+				Layout layout = layouts.get(0);
+
+				long firstLayoutId = layout.getLayoutId();
 
 				if (firstLayoutId == layoutId) {
 					firstLayout = true;
@@ -269,10 +282,21 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 		LayoutTypeController layoutTypeController =
 			LayoutTypeControllerTracker.getLayoutTypeController(type);
 
-		if (!layoutTypeController.isParentable()) {
-			if (layoutPersistence.countByG_P_P(
-					groupId, privateLayout, layoutId) > 0) {
+		if (!layoutTypeController.isInstanceable()) {
+			boolean layoutInstanceableAllowed = GetterUtil.getBoolean(
+				serviceContext.getAttribute("layout.instanceable.allowed"));
 
+			if (!layoutInstanceableAllowed) {
+				throw new LayoutTypeException(
+					LayoutTypeException.NOT_INSTANCEABLE);
+			}
+		}
+
+		if (!layoutTypeController.isParentable()) {
+			int count = layoutPersistence.countByG_P_P(
+				groupId, privateLayout, layoutId);
+
+			if (count > 0) {
 				throw new LayoutTypeException(
 					LayoutTypeException.NOT_PARENTABLE);
 			}
@@ -287,10 +311,10 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 		if (group.isGuest() && layout.isPublicLayout() &&
 			!hasGuestViewPermission(layout)) {
 
-			LayoutTypeException lte = new LayoutTypeException(
+			LayoutTypeException layoutTypeException = new LayoutTypeException(
 				LayoutTypeException.FIRST_LAYOUT_PERMISSION);
 
-			throw lte;
+			throw layoutTypeException;
 		}
 
 		validateFirstLayout(layout.getType());
@@ -301,12 +325,12 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 			LayoutTypeControllerTracker.getLayoutTypeController(type);
 
 		if (Validator.isNull(type) || !layoutTypeController.isFirstPageable()) {
-			LayoutTypeException lte = new LayoutTypeException(
+			LayoutTypeException layoutTypeException = new LayoutTypeException(
 				LayoutTypeException.FIRST_LAYOUT);
 
-			lte.setLayoutType(type);
+			layoutTypeException.setLayoutType(type);
 
-			throw lte;
+			throw layoutTypeException;
 		}
 	}
 
@@ -334,26 +358,59 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 				layoutFriendlyURL.getPlid());
 
 			if (layout.getLayoutId() != layoutId) {
-				LayoutFriendlyURLException lfurle =
+				LayoutFriendlyURLException layoutFriendlyURLException =
 					new LayoutFriendlyURLException(
 						LayoutFriendlyURLException.DUPLICATE);
 
-				lfurle.setDuplicateClassPK(layout.getPlid());
-				lfurle.setDuplicateClassName(Layout.class.getName());
+				layoutFriendlyURLException.setDuplicateClassPK(
+					layout.getPlid());
+				layoutFriendlyURLException.setDuplicateClassName(
+					Layout.class.getName());
 
-				throw lfurle;
+				throw layoutFriendlyURLException;
 			}
 		}
 
 		LayoutImpl.validateFriendlyURLKeyword(friendlyURL);
 
-		if (friendlyURL.contains(Portal.FRIENDLY_URL_SEPARATOR)) {
-			LayoutFriendlyURLException lfurle = new LayoutFriendlyURLException(
-				LayoutFriendlyURLException.KEYWORD_CONFLICT);
+		if (friendlyURL.contains(Portal.FRIENDLY_URL_SEPARATOR) ||
+			friendlyURL.endsWith(_FRIENDLY_URL_SEPARATOR_HEAD)) {
 
-			lfurle.setKeywordConflict(Portal.FRIENDLY_URL_SEPARATOR);
+			LayoutFriendlyURLException layoutFriendlyURLException =
+				new LayoutFriendlyURLException(
+					LayoutFriendlyURLException.KEYWORD_CONFLICT);
 
-			throw lfurle;
+			layoutFriendlyURLException.setKeywordConflict(
+				Portal.FRIENDLY_URL_SEPARATOR);
+
+			throw layoutFriendlyURLException;
+		}
+
+		Matcher matcher = _urlSeparatorPattern.matcher(friendlyURL);
+
+		if (matcher.matches()) {
+			LayoutFriendlyURLException layoutFriendlyURLException =
+				new LayoutFriendlyURLException(
+					LayoutFriendlyURLException.KEYWORD_CONFLICT);
+
+			layoutFriendlyURLException.setKeywordConflict(friendlyURL);
+
+			throw layoutFriendlyURLException;
+		}
+
+		String[] urlSeparators =
+			FriendlyURLResolverRegistryUtil.getURLSeparators();
+
+		for (String urlSeparator : urlSeparators) {
+			if (urlSeparator.contains(friendlyURL)) {
+				LayoutFriendlyURLException layoutFriendlyURLException =
+					new LayoutFriendlyURLException(
+						LayoutFriendlyURLException.KEYWORD_CONFLICT);
+
+				layoutFriendlyURLException.setKeywordConflict(urlSeparator);
+
+				throw layoutFriendlyURLException;
+			}
 		}
 
 		List<FriendlyURLMapper> friendlyURLMappers =
@@ -369,13 +426,14 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 			if (friendlyURL.contains(mapping + StringPool.SLASH) ||
 				friendlyURL.endsWith(mapping)) {
 
-				LayoutFriendlyURLException lfurle =
+				LayoutFriendlyURLException layoutFriendlyURLException =
 					new LayoutFriendlyURLException(
 						LayoutFriendlyURLException.KEYWORD_CONFLICT);
 
-				lfurle.setKeywordConflict(friendlyURLMapper.getMapping());
+				layoutFriendlyURLException.setKeywordConflict(
+					friendlyURLMapper.getMapping());
 
-				throw lfurle;
+				throw layoutFriendlyURLException;
 			}
 		}
 
@@ -387,19 +445,26 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 				StringPool.SLASH +
 					PortalUtil.getI18nPathLanguageId(locale, languageId);
 
+			String underlineI18nPathLanguageId = StringUtil.replace(
+				i18nPathLanguageId, CharPool.DASH, CharPool.UNDERLINE);
+
 			if (friendlyURL.startsWith(i18nPathLanguageId + StringPool.SLASH) ||
 				friendlyURL.startsWith(
+					underlineI18nPathLanguageId + StringPool.SLASH) ||
+				friendlyURL.startsWith(
 					StringPool.SLASH + languageId + StringPool.SLASH) ||
-				friendlyURL.endsWith(i18nPathLanguageId) ||
-				friendlyURL.endsWith(StringPool.SLASH + languageId)) {
+				friendlyURL.equals(i18nPathLanguageId) ||
+				friendlyURL.equals(underlineI18nPathLanguageId) ||
+				friendlyURL.equals(StringPool.SLASH + languageId)) {
 
-				LayoutFriendlyURLException lfurle =
+				LayoutFriendlyURLException layoutFriendlyURLException =
 					new LayoutFriendlyURLException(
 						LayoutFriendlyURLException.KEYWORD_CONFLICT);
 
-				lfurle.setKeywordConflict(i18nPathLanguageId);
+				layoutFriendlyURLException.setKeywordConflict(
+					i18nPathLanguageId);
 
-				throw lfurle;
+				throw layoutFriendlyURLException;
 			}
 		}
 
@@ -408,12 +473,13 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 		if (Validator.isNumber(layoutIdFriendlyURL) &&
 			!layoutIdFriendlyURL.equals(String.valueOf(layoutId))) {
 
-			LayoutFriendlyURLException lfurle = new LayoutFriendlyURLException(
-				LayoutFriendlyURLException.POSSIBLE_DUPLICATE);
+			LayoutFriendlyURLException layoutFriendlyURLException =
+				new LayoutFriendlyURLException(
+					LayoutFriendlyURLException.POSSIBLE_DUPLICATE);
 
-			lfurle.setKeywordConflict(layoutIdFriendlyURL);
+			layoutFriendlyURLException.setKeywordConflict(layoutIdFriendlyURL);
 
-			throw lfurle;
+			throw layoutFriendlyURLException;
 		}
 	}
 
@@ -431,19 +497,21 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 				validateFriendlyURL(
 					groupId, privateLayout, layoutId, friendlyURL);
 			}
-			catch (LayoutFriendlyURLException lfurle) {
+			catch (LayoutFriendlyURLException layoutFriendlyURLException) {
 				Locale locale = entry.getKey();
 
 				if (layoutFriendlyURLsException == null) {
 					layoutFriendlyURLsException =
-						new LayoutFriendlyURLsException(lfurle);
+						new LayoutFriendlyURLsException(
+							layoutFriendlyURLException);
 				}
 				else {
-					layoutFriendlyURLsException.addSuppressed(lfurle);
+					layoutFriendlyURLsException.addSuppressed(
+						layoutFriendlyURLException);
 				}
 
 				layoutFriendlyURLsException.addLocalizedException(
-					locale, lfurle);
+					locale, layoutFriendlyURLException);
 			}
 		}
 
@@ -455,6 +523,13 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 	public void validateName(String name) throws PortalException {
 		if (Validator.isNull(name)) {
 			throw new LayoutNameException();
+		}
+
+		int maxLength = ModelHintsUtil.getMaxLength(
+			Layout.class.getName(), "friendlyURL");
+
+		if (name.length() > maxLength) {
+			throw new LayoutNameException(LayoutNameException.TOO_LONG);
 		}
 	}
 
@@ -518,29 +593,33 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 
 		// If layout is moved, the new first layout must be valid
 
-		if (layout.getParentLayoutId() ==
+		if (layout.getParentLayoutId() !=
 				LayoutConstants.DEFAULT_PARENT_LAYOUT_ID) {
 
-			List<Layout> layouts = layoutPersistence.findByG_P_P(
-				groupId, privateLayout,
-				LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0, 2);
+			return;
+		}
 
-			// You can only reach this point if there are more than two layouts
-			// at the root level because of the descendant check
+		List<Layout> layouts = layoutPersistence.findByG_P_P(
+			groupId, privateLayout, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, 0,
+			2);
 
-			long firstLayoutId = layouts.get(0).getLayoutId();
+		// You can only reach this point if there are more than two layouts
+		// at the root level because of the descendant check
 
-			if (firstLayoutId == layoutId) {
-				Layout secondLayout = layouts.get(1);
+		Layout firstLayout = layouts.get(0);
 
-				LayoutType layoutType = secondLayout.getLayoutType();
+		long firstLayoutId = firstLayout.getLayoutId();
 
-				if (Validator.isNull(secondLayout.getType()) ||
-					!layoutType.isFirstPageable()) {
+		if (firstLayoutId == layoutId) {
+			Layout secondLayout = layouts.get(1);
 
-					throw new LayoutParentLayoutIdException(
-						LayoutParentLayoutIdException.FIRST_LAYOUT_TYPE);
-				}
+			LayoutType layoutType = secondLayout.getLayoutType();
+
+			if (Validator.isNull(secondLayout.getType()) ||
+				!layoutType.isFirstPageable()) {
+
+				throw new LayoutParentLayoutIdException(
+					LayoutParentLayoutIdException.FIRST_LAYOUT_TYPE);
 			}
 		}
 	}
@@ -570,8 +649,16 @@ public class LayoutLocalServiceHelper implements IdentifiableBean {
 	@BeanReference(type = ResourcePermissionLocalService.class)
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 
+	private static final String _FRIENDLY_URL_SEPARATOR_HEAD =
+		Portal.FRIENDLY_URL_SEPARATOR.substring(
+			0, Portal.FRIENDLY_URL_SEPARATOR.length() - 1);
+
 	private static final int _PRIORITY_BUFFER = 1000000;
 
-	private String _beanIdentifier;
+	private static final Log _log = LogFactoryUtil.getLog(
+		LayoutLocalServiceHelper.class);
+
+	private static final Pattern _urlSeparatorPattern = Pattern.compile(
+		"/[A-Za-z]");
 
 }

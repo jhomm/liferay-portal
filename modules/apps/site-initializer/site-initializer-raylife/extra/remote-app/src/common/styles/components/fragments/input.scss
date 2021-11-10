@@ -1,0 +1,96 @@
+.input-area {
+	display: flex;
+	flex-direction: column;
+	position: relative;
+	width: 100%;
+
+	& > label {
+		margin-bottom: 0.5rem;
+
+		& > button.btn.badge {
+			margin-right: -31px;
+		}
+	}
+
+	&.invalid {
+		input {
+			border-color: $color-state-error;
+		}
+	}
+}
+
+label {
+	color: $color-neutral-0;
+	display: flex;
+	font-family: $font-family;
+	font-size: 1.125rem;
+	font-weight: bold;
+	gap: 0.75rem;
+	margin-right: -5px;
+
+	& .required::after {
+		color: $color-state-error;
+		content: '*';
+		font-size: 0.813rem;
+		position: relative;
+		top: -5px;
+	}
+}
+
+input,
+.input {
+	background: $background;
+	border: 1px solid $color-action-neutral-default;
+	border-radius: 0.25rem;
+	color: $color-neutral-0;
+	display: flex;
+	flex: 1;
+	font-family: $font-family;
+	font-size: 1rem;
+	font-weight: 500;
+	min-height: 3rem;
+	padding: $spacer-0 $spacer-3;
+	transition: all ease-out 200ms;
+	width: auto;
+
+	&:focus,
+	&:hover {
+		border-color: $color-action-primary-hover;
+	}
+
+	&:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+
+	&::placeholder {
+		opacity: 0.4;
+	}
+}
+
+input.hidden {
+	display: none;
+}
+
+input.search {
+	font-size: 1.313rem;
+	font-weight: 700;
+	min-height: 3.5rem;
+	padding: 0 $spacer-4;
+}
+
+select {
+	-moz-appearance: none;
+	-webkit-appearance: none;
+	appearance: none;
+}
+
+.select-icon {
+	bottom: 10px;
+	fill: $color-action-neutral-default;
+	height: 24px !important;
+	pointer-events: none;
+	position: absolute;
+	right: 12px;
+	width: 24px !important;
+}

@@ -14,30 +14,30 @@
 
 package com.liferay.portal.license.util;
 
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.json.JSONObjectImpl;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.license.LicenseInfo;
+import com.liferay.portal.kernel.license.util.LicenseManager;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
+import com.liferay.portal.kernel.security.SecureRandomUtil;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
-import com.liferay.portal.license.LicenseInfo;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.util.LicenseUtil;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * @author Amos Fong
  */
-@DoPrivileged
-public class DefaultLicenseManagerImpl
-	implements com.liferay.portal.license.util.LicenseManager {
+public class DefaultLicenseManagerImpl implements LicenseManager {
 
 	@Override
 	public void checkLicense(String productId) {
@@ -84,37 +84,45 @@ public class DefaultLicenseManagerImpl
 		}
 
 		try {
-			JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+			JSONObject jsonObject = new JSONObjectImpl();
 
-			byte[] serverIdBytes = LicenseUtil.getServerIdBytes();
-
-			jsonObject.put(Constants.CMD, "GET_LICENSE_STATE");
-
-			jsonObject.put("hostName", getHostName());
-			jsonObject.put("ipAddresses", StringUtil.merge(getIpAddresses()));
-			jsonObject.put("macAddresses", StringUtil.merge(getMacAddresses()));
-			jsonObject.put("productId", productId);
+			jsonObject.put(
+				Constants.CMD, "GET_LICENSE_STATE"
+			).put(
+				"hostName", getHostName()
+			).put(
+				"ipAddresses", StringUtil.merge(getIpAddresses())
+			).put(
+				"macAddresses", StringUtil.merge(getMacAddresses())
+			).put(
+				"productId", productId
+			);
 
 			String productVersion = licenseProperties.get("productVersion");
 
 			jsonObject.put("productVersion", productVersion);
 
-			String randomUuid = PortalUUIDUtil.generate();
+			String randomUuid = String.valueOf(
+				new UUID(
+					SecureRandomUtil.nextLong(), SecureRandomUtil.nextLong()));
 
-			jsonObject.put("randomUuid", randomUuid);
-
-			jsonObject.put("serverId", Arrays.toString(serverIdBytes));
+			jsonObject.put(
+				"randomUuid", randomUuid
+			).put(
+				"serverId", Arrays.toString(LicenseUtil.getServerIdBytes())
+			);
 
 			String userCount = licenseProperties.get("userCount");
 
-			jsonObject.put("userCount", userCount);
-
-			jsonObject.put("version", 2);
+			jsonObject.put(
+				"userCount", userCount
+			).put(
+				"version", 2
+			);
 
 			String response = LicenseUtil.sendRequest(jsonObject.toString());
 
-			JSONObject responseJSONObject = JSONFactoryUtil.createJSONObject(
-				response);
+			JSONObject responseJSONObject = new JSONObjectImpl(response);
 
 			String errorMessage = responseJSONObject.getString("errorMessage");
 
@@ -126,13 +134,11 @@ public class DefaultLicenseManagerImpl
 				"randomUuid");
 
 			if (responseRandomUuid.equals(randomUuid)) {
-				int licenseState = responseJSONObject.getInt("licenseState");
-
-				return licenseState;
+				return responseJSONObject.getInt("licenseState");
 			}
 		}
-		catch (Exception e) {
-			_log.error(e.getMessage());
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 
 		return 0;
@@ -140,11 +146,10 @@ public class DefaultLicenseManagerImpl
 
 	@Override
 	public int getLicenseState(String productId) {
-		Map<String, String> licenseProperties = new HashMap<>();
-
-		licenseProperties.put("productId", productId);
-
-		return getLicenseState(licenseProperties);
+		return getLicenseState(
+			HashMapBuilder.put(
+				"productId", productId
+			).build());
 	}
 
 	@Override
@@ -156,7 +161,7 @@ public class DefaultLicenseManagerImpl
 	public void registerLicense(JSONObject jsonObject) throws Exception {
 		String serverId = jsonObject.getString("serverId");
 
-		if (serverId.length() <= 2) {
+		if (Validator.isNotNull(serverId) && (serverId.length() <= 2)) {
 			return;
 		}
 

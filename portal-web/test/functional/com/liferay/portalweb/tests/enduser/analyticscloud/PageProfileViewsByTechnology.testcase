@@ -1,0 +1,126 @@
+@component-name = "portal-analytics-cloud"
+definition {
+
+	property custom.properties = "jsonws.web.service.paths.excludes=";
+	property portal.release = "false";
+	property portal.upstream = "true";
+	property property.group = "analytics.cloud.profile";
+	property testray.main.component.name = "Analytics Cloud";
+
+	setUp {
+		ACUtils.launchAC();
+
+		ACSettings.takeTokenFromAnalyticsCloud();
+
+		TestCase.setUpPortalInstance();
+
+		ACUtils.launchDXP();
+
+		task ("Connect DXP to AC") {
+			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
+		}
+
+		task ("Add a new user") {
+			JSONUser.addUser(
+				userEmailAddress = "ac@liferay.com",
+				userFirstName = "ac",
+				userLastName = "ac",
+				userScreenName = "ac");
+
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "ac@liferay.com");
+		}
+
+		task ("Sync the Contact Data") {
+			ACDXPSettings.syncNewContactData();
+		}
+
+		task ("View the site page as ac user") {
+			User.logoutAndLoginPG(
+				userLoginEmailAddress = "ac@liferay.com",
+				userLoginFullName = "ac ac");
+
+			ACUtils.navigateToSitePage(
+				pageName = "AC Page",
+				siteName = "Site Name");
+		}
+
+		task ("Switch to new property in AC") {
+			ACUtils.closeAllSessionsAndWait();
+
+			ACUtils.launchAC();
+
+			ACProperties.switchProperty(propertyName = "${propertyName}");
+		}
+
+		task ("Navigate to the Views by Technology card") {
+			ACNavigation.goToSites();
+
+			ACNavigation.switchTab(tabName = "Pages");
+
+			ACTimeFilter.clickTimeFilterButton();
+
+			ACTimeFilter.setLast24Hours();
+
+			ACNavigation.openItem(itemName = "AC Page - Site Name - Liferay DXP");
+
+			ACTimeFilter.clickTimeFilterButton(cardName = "Views by Technology");
+
+			ACTimeFilter.setLast24Hours();
+		}
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		ACUtils.tearDownDXP();
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Site Name");
+
+			JSONUser.tearDownNonAdminUsers();
+		}
+
+		ACUtils.tearDownAC();
+	}
+
+	@description = "Feature ID: Legacy | Automation ID: LRAC-8362 | Test Summary: Page profile views by technology shows which browsers are being used"
+	@ignore = "true"
+	@priority = "5"
+	test ShowsWhichBrowsersBeingUsed {
+		property portal.upstream = "quarantine";
+
+		// AC Refactor: Data doesn't appear on time
+		// AC Refactor ticket: LRAC-9001
+
+		ACNavigation.switchTabInCard(tabName = "Browsers");
+
+		ACAssets.viewTechnologyBrowsersMetric(
+			browserMetricValue = "Chrome",
+			cardTitle = "Views by Technology",
+			cssValue = "rgb(75, 155, 255)",
+			percentageMetricValue = "100%");
+	}
+
+	@description = "Feature ID: Legacy | Automation ID: LRAC-8363 | Test Summary: Page profile views by technology shows which devices are being used"
+	@ignore = "true"
+	@priority = "5"
+	test ShowsWhichDevicesBeingUsed {
+		property portal.upstream = "quarantine";
+
+		// AC Refactor: Data doesn't appear on time
+		// AC Refactor ticket: LRAC-9002
+
+		ACAssets.viewTechnologyDeviceViewsAndPercentage(
+			actionValue = "1 Views",
+			cardTitle = "Views by Technology",
+			deviceName = "Desktop",
+			percentageValue = "100%");
+	}
+
+}

@@ -1,0 +1,277 @@
+@component-name = "portal-workflow-ee"
+definition {
+
+	property portal.acceptance = "true";
+	property portal.release = "false";
+	property portal.upstream = "true";
+	property test.run.environment = "EE";
+	property testray.main.component.name = "Reports";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			ReportsAdmin.tearDownReports();
+
+			ReportsAdmin.tearDownDefinitions();
+
+			ReportsAdmin.tearDownConfiguration();
+
+			ServerAdministration.tearDownMailServerSettings();
+
+			Page.tearDownCP();
+		}
+	}
+
+	@description = "This is a use case for LPS-51226."
+	@priority = "4"
+	test AddDefinitionNoTemplate {
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Configuration",
+			portlet = "Reports Admin");
+
+		ReportsAdmin.gotoDefinitions();
+
+		Click(locator1 = "Button#PLUS");
+
+		PortletEntry.inputName(name = "Reports Definition Name");
+
+		Button.clickSave();
+
+		Alert.viewErrorMessage(errorMessage = "Please enter a valid file.");
+	}
+
+	@priority = "4"
+	test DownloadReportPG {
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Configuration",
+			portlet = "Reports Admin");
+
+		ReportsAdmin.gotoDefinitions();
+
+		ReportsAdmin.addReportDefinition(
+			dataSource = "Portal",
+			reportsDefinitionDescription = "Reports Definition Description",
+			reportsDefinitionName = "Reports Definition Name",
+			templateFile = "reports_admin_template_source_sample_class_name.jrxml");
+
+		ReportsAdmin.addReportEntry(
+			emailNotificationsAddress = "test@liferay.com",
+			emailRecipientAddress = "test@liferay.com",
+			reportFormat = "pdf",
+			reportsDefinitionName = "Reports Definition Name");
+
+		ProductMenu.gotoPortlet(
+			category = "Site Builder",
+			portlet = "Pages");
+
+		SitePages.addPublicPage(pageName = "Reports Page");
+
+		Navigator.gotoPage(pageName = "Reports Page");
+
+		Portlet.addPG(portletName = "Reports Display");
+
+		ReportsDisplayPortlet.viewReportEntry(reportsDefinitionName = "Reports Definition Name");
+
+		ReportsDisplayPortlet.downloadReportEntryFile(
+			reportFormat = "pdf",
+			reportsFileName = "reports_admin_template_source_sample_class_name.pdf");
+	}
+
+	@description = "This is a use case for LPS-50501."
+	@priority = "4"
+	test ViewDefinitionsPagination {
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Configuration",
+			portlet = "Reports Admin");
+
+		for (var number : list "1,2,3,4,5,6") {
+			ReportsAdmin.gotoDefinitions();
+
+			ReportsAdmin.addReportDefinition(
+				dataSource = "Portal",
+				reportsDefinitionDescription = "Reports Definition Description",
+				reportsDefinitionName = "Reports Definition ${number}",
+				templateFile = "reports_admin_template_source_sample_class_name.jrxml");
+		}
+
+		ReportsAdmin.gotoDefinitions();
+
+		Pagination.changePagination(itemsPerPage = "4");
+
+		var key_reportsDefinitionName = "Reports Definition 6";
+
+		AssertElementNotPresent(locator1 = "ReportsAdmin#REPORTS_ENTRY_TABLE_DEFINITION_NAME");
+
+		Click(locator1 = "Pagination#NEXT_LINK");
+
+		AssertTextEquals(
+			locator1 = "ReportsAdmin#REPORTS_ENTRY_TABLE_DEFINITION_NAME",
+			value1 = "Reports Definition 6");
+
+		Click(locator1 = "Pagination#PREVIOUS_LINK");
+
+		AssertElementNotPresent(locator1 = "ReportsAdmin#REPORTS_ENTRY_TABLE_DEFINITION_NAME");
+	}
+
+	@description = "This is a use case for LPS-51009."
+	@priority = "4"
+	test ViewReportEmailNewConfiguration {
+		property test.assert.javascript.errors = "false";
+		property test.name.skip.portal.instance = "ReportsUsecase#ViewReportEmailNewConfiguration";
+
+		var portalURL = PropsUtil.get("portal.url");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "System",
+			panel = "Control Panel",
+			portlet = "Server Administration");
+
+		ServerAdministration.configureMailServerSettings(
+			userName = PropsUtil.get("email.address.2"),
+			userPassword = PropsUtil.get("email.password.2"));
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Configuration",
+			portlet = "Reports Admin");
+
+		ReportsAdmin.gotoConfiguration();
+
+		ReportsAdmin.configureEmailFrom(
+			emailFromAddress = PropsUtil.get("email.address.2"),
+			emailFromName = "Liferay QA");
+
+		IFrame.closeFrame();
+
+		ReportsAdmin.gotoConfiguration();
+
+		ReportsAdmin.configureDeliveryEmail(
+			deliveryBody = '''Please review the attached report from your friends in QA!''',
+			deliverySubject = '''New Report From QA: [$REPORT_NAME$]''');
+
+		IFrame.closeFrame();
+
+		ReportsAdmin.gotoConfiguration();
+
+		ReportsAdmin.configureNotificationsEmail(
+			notificationBody = '''You have a new <a href="[$PAGE_URL$]">report</a> from your friends in QA.''',
+			notificationSubject = '''New Report From QA: [$REPORT_NAME$]''');
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Configuration",
+			portlet = "Reports Admin");
+
+		ReportsAdmin.gotoDefinitions();
+
+		ReportsAdmin.addReportDefinition(
+			dataSource = "Portal",
+			reportsDefinitionDescription = "Reports Definition Description",
+			reportsDefinitionName = "Reports Definition Name",
+			templateFile = "reports_admin_template_source_sample_class_name.jrxml");
+
+		ReportsAdmin.addReportEntry(
+			emailNotificationsAddress = PropsUtil.get("email.address.4"),
+			emailRecipientAddress = PropsUtil.get("email.address.3"),
+			reportFormat = "pdf",
+			reportsDefinitionName = "Reports Definition Name");
+
+		Pause(locator1 = "30000");
+
+		Gmail.login(
+			userEmailAddress = PropsUtil.get("email.address.4"),
+			userPassword = PropsUtil.get("email.password.4"));
+
+		Gmail.gotoHtmlMode();
+
+		Gmail.viewMail(
+			emailFromUserName = "Liferay QA",
+			gmailAssetType = "New Report From QA: reports_admin_template_source_sample_class_name.pdf",
+			gmailMessageBody = "You have a new report from your friends in QA.",
+			gmailMessageTitle = "New Report From QA: reports_admin_template_source_sample_class_name.pdf");
+
+		Gmail.gotoHtmlMode();
+
+		Gmail.deleteSpecificMail(gmailMessageTitleList = "New Report From QA: reports_admin_template_source_sample_class_name.pdf");
+
+		Gmail.logoutAndLogin(
+			userEmailAddress = PropsUtil.get("email.address.3"),
+			userPassword = PropsUtil.get("email.password.3"));
+
+		Gmail.gotoHtmlMode();
+
+		Gmail.viewMail(
+			emailFromUserName = "Liferay QA",
+			gmailAssetType = "New Report From QA: reports_admin_template_source_sample_class_name.pdf",
+			gmailMessageAttachment = "reports_admin_template_source_sample_class_name.pdf",
+			gmailMessageBody = "Please review the attached report from your friends in QA!",
+			gmailMessageTitle = "New Report From QA: reports_admin_template_source_sample_class_name.pdf");
+
+		Gmail.gotoHtmlMode();
+
+		Gmail.deleteSpecificMail(gmailMessageTitleList = "New Report From QA: reports_admin_template_source_sample_class_name.pdf");
+
+		Navigator.openSpecificURL(url = "${portalURL}");
+	}
+
+	@priority = "4"
+	test ViewReportPG {
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Configuration",
+			portlet = "Reports Admin");
+
+		ReportsAdmin.gotoDefinitions();
+
+		ReportsAdmin.addReportDefinition(
+			dataSource = "Portal",
+			reportsDefinitionDescription = "Reports Definition Description",
+			reportsDefinitionName = "Reports Definition Name",
+			templateFile = "reports_admin_template_source_sample_class_name.jrxml");
+
+		ReportsAdmin.addReportEntry(
+			emailNotificationsAddress = "test@liferay.com",
+			emailRecipientAddress = "test@liferay.com",
+			reportFormat = "CSV",
+			reportsDefinitionName = "Reports Definition Name");
+
+		ProductMenu.gotoPortlet(
+			category = "Site Builder",
+			portlet = "Pages");
+
+		SitePages.addPublicPage(pageName = "Reports Page");
+
+		Navigator.gotoPage(pageName = "Reports Page");
+
+		Portlet.addPG(portletName = "Reports Display");
+
+		ReportsDisplayPortlet.viewReportEntry(reportsDefinitionName = "Reports Definition Name");
+
+		ReportsDisplayPortlet.viewReportEntryFields(
+			dataSource = "portal",
+			reportsDefinitionDescription = "Reports Definition Description",
+			reportsDefinitionName = "Reports Definition Name",
+			reportsFileName = "reports_admin_template_source_sample_class_name.csv",
+			userName = "Test Test");
+	}
+
+}

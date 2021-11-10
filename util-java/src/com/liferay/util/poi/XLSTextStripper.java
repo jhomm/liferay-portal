@@ -14,9 +14,9 @@
 
 package com.liferay.util.poi;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.StringBundler;
 
 import java.io.InputStream;
 
@@ -25,6 +25,8 @@ import java.util.Iterator;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
+import org.apache.poi.ss.usermodel.RichTextString;
 import org.apache.poi.ss.usermodel.Row;
 
 /**
@@ -32,13 +34,13 @@ import org.apache.poi.ss.usermodel.Row;
  */
 public class XLSTextStripper {
 
-	public XLSTextStripper(InputStream is) {
+	public XLSTextStripper(InputStream inputStream) {
 		String text = null;
 
 		try {
 			StringBundler sb = new StringBundler();
 
-			HSSFWorkbook workbook = new HSSFWorkbook(is);
+			HSSFWorkbook workbook = new HSSFWorkbook(inputStream);
 
 			int numOfSheets = workbook.getNumberOfSheets();
 
@@ -57,19 +59,21 @@ public class XLSTextStripper {
 
 						String cellStringValue = null;
 
-						if (cell.getCellType() == 4) {
+						if (cell.getCellType() == CellType.BOOLEAN) {
 							boolean booleanValue = cell.getBooleanCellValue();
 
 							cellStringValue = String.valueOf(booleanValue);
 						}
-						else if (cell.getCellType() == 0) {
+						else if (cell.getCellType() == CellType.NUMERIC) {
 							double doubleValue = cell.getNumericCellValue();
 
 							cellStringValue = String.valueOf(doubleValue);
 						}
-						else if (cell.getCellType() == 1) {
-							cellStringValue =
-								cell.getRichStringCellValue().getString();
+						else if (cell.getCellType() == CellType.STRING) {
+							RichTextString richTextString =
+								cell.getRichStringCellValue();
+
+							cellStringValue = richTextString.getString();
 						}
 
 						if (cellStringValue != null) {
@@ -84,8 +88,8 @@ public class XLSTextStripper {
 
 			text = sb.toString();
 		}
-		catch (Exception e) {
-			_log.error(e.getMessage());
+		catch (Exception exception) {
+			_log.error(exception.getMessage());
 		}
 
 		_text = text;

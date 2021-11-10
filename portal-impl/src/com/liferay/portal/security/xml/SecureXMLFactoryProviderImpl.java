@@ -17,7 +17,7 @@ package com.liferay.portal.security.xml;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.ClassLoaderUtil;
+import com.liferay.portal.kernel.security.xml.SecureXMLFactoryProvider;
 import com.liferay.portal.util.PropsValues;
 
 import javax.xml.XMLConstants;
@@ -46,22 +46,22 @@ public class SecureXMLFactoryProviderImpl implements SecureXMLFactoryProvider {
 			documentBuilderFactory.setFeature(
 				XMLConstants.FEATURE_SECURE_PROCESSING, true);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			_log.error(
 				"Unable to initialize safe document builder factory to " +
 					"protect from XML Bomb attacks",
-				e);
+				exception);
 		}
 
 		try {
 			documentBuilderFactory.setFeature(
 				_FEATURES_DISALLOW_DOCTYPE_DECL, true);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			_log.error(
 				"Unable to initialize safe document builder factory to " +
 					"protect from XML Bomb attacks",
-				e);
+				exception);
 		}
 
 		try {
@@ -71,11 +71,11 @@ public class SecureXMLFactoryProviderImpl implements SecureXMLFactoryProvider {
 			documentBuilderFactory.setFeature(
 				_FEATURES_EXTERNAL_PARAMETER_ENTITIES, false);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			_log.error(
 				"Unable to initialize safe document builder factory to " +
 					"protect from XXE attacks",
-				e);
+				exception);
 		}
 
 		return documentBuilderFactory;
@@ -104,24 +104,25 @@ public class SecureXMLFactoryProviderImpl implements SecureXMLFactoryProvider {
 
 		ClassLoader classLoader = clazz.getClassLoader();
 
-		ClassLoader contextClassLoader =
-			ClassLoaderUtil.getContextClassLoader();
+		Thread currentThread = Thread.currentThread();
+
+		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
 
 		XMLReader xmlReader = null;
 
 		try {
 			if (classLoader != contextClassLoader) {
-				ClassLoaderUtil.setContextClassLoader(classLoader);
+				currentThread.setContextClassLoader(classLoader);
 			}
 
 			xmlReader = new SAXParser();
 		}
-		catch (RuntimeException re) {
-			throw new SystemException(re);
+		catch (RuntimeException runtimeException) {
+			throw new SystemException(runtimeException);
 		}
 		finally {
 			if (classLoader != contextClassLoader) {
-				ClassLoaderUtil.setContextClassLoader(contextClassLoader);
+				currentThread.setContextClassLoader(contextClassLoader);
 			}
 		}
 
@@ -134,22 +135,22 @@ public class SecureXMLFactoryProviderImpl implements SecureXMLFactoryProvider {
 		try {
 			xmlReader.setFeature(_FEATURES_DISALLOW_DOCTYPE_DECL, true);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			_log.error(
 				"Unable to initialize safe SAX parser to protect from XML " +
 					"Bomb attacks",
-				e);
+				exception);
 		}
 
 		try {
 			xmlReader.setFeature(_FEATURES_EXTERNAL_GENERAL_ENTITIES, false);
 			xmlReader.setFeature(_FEATURES_EXTERNAL_PARAMETER_ENTITIES, false);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			_log.error(
 				"Unable to initialize safe SAX parser to protect from XXE " +
 					"attacks",
-				e);
+				exception);
 		}
 
 		return xmlReader;

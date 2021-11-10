@@ -14,29 +14,28 @@
 
 package com.liferay.portal.service.http;
 
-import aQute.bnd.annotation.ProviderType;
-
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.service.UserGroupGroupRoleServiceUtil;
+import com.liferay.portal.kernel.service.UserGroupGroupRoleServiceUtil;
 
 import java.rmi.RemoteException;
 
 /**
  * Provides the SOAP utility for the
- * {@link UserGroupGroupRoleServiceUtil} service utility. The
- * static methods of this class calls the same methods of the service utility.
- * However, the signatures are different because it is difficult for SOAP to
- * support certain types.
+ * <code>UserGroupGroupRoleServiceUtil</code> service
+ * utility. The static methods of this class call the same methods of the
+ * service utility. However, the signatures are different because it is
+ * difficult for SOAP to support certain types.
  *
  * <p>
  * ServiceBuilder follows certain rules in translating the methods. For example,
- * if the method in the service utility returns a {@link java.util.List}, that
- * is translated to an array of {@link com.liferay.portal.model.UserGroupGroupRoleSoap}.
- * If the method in the service utility returns a
- * {@link com.liferay.portal.model.UserGroupGroupRole}, that is translated to a
- * {@link com.liferay.portal.model.UserGroupGroupRoleSoap}. Methods that SOAP cannot
- * safely wire are skipped.
+ * if the method in the service utility returns a <code>java.util.List</code>,
+ * that is translated to an array of
+ * <code>com.liferay.portal.kernel.model.UserGroupGroupRoleSoap</code>. If the method in the
+ * service utility returns a
+ * <code>com.liferay.portal.kernel.model.UserGroupGroupRole</code>, that is translated to a
+ * <code>com.liferay.portal.kernel.model.UserGroupGroupRoleSoap</code>. Methods that SOAP
+ * cannot safely wire are skipped.
  * </p>
  *
  * <p>
@@ -58,63 +57,73 @@ import java.rmi.RemoteException;
  *
  * @author Brian Wing Shun Chan
  * @see UserGroupGroupRoleServiceHttp
- * @see com.liferay.portal.model.UserGroupGroupRoleSoap
- * @see UserGroupGroupRoleServiceUtil
+ * @deprecated As of Athanasius (7.3.x), with no direct replacement
  * @generated
  */
-@ProviderType
+@Deprecated
 public class UserGroupGroupRoleServiceSoap {
-	public static void addUserGroupGroupRoles(long userGroupId, long groupId,
-		long[] roleIds) throws RemoteException {
-		try {
-			UserGroupGroupRoleServiceUtil.addUserGroupGroupRoles(userGroupId,
-				groupId, roleIds);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
 
-			throw new RemoteException(e.getMessage());
+	public static void addUserGroupGroupRoles(
+			long userGroupId, long groupId, long[] roleIds)
+		throws RemoteException {
+
+		try {
+			UserGroupGroupRoleServiceUtil.addUserGroupGroupRoles(
+				userGroupId, groupId, roleIds);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	public static void addUserGroupGroupRoles(long[] userGroupIds,
-		long groupId, long roleId) throws RemoteException {
-		try {
-			UserGroupGroupRoleServiceUtil.addUserGroupGroupRoles(userGroupIds,
-				groupId, roleId);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
+	public static void addUserGroupGroupRoles(
+			long[] userGroupIds, long groupId, long roleId)
+		throws RemoteException {
 
-			throw new RemoteException(e.getMessage());
+		try {
+			UserGroupGroupRoleServiceUtil.addUserGroupGroupRoles(
+				userGroupIds, groupId, roleId);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	public static void deleteUserGroupGroupRoles(long userGroupId,
-		long groupId, long[] roleIds) throws RemoteException {
-		try {
-			UserGroupGroupRoleServiceUtil.deleteUserGroupGroupRoles(userGroupId,
-				groupId, roleIds);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
+	public static void deleteUserGroupGroupRoles(
+			long userGroupId, long groupId, long[] roleIds)
+		throws RemoteException {
 
-			throw new RemoteException(e.getMessage());
+		try {
+			UserGroupGroupRoleServiceUtil.deleteUserGroupGroupRoles(
+				userGroupId, groupId, roleIds);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	public static void deleteUserGroupGroupRoles(long[] userGroupIds,
-		long groupId, long roleId) throws RemoteException {
-		try {
-			UserGroupGroupRoleServiceUtil.deleteUserGroupGroupRoles(userGroupIds,
-				groupId, roleId);
-		}
-		catch (Exception e) {
-			_log.error(e, e);
+	public static void deleteUserGroupGroupRoles(
+			long[] userGroupIds, long groupId, long roleId)
+		throws RemoteException {
 
-			throw new RemoteException(e.getMessage());
+		try {
+			UserGroupGroupRoleServiceUtil.deleteUserGroupGroupRoles(
+				userGroupIds, groupId, roleId);
+		}
+		catch (Exception exception) {
+			_log.error(exception, exception);
+
+			throw new RemoteException(exception.getMessage());
 		}
 	}
 
-	private static Log _log = LogFactoryUtil.getLog(UserGroupGroupRoleServiceSoap.class);
+	private static Log _log = LogFactoryUtil.getLog(
+		UserGroupGroupRoleServiceSoap.class);
+
 }

@@ -15,13 +15,15 @@
 package com.liferay.portal.service.permission;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.model.OrganizationConstants;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
+import com.liferay.portal.kernel.service.permission.OrganizationPermission;
+import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.model.Organization;
-import com.liferay.portal.model.OrganizationConstants;
-import com.liferay.portal.security.auth.PrincipalException;
-import com.liferay.portal.security.permission.ActionKeys;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.service.OrganizationLocalServiceUtil;
 
 /**
  * @author Charles May
@@ -63,14 +65,13 @@ public class OrganizationPermissionImpl implements OrganizationPermission {
 		throws PortalException {
 
 		if (organizationId > 0) {
-			Organization organization =
-				OrganizationLocalServiceUtil.getOrganization(organizationId);
+			return contains(
+				permissionChecker,
+				OrganizationLocalServiceUtil.getOrganization(organizationId),
+				actionId);
+		}
 
-			return contains(permissionChecker, organization, actionId);
-		}
-		else {
-			return false;
-		}
+		return false;
 	}
 
 	@Override
@@ -80,7 +81,7 @@ public class OrganizationPermissionImpl implements OrganizationPermission {
 		throws PortalException {
 
 		if (ArrayUtil.isEmpty(organizationIds)) {
-			return true;
+			return false;
 		}
 
 		for (long organizationId : organizationIds) {
@@ -98,29 +99,9 @@ public class OrganizationPermissionImpl implements OrganizationPermission {
 			String actionId)
 		throws PortalException {
 
-		long groupId = organization.getGroupId();
-
-		if (contains(permissionChecker, groupId, organization, actionId)) {
-			return true;
-		}
-
-		while (!organization.isRoot()) {
-			Organization parentOrganization =
-				organization.getParentOrganization();
-
-			groupId = parentOrganization.getGroupId();
-
-			if (contains(
-					permissionChecker, groupId, parentOrganization,
-					ActionKeys.MANAGE_SUBORGANIZATIONS)) {
-
-				return true;
-			}
-
-			organization = parentOrganization;
-		}
-
-		return false;
+		return contains(
+			permissionChecker, organization.getGroupId(), organization,
+			actionId);
 	}
 
 	protected boolean contains(

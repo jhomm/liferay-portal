@@ -1,86 +1,114 @@
-<definition>
-	<command name="addCP">
-		<execute function="AssertClick" locator1="Button#ADD" value1="Add" />
+definition {
 
-		<execute function="Type" locator1="TextInput#WEB_ID" value1="${webId}" />
-		<execute function="Type" locator1="TextInput#VIRTUAL_HOST" value1="${virtualHost}" />
-		<execute function="Type" locator1="TextInput#MAIL_DOMAIN" value1="${mailDomain}" />
+	macro addCP {
+		LexiconEntry.gotoAdd();
 
-		<if>
-			<equals arg1="${maxUsers}" arg2="true" />
-			<then>
-				<execute function="Type" locator1="TextInput#MAX_USERS" value1="${maxUserNumber}" />
-			</then>
-		</if>
+		Type(
+			locator1 = "TextInput#WEB_ID",
+			value1 = "${webId}");
 
-		<if>
-			<equals arg1="${portalInstanceActive}" arg2="false" />
-			<then>
-				<execute function="Uncheck" locator1="Checkbox#ACTIVE" />
-			</then>
-		</if>
+		Type(
+			locator1 = "TextInput#VIRTUAL_HOST",
+			value1 = "${virtualHost}");
 
-		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
-	</command>
+		Type(
+			locator1 = "TextInput#MAIL_DOMAIN",
+			value1 = "${mailDomain}");
 
-	<command name="deactivatePortalInstance">
-		<var name="key_virtualHost" value="${virtualHost}" />
+		if ("${maxUsers}" == "true") {
+			Type(
+				locator1 = "TextInput#MAX_USERS",
+				value1 = "${maxUserNumber}");
+		}
 
-		<execute function="Click" locator1="PortalInstances#INSTANCE_TABLE_ACTIONS" />
-		<execute function="AssertClick" locator1="MenuItem#EDIT" value1="Edit" />
+		if ("${portalInstanceActive}" == "false") {
+			Uncheck(locator1 = "Checkbox#ACTIVE");
+		}
 
-		<execute function="Uncheck" locator1="Checkbox#ACTIVE" />
-		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
+		PortletEntry.save();
+	}
 
-		<execute function="AssertTextEquals" locator1="PortalInstances#INSTANCE_TABLE_ACTIVE" value1="No" />
-	</command>
+	macro deactivatePortalInstance {
+		var key_virtualHost = "${virtualHost}";
 
-	<command name="deleteCP">
-		<var name="key_virtualHost" value="${virtualHost}" />
+		LexiconEntry.openEntryMenu(rowEntry = "${virtualHost}");
 
-		<execute function="AssertTextEquals" locator1="PortalInstances#INSTANCE_TABLE_VIRTUAL_HOST" value1="${virtualHost}" />
-		<execute function="Click" locator1="PortalInstances#INSTANCE_TABLE_ACTIONS" />
-		<execute function="AssertClickNoError" locator1="MenuItem#DELETE" value1="Delete" />
+		MenuItem.click(menuItem = "Edit");
 
-		<execute function="Confirm" value1="Are you sure you want to delete this? It will be deleted immediately." />
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
-		<execute function="AssertTextNotPresent" locator1="PortalInstances#INSTANCE_TABLE_VIRTUAL_HOST" value1="${virtualHost}" />
-	</command>
+		Uncheck.uncheckToggleSwitch(locator1 = "Checkbox#ACTIVE");
 
-	<command name="editCP">
-		<var name="key_virtualHost" value="${virtualHost}" />
+		Button.clickSave();
 
-		<execute function="AssertTextEquals" locator1="PortalInstances#INSTANCE_TABLE_VIRTUAL_HOST" value1="${virtualHost}" />
-		<execute function="AssertClick" locator1="PortalInstances#INSTANCE_TABLE_EDIT" value1="Edit" />
+		AssertTextEquals(
+			locator1 = "PortalInstances#INSTANCE_TABLE_ACTIVE",
+			value1 = "No");
+	}
 
-		<execute function="Type" locator1="CPPortalinstancesEdit#MAIL_DOMAIN_FIELD" value1="${mailDomain}" />
-		<execute function="AssertClick" locator1="CPPortalinstancesEdit#SAVE_BUTTON" value1="Save" />
+	macro deleteCP {
+		var key_virtualHost = "${virtualHost}";
 
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
-	</command>
+		AssertTextEquals(
+			locator1 = "PortalInstances#INSTANCE_TABLE_VIRTUAL_HOST",
+			value1 = "${virtualHost}");
 
-	<command name="tearDownCP">
-		<execute macro="Page#gotoCP">
-			<var name="portletName" value="Portal Instances" />
-		</execute>
+		LexiconEntry.openEntryMenu(rowEntry = "${virtualHost}");
 
-		<while>
-			<condition function="IsElementPresent" locator1="PortalInstances#INSTANCE_TABLE_ACTIONS_GENERIC" />
-			<then>
-				<execute function="Click" locator1="PortalInstances#INSTANCE_TABLE_ACTIONS_GENERIC" />
-				<execute function="AssertClickNoError" locator1="MenuItem#DELETE" value1="Delete" />
-				<execute function="Confirm" value1="Are you sure you want to delete this? It will be deleted immediately." />
-				<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
-			</then>
-		</while>
-	</command>
+		MenuItem.clickNoError(menuItem = "Delete");
 
-	<command name="viewCP">
-		<var name="key_virtualHost" value="${virtualHost}" />
+		AssertConfirm(value1 = "Are you sure you want to delete this? It will be deleted immediately.");
 
-		<execute function="AssertTextEquals" locator1="PortalInstances#INSTANCE_TABLE_WEB_ID" value1="${virtualHost}" />
-		<execute function="AssertTextEquals" locator1="PortalInstances#INSTANCE_TABLE_VIRTUAL_HOST" value1="${virtualHost}" />
-		<execute function="AssertTextEquals" locator1="PortalInstances#INSTANCE_TABLE_MAIL_DOMAIN" value1="${virtualHost}" />
-	</command>
-</definition>
+		Alert.viewSuccessMessage();
+
+		AssertTextNotPresent(
+			locator1 = "PortalInstances#INSTANCE_TABLE_VIRTUAL_HOST",
+			value1 = "${virtualHost}");
+	}
+
+	macro editCP {
+		var key_virtualHost = "${virtualHost}";
+
+		AssertTextEquals(
+			locator1 = "PortalInstances#INSTANCE_TABLE_VIRTUAL_HOST",
+			value1 = "${virtualHost}");
+
+		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Edit");
+
+		Type(
+			locator1 = "TextInput#MAIL_DOMAIN",
+			value1 = "${mailDomain}");
+
+		AssertClick(
+			locator1 = "Button#SAVE",
+			value1 = "Save");
+
+		Alert.viewSuccessMessage();
+	}
+
+	macro openVirtualInstancesAdmin {
+		Navigator.openWithAppendToBaseURL(urlAppend = "group/control_panel/manage?p_p_id=com_liferay_portal_instances_web_portlet_PortalInstancesPortlet");
+	}
+
+	@summary = "Clean up Portal Instances as part of standard teardown"
+	macro tearDownCP {
+		JSONUser.tearDownNonAdminUsers(authenticationMethod = "${authenticationMethod}");
+
+		HeadlessPortalInstanceAPI.cleanAllPortalInstances(authenticationMethod = "${authenticationMethod}");
+	}
+
+	macro viewCP {
+		var key_virtualHost = "${virtualHost}";
+
+		AssertTextEquals(
+			locator1 = "PortalInstances#INSTANCE_TABLE_WEB_ID",
+			value1 = "${virtualHost}");
+
+		AssertTextEquals(
+			locator1 = "PortalInstances#INSTANCE_TABLE_VIRTUAL_HOST",
+			value1 = "${virtualHost}");
+
+		AssertTextEquals(
+			locator1 = "PortalInstances#INSTANCE_TABLE_MAIL_DOMAIN",
+			value1 = "${virtualHost}");
+	}
+
+}

@@ -20,9 +20,12 @@ import com.liferay.portal.fabric.local.agent.EmbeddedProcessExecutor;
 import com.liferay.portal.fabric.local.agent.LocalFabricAgent;
 import com.liferay.portal.fabric.netty.agent.NettyFabricAgentConfig;
 import com.liferay.portal.fabric.netty.fileserver.handlers.FileServerTestUtil;
-import com.liferay.portal.kernel.test.CaptureHandler;
-import com.liferay.portal.kernel.test.JDKLoggerTestUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
@@ -36,11 +39,11 @@ import java.nio.file.Paths;
 
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -49,8 +52,10 @@ import org.junit.Test;
 public class NettyFabricAgentRegistrationChannelHandlerTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@After
 	public void tearDown() {
@@ -65,9 +70,10 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 
 			Assert.fail();
 		}
-		catch (NullPointerException npe) {
+		catch (NullPointerException nullPointerException) {
 			Assert.assertEquals(
-				"Fabric agent registry is null", npe.getMessage());
+				"Fabric agent registry is null",
+				nullPointerException.getMessage());
 		}
 
 		try {
@@ -78,9 +84,10 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 
 			Assert.fail();
 		}
-		catch (NullPointerException npe) {
+		catch (NullPointerException nullPointerException) {
 			Assert.assertEquals(
-				"Repository parent path is null", npe.getMessage());
+				"Repository parent path is null",
+				nullPointerException.getMessage());
 		}
 
 		try {
@@ -91,9 +98,10 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 
 			Assert.fail();
 		}
-		catch (NullPointerException npe) {
+		catch (NullPointerException nullPointerException) {
 			Assert.assertEquals(
-				"Event executor group is null", npe.getMessage());
+				"Event executor group is null",
+				nullPointerException.getMessage());
 		}
 
 		new NettyFabricAgentRegistrationChannelHandler(
@@ -116,10 +124,9 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 				fabricAgentRegistry, repositoryParentPath,
 				new DefaultEventExecutorGroup(1), 0, 0, 0));
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					NettyFabricAgentRegistrationChannelHandler.class.getName(),
-					Level.INFO)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				NettyFabricAgentRegistrationChannelHandler.class.getName(),
+				Level.INFO)) {
 
 			String embeddedChannelToString = embeddedChannel.toString();
 
@@ -128,24 +135,24 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 
 			Assert.assertFalse(embeddedChannel.isOpen());
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			Assert.assertEquals(2, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 2, logEntries.size());
 
-			LogRecord logRecord = logRecords.get(0);
+			LogEntry logEntry = logEntries.get(0);
 
 			Assert.assertEquals(
 				"Closing " + embeddedChannelToString + " due to:",
-				logRecord.getMessage());
+				logEntry.getMessage());
 
-			Throwable throwable = logRecord.getThrown();
+			Throwable throwable = logEntry.getThrowable();
 
 			Assert.assertTrue(throwable instanceof IOException);
 
-			logRecord = logRecords.get(1);
+			logEntry = logEntries.get(1);
 
 			Assert.assertEquals(
-				embeddedChannel + " is closed", logRecord.getMessage());
+				embeddedChannel + " is closed", logEntry.getMessage());
 		}
 	}
 
@@ -165,10 +172,9 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 				fabricAgentRegistry, repositoryParentPath,
 				new DefaultEventExecutorGroup(1), 0, 0, 0));
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					NettyFabricAgentRegistrationChannelHandler.class.getName(),
-					Level.OFF)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				NettyFabricAgentRegistrationChannelHandler.class.getName(),
+				Level.OFF)) {
 
 			embeddedChannel.writeInbound(
 				new NettyFabricAgentConfig(new File("RepositoryFolder")));
@@ -176,7 +182,8 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 			List<FabricAgent> fabricAgents =
 				fabricAgentRegistry.getFabricAgents();
 
-			Assert.assertEquals(1, fabricAgents.size());
+			Assert.assertEquals(
+				fabricAgents.toString(), 1, fabricAgents.size());
 			Assert.assertSame(
 				fabricAgents.get(0),
 				NettyChannelAttributes.getNettyFabricAgentStub(
@@ -186,7 +193,7 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 
 			fabricAgents = fabricAgentRegistry.getFabricAgents();
 
-			Assert.assertTrue(fabricAgents.isEmpty());
+			Assert.assertTrue(fabricAgents.toString(), fabricAgents.isEmpty());
 		}
 
 		// With log
@@ -196,10 +203,9 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 				fabricAgentRegistry, repositoryParentPath,
 				new DefaultEventExecutorGroup(1), 0, 0, 0));
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					NettyFabricAgentRegistrationChannelHandler.class.getName(),
-					Level.INFO)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				NettyFabricAgentRegistrationChannelHandler.class.getName(),
+				Level.INFO)) {
 
 			embeddedChannel.writeInbound(
 				new NettyFabricAgentConfig(new File("RepositoryFolder")));
@@ -207,35 +213,36 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 			List<FabricAgent> fabricAgents =
 				fabricAgentRegistry.getFabricAgents();
 
-			Assert.assertEquals(1, fabricAgents.size());
+			Assert.assertEquals(
+				fabricAgents.toString(), 1, fabricAgents.size());
 			Assert.assertSame(
 				fabricAgents.get(0),
 				NettyChannelAttributes.getNettyFabricAgentStub(
 					embeddedChannel));
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			LogRecord logRecord = logRecords.remove(0);
+			LogEntry logEntry = logEntries.remove(0);
 
 			Assert.assertEquals(
 				"Registered fabric agent on " + embeddedChannel,
-				logRecord.getMessage());
+				logEntry.getMessage());
 
 			embeddedChannel.close();
 
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			logRecord = logRecords.remove(0);
+			logEntry = logEntries.remove(0);
 
 			Assert.assertEquals(
 				"Unregistered fabric agent on " + embeddedChannel,
-				logRecord.getMessage());
+				logEntry.getMessage());
 
 			fabricAgents = fabricAgentRegistry.getFabricAgents();
 
-			Assert.assertTrue(fabricAgents.isEmpty());
+			Assert.assertTrue(fabricAgents.toString(), fabricAgents.isEmpty());
 		}
 	}
 
@@ -260,22 +267,22 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 
 		List<FabricAgent> fabricAgents = fabricAgentRegistry.getFabricAgents();
 
-		Assert.assertEquals(1, fabricAgents.size());
+		Assert.assertEquals(fabricAgents.toString(), 1, fabricAgents.size());
 		Assert.assertSame(
 			fabricAgents.get(0),
 			NettyChannelAttributes.getNettyFabricAgentStub(embeddedChannel));
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					NettyFabricAgentRegistrationChannelHandler.class.getName(),
-					Level.OFF)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				NettyFabricAgentRegistrationChannelHandler.class.getName(),
+				Level.OFF)) {
 
 			embeddedChannel.writeInbound(
 				new NettyFabricAgentConfig(new File("RepositoryFolder")));
 
 			fabricAgents = fabricAgentRegistry.getFabricAgents();
 
-			Assert.assertEquals(1, fabricAgents.size());
+			Assert.assertEquals(
+				fabricAgents.toString(), 1, fabricAgents.size());
 			Assert.assertSame(
 				fabricAgents.get(0),
 				NettyChannelAttributes.getNettyFabricAgentStub(
@@ -284,27 +291,27 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 
 		// With log
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					NettyFabricAgentRegistrationChannelHandler.class.getName(),
-					Level.WARNING)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				NettyFabricAgentRegistrationChannelHandler.class.getName(),
+				Level.WARNING)) {
 
 			embeddedChannel.writeInbound(
 				new NettyFabricAgentConfig(new File("RepositoryFolder")));
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			LogRecord logRecord = logRecords.get(0);
+			LogEntry logEntry = logEntries.get(0);
 
 			Assert.assertEquals(
 				"Rejected duplicated fabric agent on " + embeddedChannel,
-				logRecord.getMessage());
+				logEntry.getMessage());
 
 			fabricAgents = fabricAgentRegistry.getFabricAgents();
 
-			Assert.assertEquals(1, fabricAgents.size());
+			Assert.assertEquals(
+				fabricAgents.toString(), 1, fabricAgents.size());
 			Assert.assertSame(
 				fabricAgents.get(0),
 				NettyChannelAttributes.getNettyFabricAgentStub(
@@ -328,10 +335,9 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 				fabricAgentRegistry, repositoryParentPath,
 				new DefaultEventExecutorGroup(1), 0, 0, 0));
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					NettyFabricAgentRegistrationChannelHandler.class.getName(),
-					Level.OFF)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				NettyFabricAgentRegistrationChannelHandler.class.getName(),
+				Level.OFF)) {
 
 			embeddedChannel.writeInbound(
 				new NettyFabricAgentConfig(new File("RepositoryFolder")));
@@ -339,7 +345,8 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 			List<FabricAgent> fabricAgents =
 				fabricAgentRegistry.getFabricAgents();
 
-			Assert.assertEquals(1, fabricAgents.size());
+			Assert.assertEquals(
+				fabricAgents.toString(), 1, fabricAgents.size());
 			Assert.assertSame(
 				fabricAgents.get(0),
 				NettyChannelAttributes.getNettyFabricAgentStub(
@@ -352,7 +359,7 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 
 			fabricAgents = fabricAgentRegistry.getFabricAgents();
 
-			Assert.assertTrue(fabricAgents.isEmpty());
+			Assert.assertTrue(fabricAgents.toString(), fabricAgents.isEmpty());
 		}
 
 		// With log
@@ -362,10 +369,9 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 				fabricAgentRegistry, repositoryParentPath,
 				new DefaultEventExecutorGroup(1), 0, 0, 0));
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					NettyFabricAgentRegistrationChannelHandler.class.getName(),
-					Level.WARNING)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				NettyFabricAgentRegistrationChannelHandler.class.getName(),
+				Level.WARNING)) {
 
 			embeddedChannel.writeInbound(
 				new NettyFabricAgentConfig(new File("RepositoryFolder")));
@@ -373,7 +379,8 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 			List<FabricAgent> fabricAgents =
 				fabricAgentRegistry.getFabricAgents();
 
-			Assert.assertEquals(1, fabricAgents.size());
+			Assert.assertEquals(
+				fabricAgents.toString(), 1, fabricAgents.size());
 			Assert.assertSame(
 				fabricAgents.get(0),
 				NettyChannelAttributes.getNettyFabricAgentStub(
@@ -384,19 +391,19 @@ public class NettyFabricAgentRegistrationChannelHandlerTest {
 
 			embeddedChannel.close();
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			LogRecord logRecord = logRecords.get(0);
+			LogEntry logEntry = logEntries.get(0);
 
 			Assert.assertEquals(
 				"Unable to unregister fabric agent on " + embeddedChannel,
-				logRecord.getMessage());
+				logEntry.getMessage());
 
 			fabricAgents = fabricAgentRegistry.getFabricAgents();
 
-			Assert.assertTrue(fabricAgents.isEmpty());
+			Assert.assertTrue(fabricAgents.toString(), fabricAgents.isEmpty());
 		}
 	}
 

@@ -14,20 +14,18 @@
 
 package com.liferay.portal.events;
 
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.events.ActionException;
 import com.liferay.portal.kernel.events.LifecycleAction;
 import com.liferay.portal.kernel.events.LifecycleEvent;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.util.InstancePool;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.registry.collections.ServiceTrackerCollections;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -43,74 +41,27 @@ public class EventsProcessorUtil {
 	public static void process(String key, String[] classes)
 		throws ActionException {
 
-		_instance._process(key, classes, new LifecycleEvent());
+		process(key, classes, new LifecycleEvent());
 	}
 
 	public static void process(
-			String key, String[] classes, HttpServletRequest request,
-			HttpServletResponse response)
+			String key, String[] classes, HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws ActionException {
 
-		_instance._process(key, classes, new LifecycleEvent(request, response));
+		process(
+			key, classes,
+			new LifecycleEvent(httpServletRequest, httpServletResponse));
 	}
 
 	public static void process(
-			String key, String[] classes, HttpSession session)
+			String key, String[] classes, HttpSession httpSession)
 		throws ActionException {
 
-		_instance._process(key, classes, new LifecycleEvent(session));
+		process(key, classes, new LifecycleEvent(httpSession));
 	}
 
 	public static void process(
-			String key, String[] classes, LifecycleEvent lifecycleEvent)
-		throws ActionException {
-
-		_instance._process(key, classes, lifecycleEvent);
-	}
-
-	public static void process(String key, String[] classes, String[] ids)
-		throws ActionException {
-
-		_instance._process(key, classes, new LifecycleEvent(ids));
-	}
-
-	public static void processEvent(
-			LifecycleAction lifecycleAction, LifecycleEvent lifecycleEvent)
-		throws ActionException {
-
-		_instance._processEvent(lifecycleAction, lifecycleEvent);
-	}
-
-	public static void registerEvent(String key, Object event) {
-		_instance._registerEvent(key, event);
-	}
-
-	public static void unregisterEvent(String key, Object event) {
-		_instance._unregisterEvent(key, event);
-	}
-
-	protected EventsProcessorUtil() {
-	}
-
-	protected Collection<LifecycleAction> _getLifecycleActions(String key) {
-		Collection<LifecycleAction> lifecycleActions = _lifecycleActions.get(
-			key);
-
-		if (lifecycleActions == null) {
-			Map<String, Object> properties = new HashMap<>();
-
-			properties.put("key", key);
-
-			lifecycleActions = ServiceTrackerCollections.list(
-				LifecycleAction.class, "(key=" + key + ")", properties);
-
-			_lifecycleActions.putIfAbsent(key, lifecycleActions);
-		}
-
-		return lifecycleActions;
-	}
-
-	protected void _process(
 			String key, String[] classes, LifecycleEvent lifecycleEvent)
 		throws ActionException {
 
@@ -133,41 +84,37 @@ public class EventsProcessorUtil {
 			return;
 		}
 
-		for (LifecycleAction lifecycleAction : _instance._getLifecycleActions(
-				key)) {
+		List<LifecycleAction> lifecycleActions = _lifecycleActions.getService(
+			key);
 
-			lifecycleAction.processLifecycleEvent(lifecycleEvent);
+		if (lifecycleActions != null) {
+			for (LifecycleAction lifecycleAction : lifecycleActions) {
+				lifecycleAction.processLifecycleEvent(lifecycleEvent);
+			}
 		}
 	}
 
-	protected void _processEvent(
+	public static void process(String key, String[] classes, String[] ids)
+		throws ActionException {
+
+		process(key, classes, new LifecycleEvent(ids));
+	}
+
+	public static void processEvent(
 			LifecycleAction lifecycleAction, LifecycleEvent lifecycleEvent)
 		throws ActionException {
 
 		lifecycleAction.processLifecycleEvent(lifecycleEvent);
 	}
 
-	protected void _registerEvent(String key, Object event) {
-		Collection<LifecycleAction> lifecycleActions =
-			_instance._getLifecycleActions(key);
-
-		lifecycleActions.add((LifecycleAction)event);
-	}
-
-	protected void _unregisterEvent(String key, Object event) {
-		Collection<LifecycleAction> lifecycleActions =
-			_instance._getLifecycleActions(key);
-
-		lifecycleActions.remove(event);
+	protected EventsProcessorUtil() {
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		EventsProcessorUtil.class);
 
-	private static final EventsProcessorUtil _instance =
-		new EventsProcessorUtil();
-
-	private final ConcurrentMap<String, Collection<LifecycleAction>>
-		_lifecycleActions = new ConcurrentHashMap<>();
+	private static final ServiceTrackerMap<String, List<LifecycleAction>>
+		_lifecycleActions = ServiceTrackerMapFactory.openMultiValueMap(
+			SystemBundleUtil.getBundleContext(), LifecycleAction.class, "key");
 
 }

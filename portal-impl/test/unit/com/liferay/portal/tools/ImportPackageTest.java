@@ -14,10 +14,14 @@
 
 package com.liferay.portal.tools;
 
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -25,32 +29,40 @@ import org.junit.Test;
  */
 public class ImportPackageTest {
 
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
 	@Test
 	public void testContains() {
-		ImportPackage importPackage = _javaImportsFormatter.createImportPackage(
-			_ARRAYS_IMPORT_STATEMENT);
-		ImportPackage importPackage2 =
+		ImportPackage importPackage1 =
 			_javaImportsFormatter.createImportPackage(_ARRAYS_IMPORT_STATEMENT);
 
 		List<ImportPackage> importPackages = new ArrayList<>();
 
-		importPackages.add(importPackage);
+		importPackages.add(importPackage1);
 
-		if (!importPackages.contains(importPackage)) {
+		if (!importPackages.contains(importPackage1)) {
+			ImportPackage importPackage2 =
+				_javaImportsFormatter.createImportPackage(
+					_ARRAYS_IMPORT_STATEMENT);
+
 			importPackages.add(importPackage2);
 		}
 
-		Assert.assertEquals(1, importPackages.size());
+		Assert.assertEquals(
+			importPackages.toString(), 1, importPackages.size());
 	}
 
 	@Test
 	public void testEquals() {
-		ImportPackage importPackage = _javaImportsFormatter.createImportPackage(
-			_ARRAYS_IMPORT_STATEMENT);
+		ImportPackage importPackage1 =
+			_javaImportsFormatter.createImportPackage(_ARRAYS_IMPORT_STATEMENT);
 		ImportPackage importPackage2 =
 			_javaImportsFormatter.createImportPackage(_ARRAYS_IMPORT_STATEMENT);
 
-		Assert.assertEquals(importPackage, importPackage2);
+		Assert.assertEquals(importPackage1, importPackage2);
 	}
 
 	private static final String _ARRAYS_IMPORT_STATEMENT =

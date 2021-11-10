@@ -1,7 +1,5 @@
 Bundle-Name: Liferay Layout Set Prototype Web
 Bundle-SymbolicName: com.liferay.layout.set.prototype.web
-Bundle-Version: 1.0.0
-Export-package: com.liferay.layout.set.prototype.web.lar
-Include-Resource:\
-	classes,\
-	META-INF/resources=src/META-INF/resources
+Bundle-Version: 5.0.13
+Web-ContextPath: /layout-set-prototype-web
+-dsannotations-options: inherit

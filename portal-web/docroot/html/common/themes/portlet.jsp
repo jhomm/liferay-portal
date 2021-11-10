@@ -21,47 +21,19 @@
 <%
 String tilesPortletContent = GetterUtil.getString(request.getAttribute(WebKeys.PORTLET_CONTENT_JSP));
 
-if (Validator.isBlank(tilesPortletContent)) {
-	tilesPortletContent = GetterUtil.getString(TilesAttributeUtil.getTilesAttribute(pageContext, "portlet_content"));
-}
-
-boolean tilesPortletDecorate = GetterUtil.getBoolean(TilesAttributeUtil.getTilesAttribute(pageContext, "portlet_decorate"), true);
-
-TilesAttributeUtil.removeComponentContext(pageContext);
-
 Portlet portlet = (Portlet)request.getAttribute(WebKeys.RENDER_PORTLET);
 
-PortletPreferences portletSetup = portletDisplay.getPortletSetup();
-
-RenderResponseImpl renderResponseImpl = (RenderResponseImpl)PortletResponseImpl.getPortletResponseImpl(renderResponse);
-
-// Portlet decorate
-
-boolean portletDecorateDefault = false;
-
-if (tilesPortletDecorate) {
-	portletDecorateDefault = GetterUtil.getBoolean(themeDisplay.getThemeSetting("portlet-setup-show-borders-default"), PropsValues.THEME_PORTLET_DECORATE_DEFAULT);
-}
-
-boolean portletDecorate = GetterUtil.getBoolean(portletSetup.getValue("portletSetupShowBorders", String.valueOf(portletDecorateDefault)));
-
-Boolean portletDecorateObj = (Boolean)renderRequest.getAttribute(WebKeys.PORTLET_DECORATE);
-
-if (portletDecorateObj != null) {
-	portletDecorate = portletDecorateObj.booleanValue();
-
-	request.removeAttribute(WebKeys.PORTLET_DECORATE);
-}
+LiferayRenderResponse liferayRenderResponse = (LiferayRenderResponse)LiferayPortletUtil.getLiferayPortletResponse(renderResponse);
 
 // Portlet title
 
-String portletTitle = PortletConfigurationUtil.getPortletTitle(portletSetup, themeDisplay.getLanguageId());
+String portletTitle = PortletConfigurationUtil.getPortletTitle(portletDisplay.getPortletSetup(), themeDisplay.getLanguageId());
 
-if (portletDisplay.isAccess() && portletDisplay.isActive() && (portletTitle == null)) {
-	portletTitle = HtmlUtil.extractText(renderResponseImpl.getTitle());
+if (portletDisplay.isActive() && Validator.isNull(portletTitle)) {
+	portletTitle = liferayRenderResponse.getTitle();
 }
 
-if (portletTitle == null) {
+if (Validator.isNull(portletTitle)) {
 	portletTitle = PortalUtil.getPortletTitle(portlet, application, locale);
 }
 
@@ -69,31 +41,24 @@ portletDisplay.setTitle(portletTitle);
 
 // Portlet description
 
-String portletDescription = PortalUtil.getPortletDescription(portlet, application, locale);
-
-portletDisplay.setDescription(portletDescription);
+if (Validator.isNull(portletDisplay.getDescription())) {
+	portletDisplay.setDescription(PortalUtil.getPortletDescription(portlet, application, locale));
+}
 
 Group group = layout.getGroup();
-
-boolean wsrp = ParamUtil.getBoolean(PortalUtil.getOriginalServletRequest(request), "wsrp");
 %>
 
 <c:choose>
-	<c:when test="<%= wsrp %>">
-		<liferay-wsrp-portlet>
-			<%@ include file="/html/common/themes/portlet_content_wrapper.jspf" %>
-		</liferay-wsrp-portlet>
-	</c:when>
-	<c:when test="<%= themeDisplay.isFacebook() %>">
-		<%@ include file="/html/common/themes/portlet_facebook.jspf" %>
-	</c:when>
 	<c:when test="<%= themeDisplay.isStateExclusive() %>">
 		<%@ include file="/html/common/themes/portlet_content_wrapper.jspf" %>
 	</c:when>
 	<c:when test="<%= themeDisplay.isStatePopUp() %>">
 		<div class="portlet-body">
 			<c:if test='<%= !tilesPortletContent.endsWith("/error.jsp") %>'>
-				<%@ include file="/html/common/themes/portlet_messages.jspf" %>
+				<liferay-theme:portlet-messages
+					group="<%= group %>"
+					portlet="<%= portlet %>"
+				/>
 			</c:if>
 
 			<c:choose>
@@ -103,7 +68,9 @@ boolean wsrp = ParamUtil.getBoolean(PortalUtil.getOriginalServletRequest(request
 				<c:otherwise>
 
 					<%
-					pageContext.getOut().print(renderRequest.getAttribute(WebKeys.PORTLET_CONTENT));
+					JspWriter jspWriter = pageContext.getOut();
+
+					jspWriter.print(renderRequest.getAttribute(WebKeys.PORTLET_CONTENT));
 					%>
 
 				</c:otherwise>
@@ -111,80 +78,12 @@ boolean wsrp = ParamUtil.getBoolean(PortalUtil.getOriginalServletRequest(request
 		</div>
 	</c:when>
 	<c:otherwise>
-
-		<%
-		Boolean renderPortletResource = (Boolean)request.getAttribute(WebKeys.RENDER_PORTLET_RESOURCE);
-
-		boolean runtimePortlet = (renderPortletResource != null) && renderPortletResource.booleanValue();
-
-		boolean freeformPortlet = themeDisplay.isFreeformLayout() && !runtimePortlet && !layoutTypePortlet.hasStateMax();
-
-		String containerStyles = StringPool.BLANK;
-
-		if (freeformPortlet) {
-			Properties freeformStyleProps = PropertiesUtil.load(portletSetup.getValue("portlet-freeform-styles", StringPool.BLANK));
-
-			containerStyles = "style=\"height: ".concat(GetterUtil.getString(HtmlUtil.escapeAttribute(freeformStyleProps.getProperty("height")), "300px")).concat("; overflow: auto;\"");
-		}
-		%>
-
-		<c:choose>
-			<c:when test="<%= portletDecorate %>">
-				<liferay-theme:wrap-portlet page="portlet.jsp">
-					<div class="<%= portletDisplay.isStateMin() ? "hide" : "" %> portlet-content-container" <%= containerStyles %>>
-						<%@ include file="/html/common/themes/portlet_content_wrapper.jspf" %>
-					</div>
-				</liferay-theme:wrap-portlet>
-			</c:when>
-			<c:otherwise>
-
-				<%
-				boolean showPortletActions =
-					(group.isLayoutPrototype() || tilesPortletDecorate) &&
-					(portletDisplay.isShowCloseIcon() ||
-					 portletDisplay.isShowConfigurationIcon() ||
-					 portletDisplay.isShowEditDefaultsIcon() ||
-					 portletDisplay.isShowEditGuestIcon() ||
-					 portletDisplay.isShowEditIcon() ||
-					 portletDisplay.isShowExportImportIcon() ||
-					 portletDisplay.isShowHelpIcon() ||
-					 portletDisplay.isShowPortletCssIcon() ||
-					 portletDisplay.isShowPrintIcon() ||
-					 portletDisplay.isShowRefreshIcon());
-				%>
-
-				<div class="portlet-borderless-container" <%= containerStyles %>>
-					<c:if test="<%= showPortletActions %>">
-						<div class="portlet-borderless-bar">
-							<span class="portlet-title-default"><%= HtmlUtil.escape(portletDisplay.getTitle()) %></span>
-
-							<span class="portlet-actions">
-								<span class="portlet-action">
-									<span class="portlet-action-separator">-</span>
-
-									<liferay-portlet:icon-options />
-								</span>
-
-								<c:if test="<%= portletDisplay.isShowBackIcon() %>">
-									<span class="portlet-action portlet-back">
-										<span class="portlet-action-separator">-</span>
-
-										<a href="<%= HtmlUtil.escapeAttribute(portletDisplay.getURLBack()) %>" title="<liferay-ui:message key="back" />"><liferay-ui:message key="back" /></a>
-									</span>
-								</c:if>
-							</span>
-						</div>
-					</c:if>
-
-					<%@ include file="/html/common/themes/portlet_content_wrapper.jspf" %>
-				</div>
-
-				<c:if test="<%= freeformPortlet %>">
-					<div class="portlet-resize-container">
-						<div class="portlet-resize-handle"></div>
-					</div>
-				</c:if>
-			</c:otherwise>
-		</c:choose>
+		<liferay-theme:wrap-portlet
+			page="portlet.jsp"
+		>
+			<div class="<%= portletDisplay.isStateMin() ? "hide" : "" %> portlet-content-container">
+				<%@ include file="/html/common/themes/portlet_content_wrapper.jspf" %>
+			</div>
+		</liferay-theme:wrap-portlet>
 	</c:otherwise>
 </c:choose>

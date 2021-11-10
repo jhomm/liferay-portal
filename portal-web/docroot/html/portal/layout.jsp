@@ -16,10 +16,21 @@
 
 <%@ include file="/html/portal/init.jsp" %>
 
-<%
-StringBundler sb = (StringBundler)request.getAttribute(WebKeys.LAYOUT_CONTENT);
+<c:choose>
+	<c:when test="<%= Validator.isNotNull(request.getAttribute(NoSuchLayoutException.class.getName())) %>">
+		<div class="container pb-3 pt-3">
+			<%@ include file="/html/portal/status.jsp" %>
+		</div>
+	</c:when>
+	<c:otherwise>
 
-sb.writeTo(out);
+		<%
+		StringBundler sb = (StringBundler)request.getAttribute(WebKeys.LAYOUT_CONTENT);
 
-request.removeAttribute(WebKeys.LAYOUT_CONTENT);
-%>
+		sb.writeTo(out);
+
+		request.removeAttribute(WebKeys.LAYOUT_CONTENT);
+		%>
+
+	</c:otherwise>
+</c:choose>

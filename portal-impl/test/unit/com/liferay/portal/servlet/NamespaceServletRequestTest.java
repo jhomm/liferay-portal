@@ -16,11 +16,14 @@ package com.liferay.portal.servlet;
 
 import com.liferay.portal.kernel.servlet.DynamicServletRequest;
 import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Map;
 import java.util.Set;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -29,6 +32,11 @@ import org.springframework.mock.web.MockHttpServletRequest;
  * @author Shuyang Zhou
  */
 public class NamespaceServletRequestTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Test
 	public void testNestedWrapping() {
@@ -66,7 +74,7 @@ public class NamespaceServletRequestTest {
 		Map<String, String[]> parameterMap =
 			dynamicServletRequest.getParameterMap();
 
-		Assert.assertEquals(3, parameterMap.size());
+		Assert.assertEquals(parameterMap.toString(), 3, parameterMap.size());
 		Assert.assertArrayEquals(
 			new String[] {parameterValue1}, parameterMap.get(parameterName1));
 		Assert.assertArrayEquals(
@@ -77,8 +85,11 @@ public class NamespaceServletRequestTest {
 		Set<String> attributeNames = SetUtil.fromEnumeration(
 			dynamicServletRequest.getAttributeNames());
 
-		Assert.assertEquals(1, attributeNames.size());
-		Assert.assertTrue(attributeNames.contains(attributeName));
+		Assert.assertEquals(
+			attributeNames.toString(), 1, attributeNames.size());
+		Assert.assertTrue(
+			attributeNames.toString(), attributeNames.contains(attributeName));
+
 		Assert.assertEquals(
 			attributeValue, dynamicServletRequest.getAttribute(attributeName));
 	}

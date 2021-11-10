@@ -14,6 +14,7 @@
 
 package com.liferay.portlet;
 
+import java.io.IOException;
 import java.io.Serializable;
 
 import java.util.Enumeration;
@@ -21,6 +22,7 @@ import java.util.Map;
 
 import javax.portlet.PortletPreferences;
 import javax.portlet.ReadOnlyException;
+import javax.portlet.ValidatorException;
 
 /**
  * @author Brian Wing Shun Chan
@@ -33,26 +35,25 @@ public class PortletPreferencesWrapper
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof PortletPreferencesWrapper)) {
+		if (!(object instanceof PortletPreferencesWrapper)) {
 			return false;
 		}
 
 		PortletPreferencesWrapper portletPreferencesWrapper =
-			(PortletPreferencesWrapper)obj;
+			(PortletPreferencesWrapper)object;
 
 		if (getPortletPreferencesImpl().equals(
 				portletPreferencesWrapper.getPortletPreferencesImpl())) {
 
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	@Override
@@ -67,14 +68,6 @@ public class PortletPreferencesWrapper
 
 	public PortletPreferencesImpl getPortletPreferencesImpl() {
 		return (PortletPreferencesImpl)_portletPreferences;
-	}
-
-	/**
-	 * @deprecated As of 6.1.0, replaced by {@link #getPortletPreferencesImpl}
-	 */
-	@Deprecated
-	public PortletPreferencesImpl getPreferencesImpl() {
-		return getPortletPreferencesImpl();
 	}
 
 	@Override
@@ -115,7 +108,7 @@ public class PortletPreferencesWrapper
 	}
 
 	@Override
-	public void store() {
+	public void store() throws IOException, ValidatorException {
 
 		// PLT.17.1, clv
 

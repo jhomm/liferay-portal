@@ -23,8 +23,7 @@ import java.util.Map;
  * @author Shuyang Zhou
  */
 public class StrictPortletPreferencesImpl
-	extends PortletPreferencesImpl
-	implements Cloneable, Serializable {
+	extends PortletPreferencesImpl implements Cloneable, Serializable {
 
 	public StrictPortletPreferencesImpl() {
 	}
@@ -39,8 +38,8 @@ public class StrictPortletPreferencesImpl
 	@Override
 	public Object clone() {
 		return new StrictPortletPreferencesImpl(
-			companyId, getOwnerId(), getOwnerType(), getPlid(), getPortletId(),
-			getOriginalXML(), getOriginalPreferences());
+			getCompanyId(), getOwnerId(), getOwnerType(), getPlid(),
+			getPortletId(), getOriginalXML(), getOriginalPreferences());
 	}
 
 }

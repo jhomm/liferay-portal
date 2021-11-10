@@ -16,12 +16,16 @@ package com.liferay.portal.model.impl;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.model.Country;
-import com.liferay.portal.model.ListType;
-import com.liferay.portal.model.Region;
-import com.liferay.portal.service.CountryServiceUtil;
-import com.liferay.portal.service.ListTypeServiceUtil;
-import com.liferay.portal.service.RegionServiceUtil;
+import com.liferay.portal.kernel.model.Country;
+import com.liferay.portal.kernel.model.ListType;
+import com.liferay.portal.kernel.model.Phone;
+import com.liferay.portal.kernel.model.Region;
+import com.liferay.portal.kernel.service.CountryServiceUtil;
+import com.liferay.portal.kernel.service.ListTypeServiceUtil;
+import com.liferay.portal.kernel.service.PhoneLocalServiceUtil;
+import com.liferay.portal.kernel.service.RegionServiceUtil;
+
+import java.util.List;
 
 /**
  * @author Brian Wing Shun Chan
@@ -35,15 +39,29 @@ public class AddressImpl extends AddressBaseImpl {
 		try {
 			country = CountryServiceUtil.getCountry(getCountryId());
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			country = new CountryImpl();
 
 			if (_log.isWarnEnabled()) {
-				_log.warn(e);
+				_log.warn(exception, exception);
 			}
 		}
 
 		return country;
+	}
+
+	@Override
+	public String getPhoneNumber() {
+		List<Phone> phones = PhoneLocalServiceUtil.getPhones(
+			getCompanyId(), getModelClassName(), getAddressId());
+
+		if (phones.isEmpty()) {
+			return null;
+		}
+
+		Phone phone = phones.get(0);
+
+		return phone.getNumber();
 	}
 
 	@Override
@@ -53,11 +71,11 @@ public class AddressImpl extends AddressBaseImpl {
 		try {
 			region = RegionServiceUtil.getRegion(getRegionId());
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			region = new RegionImpl();
 
 			if (_log.isWarnEnabled()) {
-				_log.warn(e);
+				_log.warn(exception, exception);
 			}
 		}
 
@@ -71,11 +89,11 @@ public class AddressImpl extends AddressBaseImpl {
 		try {
 			type = ListTypeServiceUtil.getListType(getTypeId());
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			type = new ListTypeImpl();
 
 			if (_log.isWarnEnabled()) {
-				_log.warn(e);
+				_log.warn(exception, exception);
 			}
 		}
 

@@ -1,0 +1,169 @@
+definition {
+
+	macro activatePaymentMethod {
+		CommerceEntry.clickTableEntryEditButton(
+			entryName = "${paymentMethod}",
+			table = "Payment Methods");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Type(
+			locator1 = "TextInput#NAME",
+			value1 = "${paymentMethod}");
+
+		Type(
+			locator1 = "TextInput#DESCRIPTION",
+			value1 = "Pay with ${paymentMethod}.");
+
+		Check.checkToggleSwitch(locator1 = "CommerceEntry#ACTIVE_CHECKBOX");
+
+		Button.clickSave();
+
+		Click(locator1 = "Icon#CLOSE");
+	}
+
+	macro addCategory {
+		Click(locator1 = "Button#PLUS");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Button.click(button = "Select");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
+
+		Click(locator1 = "Treeview#NODE_COLLAPSED");
+
+		Click(
+			key_card = "${key_card}",
+			locator1 = "Card#CARD_TITLE");
+
+		SelectFrame.selectFrameTop();
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Button.click(button = "Done");
+	}
+
+	macro addCategoryDiplayPage {
+		SelectFrame.selectFrameTop();
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Button.click(button = "Choose");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
+
+		Click(
+			key_card = "${key_card}",
+			locator1 = "Card#CARD_TITLE");
+
+		SelectFrame.selectFrameTop();
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Button.clickSave();
+	}
+
+	macro assertMercanetConfigurationEnvironment {
+		CommerceEntry.clickTableEntryEditButton(
+			entryName = "${paymentMethod}",
+			table = "Payment Methods");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Click(
+			locator1 = "CommerceEntry#PAYMENT_METHODS_SIDE_PANEL_NAV_ITEMS",
+			navItem = "Configuration");
+
+		Select(
+			key_fieldLabel = "Environment",
+			locator1 = "Select#GENERIC_SELECT_FIELD",
+			value1 = "${key_value}");
+
+		Button.clickSave();
+
+		Alert.viewSuccessMessage();
+
+		AssertElementPresent(
+			key_fieldLabel = "Environment",
+			key_value = "${key_value}",
+			locator1 = "CommerceEntry#SELECT_ASSERT_SELECTED_VALUE");
+
+		Click(locator1 = "Icon#CLOSE");
+	}
+
+	macro configurationPaypal {
+		CommerceEntry.clickTableEntryEditButton(
+			entryName = "PayPal",
+			table = "Payment Methods");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Click(
+			locator1 = "CommerceEntry#PAYMENT_METHODS_SIDE_PANEL_NAV_ITEMS",
+			navItem = "Configuration");
+
+		Type(
+			key_text = "Client ID",
+			locator1 = "TextInput#ANY",
+			value1 = "PayPal Client ID");
+
+		Type(
+			key_text = "Client Secret",
+			locator1 = "TextInput#ANY",
+			value1 = "PayPal Client Secret");
+
+		Select(
+			key_fieldLabel = "Mode",
+			locator1 = "Select#GENERIC_SELECT_FIELD",
+			value1 = "${mode}");
+
+		Button.clickSave();
+
+		Click(locator1 = "Icon#CLOSE");
+	}
+
+	macro createCategoryDisplayPage {
+		CommerceChannels.addCategory(key_card = "${vocabulary}");
+
+		CommerceChannels.addCategoryDiplayPage(key_card = "${page}");
+	}
+
+	macro editCategoryDisplayPage {
+		Click(
+			key_value = "${name}",
+			locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+
+		ClickNoError(
+			key_selectAction = "Edit",
+			locator1 = "FormViewBuilder#FIELD_ELLIPSIS_ACTION");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Button.click(button = "Choose");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
+
+		if ("${tabName}" == "Private+Pages") {
+			if (IsElementNotPresent(locator1 = "AppBuilderAppAdmin#APP_TAB", key_tabName = "Private+Pages")) {
+				Click(
+					key_text = "Public Pages",
+					locator1 = "Button#ANY_WITH_SPAN");
+			}
+			Click(
+				key_tabName = "Private+Pages",
+				locator1 = "AppBuilderAppAdmin#APP_TAB");
+		}
+
+		Click(
+			key_card = "${key_card}",
+			locator1 = "Card#CARD_TITLE");
+
+		SelectFrame.selectFrameTop();
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Button.clickSave();
+	}
+
+}

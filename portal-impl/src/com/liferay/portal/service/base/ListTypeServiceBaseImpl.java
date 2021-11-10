@@ -15,18 +15,20 @@
 package com.liferay.portal.service.base;
 
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.bean.IdentifiableBean;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.model.ListType;
-import com.liferay.portal.service.BaseServiceImpl;
-import com.liferay.portal.service.ListTypeService;
-import com.liferay.portal.service.persistence.ClassNamePersistence;
-import com.liferay.portal.service.persistence.ListTypePersistence;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.model.ListType;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
+import com.liferay.portal.kernel.service.BaseServiceImpl;
+import com.liferay.portal.kernel.service.ListTypeService;
+import com.liferay.portal.kernel.service.ListTypeServiceUtil;
+import com.liferay.portal.kernel.service.persistence.ListTypePersistence;
+import com.liferay.portal.kernel.util.PortalUtil;
+
+import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -39,15 +41,16 @@ import javax.sql.DataSource;
  *
  * @author Brian Wing Shun Chan
  * @see com.liferay.portal.service.impl.ListTypeServiceImpl
- * @see com.liferay.portal.service.ListTypeServiceUtil
  * @generated
  */
-public abstract class ListTypeServiceBaseImpl extends BaseServiceImpl
-	implements ListTypeService, IdentifiableBean {
+public abstract class ListTypeServiceBaseImpl
+	extends BaseServiceImpl
+	implements IdentifiableOSGiService, ListTypeService {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Always use {@link com.liferay.portal.service.ListTypeServiceUtil} to access the list type remote service.
+	 * Never modify or reference this class directly. Use <code>ListTypeService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>ListTypeServiceUtil</code>.
 	 */
 
 	/**
@@ -55,7 +58,9 @@ public abstract class ListTypeServiceBaseImpl extends BaseServiceImpl
 	 *
 	 * @return the list type local service
 	 */
-	public com.liferay.portal.service.ListTypeLocalService getListTypeLocalService() {
+	public com.liferay.portal.kernel.service.ListTypeLocalService
+		getListTypeLocalService() {
+
 		return listTypeLocalService;
 	}
 
@@ -65,7 +70,9 @@ public abstract class ListTypeServiceBaseImpl extends BaseServiceImpl
 	 * @param listTypeLocalService the list type local service
 	 */
 	public void setListTypeLocalService(
-		com.liferay.portal.service.ListTypeLocalService listTypeLocalService) {
+		com.liferay.portal.kernel.service.ListTypeLocalService
+			listTypeLocalService) {
+
 		this.listTypeLocalService = listTypeLocalService;
 	}
 
@@ -101,7 +108,9 @@ public abstract class ListTypeServiceBaseImpl extends BaseServiceImpl
 	 *
 	 * @param listTypePersistence the list type persistence
 	 */
-	public void setListTypePersistence(ListTypePersistence listTypePersistence) {
+	public void setListTypePersistence(
+		ListTypePersistence listTypePersistence) {
+
 		this.listTypePersistence = listTypePersistence;
 	}
 
@@ -110,7 +119,9 @@ public abstract class ListTypeServiceBaseImpl extends BaseServiceImpl
 	 *
 	 * @return the counter local service
 	 */
-	public com.liferay.counter.service.CounterLocalService getCounterLocalService() {
+	public com.liferay.counter.kernel.service.CounterLocalService
+		getCounterLocalService() {
+
 		return counterLocalService;
 	}
 
@@ -120,91 +131,28 @@ public abstract class ListTypeServiceBaseImpl extends BaseServiceImpl
 	 * @param counterLocalService the counter local service
 	 */
 	public void setCounterLocalService(
-		com.liferay.counter.service.CounterLocalService counterLocalService) {
+		com.liferay.counter.kernel.service.CounterLocalService
+			counterLocalService) {
+
 		this.counterLocalService = counterLocalService;
 	}
 
-	/**
-	 * Returns the class name local service.
-	 *
-	 * @return the class name local service
-	 */
-	public com.liferay.portal.service.ClassNameLocalService getClassNameLocalService() {
-		return classNameLocalService;
-	}
-
-	/**
-	 * Sets the class name local service.
-	 *
-	 * @param classNameLocalService the class name local service
-	 */
-	public void setClassNameLocalService(
-		com.liferay.portal.service.ClassNameLocalService classNameLocalService) {
-		this.classNameLocalService = classNameLocalService;
-	}
-
-	/**
-	 * Returns the class name remote service.
-	 *
-	 * @return the class name remote service
-	 */
-	public com.liferay.portal.service.ClassNameService getClassNameService() {
-		return classNameService;
-	}
-
-	/**
-	 * Sets the class name remote service.
-	 *
-	 * @param classNameService the class name remote service
-	 */
-	public void setClassNameService(
-		com.liferay.portal.service.ClassNameService classNameService) {
-		this.classNameService = classNameService;
-	}
-
-	/**
-	 * Returns the class name persistence.
-	 *
-	 * @return the class name persistence
-	 */
-	public ClassNamePersistence getClassNamePersistence() {
-		return classNamePersistence;
-	}
-
-	/**
-	 * Sets the class name persistence.
-	 *
-	 * @param classNamePersistence the class name persistence
-	 */
-	public void setClassNamePersistence(
-		ClassNamePersistence classNamePersistence) {
-		this.classNamePersistence = classNamePersistence;
-	}
-
 	public void afterPropertiesSet() {
+		_setServiceUtilService(listTypeService);
 	}
 
 	public void destroy() {
+		_setServiceUtilService(null);
 	}
 
 	/**
-	 * Returns the Spring bean ID for this bean.
+	 * Returns the OSGi service identifier.
 	 *
-	 * @return the Spring bean ID for this bean
+	 * @return the OSGi service identifier
 	 */
 	@Override
-	public String getBeanIdentifier() {
-		return _beanIdentifier;
-	}
-
-	/**
-	 * Sets the Spring bean ID for this bean.
-	 *
-	 * @param beanIdentifier the Spring bean ID for this bean
-	 */
-	@Override
-	public void setBeanIdentifier(String beanIdentifier) {
-		_beanIdentifier = beanIdentifier;
+	public String getOSGiServiceIdentifier() {
+		return ListTypeService.class.getName();
 	}
 
 	protected Class<?> getModelClass() {
@@ -224,34 +172,51 @@ public abstract class ListTypeServiceBaseImpl extends BaseServiceImpl
 		try {
 			DataSource dataSource = listTypePersistence.getDataSource();
 
-			DB db = DBFactoryUtil.getDB();
+			DB db = DBManagerUtil.getDB();
 
 			sql = db.buildSQL(sql);
 			sql = PortalUtil.transformSQL(sql);
 
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(dataSource,
-					sql, new int[0]);
+			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
+				dataSource, sql);
 
 			sqlUpdate.update();
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 	}
 
-	@BeanReference(type = com.liferay.portal.service.ListTypeLocalService.class)
-	protected com.liferay.portal.service.ListTypeLocalService listTypeLocalService;
-	@BeanReference(type = com.liferay.portal.service.ListTypeService.class)
+	private void _setServiceUtilService(ListTypeService listTypeService) {
+		try {
+			Field field = ListTypeServiceUtil.class.getDeclaredField(
+				"_service");
+
+			field.setAccessible(true);
+
+			field.set(null, listTypeService);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new RuntimeException(reflectiveOperationException);
+		}
+	}
+
+	@BeanReference(
+		type = com.liferay.portal.kernel.service.ListTypeLocalService.class
+	)
+	protected com.liferay.portal.kernel.service.ListTypeLocalService
+		listTypeLocalService;
+
+	@BeanReference(type = ListTypeService.class)
 	protected ListTypeService listTypeService;
+
 	@BeanReference(type = ListTypePersistence.class)
 	protected ListTypePersistence listTypePersistence;
-	@BeanReference(type = com.liferay.counter.service.CounterLocalService.class)
-	protected com.liferay.counter.service.CounterLocalService counterLocalService;
-	@BeanReference(type = com.liferay.portal.service.ClassNameLocalService.class)
-	protected com.liferay.portal.service.ClassNameLocalService classNameLocalService;
-	@BeanReference(type = com.liferay.portal.service.ClassNameService.class)
-	protected com.liferay.portal.service.ClassNameService classNameService;
-	@BeanReference(type = ClassNamePersistence.class)
-	protected ClassNamePersistence classNamePersistence;
-	private String _beanIdentifier;
+
+	@BeanReference(
+		type = com.liferay.counter.kernel.service.CounterLocalService.class
+	)
+	protected com.liferay.counter.kernel.service.CounterLocalService
+		counterLocalService;
+
 }

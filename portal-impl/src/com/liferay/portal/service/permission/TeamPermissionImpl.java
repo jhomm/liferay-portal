@@ -14,12 +14,16 @@
 
 package com.liferay.portal.service.permission;
 
+import com.liferay.exportimport.kernel.staging.permission.StagingPermissionUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.Team;
-import com.liferay.portal.security.auth.PrincipalException;
-import com.liferay.portal.security.permission.ActionKeys;
-import com.liferay.portal.security.permission.PermissionChecker;
-import com.liferay.portal.service.TeamLocalServiceUtil;
+import com.liferay.portal.kernel.model.Team;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.TeamLocalServiceUtil;
+import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
+import com.liferay.portal.kernel.service.permission.TeamPermission;
 
 /**
  * @author Brian Wing Shun Chan
@@ -54,9 +58,8 @@ public class TeamPermissionImpl implements TeamPermission {
 			PermissionChecker permissionChecker, long teamId, String actionId)
 		throws PortalException {
 
-		Team team = TeamLocalServiceUtil.getTeam(teamId);
-
-		return contains(permissionChecker, team, actionId);
+		return contains(
+			permissionChecker, TeamLocalServiceUtil.getTeam(teamId), actionId);
 	}
 
 	@Override
@@ -64,14 +67,18 @@ public class TeamPermissionImpl implements TeamPermission {
 			PermissionChecker permissionChecker, Team team, String actionId)
 		throws PortalException {
 
-		if (GroupPermissionUtil.contains(
-				permissionChecker, team.getGroupId(),
-				ActionKeys.MANAGE_TEAMS)) {
+		Boolean hasPermission = StagingPermissionUtil.hasPermission(
+			permissionChecker, team.getGroupId(), Team.class.getName(),
+			team.getTeamId(), StringPool.BLANK, actionId);
 
-			return true;
+		if (hasPermission != null) {
+			return hasPermission.booleanValue();
 		}
 
-		if (permissionChecker.hasOwnerPermission(
+		if (GroupPermissionUtil.contains(
+				permissionChecker, team.getGroupId(),
+				ActionKeys.MANAGE_TEAMS) ||
+			permissionChecker.hasOwnerPermission(
 				team.getCompanyId(), Team.class.getName(), team.getTeamId(),
 				team.getUserId(), actionId)) {
 

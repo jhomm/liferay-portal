@@ -17,20 +17,26 @@ package com.liferay.portlet.usersadmin.search;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.portlet.PortalPreferences;
+import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.model.User;
-import com.liferay.portlet.PortalPreferences;
-import com.liferay.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.util.comparator.GroupDescriptiveNameComparator;
+import com.liferay.portal.kernel.util.comparator.GroupNameComparator;
+import com.liferay.portal.kernel.util.comparator.GroupTypeComparator;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.portlet.PortletRequest;
@@ -43,16 +49,17 @@ public class GroupSearch extends SearchContainer<Group> {
 
 	public static final String EMPTY_RESULTS_MESSAGE = "no-sites-were-found";
 
-	public static List<String> headerNames = new ArrayList<>();
-	public static Map<String, String> orderableHeaders = new HashMap<>();
-
-	static {
-		headerNames.add("name");
-		headerNames.add("type");
-
-		orderableHeaders.put("name", "name");
-		orderableHeaders.put("type", "type");
-	}
+	public static List<String> headerNames = new ArrayList<String>() {
+		{
+			add("name");
+			add("type");
+		}
+	};
+	public static Map<String, String> orderableHeaders = HashMapBuilder.put(
+		"name", "name"
+	).put(
+		"type", "type"
+	).build();
 
 	public GroupSearch(PortletRequest portletRequest, PortletURL iteratorURL) {
 		super(
@@ -95,18 +102,49 @@ public class GroupSearch extends SearchContainer<Group> {
 					portletId, "groups-order-by-type", "asc");
 			}
 
+			Locale locale = LocaleUtil.getDefault();
+
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)portletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			if (themeDisplay != null) {
+				locale = themeDisplay.getLocale();
+			}
+
 			OrderByComparator<Group> orderByComparator =
-				UsersAdminUtil.getGroupOrderByComparator(
-					orderByCol, orderByType);
+				_getGroupOrderByComparator(orderByCol, orderByType, locale);
 
 			setOrderableHeaders(orderableHeaders);
 			setOrderByCol(orderByCol);
 			setOrderByType(orderByType);
 			setOrderByComparator(orderByComparator);
 		}
-		catch (Exception e) {
-			_log.error(e);
+		catch (Exception exception) {
+			_log.error("Unable to initialize group search", exception);
 		}
+	}
+
+	private OrderByComparator<Group> _getGroupOrderByComparator(
+		String orderByCol, String orderByType, Locale locale) {
+
+		boolean orderByAsc = false;
+
+		if (orderByType.equals("asc")) {
+			orderByAsc = true;
+		}
+
+		if (orderByCol.equals("descriptive-name")) {
+			return new GroupDescriptiveNameComparator(orderByAsc, locale);
+		}
+		else if (orderByCol.equals("name")) {
+			return new GroupNameComparator(orderByAsc, locale);
+		}
+		else if (orderByCol.equals("type")) {
+			return new GroupTypeComparator(orderByAsc);
+		}
+
+		return new GroupNameComparator(orderByAsc, locale);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(GroupSearch.class);

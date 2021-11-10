@@ -1,0 +1,26 @@
+html#{$cadmin-selector} {
+	.cadmin {
+		.sidebar-body__add-panel {
+			&__tab-content {
+				ul.grid {
+					display: flex;
+					flex-wrap: wrap;
+					justify-content: space-between;
+				}
+			}
+
+			&__tabs {
+				border-bottom: 1px solid $cadmin-gray-300;
+				color: $cadmin-dark;
+				font-size: 12px;
+				margin-bottom: 16px;
+
+				.nav-item {
+					.nav-link.active {
+						color: $cadmin-gray-600;
+					}
+				}
+			}
+		}
+	}
+}

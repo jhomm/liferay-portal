@@ -14,12 +14,15 @@
 
 package com.liferay.portal.webdav.methods;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.petra.xml.Dom4jUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.lock.Lock;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.WebDAVProps;
+import com.liferay.portal.kernel.service.WebDAVPropsLocalServiceUtil;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.webdav.Resource;
 import com.liferay.portal.kernel.webdav.WebDAVException;
@@ -31,11 +34,8 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.Namespace;
 import com.liferay.portal.kernel.xml.QName;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
-import com.liferay.portal.model.WebDAVProps;
-import com.liferay.portal.service.WebDAVPropsLocalServiceUtil;
 import com.liferay.portal.webdav.InvalidRequestException;
 import com.liferay.portal.webdav.LockException;
-import com.liferay.util.xml.Dom4jUtil;
 
 import java.util.HashSet;
 import java.util.List;
@@ -56,18 +56,27 @@ public class ProppatchMethodImpl extends BasePropMethodImpl {
 
 			return writeResponseXML(webDAVRequest, props);
 		}
-		catch (InvalidRequestException ire) {
+		catch (InvalidRequestException invalidRequestException) {
 			if (_log.isInfoEnabled()) {
-				_log.info(ire.getMessage(), ire);
+				_log.info(
+					invalidRequestException.getMessage(),
+					invalidRequestException);
 			}
 
 			return HttpServletResponse.SC_BAD_REQUEST;
 		}
-		catch (LockException le) {
+		catch (LockException lockException) {
+
+			// LPS-52675
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(lockException, lockException);
+			}
+
 			return WebDAVUtil.SC_LOCKED;
 		}
-		catch (Exception e) {
-			throw new WebDAVException(e);
+		catch (Exception exception) {
+			throw new WebDAVException(exception);
 		}
 	}
 
@@ -77,8 +86,6 @@ public class ProppatchMethodImpl extends BasePropMethodImpl {
 		WebDAVStorage storage = webDAVRequest.getWebDAVStorage();
 
 		Resource resource = storage.getResource(webDAVRequest);
-
-		WebDAVProps webDavProps = null;
 
 		if (resource.getPrimaryKey() <= 0) {
 			if (_log.isWarnEnabled()) {
@@ -90,18 +97,20 @@ public class ProppatchMethodImpl extends BasePropMethodImpl {
 		else if (resource.isLocked()) {
 			Lock lock = resource.getLock();
 
-			if ((lock == null) ||
-				!lock.getUuid().equals(webDAVRequest.getLockUuid())) {
+			if (lock == null) {
+				throw new LockException();
+			}
 
+			String uuid = lock.getUuid();
+
+			if (!uuid.equals(webDAVRequest.getLockUuid())) {
 				throw new LockException();
 			}
 		}
 
-		webDavProps = WebDAVPropsLocalServiceUtil.getWebDAVProps(
+		return WebDAVPropsLocalServiceUtil.getWebDAVProps(
 			webDAVRequest.getCompanyId(), resource.getClassName(),
 			resource.getPrimaryKey());
-
-		return webDavProps;
 	}
 
 	protected Set<QName> processInstructions(WebDAVRequest webDAVRequest)
@@ -110,12 +119,11 @@ public class ProppatchMethodImpl extends BasePropMethodImpl {
 		try {
 			Set<QName> newProps = new HashSet<>();
 
-			HttpServletRequest request = webDAVRequest.getHttpServletRequest();
-
-			WebDAVProps webDavProps = getStoredProperties(webDAVRequest);
+			HttpServletRequest httpServletRequest =
+				webDAVRequest.getHttpServletRequest();
 
 			String xml = new String(
-				FileUtil.getBytes(request.getInputStream()));
+				FileUtil.getBytes(httpServletRequest.getInputStream()));
 
 			if (Validator.isNull(xml)) {
 				return newProps;
@@ -126,6 +134,8 @@ public class ProppatchMethodImpl extends BasePropMethodImpl {
 					"Request XML: \n" +
 						Dom4jUtil.toString(xml, StringPool.FOUR_SPACES));
 			}
+
+			WebDAVProps webDAVProps = getStoredProperties(webDAVRequest);
 
 			Document document = SAXReaderUtil.read(xml);
 
@@ -139,13 +149,16 @@ public class ProppatchMethodImpl extends BasePropMethodImpl {
 				if (propElements.size() != 1) {
 					throw new InvalidRequestException(
 						"There should only be one <prop /> per set or remove " +
-							"instruction.");
+							"instruction");
 				}
 
 				Element propElement = propElements.get(0);
 
-				if (!propElement.getName().equals("prop") ||
-					!propElement.getNamespaceURI().equals(
+				String propElementName = propElement.getName();
+				String propElementNamespaceURI = propElement.getNamespaceURI();
+
+				if (!propElementName.equals("prop") ||
+					!propElementNamespaceURI.equals(
 						WebDAVUtil.DAV_URI.getURI())) {
 
 					throw new InvalidRequestException(
@@ -155,28 +168,33 @@ public class ProppatchMethodImpl extends BasePropMethodImpl {
 				List<Element> customPropElements = propElement.elements();
 
 				for (Element customPropElement : customPropElements) {
-					String name = customPropElement.getName();
 					String prefix = customPropElement.getNamespacePrefix();
 					String uri = customPropElement.getNamespaceURI();
-					String text = customPropElement.getText();
 
 					Namespace namespace = WebDAVUtil.createNamespace(
 						prefix, uri);
 
-					if (instructionElement.getName().equals("set")) {
+					String name = customPropElement.getName();
+
+					String instructionElementName =
+						instructionElement.getName();
+
+					if (instructionElementName.equals("set")) {
+						String text = customPropElement.getText();
+
 						if (Validator.isNull(text)) {
-							webDavProps.addProp(name, prefix, uri);
+							webDAVProps.addProp(name, prefix, uri);
 						}
 						else {
-							webDavProps.addProp(name, prefix, uri, text);
+							webDAVProps.addProp(name, prefix, uri, text);
 						}
 
 						newProps.add(
 							SAXReaderUtil.createQName(
 								customPropElement.getName(), namespace));
 					}
-					else if (instructionElement.getName().equals("remove")) {
-						webDavProps.removeProp(name, prefix, uri);
+					else if (instructionElementName.equals("remove")) {
+						webDAVProps.removeProp(name, prefix, uri);
 					}
 					else {
 						throw new InvalidRequestException(
@@ -186,15 +204,15 @@ public class ProppatchMethodImpl extends BasePropMethodImpl {
 				}
 			}
 
-			WebDAVPropsLocalServiceUtil.storeWebDAVProps(webDavProps);
+			WebDAVPropsLocalServiceUtil.storeWebDAVProps(webDAVProps);
 
 			return newProps;
 		}
-		catch (LockException le) {
-			throw le;
+		catch (LockException lockException) {
+			throw lockException;
 		}
-		catch (Exception e) {
-			throw new InvalidRequestException(e);
+		catch (Exception exception) {
+			throw new InvalidRequestException(exception);
 		}
 	}
 

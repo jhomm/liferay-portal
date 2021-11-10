@@ -14,13 +14,82 @@
 
 package com.liferay.portal.template;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.template.TemplateConstants;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import java.net.URL;
+
 import org.junit.Assert;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
  * @author Tina Tian
  */
 public class URLResourceParserTest {
+
+	@ClassRule
+	public static LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
+	@Test
+	public void testIsTemplateResourceValid() {
+		URLResourceParser urlResourceParser = new URLResourceParser() {
+
+			@Override
+			public URL getURL(String templateId) {
+				return null;
+			}
+
+		};
+
+		for (String langType : TemplateConstants.ALLOWED_LANG_TYPES) {
+			Assert.assertTrue(
+				urlResourceParser.isTemplateResourceValid(
+					"_SEPARATOR_/template." + langType, langType));
+			Assert.assertFalse(
+				urlResourceParser.isTemplateResourceValid(
+					"portal-ext.properties", langType));
+		}
+
+		Assert.assertTrue(
+			urlResourceParser.isTemplateResourceValid(
+				"_SEPARATOR_/template.custom", "custom"));
+		Assert.assertFalse(
+			urlResourceParser.isTemplateResourceValid(
+				"..\\file", StringPool.BLANK));
+		Assert.assertFalse(
+			urlResourceParser.isTemplateResourceValid(
+				"../\\file", StringPool.BLANK));
+		Assert.assertFalse(
+			urlResourceParser.isTemplateResourceValid(
+				"..\\/file", StringPool.BLANK));
+		Assert.assertFalse(
+			urlResourceParser.isTemplateResourceValid(
+				"\\..\\file", StringPool.BLANK));
+		Assert.assertFalse(
+			urlResourceParser.isTemplateResourceValid(
+				"/..\\file", StringPool.BLANK));
+		Assert.assertFalse(
+			urlResourceParser.isTemplateResourceValid(
+				"\\../\\file", StringPool.BLANK));
+		Assert.assertFalse(
+			urlResourceParser.isTemplateResourceValid(
+				"\\..\\/file", StringPool.BLANK));
+		Assert.assertFalse(
+			urlResourceParser.isTemplateResourceValid(
+				"%2f..%2ffile", StringPool.BLANK));
+		Assert.assertFalse(
+			urlResourceParser.isTemplateResourceValid(
+				"/file?a=.ftl", StringPool.BLANK));
+		Assert.assertFalse(
+			urlResourceParser.isTemplateResourceValid(
+				"/file#a=.ftl", StringPool.BLANK));
+		Assert.assertFalse(
+			urlResourceParser.isTemplateResourceValid(
+				"/file;a=.ftl", StringPool.BLANK));
+	}
 
 	@Test
 	public void testNormalizePath() {
@@ -34,8 +103,10 @@ public class URLResourceParserTest {
 
 			Assert.fail();
 		}
-		catch (IllegalArgumentException iae) {
-			Assert.assertEquals("Unable to parse path //", iae.getMessage());
+		catch (IllegalArgumentException illegalArgumentException) {
+			Assert.assertEquals(
+				"Unable to parse path //",
+				illegalArgumentException.getMessage());
 		}
 
 		Assert.assertEquals(
@@ -48,8 +119,10 @@ public class URLResourceParserTest {
 
 			Assert.fail();
 		}
-		catch (IllegalArgumentException iae) {
-			Assert.assertEquals("Unable to parse path ../", iae.getMessage());
+		catch (IllegalArgumentException illegalArgumentException) {
+			Assert.assertEquals(
+				"Unable to parse path ../",
+				illegalArgumentException.getMessage());
 		}
 
 		Assert.assertEquals(

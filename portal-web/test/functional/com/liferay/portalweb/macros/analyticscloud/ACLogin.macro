@@ -1,0 +1,25 @@
+definition {
+
+	macro loginAs {
+		WaitForPageLoad();
+
+		if (!(isSet(password))) {
+			password = "test";
+		}
+
+		Click(locator1 = "ACLogin#EMAIL_LOGIN_FIELD");
+
+		Type(
+			locator1 = "ACLogin#EMAIL_LOGIN_FIELD",
+			value1 = "${emailAddress}");
+
+		Click(locator1 = "ACLogin#PASSWORD_LOGIN_FIELD");
+
+		Type(
+			locator1 = "ACLogin#PASSWORD_LOGIN_FIELD",
+			value1 = "${password}");
+
+		Click(locator1 = "ACLogin#LOGIN_BUTTON");
+	}
+
+}

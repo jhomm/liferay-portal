@@ -14,7 +14,8 @@
 
 package com.liferay.portal.asm;
 
-import com.liferay.portal.kernel.util.CharPool;
+import com.liferay.petra.string.CharPool;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.IOException;
 
@@ -127,7 +128,7 @@ public class ASMUtil {
 
 		String name = clazz.getName();
 
-		name = name.replace(CharPool.PERIOD, CharPool.SLASH);
+		name = StringUtil.replace(name, CharPool.PERIOD, CharPool.SLASH);
 
 		ClassReader classReader = null;
 
@@ -135,23 +136,21 @@ public class ASMUtil {
 			classReader = new ClassReader(
 				classLoader.getResourceAsStream(name.concat(".class")));
 		}
-		catch (IOException ioe) {
-			throw new RuntimeException(ioe);
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
 		}
 
 		ClassNode classNode = new ClassNode();
 
 		ClassVisitor classVisitor = new RemappingClassAdapter(
-			classNode,
-			new RenameClassRemapper(name, newName)) {
+			classNode, new RenameClassRemapper(name, newName)) {
 
-				@Override
-				public void visitInnerClass(
-					String name, String outerName, String innerName,
-					int access) {
-				}
+			@Override
+			public void visitInnerClass(
+				String name, String outerName, String innerName, int access) {
+			}
 
-			};
+		};
 
 		classReader.accept(
 			classVisitor, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
@@ -170,24 +169,24 @@ public class ASMUtil {
 				Opcodes.ASM5, methodNode, headMethodNode.access,
 				headMethodNode.name, headMethodNode.desc) {
 
-					@Override
-					protected void onMethodExit(int opcode) {
-						mv = _emptyMethodVisitor;
-					}
+				@Override
+				protected void onMethodExit(int opcode) {
+					mv = _emptyMethodVisitor;
+				}
 
-				});
+			});
 
 		tailMethodNode.accept(
 			new AdviceAdapter(
 				Opcodes.ASM5, _emptyMethodVisitor, tailMethodNode.access,
 				tailMethodNode.name, tailMethodNode.desc) {
 
-					@Override
-					protected void onMethodEnter() {
-						mv = methodNode;
-					}
+				@Override
+				protected void onMethodEnter() {
+					mv = methodNode;
+				}
 
-				});
+			});
 
 		containerMethodNode.instructions = methodNode.instructions;
 	}
@@ -266,9 +265,9 @@ public class ASMUtil {
 		return removedMethodNodes;
 	}
 
-	private static final MethodVisitor _emptyMethodVisitor =
-		new MethodVisitor(Opcodes.ASM5) {
-		};
+	private static final MethodVisitor _emptyMethodVisitor = new MethodVisitor(
+		Opcodes.ASM5) {
+	};
 
 	private static class RenameClassRemapper extends Remapper {
 

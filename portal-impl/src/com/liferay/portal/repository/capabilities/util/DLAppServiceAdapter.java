@@ -14,13 +14,13 @@
 
 package com.liferay.portal.repository.capabilities.util;
 
+import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLAppService;
+import com.liferay.document.library.kernel.service.DLAppServiceUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.DocumentRepository;
 import com.liferay.portal.kernel.repository.LocalRepository;
-import com.liferay.portlet.documentlibrary.service.DLAppLocalService;
-import com.liferay.portlet.documentlibrary.service.DLAppLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLAppService;
-import com.liferay.portlet.documentlibrary.service.DLAppServiceUtil;
 
 /**
  * @author Iván Zaera
@@ -55,6 +55,15 @@ public class DLAppServiceAdapter {
 		}
 		else {
 			_dlAppLocalService.deleteFileEntry(fileEntryId);
+		}
+	}
+
+	public void deleteFileVersion(long fileVersionId) throws PortalException {
+		if (_dlAppService != null) {
+			_dlAppService.deleteFileVersion(fileVersionId);
+		}
+		else {
+			_dlAppLocalService.deleteFileVersion(fileVersionId);
 		}
 	}
 

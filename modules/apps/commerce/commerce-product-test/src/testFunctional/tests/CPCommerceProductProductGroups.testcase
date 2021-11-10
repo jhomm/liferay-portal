@@ -1,0 +1,208 @@
+@component-name = "portal-commerce"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Product Info Management";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		CommerceConfiguration.commerceStoreFrontSetUp();
+	}
+
+	tearDown {
+		Navigator.openURL();
+
+		if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
+			User.logoutPG();
+		}
+
+		User.firstLoginPG();
+
+		CommerceConfiguration.commerceAdminTearDown();
+
+		CommerceConfiguration.commerceInitializersTearDown();
+	}
+
+	@description = "This is a test for COMMERCE-6066. AddANewProductGroup"
+	@priority = "3"
+	test AddANewProductGroup {
+		property portal.acceptance = "false";
+
+		// TODO Review
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Product Groups");
+
+		Click(locator1 = "ContentDashboard#SEARCH_FIELD");
+
+		Type(
+			locator1 = "ContentDashboard#SEARCH_FIELD",
+			value1 = "PG2");
+
+		Click(
+			key_text = "Create New",
+			locator1 = "Button#ANY");
+
+		Refresh();
+
+		AssertElementPresent(
+			key_tableEntryName = "PG2",
+			locator1 = "RemoteApps#TABLE_ENTRY_NAME_REMOTE_TABLE");
+
+		Button.clickPublish();
+	}
+
+	@description = "This is a test for COMMERCE-6065. AddAPreExistingProductGroup"
+	@priority = "3"
+	test AddAPreExistingProductGroup {
+		property portal.acceptance = "false";
+
+		// TODO Review
+
+		CommerceNavigator.gotoPortlet(
+			category = "Pricing",
+			portlet = "Product Groups");
+
+		Click(locator1 = "Button#PLUS");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_IFRAME");
+
+		Type(
+			key_fieldLabel = "Name",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "PG1");
+
+		Button.click(button = "Submit");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Product Groups");
+
+		Type(
+			locator1 = "ContentDashboard#SEARCH_FIELD",
+			value1 = "PG1");
+
+		Click(
+			key_text = "Select",
+			locator1 = "Button#ANY");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@description = "This is a test for COMMERCE-6068. EditAProductGroup"
+	@priority = "3"
+	test EditAProductGroup {
+		property portal.acceptance = "false";
+
+		// TODO Review
+
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Control Panel",
+			portlet = "Custom Fields");
+
+		CustomFields.addCP(
+			customFieldName = "Custom Field",
+			customFieldType = "Input Field",
+			customInputDataType = "Text",
+			resourceName = "Commerce Product Group");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Product Groups");
+
+		Click(locator1 = "ContentDashboard#SEARCH_FIELD");
+
+		Type(
+			locator1 = "ContentDashboard#SEARCH_FIELD",
+			value1 = "PG2");
+
+		Click(
+			key_text = "Create New",
+			locator1 = "Button#ANY");
+
+		Refresh();
+
+		CommerceNavigator.gotoEntry(entryName = "PG2");
+
+		SelectFrame(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Type(
+			locator1 = "TextInput#CUSTOM_FIELD",
+			value1 = "Test");
+
+		Button.clickSave();
+
+		Alert.viewSuccessMessage();
+	}
+
+	@description = "This is a test for COMMERCE-6067. RemoveAProductGroup"
+	@priority = "3"
+	test RemoveAProductGroup {
+		property portal.acceptance = "false";
+
+		// TODO Review
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Master",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Product Groups");
+
+		Click(locator1 = "ContentDashboard#SEARCH_FIELD");
+
+		Type(
+			locator1 = "ContentDashboard#SEARCH_FIELD",
+			value1 = "PG2");
+
+		Click(
+			key_text = "Create New",
+			locator1 = "Button#ANY");
+
+		Refresh();
+
+		Click(
+			key_value = "",
+			locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+
+		Click(
+			key_selectAction = "Remove",
+			locator1 = "FormViewBuilder#FIELD_ELLIPSIS_ACTION_FIELDSET");
+
+		Alert.viewSuccessMessage();
+	}
+
+}

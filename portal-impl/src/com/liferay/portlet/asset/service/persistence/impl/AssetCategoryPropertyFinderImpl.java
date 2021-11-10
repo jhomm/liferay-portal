@@ -14,16 +14,15 @@
 
 package com.liferay.portlet.asset.service.persistence.impl;
 
+import com.liferay.asset.kernel.model.AssetCategoryProperty;
+import com.liferay.asset.kernel.service.persistence.AssetCategoryPropertyFinder;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.Type;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.service.persistence.impl.BasePersistenceImpl;
-import com.liferay.portlet.asset.model.AssetCategoryProperty;
 import com.liferay.portlet.asset.model.impl.AssetCategoryPropertyImpl;
-import com.liferay.portlet.asset.service.persistence.AssetCategoryPropertyFinder;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
 import java.util.ArrayList;
@@ -35,7 +34,7 @@ import java.util.List;
  * @author Jorge Ferrer
  */
 public class AssetCategoryPropertyFinderImpl
-	extends BasePersistenceImpl<AssetCategoryProperty>
+	extends AssetCategoryPropertyFinderBaseImpl
 	implements AssetCategoryPropertyFinder {
 
 	public static final String COUNT_BY_G_K =
@@ -53,19 +52,19 @@ public class AssetCategoryPropertyFinderImpl
 
 			String sql = CustomSQLUtil.get(COUNT_BY_G_K);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addScalar(COUNT_COLUMN_NAME, Type.LONG);
+			sqlQuery.addScalar(COUNT_COLUMN_NAME, Type.LONG);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(groupId);
-			qPos.add(key);
+			queryPos.add(groupId);
+			queryPos.add(key);
 
-			Iterator<Long> itr = q.iterate();
+			Iterator<Long> iterator = sqlQuery.iterate();
 
-			if (itr.hasNext()) {
-				Long count = itr.next();
+			if (iterator.hasNext()) {
+				Long count = iterator.next();
 
 				if (count != null) {
 					return count.intValue();
@@ -74,8 +73,8 @@ public class AssetCategoryPropertyFinderImpl
 
 			return 0;
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -98,36 +97,34 @@ public class AssetCategoryPropertyFinderImpl
 
 			String sql = CustomSQLUtil.get(FIND_BY_G_K);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addScalar("categoryPropertyValue", Type.STRING);
+			sqlQuery.addScalar("categoryPropertyValue", Type.STRING);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(groupId);
-			qPos.add(key);
+			queryPos.add(groupId);
+			queryPos.add(key);
 
 			List<AssetCategoryProperty> categoryProperties = new ArrayList<>();
 
-			Iterator<String> itr = (Iterator<String>)QueryUtil.iterate(
-				q, getDialect(), start, end);
+			Iterator<String> iterator = (Iterator<String>)QueryUtil.iterate(
+				sqlQuery, getDialect(), start, end);
 
-			while (itr.hasNext()) {
-				String value = itr.next();
-
+			while (iterator.hasNext()) {
 				AssetCategoryProperty categoryProperty =
 					new AssetCategoryPropertyImpl();
 
 				categoryProperty.setKey(key);
-				categoryProperty.setValue(value);
+				categoryProperty.setValue(iterator.next());
 
 				categoryProperties.add(categoryProperty);
 			}
 
 			return categoryProperties;
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);

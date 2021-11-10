@@ -14,16 +14,23 @@
 
 package com.liferay.taglib.ui;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
-import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortletCategoryKeys;
+import com.liferay.taglib.portletext.RuntimeTag;
 import com.liferay.taglib.util.IncludeTag;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.jsp.JspWriter;
 
 /**
  * @author Eudaldo Alonso
@@ -32,6 +39,8 @@ public class LayoutCommonTag extends IncludeTag {
 
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
 		_includeStaticPortlets = false;
 		_includeWebServerDisplayNode = false;
 	}
@@ -43,43 +52,75 @@ public class LayoutCommonTag extends IncludeTag {
 
 	@Override
 	protected boolean isCleanUpSetAttributes() {
-		return _CLEAN_UP_SET_ATTRIBUTES;
+		return super.isCleanUpSetAttributes();
 	}
 
 	@Override
-	protected void setAttributes(HttpServletRequest request) {
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+	protected int processEndTag() throws Exception {
+		HttpServletRequest httpServletRequest = getRequest();
 
-		if (!themeDisplay.isFacebook() && !themeDisplay.isStateExclusive() &&
-			!themeDisplay.isStatePopUp() && !themeDisplay.isWidget() &&
-			(!_DOCKBAR_ADMINISTRATIVE_LINKS_SHOW_IN_POP_UP ||
-			 !Validator.equals(
-				 themeDisplay.getControlPanelCategory(),
-				 PortletCategoryKeys.MY))) {
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
-			_includeStaticPortlets = true;
+		if (!themeDisplay.isStatePopUp()) {
+			if (!themeDisplay.isStateExclusive() && !themeDisplay.isWidget()) {
+				_includeStaticPortlets = true;
+			}
+
+			if (_WEB_SERVER_DISPLAY_NODE) {
+				_includeWebServerDisplayNode = true;
+			}
 		}
 
-		request.setAttribute(
-			"liferay-ui:layout-common:includeStaticPortlets",
-			_includeStaticPortlets);
+		if (_includeStaticPortlets) {
+			Company company = themeDisplay.getCompany();
+			HttpServletResponse httpServletResponse =
+				(HttpServletResponse)pageContext.getResponse();
 
-		if (_WEB_SERVER_DISPLAY_NODE && !themeDisplay.isStatePopUp()) {
-			_includeWebServerDisplayNode = true;
+			for (String portletId : _LAYOUT_STATIC_PORTLETS_ALL) {
+				if (PortletLocalServiceUtil.hasPortlet(
+						company.getCompanyId(), portletId)) {
+
+					RuntimeTag.doTag(
+						portletId, pageContext, httpServletRequest,
+						httpServletResponse);
+				}
+			}
 		}
 
-		request.setAttribute(
-			"liferay-ui:layout-common:includeWebServerDisplayNode",
-			_includeWebServerDisplayNode);
+		JspWriter jspWriter = pageContext.getOut();
+
+		if (_includeWebServerDisplayNode) {
+			jspWriter.write("<div class=\"alert alert-info\">");
+
+			MessageTag.doTag("node", pageContext);
+
+			jspWriter.write(": ");
+			jspWriter.write(
+				StringUtil.toLowerCase(PortalUtil.getComputerName()));
+			jspWriter.write(StringPool.COLON);
+			jspWriter.write(
+				String.valueOf(PortalUtil.getPortalLocalPort(false)));
+			jspWriter.write("</div>");
+		}
+
+		jspWriter.write(
+			"<form action=\"#\" aria-hidden=\"true\" class=\"hide\" " +
+				"id=\"hrefFm\" method=\"post\" name=\"hrefFm\"><span>" +
+					"</span><button hidden type=\"submit\">");
+		jspWriter.write(LanguageUtil.get(httpServletRequest, "hidden"));
+		jspWriter.write("</button></form>");
+
+		return EVAL_PAGE;
 	}
 
-	private static final boolean _CLEAN_UP_SET_ATTRIBUTES = true;
+	@Override
+	protected void setAttributes(HttpServletRequest httpServletRequest) {
+	}
 
-	private static final boolean _DOCKBAR_ADMINISTRATIVE_LINKS_SHOW_IN_POP_UP =
-		GetterUtil.getBoolean(
-			PropsUtil.get(
-				PropsKeys.DOCKBAR_ADMINISTRATIVE_LINKS_SHOW_IN_POP_UP));
+	private static final String[] _LAYOUT_STATIC_PORTLETS_ALL =
+		PropsUtil.getArray(PropsKeys.LAYOUT_STATIC_PORTLETS_ALL);
 
 	private static final String _PAGE =
 		"/html/taglib/ui/layout_common/page.jsp";

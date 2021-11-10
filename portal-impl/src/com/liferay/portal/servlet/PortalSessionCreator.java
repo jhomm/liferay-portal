@@ -24,15 +24,14 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.util.PropsValues;
 
 import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpSessionEvent;
 
 /**
  * @author Michael Young
  */
 public class PortalSessionCreator extends BasePortalLifecycle {
 
-	public PortalSessionCreator(HttpSessionEvent httpSessionEvent) {
-		_httpSessionEvent = httpSessionEvent;
+	public PortalSessionCreator(HttpSession httpSession) {
+		_httpSession = httpSession;
 
 		registerPortalLifecycle(METHOD_INIT);
 	}
@@ -43,18 +42,12 @@ public class PortalSessionCreator extends BasePortalLifecycle {
 
 	@Override
 	protected void doPortalInit() {
-		if (PropsValues.SESSION_DISABLED) {
-			return;
-		}
-
-		HttpSession session = _httpSessionEvent.getSession();
-
 		try {
-			PortalSessionContext.put(session.getId(), session);
+			PortalSessionContext.put(_httpSession.getId(), _httpSession);
 		}
-		catch (IllegalStateException ise) {
+		catch (IllegalStateException illegalStateException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(ise, ise);
+				_log.warn(illegalStateException, illegalStateException);
 			}
 		}
 
@@ -63,16 +56,16 @@ public class PortalSessionCreator extends BasePortalLifecycle {
 		try {
 			EventsProcessorUtil.process(
 				PropsKeys.SERVLET_SESSION_CREATE_EVENTS,
-				PropsValues.SERVLET_SESSION_CREATE_EVENTS, session);
+				PropsValues.SERVLET_SESSION_CREATE_EVENTS, _httpSession);
 		}
-		catch (ActionException ae) {
-			_log.error(ae, ae);
+		catch (ActionException actionException) {
+			_log.error(actionException, actionException);
 		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		PortalSessionCreator.class);
 
-	private final HttpSessionEvent _httpSessionEvent;
+	private final HttpSession _httpSession;
 
 }

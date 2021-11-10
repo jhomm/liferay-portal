@@ -1,13 +1,18 @@
-<definition default="addSelection">
-	<command name="addSelection">
-		<execute selenium="waitForVisible" />
+@default = "addSelection"
+definition {
 
-		<execute selenium="mouseOver" />
+	function addSelection {
+		WaitForSPARefresh();
 
-		<execute selenium="addSelection" />
+		selenium.waitForVisible();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.mouseOver();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.addSelection();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

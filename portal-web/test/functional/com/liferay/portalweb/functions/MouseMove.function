@@ -1,17 +1,16 @@
-<definition default="mouseMove">
-	<command name="mouseMove">
-		<execute selenium="mouseMove" />
+@default = "mouseMoveAt"
+definition {
 
-		<execute selenium="assertJavaScriptErrors" />
+	function mouseMoveAt {
+		WaitForSPARefresh();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
+		selenium.waitForVisible();
 
-	<command name="mouseMoveAt">
-		<execute selenium="mouseMoveAt" />
+		selenium.mouseMoveAt("${locator1}", "${value1}");
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.assertJavaScriptErrors();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.assertLiferayErrors();
+	}
+
+}

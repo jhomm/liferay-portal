@@ -14,6 +14,7 @@
 
 package com.liferay.portal.json;
 
+import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.portal.json.transformer.CompanyJSONTransformer;
 import com.liferay.portal.json.transformer.FileJSONTransformer;
 import com.liferay.portal.json.transformer.JSONArrayJSONTransformer;
@@ -26,13 +27,12 @@ import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONSerializable;
 import com.liferay.portal.kernel.json.JSONTransformer;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletDisplayModel;
 import com.liferay.portal.kernel.repository.model.RepositoryModel;
-import com.liferay.portal.model.Company;
-import com.liferay.portal.model.User;
-import com.liferay.portlet.expando.model.ExpandoBridge;
 
 import java.io.File;
 import java.io.InputStream;
@@ -41,10 +41,11 @@ import java.io.OutputStream;
 import javax.portlet.PortletURL;
 
 import jodd.introspector.CachingIntrospector;
-import jodd.introspector.JoddIntrospector;
+import jodd.introspector.ClassIntrospector;
 
-import jodd.json.JoddJson;
+import jodd.json.JsonSerializer;
 import jodd.json.TypeJsonSerializerMap;
+import jodd.json.meta.JsonAnnotationManager;
 
 /**
  * @author Igor Spasic
@@ -61,49 +62,53 @@ public class JSONInit {
 
 			_initalized = true;
 		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
 		}
 	}
 
 	private static void _registerDefaultTransformers() throws Exception {
-		JoddIntrospector.introspector = new CachingIntrospector(
-			true, true, true, new String[] {"_"});
+		ClassIntrospector.Implementation.set(
+			new CachingIntrospector(true, true, true, new String[] {"_"}));
 
-		JoddJson.jsonAnnotation = JSON.class;
+		JsonAnnotationManager jsonAnnotationManager =
+			JsonAnnotationManager.get();
 
-		JoddJson.excludedTypes = new Class[] {
+		jsonAnnotationManager.setJsonAnnotation(JSON.class);
+
+		JsonSerializer.Defaults.excludedTypes = new Class<?>[] {
 			ExpandoBridge.class, InputStream.class, LiferayPortletRequest.class,
 			LiferayPortletResponse.class, OutputStream.class,
 			PortletDisplayModel.class, PortletURL.class
 		};
 
-		JoddJson.excludedTypeNames = new String[] {"javax.*"};
+		JsonSerializer.Defaults.excludedTypeNames = new String[] {"javax.*"};
 
-		TypeJsonSerializerMap typeSerializerMap = JoddJson.defaultSerializers;
+		TypeJsonSerializerMap typeJsonSerializerMap =
+			TypeJsonSerializerMap.get();
 
 		Class<?>[][] classesArray = new Class<?>[][] {
-			new Class[] {Company.class, CompanyJSONTransformer.class},
-			new Class[] {File.class, FileJSONTransformer.class},
-			new Class[] {JSONArray.class, JSONArrayJSONTransformer.class},
-			new Class[] {JSONObject.class, JSONObjectJSONTransformer.class},
-			new Class[] {
+			new Class<?>[] {Company.class, CompanyJSONTransformer.class},
+			new Class<?>[] {File.class, FileJSONTransformer.class},
+			new Class<?>[] {JSONArray.class, JSONArrayJSONTransformer.class},
+			new Class<?>[] {JSONObject.class, JSONObjectJSONTransformer.class},
+			new Class<?>[] {
 				JSONSerializable.class, JSONSerializableJSONTransformer.class
 			},
-			new Class[] {
+			new Class<?>[] {
 				RepositoryModel.class, RepositoryModelJSONTransformer.class
 			},
-			new Class[] {User.class, UserJSONTransformer.class}
+			new Class<?>[] {User.class, UserJSONTransformer.class}
 		};
 
 		for (Class<?>[] classes : classesArray) {
-			typeSerializerMap.register(
+			typeJsonSerializerMap.register(
 				classes[0],
 				new JoddJsonTransformer(
 					(JSONTransformer)classes[1].newInstance()));
 		}
 	}
 
-	private static boolean _initalized = false;
+	private static boolean _initalized;
 
 }

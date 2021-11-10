@@ -1,0 +1,42 @@
+$header-close: (
+	color: var(--color-action-neutral-default),
+	hover-color: var(--color-action-neutral-hover),
+	focus-color: var(--color-action-neutral-active),
+	disabled-color: var(--color-action-neutral-disabled),
+);
+
+// Modal Success
+
+$modal-success: (
+	header-bg: $success-l2,
+	header-border-color: $dialect-success,
+	header-color: $dialect-success,
+	header-close: $header-close,
+);
+
+// Modal Info
+
+$modal-info: (
+	header-bg: $info-l2,
+	header-border-color: $dialect-info,
+	header-color: $dialect-info,
+	header-close: $header-close,
+);
+
+// Modal Warning
+
+$modal-warning: (
+	header-bg: $warning-l2,
+	header-border-color: $dialect-warning,
+	header-color: $dialect-warning,
+	header-close: $header-close,
+);
+
+// Modal Danger
+
+$modal-danger: (
+	header-bg: $danger-l2,
+	header-border-color: $dialect-danger,
+	header-color: $dialect-danger,
+	header-close: $header-close,
+);

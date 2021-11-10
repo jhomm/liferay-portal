@@ -1,0 +1,210 @@
+@component-name = "portal-staging"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Staging";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONGroup.addGroup(groupName = "Site Name");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Site Name",
+			layoutName = "Staging Test Page");
+
+		JSONStaging.enableLocalStaging(
+			branchingPrivate = "true",
+			branchingPublic = "true",
+			groupName = "Site Name");
+
+		Navigator.openStagingSiteURL(siteName = "Site Name");
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Site Name");
+		}
+	}
+
+	@priority = "4"
+	test AddEventRepeatDaily {
+		Staging.addRepeatEvent(
+			frequency = "Daily",
+			scheduleTitleName = "Event Daily Name",
+			siteName = "Site Name",
+			startOnTomorrow = "true");
+
+		Staging.viewRepeatingEventDetails(
+			endDate = "No End Date",
+			scheduleTitleName = "Event Daily Name",
+			siteName = "site-name-staging");
+	}
+
+	@priority = "5"
+	test AddPageVariation {
+		property portal.acceptance = "true";
+		property test.assert.warning.exceptions = "true";
+		property test.name.skip.portal.instance = "PGStagingWithVersioning#AddPageVariation";
+		property testray.component.names = "Training";
+
+		Staging.addPageVariationPG(pageVariationName = "Page Variation Name");
+
+		Navigator.openStagingSiteURL(siteName = "Site Name");
+
+		Staging.viewPageVariationPG(pageVariationName = "Page Variation Name");
+
+		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+
+		SitePages.gotoPageMenuItem(
+			menuItem = "Configure",
+			pageName = "Staging Test Page");
+
+		Page.addFriendlyURLLocalizedPG(
+			friendlyUrlLocalized = "de-DE",
+			localizedFriendlyURL = "/german");
+
+		PortletEntry.inputName(name = "German Staging Test Page");
+
+		Button.click(button = "Save");
+
+		Alert.viewSuccessMessage();
+
+		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+
+		SitePages.gotoPageMenuItem(
+			menuItem = "Configure",
+			pageName = "Staging Test Page");
+
+		Page.viewPageFriendlyURLPG(
+			friendlyUrlLocalized = "de_DE",
+			pageName = "german");
+	}
+
+	@priority = "5"
+	test AddPageWithPageVersioningEnabled {
+		property portal.acceptance = "true";
+
+		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+
+		SitePages.addPublicPage(pageName = "Staging Page Versioning");
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Staging Page Versioning",
+			siteName = "Site Name");
+
+		Portlet.addPG(portletName = "IFrame");
+
+		Staging.markAsReadyForPublication();
+
+		Navigator.openStagingSiteURL(siteName = "Site Name");
+
+		Staging.gotoPublishToLive();
+
+		Staging.publishToLive();
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Staging Page Versioning",
+			siteName = "Site Name");
+
+		Portlet.viewSpecificPG(portletName = "IFrame");
+	}
+
+	@priority = "5"
+	test AddSitePagesVariation {
+		property portal.acceptance = "true";
+
+		Staging.addSitePagesVariationPG(sitePagesVariationName = "Site Pages Variation Name");
+
+		Navigator.openStagingSiteURL(siteName = "Site Name");
+
+		Staging.viewSitePagesVariationPG(sitePagesVariationName = "Site Pages Variation Name");
+	}
+
+	@description = "This is a use case for LPS-123156"
+	@priority = "4"
+	test AssertStagingVariationInfo {
+		Page.viewWithWorkflowPG(workflowStatus = "Ready for Publication");
+
+		MouseOver(
+			key_tooltipInfo = "Page variations allow you to work in parallel in different versions of the same page inside this pages variation. When publishing to live, the version marked as ready to publish is the one that is processed.",
+			locator1 = "Staging#STAGING_TOOLTIP");
+
+		AssertVisible(
+			key_content = "Page variations allow you to work in parallel in different versions of the same page inside this pages variation. When publishing to live, the version marked as ready to publish is the one that is processed.",
+			locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+
+		Staging.addSitePagesVariationPG(
+			copySitePagesVariationName = "All Site Pages Variations",
+			sitePagesVariationName = "Site Pages Variation Name");
+
+		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+
+		SitePages.addPublicChildPage(
+			childPageName = "Child Page",
+			parentPageName = "Staging Test Page");
+
+		Navigator.openStagingSiteURL(siteName = "Site Name");
+
+		Staging.addPageVariationPG(pageVariationName = "Page Variation Name");
+
+		Staging.markAsReadyForPublication();
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Child Page",
+			siteName = "Site Name");
+
+		Staging.addPageVariationPG(pageVariationName = "Child Page Variation Name");
+
+		Staging.gotoPublishToLive();
+
+		AssertClick.assertPartialTextClickAt(
+			locator1 = "StagingPublishToLive#SWITCH_TO_ADVANCED_PUBLICATION",
+			value1 = "Switch to Advanced Publish Process");
+
+		MouseOver(
+			key_tooltipInfo = "Child pages cannot be published independently of their parent pages by default. You are able to configure this in System Settings. This process will automatically publish the parent pages even if they are not selected.",
+			locator1 = "Staging#STAGING_TOOLTIP");
+
+		AssertVisible(
+			key_content = "Child pages cannot be published independently of their parent pages by default. You are able to configure this in System Settings. This process will automatically publish the parent pages even if they are not selected.",
+			locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+
+		Staging.viewVariationTooltipMessage(
+			pageName = "Staging Test Page",
+			title = "This is the page variation that is marked as ready for publish process.");
+
+		Staging.viewVariationTooltipMessage(
+			pageName = "Child Page",
+			title = "There is not a version of this page marked as ready for publish process.");
+	}
+
+	@description = "This is a use case for LPS-123156"
+	@priority = "4"
+	test AssertVariationInfoInPublishScreen {
+		Staging.addSitePagesVariationPG(
+			copySitePagesVariationName = "All Site Pages Variations",
+			sitePagesVariationName = "Site Pages Variation Name");
+
+		Staging.markAsReadyForPublication();
+
+		Staging.gotoPublishToLive();
+
+		SelectFrame(
+			key_title = "Publish Site Pages Variation Name to Live.",
+			locator1 = "StagingPublishToLive#MODAL_TITLE");
+
+		AssertTextEquals(
+			locator1 = "StagingPublishToLive#MODAL_TITLE",
+			value1 = "Publish Site Pages Variation Name to Live.");
+	}
+
+}

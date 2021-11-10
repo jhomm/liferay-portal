@@ -14,20 +14,20 @@
 
 package com.liferay.portlet.social.service.base;
 
-import aQute.bnd.annotation.ProviderType;
-
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.bean.IdentifiableBean;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
+import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
 import com.liferay.portal.kernel.util.InfrastructureUtil;
-import com.liferay.portal.service.BaseLocalServiceImpl;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.social.kernel.service.SocialRequestInterpreterLocalService;
+import com.liferay.social.kernel.service.SocialRequestInterpreterLocalServiceUtil;
 
-import com.liferay.portlet.social.service.SocialRequestInterpreterLocalService;
+import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -40,17 +40,16 @@ import javax.sql.DataSource;
  *
  * @author Brian Wing Shun Chan
  * @see com.liferay.portlet.social.service.impl.SocialRequestInterpreterLocalServiceImpl
- * @see com.liferay.portlet.social.service.SocialRequestInterpreterLocalServiceUtil
  * @generated
  */
-@ProviderType
 public abstract class SocialRequestInterpreterLocalServiceBaseImpl
-	extends BaseLocalServiceImpl implements SocialRequestInterpreterLocalService,
-		IdentifiableBean {
+	extends BaseLocalServiceImpl
+	implements IdentifiableOSGiService, SocialRequestInterpreterLocalService {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Always use {@link com.liferay.portlet.social.service.SocialRequestInterpreterLocalServiceUtil} to access the social request interpreter local service.
+	 * Never modify or reference this class directly. Use <code>SocialRequestInterpreterLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>SocialRequestInterpreterLocalServiceUtil</code>.
 	 */
 
 	/**
@@ -58,7 +57,9 @@ public abstract class SocialRequestInterpreterLocalServiceBaseImpl
 	 *
 	 * @return the social request interpreter local service
 	 */
-	public SocialRequestInterpreterLocalService getSocialRequestInterpreterLocalService() {
+	public SocialRequestInterpreterLocalService
+		getSocialRequestInterpreterLocalService() {
+
 		return socialRequestInterpreterLocalService;
 	}
 
@@ -68,8 +69,11 @@ public abstract class SocialRequestInterpreterLocalServiceBaseImpl
 	 * @param socialRequestInterpreterLocalService the social request interpreter local service
 	 */
 	public void setSocialRequestInterpreterLocalService(
-		SocialRequestInterpreterLocalService socialRequestInterpreterLocalService) {
-		this.socialRequestInterpreterLocalService = socialRequestInterpreterLocalService;
+		SocialRequestInterpreterLocalService
+			socialRequestInterpreterLocalService) {
+
+		this.socialRequestInterpreterLocalService =
+			socialRequestInterpreterLocalService;
 	}
 
 	/**
@@ -77,7 +81,9 @@ public abstract class SocialRequestInterpreterLocalServiceBaseImpl
 	 *
 	 * @return the counter local service
 	 */
-	public com.liferay.counter.service.CounterLocalService getCounterLocalService() {
+	public com.liferay.counter.kernel.service.CounterLocalService
+		getCounterLocalService() {
+
 		return counterLocalService;
 	}
 
@@ -87,34 +93,28 @@ public abstract class SocialRequestInterpreterLocalServiceBaseImpl
 	 * @param counterLocalService the counter local service
 	 */
 	public void setCounterLocalService(
-		com.liferay.counter.service.CounterLocalService counterLocalService) {
+		com.liferay.counter.kernel.service.CounterLocalService
+			counterLocalService) {
+
 		this.counterLocalService = counterLocalService;
 	}
 
 	public void afterPropertiesSet() {
+		_setLocalServiceUtilService(socialRequestInterpreterLocalService);
 	}
 
 	public void destroy() {
+		_setLocalServiceUtilService(null);
 	}
 
 	/**
-	 * Returns the Spring bean ID for this bean.
+	 * Returns the OSGi service identifier.
 	 *
-	 * @return the Spring bean ID for this bean
+	 * @return the OSGi service identifier
 	 */
 	@Override
-	public String getBeanIdentifier() {
-		return _beanIdentifier;
-	}
-
-	/**
-	 * Sets the Spring bean ID for this bean.
-	 *
-	 * @param beanIdentifier the Spring bean ID for this bean
-	 */
-	@Override
-	public void setBeanIdentifier(String beanIdentifier) {
-		_beanIdentifier = beanIdentifier;
+	public String getOSGiServiceIdentifier() {
+		return SocialRequestInterpreterLocalService.class.getName();
 	}
 
 	/**
@@ -126,24 +126,47 @@ public abstract class SocialRequestInterpreterLocalServiceBaseImpl
 		try {
 			DataSource dataSource = InfrastructureUtil.getDataSource();
 
-			DB db = DBFactoryUtil.getDB();
+			DB db = DBManagerUtil.getDB();
 
 			sql = db.buildSQL(sql);
 			sql = PortalUtil.transformSQL(sql);
 
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(dataSource,
-					sql, new int[0]);
+			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
+				dataSource, sql);
 
 			sqlUpdate.update();
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 	}
 
-	@BeanReference(type = com.liferay.portlet.social.service.SocialRequestInterpreterLocalService.class)
-	protected SocialRequestInterpreterLocalService socialRequestInterpreterLocalService;
-	@BeanReference(type = com.liferay.counter.service.CounterLocalService.class)
-	protected com.liferay.counter.service.CounterLocalService counterLocalService;
-	private String _beanIdentifier;
+	private void _setLocalServiceUtilService(
+		SocialRequestInterpreterLocalService
+			socialRequestInterpreterLocalService) {
+
+		try {
+			Field field =
+				SocialRequestInterpreterLocalServiceUtil.class.getDeclaredField(
+					"_service");
+
+			field.setAccessible(true);
+
+			field.set(null, socialRequestInterpreterLocalService);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new RuntimeException(reflectiveOperationException);
+		}
+	}
+
+	@BeanReference(type = SocialRequestInterpreterLocalService.class)
+	protected SocialRequestInterpreterLocalService
+		socialRequestInterpreterLocalService;
+
+	@BeanReference(
+		type = com.liferay.counter.kernel.service.CounterLocalService.class
+	)
+	protected com.liferay.counter.kernel.service.CounterLocalService
+		counterLocalService;
+
 }

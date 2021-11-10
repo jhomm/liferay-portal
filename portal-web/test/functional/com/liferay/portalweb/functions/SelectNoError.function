@@ -1,15 +1,18 @@
-<definition default="select">
-	<command name="pauseSelect">
-		<execute argument1="5000" selenium="pause" />
+@default = "select"
+definition {
 
-		<execute function="SelectNoError#select" />
-	</command>
+	function select {
+		WaitForSPARefresh();
 
-	<command name="select">
-		<execute selenium="waitForVisible" />
+		selenium.pause("5000");
 
-		<execute selenium="mouseOver" />
+		WaitForSPARefresh();
 
-		<execute selenium="select" />
-	</command>
-</definition>
+		selenium.waitForVisible();
+
+		selenium.mouseOver();
+
+		selenium.select();
+	}
+
+}

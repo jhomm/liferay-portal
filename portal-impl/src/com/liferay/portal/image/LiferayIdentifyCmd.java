@@ -14,10 +14,10 @@
 
 package com.liferay.portal.image;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -40,7 +40,7 @@ public class LiferayIdentifyCmd extends IdentifyCmd {
 
 		LinkedList<String> arguments = new LinkedList<>();
 
-		arguments.addAll(_instance.getCommand());
+		arguments.addAll(_liferayIdentifyCmd.getCommand());
 		arguments.addAll(resourceLimits);
 		arguments.addAll(commandArguments);
 
@@ -61,7 +61,7 @@ public class LiferayIdentifyCmd extends IdentifyCmd {
 	private static final Log _log = LogFactoryUtil.getLog(
 		LiferayIdentifyCmd.class);
 
-	private static final LiferayIdentifyCmd _instance =
+	private static final LiferayIdentifyCmd _liferayIdentifyCmd =
 		new LiferayIdentifyCmd();
 
 }

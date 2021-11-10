@@ -1,0 +1,121 @@
+@default = "type"
+@summary = "Type to '${locator1}' the value '${value1}'"
+definition {
+
+	function clickAtSendKeys {
+		selenium.waitForVisible();
+
+		selenium.mouseOver();
+
+		selenium.clickAt();
+
+		selenium.sendKeys();
+
+		selenium.clickAt();
+	}
+
+	function clickAtType {
+		selenium.waitForVisible();
+
+		selenium.mouseOver();
+
+		selenium.clickAt();
+
+		selenium.type();
+
+		selenium.clickAt();
+	}
+
+	function sendKeys {
+		selenium.waitForVisible();
+
+		selenium.mouseOver();
+
+		selenium.sendKeys();
+	}
+
+	function sendKeysAceEditor {
+		selenium.waitForElementPresent();
+
+		selenium.mouseOver();
+
+		selenium.sendKeysAceEditor();
+	}
+
+	function sendKeysAceEditorNoMouseOver {
+		selenium.waitForElementPresent();
+
+		selenium.sendKeysAceEditor();
+	}
+
+	function sendKeysNoWait {
+		selenium.mouseOver();
+
+		selenium.sendKeys();
+	}
+
+	function type {
+		selenium.waitForVisible();
+
+		selenium.mouseOver();
+
+		selenium.type();
+	}
+
+	function typeAceEditor {
+		selenium.waitForElementPresent();
+
+		selenium.mouseOver();
+
+		selenium.typeAceEditor();
+	}
+
+	function typeAceEditorNoMouseOver {
+		selenium.waitForElementPresent();
+
+		selenium.typeAceEditor();
+	}
+
+	function typeCKEditor {
+		selenium.waitForVisible();
+
+		selenium.mouseOver();
+
+		selenium.typeCKEditor();
+	}
+
+	function typeCKEditorWaitForCKEditor {
+		selenium.waitForVisible(
+			"//a[contains(@class,'cke_button__source') and contains(@class,'cke_button_off')]"
+		);
+
+		Type.typeCKEditor();
+	}
+
+	function typeClickAt {
+		selenium.waitForVisible();
+
+		selenium.mouseOver();
+
+		selenium.type();
+
+		selenium.clickAt();
+	}
+
+	function typeEditor {
+		selenium.waitForElementPresent();
+
+		selenium.mouseOver();
+
+		selenium.typeEditor();
+	}
+
+	function typeWaitForCKEditor {
+		selenium.waitForVisible(
+			"//a[contains(@class,'cke_button__unlink') and contains(@class,'cke_button_disabled')]"
+		);
+
+		Type.type();
+	}
+
+}

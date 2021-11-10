@@ -15,10 +15,10 @@
 package com.liferay.taglib.ui;
 
 import com.liferay.portal.kernel.dao.search.SearchContainer;
-import com.liferay.portal.kernel.util.CharPool;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.util.IncludeTag;
+
+import javax.portlet.PortletURL;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -26,6 +26,66 @@ import javax.servlet.http.HttpServletRequest;
  * @author Brian Wing Shun Chan
  */
 public class PageIteratorTag extends IncludeTag {
+
+	public int getCur() {
+		return _cur;
+	}
+
+	public String getCurParam() {
+		return _curParam;
+	}
+
+	public int getDelta() {
+		return _delta;
+	}
+
+	public String getDeltaParam() {
+		return _deltaParam;
+	}
+
+	public String getFormName() {
+		return _formName;
+	}
+
+	public String getId() {
+		return _id;
+	}
+
+	public String getJsCall() {
+		return _jsCall;
+	}
+
+	public String getMarkupView() {
+		return _markupView;
+	}
+
+	public int getMaxPages() {
+		return _maxPages;
+	}
+
+	public PortletURL getPortletURL() {
+		return _portletURL;
+	}
+
+	public String getTarget() {
+		return _target;
+	}
+
+	public int getTotal() {
+		return _total;
+	}
+
+	public String getType() {
+		return _type;
+	}
+
+	public boolean isDeltaConfigurable() {
+		return _deltaConfigurable;
+	}
+
+	public boolean isForcePost() {
+		return _forcePost;
+	}
 
 	public void setCur(int cur) {
 		_cur = cur;
@@ -47,6 +107,10 @@ public class PageIteratorTag extends IncludeTag {
 		_deltaParam = deltaParam;
 	}
 
+	public void setForcePost(boolean forcePost) {
+		_forcePost = forcePost;
+	}
+
 	public void setFormName(String formName) {
 		_formName = formName;
 	}
@@ -59,8 +123,16 @@ public class PageIteratorTag extends IncludeTag {
 		_jsCall = jsCall;
 	}
 
+	public void setMarkupView(String markupView) {
+		_markupView = markupView;
+	}
+
 	public void setMaxPages(int maxPages) {
 		_maxPages = maxPages;
+	}
+
+	public void setPortletURL(PortletURL portletURL) {
+		_portletURL = portletURL;
 	}
 
 	public void setTarget(String target) {
@@ -75,88 +147,86 @@ public class PageIteratorTag extends IncludeTag {
 		_type = type;
 	}
 
-	public void setUrl(String url) {
-		String[] urlArray = PortalUtil.stripURLAnchor(url, StringPool.POUND);
-
-		_url = urlArray[0];
-		_urlAnchor = urlArray[1];
-
-		if (_url.indexOf(CharPool.QUESTION) == -1) {
-			_url += "?";
-		}
-		else if (!_url.endsWith("&")) {
-			_url += "&";
-		}
-	}
-
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
 		_cur = 0;
 		_curParam = null;
 		_delta = SearchContainer.DEFAULT_DELTA;
 		_deltaConfigurable = SearchContainer.DEFAULT_DELTA_CONFIGURABLE;
 		_deltaParam = SearchContainer.DEFAULT_DELTA_PARAM;
+		_forcePost = SearchContainer.DEFAULT_FORCE_POST;
 		_formName = "fm";
 		_id = null;
 		_jsCall = null;
+		_markupView = null;
 		_maxPages = 10;
 		_pages = 0;
+		_portletURL = null;
 		_target = "_self";
 		_total = 0;
 		_type = "regular";
-		_url = null;
-		_urlAnchor = null;
 	}
 
 	@Override
 	protected String getEndPage() {
 		if (_pages > 1) {
-			return _END_PAGE;
+			if (Validator.isNotNull(_markupView)) {
+				return "/html/taglib/ui/page_iterator/" + _markupView +
+					"/end.jsp";
+			}
+
+			return "/html/taglib/ui/page_iterator/end.jsp";
 		}
-		else {
-			return null;
-		}
+
+		return null;
 	}
 
 	@Override
 	protected String getStartPage() {
-		return _START_PAGE;
+		if (Validator.isNotNull(_markupView)) {
+			return "/html/taglib/ui/page_iterator/" + _markupView +
+				"/start.jsp";
+		}
+
+		return "/html/taglib/ui/page_iterator/start.jsp";
 	}
 
 	@Override
-	protected void setAttributes(HttpServletRequest request) {
+	protected void setAttributes(HttpServletRequest httpServletRequest) {
 		_pages = (int)Math.ceil((double)_total / _delta);
 
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			"liferay-ui:page-iterator:cur", String.valueOf(_cur));
-		request.setAttribute("liferay-ui:page-iterator:curParam", _curParam);
-		request.setAttribute(
+		httpServletRequest.setAttribute(
+			"liferay-ui:page-iterator:curParam", _curParam);
+		httpServletRequest.setAttribute(
 			"liferay-ui:page-iterator:delta", String.valueOf(_delta));
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			"liferay-ui:page-iterator:deltaConfigurable",
 			String.valueOf(_deltaConfigurable));
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			"liferay-ui:page-iterator:deltaParam", _deltaParam);
-		request.setAttribute("liferay-ui:page-iterator:formName", _formName);
-		request.setAttribute("liferay-ui:page-iterator:id", _id);
-		request.setAttribute("liferay-ui:page-iterator:jsCall", _jsCall);
-		request.setAttribute(
+		httpServletRequest.setAttribute(
+			"liferay-ui:page-iterator:forcePost", String.valueOf(_forcePost));
+		httpServletRequest.setAttribute(
+			"liferay-ui:page-iterator:formName", _formName);
+		httpServletRequest.setAttribute("liferay-ui:page-iterator:id", _id);
+		httpServletRequest.setAttribute(
+			"liferay-ui:page-iterator:jsCall", _jsCall);
+		httpServletRequest.setAttribute(
 			"liferay-ui:page-iterator:maxPages", String.valueOf(_maxPages));
-		request.setAttribute(
+		httpServletRequest.setAttribute(
 			"liferay-ui:page-iterator:pages", String.valueOf(_pages));
-		request.setAttribute("liferay-ui:page-iterator:target", _target);
-		request.setAttribute(
+		httpServletRequest.setAttribute(
+			"liferay-ui:page-iterator:portletURL", _portletURL);
+		httpServletRequest.setAttribute(
+			"liferay-ui:page-iterator:target", _target);
+		httpServletRequest.setAttribute(
 			"liferay-ui:page-iterator:total", String.valueOf(_total));
-		request.setAttribute("liferay-ui:page-iterator:type", _type);
-		request.setAttribute("liferay-ui:page-iterator:url", _url);
-		request.setAttribute("liferay-ui:page-iterator:urlAnchor", _urlAnchor);
+		httpServletRequest.setAttribute("liferay-ui:page-iterator:type", _type);
 	}
-
-	private static final String _END_PAGE =
-		"/html/taglib/ui/page_iterator/end.jsp";
-
-	private static final String _START_PAGE =
-		"/html/taglib/ui/page_iterator/start.jsp";
 
 	private int _cur;
 	private String _curParam;
@@ -164,15 +234,16 @@ public class PageIteratorTag extends IncludeTag {
 	private boolean _deltaConfigurable =
 		SearchContainer.DEFAULT_DELTA_CONFIGURABLE;
 	private String _deltaParam = SearchContainer.DEFAULT_DELTA_PARAM;
+	private boolean _forcePost = SearchContainer.DEFAULT_FORCE_POST;
 	private String _formName = "fm";
 	private String _id;
 	private String _jsCall;
+	private String _markupView;
 	private int _maxPages = 10;
 	private int _pages;
+	private PortletURL _portletURL;
 	private String _target = "_self";
 	private int _total;
 	private String _type = "regular";
-	private String _url;
-	private String _urlAnchor;
 
 }

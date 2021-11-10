@@ -1,0 +1,278 @@
+[
+	{
+		"price": 45,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN93015"
+	},
+	{
+		"price": 27,
+		"priceList": "Gold Accounts Pricing",
+		"promoPrice": 25,
+		"sku": "MIN93016A"
+	},
+	{
+		"price": 90,
+		"priceList": "Gold Accounts Pricing",
+		"promoPrice": 81,
+		"sku": "MIN93016B"
+	},
+	{
+		"price": 180,
+		"priceList": "Gold Accounts Pricing",
+		"promoPrice": 162,
+		"sku": "MIN93016C"
+	},
+	{
+		"price": 90,
+		"priceList": "Gold Accounts Pricing",
+		"promoPrice": 81,
+		"sku": "MIN93017"
+	},
+	{
+		"price": 18,
+		"priceList": "Gold Accounts Pricing",
+		"promoPrice": 18,
+		"sku": "MIN93018"
+	},
+	{
+		"price": 26,
+		"priceList": "Gold Accounts Pricing",
+		"promoPrice": 24,
+		"sku": "MIN93019"
+	},
+	{
+		"price": 36,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN93020"
+	},
+	{
+		"price": 81,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN93021"
+	},
+	{
+		"price": 54,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN93022A"
+	},
+	{
+		"price": 180,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN93022B"
+	},
+	{
+		"price": 162,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN93022C"
+	},
+	{
+		"price": 540,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN93023"
+	},
+	{
+		"price": 70,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN93024"
+	},
+	{
+		"price": 30,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN93025"
+	},
+	{
+		"price": 35,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN93026"
+	},
+	{
+		"price": 54,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN93027"
+	},
+	{
+		"price": 63,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN00673"
+	},
+	{
+		"price": 625,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN00674"
+	},
+	{
+		"price": 108,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN00675"
+	},
+	{
+		"price": 405,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN00676"
+	},
+	{
+		"price": 71,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN00677"
+	},
+	{
+		"price": 12,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN00678"
+	},
+	{
+		"price": 180,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN00679"
+	},
+	{
+		"price": 27,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN00680"
+	},
+	{
+		"price": 27,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN00681"
+	},
+	{
+		"price": 20,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN00682"
+	},
+	{
+		"price": 5,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN00683"
+	},
+	{
+		"price": 95,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN77822"
+	},
+	{
+		"price": 8,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN77823"
+	},
+	{
+		"price": 28,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN77824"
+	},
+	{
+		"price": 18,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN77825"
+	},
+	{
+		"price": 598,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN19999"
+	},
+	{
+		"price": 136,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38794"
+	},
+	{
+		"price": 16,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38795"
+	},
+	{
+		"price": 80,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38796"
+	},
+	{
+		"price": 166,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38797"
+	},
+	{
+		"price": 157,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38798"
+	},
+	{
+		"price": 93,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38799"
+	},
+	{
+		"price": 144,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38800"
+	},
+	{
+		"price": 189,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38801"
+	},
+	{
+		"price": 67,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38802"
+	},
+	{
+		"price": 116,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38803"
+	},
+	{
+		"price": 3,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38804"
+	},
+	{
+		"price": 48,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN38805"
+	},
+	{
+		"price": 80,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN55853"
+	},
+	{
+		"price": 166,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN55854"
+	},
+	{
+		"price": 356,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN55855"
+	},
+	{
+		"price": 37,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN55856"
+	},
+	{
+		"price": 2,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN55857"
+	},
+	{
+		"price": 3,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN55858"
+	},
+	{
+		"price": 30,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN55859"
+	},
+	{
+		"price": 13,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN55860"
+	},
+	{
+		"price": 21,
+		"priceList": "Gold Accounts Pricing",
+		"sku": "MIN55861"
+	}
+]

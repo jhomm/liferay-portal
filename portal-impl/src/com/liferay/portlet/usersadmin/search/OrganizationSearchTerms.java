@@ -14,20 +14,20 @@
 
 package com.liferay.portlet.usersadmin.search;
 
-import com.liferay.portal.NoSuchCountryException;
-import com.liferay.portal.NoSuchRegionException;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.DAOParamUtil;
+import com.liferay.portal.kernel.exception.NoSuchCountryException;
+import com.liferay.portal.kernel.exception.NoSuchRegionException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Country;
+import com.liferay.portal.kernel.model.Region;
+import com.liferay.portal.kernel.service.CountryServiceUtil;
+import com.liferay.portal.kernel.service.RegionServiceUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Country;
-import com.liferay.portal.model.Region;
-import com.liferay.portal.service.CountryServiceUtil;
-import com.liferay.portal.service.RegionServiceUtil;
 
 import javax.portlet.PortletRequest;
 
@@ -55,9 +55,8 @@ public class OrganizationSearchTerms extends OrganizationDisplayTerms {
 		if (countryId == 0) {
 			return null;
 		}
-		else {
-			return Long.valueOf(countryId);
-		}
+
+		return Long.valueOf(countryId);
 	}
 
 	public String getCountryName() throws PortalException {
@@ -71,9 +70,9 @@ public class OrganizationSearchTerms extends OrganizationDisplayTerms {
 
 				countryName = StringUtil.quote(countryName, StringPool.QUOTE);
 			}
-			catch (NoSuchCountryException nsce) {
+			catch (NoSuchCountryException noSuchCountryException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(nsce.getMessage());
+					_log.warn(noSuchCountryException.getMessage());
 				}
 			}
 		}
@@ -85,9 +84,8 @@ public class OrganizationSearchTerms extends OrganizationDisplayTerms {
 		if (regionId == 0) {
 			return null;
 		}
-		else {
-			return Long.valueOf(regionId);
-		}
+
+		return Long.valueOf(regionId);
 	}
 
 	public String getRegionName() throws PortalException {
@@ -101,9 +99,9 @@ public class OrganizationSearchTerms extends OrganizationDisplayTerms {
 
 				regionName = StringUtil.quote(regionName, StringPool.QUOTE);
 			}
-			catch (NoSuchRegionException nsre) {
+			catch (NoSuchRegionException noSuchRegionException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(nsre.getMessage());
+					_log.warn(noSuchRegionException.getMessage());
 				}
 			}
 		}

@@ -14,10 +14,8 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.model.LayoutRevision;
-import com.liferay.portal.service.LayoutRevisionLocalServiceUtil;
+import com.liferay.portal.kernel.model.LayoutRevision;
+import com.liferay.portal.kernel.service.LayoutRevisionLocalServiceUtil;
 
 /**
  * The extended model base implementation for the LayoutRevision service. Represents a row in the &quot;LayoutRevision&quot; database table, with each column mapped to a property of this class.
@@ -31,13 +29,13 @@ import com.liferay.portal.service.LayoutRevisionLocalServiceUtil;
  * @see LayoutRevision
  * @generated
  */
-@ProviderType
-public abstract class LayoutRevisionBaseImpl extends LayoutRevisionModelImpl
-	implements LayoutRevision {
+public abstract class LayoutRevisionBaseImpl
+	extends LayoutRevisionModelImpl implements LayoutRevision {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. All methods that expect a layout revision model instance should use the {@link LayoutRevision} interface instead.
+	 * Never modify or reference this class directly. All methods that expect a layout revision model instance should use the <code>LayoutRevision</code> interface instead.
 	 */
 	@Override
 	public void persist() {
@@ -48,4 +46,5 @@ public abstract class LayoutRevisionBaseImpl extends LayoutRevisionModelImpl
 			LayoutRevisionLocalServiceUtil.updateLayoutRevision(this);
 		}
 	}
+
 }

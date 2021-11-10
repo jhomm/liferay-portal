@@ -14,15 +14,18 @@
 
 package com.liferay.portlet.ratings.service.impl;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portlet.ratings.NoSuchStatsException;
-import com.liferay.portlet.ratings.model.RatingsStats;
 import com.liferay.portlet.ratings.service.base.RatingsStatsLocalServiceBaseImpl;
+import com.liferay.ratings.kernel.exception.NoSuchStatsException;
+import com.liferay.ratings.kernel.model.RatingsStats;
 
-import java.util.List;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Brian Wing Shun Chan
@@ -36,6 +39,11 @@ public class RatingsStatsLocalServiceImpl
 
 		RatingsStats stats = ratingsStatsPersistence.create(statsId);
 
+		Date date = new Date();
+
+		stats.setCreateDate(date);
+		stats.setModifiedDate(date);
+
 		stats.setClassNameId(classNameId);
 		stats.setClassPK(classPK);
 		stats.setTotalEntries(0);
@@ -43,20 +51,21 @@ public class RatingsStatsLocalServiceImpl
 		stats.setAverageScore(0.0);
 
 		try {
-			ratingsStatsPersistence.update(stats);
+			stats = ratingsStatsPersistence.update(stats);
 		}
-		catch (SystemException se) {
+		catch (SystemException systemException) {
 			if (_log.isWarnEnabled()) {
 				_log.warn(
-					"Add failed, fetch {classNameId=" + classNameId +
-						", classPK=" + classPK + "}");
+					StringBundler.concat(
+						"Add failed, fetch {classNameId=", classNameId,
+						", classPK=", classPK, "}"));
 			}
 
 			stats = ratingsStatsPersistence.fetchByC_C(
 				classNameId, classPK, false);
 
 			if (stats == null) {
-				throw se;
+				throw systemException;
 			}
 		}
 
@@ -70,9 +79,9 @@ public class RatingsStatsLocalServiceImpl
 		try {
 			ratingsStatsPersistence.removeByC_C(classNameId, classPK);
 		}
-		catch (NoSuchStatsException nsse) {
+		catch (NoSuchStatsException noSuchStatsException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(nsse);
+				_log.warn(noSuchStatsException, noSuchStatsException);
 			}
 		}
 
@@ -81,12 +90,8 @@ public class RatingsStatsLocalServiceImpl
 
 	@Override
 	public RatingsStats fetchStats(String className, long classPK) {
-		long classNameId = classNameLocalService.getClassNameId(className);
-
-		RatingsStats stats = ratingsStatsPersistence.fetchByC_C(
-			classNameId, classPK);
-
-		return stats;
+		return ratingsStatsPersistence.fetchByC_C(
+			classNameLocalService.getClassNameId(className), classPK);
 	}
 
 	@Override
@@ -95,24 +100,26 @@ public class RatingsStatsLocalServiceImpl
 	}
 
 	@Override
-	public List<RatingsStats> getStats(String className, List<Long> classPKs) {
-		long classNameId = classNameLocalService.getClassNameId(className);
+	public RatingsStats getStats(String className, long classPK)
+		throws PortalException {
 
-		return ratingsStatsFinder.findByC_C(classNameId, classPKs);
+		return ratingsStatsPersistence.findByC_C(
+			classNameLocalService.getClassNameId(className), classPK);
 	}
 
 	@Override
-	public RatingsStats getStats(String className, long classPK) {
+	public Map<Long, RatingsStats> getStats(String className, long[] classPKs) {
 		long classNameId = classNameLocalService.getClassNameId(className);
 
-		RatingsStats stats = ratingsStatsPersistence.fetchByC_C(
-			classNameId, classPK);
+		Map<Long, RatingsStats> ratingsStats = new HashMap<>();
 
-		if (stats == null) {
-			stats = ratingsStatsLocalService.addStats(classNameId, classPK);
+		for (RatingsStats stats :
+				ratingsStatsPersistence.findByC_C(classNameId, classPKs)) {
+
+			ratingsStats.put(stats.getClassPK(), stats);
 		}
 
-		return stats;
+		return ratingsStats;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

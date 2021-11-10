@@ -1,0 +1,60 @@
+{
+	"dependencies": {
+		"@clayui/alert": "3.39.0",
+		"@clayui/autocomplete": "3.39.0",
+		"@clayui/badge": "3.39.0",
+		"@clayui/button": "3.39.0",
+		"@clayui/card": "3.39.0",
+		"@clayui/drop-down": "3.39.0",
+		"@clayui/form": "3.39.0",
+		"@clayui/icon": "3.39.0",
+		"@clayui/label": "3.39.0",
+		"@clayui/layout": "3.39.0",
+		"@clayui/link": "3.39.0",
+		"@clayui/list": "3.39.0",
+		"@clayui/loading-indicator": "3.39.0",
+		"@clayui/modal": "3.39.0",
+		"@clayui/multi-select": "3.39.0",
+		"@clayui/pagination-bar": "3.39.0",
+		"@clayui/panel": "3.39.0",
+		"@clayui/shared": "3.39.0",
+		"@clayui/sticker": "3.39.0",
+		"@clayui/table": "3.39.0",
+		"@clayui/tooltip": "3.39.0",
+		"@liferay/frontend-data-set-web": "*",
+		"@liferay/frontend-js-react-web": "*",
+		"classnames": "2.3.1",
+		"frontend-js-web": "*",
+		"prop-types": "15.7.2",
+		"react-dom": "16.12.0"
+	},
+	"devDependencies": {
+		"clay-css": "^2.16.2",
+		"faker": "^5.1.0"
+	},
+	"jest": {
+		"collectCoverageFrom": [
+			"!<rootDir>/node_modules/",
+			"<rootDir>/src/**/components/**/*.js",
+			"<rootDir>/src/**/ServiceProvider/composeAPI.js",
+			"<rootDir>/src/**/utilities/**/*.js",
+			"!<rootDir>/src/**/constants.js",
+			"!<rootDir>/src/**/entry.js"
+		],
+		"testPathIgnorePatterns": [
+			"<rootDir>/test/utils/"
+		]
+	},
+	"main": "index.js",
+	"name": "commerce-frontend-js",
+	"private": true,
+	"scripts": {
+		"build": "liferay-npm-scripts build",
+		"checkFormat": "liferay-npm-scripts check",
+		"coverage": "liferay-npm-scripts test --coverage --silent --verbose",
+		"format": "liferay-npm-scripts format",
+		"test": "liferay-npm-scripts test",
+		"watch": "liferay-npm-scripts webpack --watch"
+	},
+	"version": "4.0.24"
+}

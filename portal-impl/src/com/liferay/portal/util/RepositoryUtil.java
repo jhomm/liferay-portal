@@ -15,13 +15,16 @@
 package com.liferay.portal.util;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.repository.InvalidRepositoryIdException;
+import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.repository.LocalRepository;
-import com.liferay.portal.kernel.repository.RepositoryException;
 import com.liferay.portal.kernel.repository.RepositoryProviderUtil;
 import com.liferay.portal.kernel.repository.capabilities.RepositoryEventTriggerCapability;
 import com.liferay.portal.kernel.repository.event.RepositoryEventTrigger;
 import com.liferay.portal.kernel.repository.event.RepositoryEventType;
+import com.liferay.portal.kernel.service.RepositoryLocalServiceUtil;
+import com.liferay.portal.repository.registry.RepositoryClassDefinitionCatalogUtil;
+
+import java.util.Collection;
 
 /**
  * @author Adolfo Pérez
@@ -38,38 +41,27 @@ public class RepositoryUtil {
 		return getRepositoryEventTrigger(localRepository);
 	}
 
-	public static long getRepositoryEntryId(
-			long folderId, long fileEntryId, long fileVersionId)
-		throws RepositoryException {
-
-		long repositoryEntryId = 0;
-
-		if (folderId != 0) {
-			repositoryEntryId = folderId;
-		}
-		else if (fileEntryId != 0) {
-			repositoryEntryId = fileEntryId;
-		}
-		else if (fileVersionId != 0) {
-			repositoryEntryId = fileVersionId;
-		}
-
-		if (repositoryEntryId == 0) {
-			throw new InvalidRepositoryIdException(
-				"Missing a valid ID for folder, file entry, or file version");
-		}
-
-		return repositoryEntryId;
-	}
-
 	public static RepositoryEventTrigger getRepositoryEventTrigger(
 			long repositoryId)
 		throws PortalException {
 
-		LocalRepository localRepository =
-			RepositoryProviderUtil.getLocalRepository(repositoryId);
+		return getRepositoryEventTrigger(
+			RepositoryProviderUtil.getLocalRepository(repositoryId));
+	}
 
-		return getRepositoryEventTrigger(localRepository);
+	public static boolean isExternalRepository(long repositoryId) {
+		Repository repository = RepositoryLocalServiceUtil.fetchRepository(
+			repositoryId);
+
+		if (repository == null) {
+			return false;
+		}
+
+		Collection<String> externalRepositoryClassNames =
+			RepositoryClassDefinitionCatalogUtil.
+				getExternalRepositoryClassNames();
+
+		return externalRepositoryClassNames.contains(repository.getClassName());
 	}
 
 	protected static RepositoryEventTrigger getRepositoryEventTrigger(

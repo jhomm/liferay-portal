@@ -1,0 +1,54 @@
+[
+	{
+		"name": "Alberta",
+		"regionCode": "AB"
+	},
+	{
+		"name": "British Columbia",
+		"regionCode": "BC"
+	},
+	{
+		"name": "Manitoba",
+		"regionCode": "MB"
+	},
+	{
+		"name": "New Brunswick",
+		"regionCode": "NB"
+	},
+	{
+		"name": "Newfoundland and Labrador",
+		"regionCode": "NL"
+	},
+	{
+		"name": "Northwest Territories",
+		"regionCode": "NT"
+	},
+	{
+		"name": "Nova Scotia",
+		"regionCode": "NS"
+	},
+	{
+		"name": "Nunavut",
+		"regionCode": "NU"
+	},
+	{
+		"name": "Ontario",
+		"regionCode": "ON"
+	},
+	{
+		"name": "Prince Edward Island",
+		"regionCode": "PE"
+	},
+	{
+		"name": "Quebec",
+		"regionCode": "QC"
+	},
+	{
+		"name": "Saskatchewan",
+		"regionCode": "SK"
+	},
+	{
+		"name": "Yukon",
+		"regionCode": "YT"
+	}
+]

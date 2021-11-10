@@ -14,11 +14,16 @@
 
 package com.liferay.portal.security.access.control;
 
-import com.liferay.portal.kernel.security.access.control.AccessControl;
+import com.liferay.portal.kernel.aop.AopMethodInvocation;
+import com.liferay.portal.kernel.aop.ChainableMethodAdvice;
+import com.liferay.portal.kernel.security.access.control.AccessControlUtil;
 import com.liferay.portal.kernel.security.access.control.AccessControlled;
-import com.liferay.portal.spring.aop.AnnotationChainableMethodAdvice;
+import com.liferay.portal.kernel.security.auth.AccessControlContext;
 
-import org.aopalliance.intercept.MethodInvocation;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+
+import java.util.Map;
 
 /**
  * @author Tomas Polesovsky
@@ -27,33 +32,88 @@ import org.aopalliance.intercept.MethodInvocation;
  * @author Raymond Augé
  * @author Shuyang Zhou
  */
-public class AccessControlAdvice
-	extends AnnotationChainableMethodAdvice<AccessControlled> {
+public class AccessControlAdvice extends ChainableMethodAdvice {
 
 	@Override
-	public Object before(MethodInvocation methodInvocation) throws Throwable {
-		AccessControlled accessControlled = findAnnotation(methodInvocation);
+	public Object createMethodContext(
+		Class<?> targetClass, Method method,
+		Map<Class<? extends Annotation>, Annotation> annotations) {
 
-		if (accessControlled == AccessControl.NULL_ACCESS_CONTROLLED) {
-			return null;
-		}
+		return annotations.get(AccessControlled.class);
+	}
 
-		_accessControlAdvisor.accept(methodInvocation, accessControlled);
+	@Override
+	protected Object before(
+		AopMethodInvocation aopMethodInvocation, Object[] arguments) {
+
+		incrementServiceDepth();
+
+		AccessControlled accessControlled =
+			aopMethodInvocation.getAdviceMethodContext();
+
+		_accessControlAdvisor.accept(
+			aopMethodInvocation.getMethod(), arguments, accessControlled);
 
 		return null;
 	}
 
+	protected void decrementServiceDepth() {
+		AccessControlContext accessControlContext =
+			AccessControlUtil.getAccessControlContext();
+
+		if (accessControlContext == null) {
+			return;
+		}
+
+		Map<String, Object> settings = accessControlContext.getSettings();
+
+		Integer serviceDepth = (Integer)settings.get(
+			AccessControlContext.Settings.SERVICE_DEPTH.toString());
+
+		if (serviceDepth == null) {
+			return;
+		}
+
+		serviceDepth--;
+
+		settings.put(
+			AccessControlContext.Settings.SERVICE_DEPTH.toString(),
+			serviceDepth);
+	}
+
 	@Override
-	public AccessControlled getNullAnnotation() {
-		return AccessControl.NULL_ACCESS_CONTROLLED;
+	protected void duringFinally(
+		AopMethodInvocation aopMethodInvocation, Object[] arguments) {
+
+		decrementServiceDepth();
 	}
 
-	public void setAccessControlAdvisor(
-		AccessControlAdvisor accessControlAdvisor) {
+	protected void incrementServiceDepth() {
+		AccessControlContext accessControlContext =
+			AccessControlUtil.getAccessControlContext();
 
-		_accessControlAdvisor = accessControlAdvisor;
+		if (accessControlContext == null) {
+			return;
+		}
+
+		Map<String, Object> settings = accessControlContext.getSettings();
+
+		Integer serviceDepth = (Integer)settings.get(
+			AccessControlContext.Settings.SERVICE_DEPTH.toString());
+
+		if (serviceDepth == null) {
+			serviceDepth = Integer.valueOf(1);
+		}
+		else {
+			serviceDepth++;
+		}
+
+		settings.put(
+			AccessControlContext.Settings.SERVICE_DEPTH.toString(),
+			serviceDepth);
 	}
 
-	private AccessControlAdvisor _accessControlAdvisor;
+	private final AccessControlAdvisor _accessControlAdvisor =
+		new AccessControlAdvisorImpl();
 
 }

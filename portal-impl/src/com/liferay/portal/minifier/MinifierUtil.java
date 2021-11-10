@@ -14,81 +14,126 @@
 
 package com.liferay.portal.minifier;
 
-import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
+import com.liferay.petra.io.unsync.UnsyncStringWriter;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.internal.minifier.MinifierThreadLocal;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.InstanceFactory;
+import com.liferay.portal.kernel.util.ServiceProxyFactory;
 import com.liferay.portal.util.PropsValues;
 
-import com.yahoo.platform.yui.compressor.CssCompressor;
+import org.apache.commons.lang.time.StopWatch;
 
 /**
  * @author Brian Wing Shun Chan
  * @author Raymond Augé
+ * @author Roberto Díaz
+ * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
  */
+@Deprecated
 public class MinifierUtil {
 
 	public static String minifyCss(String content) {
-		if (!PropsValues.MINIFIER_ENABLED) {
-			return content;
+		if (PropsValues.MINIFIER_ENABLED && MinifierThreadLocal.isEnabled()) {
+			return _minifyCss(content);
 		}
 
-		return _instance._minifyCss(content);
+		return content;
 	}
 
 	public static String minifyJavaScript(String resourceName, String content) {
-		if (!PropsValues.MINIFIER_ENABLED) {
-			return content;
+		if (PropsValues.MINIFIER_ENABLED && MinifierThreadLocal.isEnabled()) {
+			return _minifyJavaScript(resourceName, content);
 		}
 
-		return _instance._minifyJavaScript(resourceName, content);
+		return content;
 	}
 
-	private static JavaScriptMinifier _getJavaScriptMinifier() {
-		try {
-			return (JavaScriptMinifier)InstanceFactory.newInstance(
-				PropsValues.MINIFIER_JAVASCRIPT_IMPL);
-		}
-		catch (Exception e) {
-			_log.error(
-				"Unable to instantiate "+ PropsValues.MINIFIER_JAVASCRIPT_IMPL);
+	private static String _minifyCss(String content) {
+		StopWatch stopWatch = new StopWatch();
 
-			return new GoogleJavaScriptMinifier();
-		}
-	}
+		stopWatch.start();
 
-	private MinifierUtil() {
-		_javaScriptMinifierInstance = _getJavaScriptMinifier();
-	}
-
-	private String _minifyCss(String content) {
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
 		try {
-			CssCompressor cssCompressor = new CssCompressor(
+			CSSCompressor cssCompressor = new CSSCompressor(
 				new UnsyncStringReader(content));
 
 			cssCompressor.compress(
 				unsyncStringWriter, PropsValues.YUI_COMPRESSOR_CSS_LINE_BREAK);
+
+			return unsyncStringWriter.toString();
 		}
-		catch (Exception e) {
-			_log.error("Unable to minfiy CSS:\n" + content);
+		catch (Exception exception) {
+			_log.error("Unable to minify CSS:\n" + content, exception);
 
 			unsyncStringWriter.append(content);
-		}
 
-		return unsyncStringWriter.toString();
+			return unsyncStringWriter.toString();
+		}
+		finally {
+			if (_log.isDebugEnabled()) {
+				int length = 0;
+
+				if (content != null) {
+					byte[] bytes = content.getBytes();
+
+					length = bytes.length;
+				}
+
+				_log.debug(
+					StringBundler.concat(
+						"Minification for ", length, " bytes of CSS took ",
+						stopWatch.getTime(), " ms"));
+			}
+		}
 	}
 
-	private String _minifyJavaScript(String resourceName, String content) {
-		return _javaScriptMinifierInstance.compress(resourceName, content);
+	private static String _minifyJavaScript(
+		String resourceName, String content) {
+
+		JavaScriptMinifier javaScriptMinifier = _javaScriptMinifier;
+
+		if (javaScriptMinifier == null) {
+			return content;
+		}
+
+		StopWatch stopWatch = new StopWatch();
+
+		stopWatch.start();
+
+		try {
+			return javaScriptMinifier.compress(resourceName, content);
+		}
+		finally {
+			if (_log.isDebugEnabled()) {
+				int length = 0;
+
+				if (content != null) {
+					byte[] bytes = content.getBytes();
+
+					length = bytes.length;
+				}
+
+				_log.debug(
+					StringBundler.concat(
+						"Minification for ", length,
+						" bytes of JavaScript in resource ", resourceName,
+						" took ", stopWatch.getTime(), " ms"));
+			}
+		}
+	}
+
+	private MinifierUtil() {
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(MinifierUtil.class);
 
-	private static final MinifierUtil _instance = new MinifierUtil();
-
-	private final JavaScriptMinifier _javaScriptMinifierInstance;
+	private static volatile JavaScriptMinifier _javaScriptMinifier =
+		ServiceProxyFactory.newServiceTrackedInstance(
+			JavaScriptMinifier.class, MinifierUtil.class, "_javaScriptMinifier",
+			false, true);
 
 }

@@ -14,10 +14,10 @@
 
 package com.liferay.portal.fabric.netty.worker;
 
-import com.liferay.portal.kernel.io.PathHolder;
-import com.liferay.portal.kernel.process.ProcessCallable;
-import com.liferay.portal.kernel.process.ProcessConfig;
-import com.liferay.portal.kernel.process.ProcessException;
+import com.liferay.petra.process.PathHolder;
+import com.liferay.petra.process.ProcessCallable;
+import com.liferay.petra.process.ProcessConfig;
+import com.liferay.petra.process.ProcessException;
 import com.liferay.util.SerializableUtil;
 
 import java.io.Serializable;
@@ -53,8 +53,6 @@ public class NettyFabricWorkerConfig<T extends Serializable>
 		_processConfig = processConfig;
 		_processCallable = new NettyFabricWorkerProcessCallable<>(
 			processCallable);
-
-		_inputPathHolderMap = new HashMap<>();
 
 		for (Map.Entry<Path, Path> entry : inputPathMap.entrySet()) {
 			_inputPathHolderMap.put(
@@ -94,13 +92,14 @@ public class NettyFabricWorkerConfig<T extends Serializable>
 	private static final long serialVersionUID = 1L;
 
 	private final long _id;
-	private final Map<PathHolder, PathHolder> _inputPathHolderMap;
+	private final Map<PathHolder, PathHolder> _inputPathHolderMap =
+		new HashMap<>();
 	private final ProcessCallable<T> _processCallable;
 	private final ProcessConfig _processConfig;
 
 	private static class NettyFabricWorkerProcessCallable
-			<T extends Serializable>
-		implements ProcessCallable<T> {
+		<T extends Serializable>
+			implements ProcessCallable<T> {
 
 		public NettyFabricWorkerProcessCallable(
 			ProcessCallable<T> processCallable) {

@@ -14,25 +14,25 @@
 
 package com.liferay.portal.layoutconfiguration.util;
 
-import com.liferay.portal.kernel.executor.CopyThreadLocalCallable;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.PortletContainerException;
 import com.liferay.portal.kernel.portlet.PortletContainerUtil;
-import com.liferay.portal.kernel.portlet.RestrictPortletServletRequest;
 import com.liferay.portal.kernel.servlet.BufferCacheServletResponse;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.model.Portlet;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.WebKeys;
 
 import java.io.IOException;
 
-import java.util.concurrent.Callable;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Shuyang Zhou
+ * @author Neil Griffin
  */
 public class PortletRenderer {
 
@@ -46,94 +46,113 @@ public class PortletRenderer {
 		_columnPos = columnPos;
 	}
 
-	public void finishParallelRender() {
-		if (_restrictPortletServletRequest != null) {
-			_restrictPortletServletRequest.mergeSharedAttributes();
-		}
-	}
-
-	public Callable<StringBundler> getCallable(
-		HttpServletRequest request, HttpServletResponse response) {
-
-		return new PortletRendererCallable(request, response);
-	}
-
 	public Portlet getPortlet() {
 		return _portlet;
 	}
 
 	public StringBundler render(
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse,
+			Map<String, Object> headerRequestAttributes)
 		throws PortletContainerException {
 
-		request = PortletContainerUtil.setupOptionalRenderParameters(
-			request, null, _columnId, _columnPos, _columnCount);
+		httpServletRequest = PortletContainerUtil.setupOptionalRenderParameters(
+			httpServletRequest, null, _columnId, _columnPos, _columnCount);
 
-		return _render(request, response);
+		_copyHeaderRequestAttributes(
+			headerRequestAttributes, httpServletRequest);
+
+		return _render(httpServletRequest, httpServletResponse);
 	}
 
 	public StringBundler renderAjax(
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws PortletContainerException {
 
-		request = PortletContainerUtil.setupOptionalRenderParameters(
-			request, _RENDER_PATH, _columnId, _columnPos, _columnCount);
+		httpServletRequest = PortletContainerUtil.setupOptionalRenderParameters(
+			httpServletRequest, _RENDER_PATH, _columnId, _columnPos,
+			_columnCount);
 
-		_restrictPortletServletRequest = (RestrictPortletServletRequest)request;
-
-		return _render(request, response);
+		return _render(httpServletRequest, httpServletResponse);
 	}
 
-	public StringBundler renderError(
-			HttpServletRequest request, HttpServletResponse response)
+	public Map<String, Object> renderHeaders(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse,
+			List<String> attributePrefixes)
 		throws PortletContainerException {
 
-		request.setAttribute(
-			WebKeys.PARALLEL_RENDERING_TIMEOUT_ERROR, Boolean.TRUE);
+		httpServletRequest = PortletContainerUtil.setupOptionalRenderParameters(
+			httpServletRequest, null, _columnId, _columnPos, _columnCount);
 
-		request = PortletContainerUtil.setupOptionalRenderParameters(
-			request, null, _columnId, _columnPos, _columnCount);
+		BufferCacheServletResponse bufferCacheServletResponse =
+			new BufferCacheServletResponse(httpServletResponse);
 
-		_restrictPortletServletRequest = (RestrictPortletServletRequest)request;
+		PortletContainerUtil.renderHeaders(
+			httpServletRequest, bufferCacheServletResponse, _portlet);
 
-		try {
-			return _render(request, response);
+		Map<String, Object> headerRequestAttributes = new HashMap<>();
+
+		Enumeration<String> enumeration =
+			httpServletRequest.getAttributeNames();
+
+		while (enumeration.hasMoreElements()) {
+			String attributeName = enumeration.nextElement();
+
+			if (attributeName.contains(
+					"javax.portlet.faces.renderResponseOutput")) {
+
+				headerRequestAttributes.put(
+					attributeName,
+					httpServletRequest.getAttribute(attributeName));
+			}
+			else if (attributePrefixes != null) {
+				for (String attributePrefix : attributePrefixes) {
+					if (attributeName.contains(attributePrefix)) {
+						headerRequestAttributes.put(
+							attributeName,
+							httpServletRequest.getAttribute(attributeName));
+
+						break;
+					}
+				}
+			}
 		}
-		finally {
-			request.removeAttribute(WebKeys.PARALLEL_RENDERING_TIMEOUT_ERROR);
+
+		return headerRequestAttributes;
+	}
+
+	private void _copyHeaderRequestAttributes(
+		Map<String, Object> headerRequestAttributes,
+		HttpServletRequest httpServletRequest) {
+
+		if (headerRequestAttributes != null) {
+			for (Map.Entry<String, Object> entry :
+					headerRequestAttributes.entrySet()) {
+
+				httpServletRequest.setAttribute(
+					entry.getKey(), entry.getValue());
+			}
 		}
 	}
 
 	private StringBundler _render(
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws PortletContainerException {
 
 		BufferCacheServletResponse bufferCacheServletResponse =
-			new BufferCacheServletResponse(response);
-
-		Object lock = request.getAttribute(
-			WebKeys.PARALLEL_RENDERING_MERGE_LOCK);
-
-		request.setAttribute(WebKeys.PARALLEL_RENDERING_MERGE_LOCK, null);
-
-		Object portletParallelRender = request.getAttribute(
-			WebKeys.PORTLET_PARALLEL_RENDER);
-
-		request.setAttribute(WebKeys.PORTLET_PARALLEL_RENDER, Boolean.FALSE);
+			new BufferCacheServletResponse(httpServletResponse);
 
 		try {
 			PortletContainerUtil.render(
-				request, bufferCacheServletResponse, _portlet);
+				httpServletRequest, bufferCacheServletResponse, _portlet);
 
 			return bufferCacheServletResponse.getStringBundler();
 		}
-		catch (IOException ioe) {
-			throw new PortletContainerException(ioe);
-		}
-		finally {
-			request.setAttribute(WebKeys.PARALLEL_RENDERING_MERGE_LOCK, lock);
-			request.setAttribute(
-				WebKeys.PORTLET_PARALLEL_RENDER, portletParallelRender);
+		catch (IOException ioException) {
+			throw new PortletContainerException(ioException);
 		}
 	}
 
@@ -144,60 +163,5 @@ public class PortletRenderer {
 	private final String _columnId;
 	private final Integer _columnPos;
 	private final Portlet _portlet;
-	private RestrictPortletServletRequest _restrictPortletServletRequest;
-
-	private class PortletRendererCallable
-		extends CopyThreadLocalCallable<StringBundler> {
-
-		public PortletRendererCallable(
-			HttpServletRequest request, HttpServletResponse response) {
-
-			super(
-				ParallelRenderThreadLocalBinderUtil.getThreadLocalBinder(),
-				false, true);
-
-			_request = request;
-			_response = response;
-		}
-
-		@Override
-		public StringBundler doCall() throws Exception {
-			ThemeDisplay themeDisplay = (ThemeDisplay)_request.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-			HttpServletRequest request =
-				PortletContainerUtil.setupOptionalRenderParameters(
-					_request, null, _columnId, _columnPos, _columnCount);
-
-			_restrictPortletServletRequest =
-				(RestrictPortletServletRequest)request;
-
-			try {
-				themeDisplay = (ThemeDisplay)themeDisplay.clone();
-
-				request.setAttribute(WebKeys.THEME_DISPLAY, themeDisplay);
-
-				return _render(request, _response);
-			}
-			catch (Exception e) {
-
-				// Under parallel rendering context. An interrupted state means
-				// the call was cancelled and so we should not rethrow the
-				// exception.
-
-				Thread currentThread = Thread.currentThread();
-
-				if (!currentThread.isInterrupted()) {
-					throw e;
-				}
-
-				return null;
-			}
-		}
-
-		private final HttpServletRequest _request;
-		private final HttpServletResponse _response;
-
-	}
 
 }

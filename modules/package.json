@@ -1,0 +1,30 @@
+{
+	"devDependencies": {
+		"@liferay/npm-scripts": "46.4.1",
+		"acorn": "7.1.0",
+		"alloy-ui": "^3.1.0-deprecated.40",
+		"babel-plugin-incremental-dom": "3.4.0",
+		"compass-mixins": "0.12.10",
+		"jsdoc": "3.6.3",
+		"liferay-frontend-common-css": "1.0.4",
+		"metal-jest-serializer": "2.0.0"
+	},
+	"private": true,
+	"resolutions": {
+		"@liferay/eslint-plugin": "1.0.0"
+	},
+	"scripts": {
+		"checkFormat": "liferay-npm-scripts check",
+		"format": "liferay-npm-scripts fix",
+		"types": "liferay-npm-scripts types"
+	},
+	"workspaces": {
+		"packages": [
+			"apps/*/*",
+			"apps/*/*/*",
+			"dxp/apps/*/*",
+			"dxp/apps/*/*/*",
+			"dxp/apps/osb/*/*/*"
+		]
+	}
+}

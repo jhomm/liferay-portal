@@ -1,0 +1,16 @@
+@default = "mouseDown"
+definition {
+
+	function javaScriptMouseDown {
+		selenium.javaScriptMouseDown();
+	}
+
+	function mouseDown {
+		selenium.mouseDown();
+	}
+
+	function mouseDownAt {
+		selenium.mouseDownAt();
+	}
+
+}

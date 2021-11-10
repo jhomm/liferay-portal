@@ -1,0 +1,17 @@
+@default = "selectFieldText"
+@summary = "Selecting all text at '${locator1}'"
+definition {
+
+	function selectFieldText {
+		Click();
+
+		selenium.selectFieldText();
+	}
+
+	function selectFieldTextNoError {
+		Click();
+
+		selenium.selectFieldText();
+	}
+
+}

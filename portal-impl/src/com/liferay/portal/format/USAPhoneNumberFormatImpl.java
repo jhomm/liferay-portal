@@ -14,9 +14,9 @@
 
 package com.liferay.portal.format;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.format.PhoneNumberFormat;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsValues;
@@ -34,33 +34,20 @@ public class USAPhoneNumberFormatImpl implements PhoneNumberFormat {
 		}
 
 		if (phoneNumber.length() > 10) {
-			StringBundler sb = new StringBundler(8);
-
-			sb.append(StringPool.OPEN_PARENTHESIS);
-			sb.append(phoneNumber.substring(0, 3));
-			sb.append(") ");
-			sb.append(phoneNumber.substring(3, 6));
-			sb.append(StringPool.DASH);
-			sb.append(phoneNumber.substring(6, 10));
-			sb.append(" x");
-			sb.append(phoneNumber.substring(10));
-
-			return sb.toString();
+			return StringBundler.concat(
+				StringPool.OPEN_PARENTHESIS, phoneNumber.substring(0, 3), ") ",
+				phoneNumber.substring(3, 6), StringPool.DASH,
+				phoneNumber.substring(6, 10), " x", phoneNumber.substring(10));
 		}
 		else if (phoneNumber.length() == 10) {
-			StringBundler sb = new StringBundler(6);
-
-			sb.append(StringPool.OPEN_PARENTHESIS);
-			sb.append(phoneNumber.substring(0, 3));
-			sb.append(") ");
-			sb.append(phoneNumber.substring(3, 6));
-			sb.append(StringPool.DASH);
-			sb.append(phoneNumber.substring(6));
-
-			return sb.toString();
+			return StringBundler.concat(
+				StringPool.OPEN_PARENTHESIS, phoneNumber.substring(0, 3), ") ",
+				phoneNumber.substring(3, 6), StringPool.DASH,
+				phoneNumber.substring(6));
 		}
 		else if (phoneNumber.length() == 7) {
-			return phoneNumber.substring(0, 3).concat(StringPool.DASH).concat(
+			return StringBundler.concat(
+				phoneNumber.substring(0, 3), StringPool.DASH,
 				phoneNumber.substring(3));
 		}
 

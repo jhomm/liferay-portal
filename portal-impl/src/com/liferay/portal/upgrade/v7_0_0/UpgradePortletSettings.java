@@ -14,23 +14,22 @@
 
 package com.liferay.portal.upgrade.v7_0_0;
 
-import com.liferay.portal.kernel.dao.jdbc.DataAccess;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.PortletPreferenceValue;
 import com.liferay.portal.kernel.settings.SettingsDescriptor;
 import com.liferay.portal.kernel.settings.SettingsFactory;
-import com.liferay.portal.kernel.settings.SettingsFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.upgrade.v7_0_0.util.PortletPreferencesRow;
-import com.liferay.portal.util.PortletKeys;
-import com.liferay.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.util.LoggingTimer;
+import com.liferay.portal.kernel.util.PortletKeys;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
-import java.util.Enumeration;
+import java.util.Set;
 
 /**
  * @author Sergio González
@@ -38,42 +37,8 @@ import java.util.Enumeration;
  */
 public abstract class UpgradePortletSettings extends UpgradeProcess {
 
-	public UpgradePortletSettings() {
-		_settingsFactory = SettingsFactoryUtil.getSettingsFactory();
-	}
-
 	public UpgradePortletSettings(SettingsFactory settingsFactory) {
 		_settingsFactory = settingsFactory;
-	}
-
-	protected void addPortletPreferences(
-			PortletPreferencesRow portletPreferencesRow)
-		throws Exception {
-
-		Connection con = null;
-		PreparedStatement ps = null;
-
-		try {
-			con = DataAccess.getUpgradeOptimizedConnection();
-
-			ps = con.prepareStatement(
-				"insert into PortletPreferences (mvccVersion, " +
-					"portletPreferencesId, ownerId, ownerType, plid, " +
-						"portletId, preferences) values (?, ?, ?, ?, ?, ?, ?)");
-
-			ps.setLong(1, portletPreferencesRow.getMvccVersion());
-			ps.setLong(2, portletPreferencesRow.getPortletPreferencesId());
-			ps.setLong(3, portletPreferencesRow.getOwnerId());
-			ps.setInt(4, portletPreferencesRow.getOwnerType());
-			ps.setLong(5, portletPreferencesRow.getPlid());
-			ps.setString(6, portletPreferencesRow.getPortletId());
-			ps.setString(7, portletPreferencesRow.getPreferences());
-
-			ps.executeUpdate();
-		}
-		finally {
-			DataAccess.cleanUp(con, ps);
-		}
 	}
 
 	protected void copyPortletSettingsAsServiceSettings(
@@ -84,95 +49,65 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 			_log.debug("Copy portlet settings as service settings");
 		}
 
-		ResultSet rs = null;
+		try (PreparedStatement selectPreparedStatement =
+				connection.prepareStatement(
+					StringBundler.concat(
+						"select PortletPreferences.portletPreferencesId, ",
+						"PortletPreferences.ownerId, PortletPreferences.plid, ",
+						"Layout.groupId from PortletPreferences left join ",
+						"Layout on Layout.plid = PortletPreferences.plid ",
+						"where PortletPreferences.ownerType = ", ownerType,
+						" and PortletPreferences.portletId = '", portletId,
+						"'"));
+			ResultSet resultSet = selectPreparedStatement.executeQuery()) {
 
-		try {
-			rs = getPortletPreferencesResultSet(portletId, ownerType);
+			while (resultSet.next()) {
+				long oldPortletPreferencesId = resultSet.getLong(1);
 
-			while (rs.next()) {
-				PortletPreferencesRow portletPreferencesRow =
-					getPortletPreferencesRow(rs);
-
-				portletPreferencesRow.setPortletPreferencesId(increment());
-				portletPreferencesRow.setOwnerType(
-					PortletKeys.PREFS_OWNER_TYPE_GROUP);
-				portletPreferencesRow.setPortletId(serviceName);
+				long ownerId = 0;
+				long plid = 0;
 
 				if (ownerType == PortletKeys.PREFS_OWNER_TYPE_LAYOUT) {
-					long plid = portletPreferencesRow.getPlid();
-
-					long groupId = getGroupId(plid);
-
-					portletPreferencesRow.setOwnerId(groupId);
-					portletPreferencesRow.setPlid(0);
-
-					if (_log.isInfoEnabled()) {
-						StringBundler sb = new StringBundler(8);
-
-						sb.append("Copying portlet ");
-						sb.append(portletId);
-						sb.append(" settings from layout ");
-						sb.append(plid);
-						sb.append(" to service ");
-						sb.append(serviceName);
-						sb.append(" in group ");
-						sb.append(groupId);
-
-						_log.info(sb.toString());
-					}
+					ownerId = resultSet.getLong(3);
+					plid = 0;
+				}
+				else {
+					ownerId = resultSet.getLong(1);
+					plid = resultSet.getLong(2);
 				}
 
-				addPortletPreferences(portletPreferencesRow);
+				long newPortletPreferencesId = increment();
+
+				try (PreparedStatement insertPreparedStatement =
+						connection.prepareStatement(
+							StringBundler.concat(
+								"insert into PortletPreferences (mvccVersion, ",
+								"ctCollectionId, portletPreferencesId, ",
+								"ownerId, ownerType, plid, portletId) values ",
+								"(0, 0, ?, ?, ?, ?, ?)"))) {
+
+					insertPreparedStatement.setLong(1, newPortletPreferencesId);
+					insertPreparedStatement.setLong(2, ownerId);
+					insertPreparedStatement.setInt(
+						3, PortletKeys.PREFS_OWNER_TYPE_GROUP);
+					insertPreparedStatement.setLong(4, plid);
+					insertPreparedStatement.setString(5, serviceName);
+
+					insertPreparedStatement.executeUpdate();
+
+					_copyPortletPreferenceValues(
+						oldPortletPreferencesId, newPortletPreferencesId);
+				}
+				catch (SQLException sqlException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(
+							"Unable to copy portlet preferences " +
+								oldPortletPreferencesId,
+							sqlException);
+					}
+				}
 			}
 		}
-		finally {
-			DataAccess.deepCleanUp(rs);
-		}
-	}
-
-	protected long getGroupId(long plid) throws Exception {
-		Connection con = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-
-		long groupId = 0;
-
-		try {
-			con = DataAccess.getUpgradeOptimizedConnection();
-
-			ps = con.prepareStatement(
-				"select groupId from Layout where plid = ?");
-
-			ps.setLong(1, plid);
-
-			rs = ps.executeQuery();
-
-			if (rs.next()) {
-				groupId = rs.getLong("groupId");
-			}
-		}
-		finally {
-			DataAccess.cleanUp(con, ps, rs);
-		}
-
-		return groupId;
-	}
-
-	protected ResultSet getPortletPreferencesResultSet(
-			String portletId, int ownerType)
-		throws Exception {
-
-		Connection con = DataAccess.getUpgradeOptimizedConnection();
-
-		PreparedStatement ps = con.prepareStatement(
-			"select portletPreferencesId, ownerId, ownerType, plid, " +
-				"portletId, preferences from PortletPreferences where " +
-					"ownerType = ? and portletId = ?");
-
-		ps.setInt(1, ownerType);
-		ps.setString(2, portletId);
-
-		return ps.executeQuery();
 	}
 
 	protected void resetPortletPreferencesValues(
@@ -180,71 +115,39 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 			SettingsDescriptor settingsDescriptor)
 		throws Exception {
 
-		ResultSet rs = null;
+		Set<String> allKeys = settingsDescriptor.getAllKeys();
 
-		try {
-			rs = getPortletPreferencesResultSet(portletId, ownerType);
+		if (allKeys.isEmpty()) {
+			return;
+		}
 
-			while (rs.next()) {
-				PortletPreferencesRow portletPreferencesRow =
-					getPortletPreferencesRow(rs);
+		StringBundler sb = new StringBundler(allKeys.size() + 8);
 
-				javax.portlet.PortletPreferences jxPortletPreferences =
-					PortletPreferencesFactoryUtil.fromDefaultXML(
-						portletPreferencesRow.getPreferences());
+		sb.append("delete from PortletPreferenceValue where ");
+		sb.append("PortletPreferenceValue.portletPreferencesId in (select ");
+		sb.append("PortletPreferences.portletPreferencesId from ");
+		sb.append("PortletPreferences where PortletPreferences.ownerType = ");
+		sb.append(ownerType);
+		sb.append(" and PortletPreferences.portletId = '");
+		sb.append(portletId);
+		sb.append("') and PortletPreferenceValue.name in (?");
 
-				Enumeration<String> names = jxPortletPreferences.getNames();
+		for (int i = 1; i < allKeys.size(); i++) {
+			sb.append(", ?");
+		}
 
-				while (names.hasMoreElements()) {
-					String name = names.nextElement();
+		sb.append(")");
 
-					for (String key : settingsDescriptor.getAllKeys()) {
-						if (name.startsWith(key)) {
-							jxPortletPreferences.reset(key);
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				sb.toString())) {
 
-							break;
-						}
-					}
-				}
+			int i = 0;
 
-				portletPreferencesRow.setPreferences(
-					PortletPreferencesFactoryUtil.toXML(jxPortletPreferences));
-
-				updatePortletPreferences(portletPreferencesRow);
+			for (String key : allKeys) {
+				preparedStatement.setString(++i, key);
 			}
-		}
-		finally {
-			DataAccess.deepCleanUp(rs);
-		}
-	}
 
-	protected void updatePortletPreferences(
-			PortletPreferencesRow portletPreferencesRow)
-		throws Exception {
-
-		Connection con = null;
-		PreparedStatement ps = null;
-
-		try {
-			con = DataAccess.getUpgradeOptimizedConnection();
-
-			ps = con.prepareStatement(
-				"update PortletPreferences set mvccVersion = ?, ownerId = ?, " +
-					"ownerType = ?, plid = ?, portletId = ?, preferences = ? " +
-						"where portletPreferencesId = ?");
-
-			ps.setLong(1, portletPreferencesRow.getMvccVersion());
-			ps.setLong(2, portletPreferencesRow.getOwnerId());
-			ps.setInt(3, portletPreferencesRow.getOwnerType());
-			ps.setLong(4, portletPreferencesRow.getPlid());
-			ps.setString(5, portletPreferencesRow.getPortletId());
-			ps.setString(6, portletPreferencesRow.getPreferences());
-			ps.setLong(7, portletPreferencesRow.getPortletPreferencesId());
-
-			ps.executeUpdate();
-		}
-		finally {
-			DataAccess.cleanUp(con, ps);
+			preparedStatement.executeUpdate();
 		}
 	}
 
@@ -252,22 +155,24 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 			String portletId, String serviceName, int ownerType)
 		throws Exception {
 
-		if (_log.isDebugEnabled()) {
-			_log.debug("Upgrading display portlet " + portletId + " settings");
+		try (LoggingTimer loggingTimer = new LoggingTimer(portletId)) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Upgrading display portlet " + portletId + " settings");
+
+				_log.debug("Delete service keys from portlet settings");
+			}
+
+			SettingsDescriptor settingsDescriptor =
+				_settingsFactory.getSettingsDescriptor(serviceName);
+
+			resetPortletPreferencesValues(
+				portletId, ownerType, settingsDescriptor);
+
+			resetPortletPreferencesValues(
+				portletId, PortletKeys.PREFS_OWNER_TYPE_ARCHIVED,
+				settingsDescriptor);
 		}
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Delete service keys from portlet settings");
-		}
-
-		SettingsDescriptor settingsDescriptor =
-			_settingsFactory.getSettingsDescriptor(serviceName);
-
-		resetPortletPreferencesValues(portletId, ownerType, settingsDescriptor);
-
-		resetPortletPreferencesValues(
-			portletId, PortletKeys.PREFS_OWNER_TYPE_ARCHIVED,
-			settingsDescriptor);
 	}
 
 	protected void upgradeMainPortlet(
@@ -275,48 +180,85 @@ public abstract class UpgradePortletSettings extends UpgradeProcess {
 			boolean resetPortletInstancePreferences)
 		throws Exception {
 
-		if (_log.isDebugEnabled()) {
-			_log.debug("Upgrading main portlet " + portletId + " settings");
-		}
-
-		copyPortletSettingsAsServiceSettings(portletId, ownerType, serviceName);
-
-		if (resetPortletInstancePreferences) {
-			SettingsDescriptor portletInstanceSettingsDescriptor =
-				_settingsFactory.getSettingsDescriptor(portletId);
-
+		try (LoggingTimer loggingTimer = new LoggingTimer(portletId)) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					"Delete portlet instance keys from service settings");
+				_log.debug("Upgrading main portlet " + portletId + " settings");
 			}
 
+			copyPortletSettingsAsServiceSettings(
+				portletId, ownerType, serviceName);
+
+			if (resetPortletInstancePreferences) {
+				SettingsDescriptor portletInstanceSettingsDescriptor =
+					_settingsFactory.getSettingsDescriptor(portletId);
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						"Delete portlet instance keys from service settings");
+				}
+
+				resetPortletPreferencesValues(
+					serviceName, PortletKeys.PREFS_OWNER_TYPE_GROUP,
+					portletInstanceSettingsDescriptor);
+			}
+
+			if (_log.isDebugEnabled()) {
+				_log.debug("Delete service keys from portlet settings");
+			}
+
+			SettingsDescriptor serviceSettingsDescriptor =
+				_settingsFactory.getSettingsDescriptor(serviceName);
+
 			resetPortletPreferencesValues(
-				serviceName, PortletKeys.PREFS_OWNER_TYPE_GROUP,
-				portletInstanceSettingsDescriptor);
+				portletId, ownerType, serviceSettingsDescriptor);
+
+			resetPortletPreferencesValues(
+				portletId, PortletKeys.PREFS_OWNER_TYPE_ARCHIVED,
+				serviceSettingsDescriptor);
 		}
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Delete service keys from portlet settings");
-		}
-
-		SettingsDescriptor serviceSettingsDescriptor =
-			_settingsFactory.getSettingsDescriptor(serviceName);
-
-		resetPortletPreferencesValues(
-			portletId, ownerType, serviceSettingsDescriptor);
-
-		resetPortletPreferencesValues(
-			portletId, PortletKeys.PREFS_OWNER_TYPE_ARCHIVED,
-			serviceSettingsDescriptor);
 	}
 
-	private PortletPreferencesRow getPortletPreferencesRow(ResultSet rs)
-		throws Exception {
+	private void _copyPortletPreferenceValues(
+			long oldPortletPreferencesId, long newPortletPreferencesId)
+		throws SQLException {
 
-		return new PortletPreferencesRow(
-			rs.getLong("portletPreferencesId"), rs.getLong("ownerId"),
-			rs.getInt("ownerType"), rs.getLong("plid"),
-			rs.getString("portletId"), rs.getString("preferences"));
+		try (PreparedStatement selectPreparedStatement =
+				connection.prepareStatement(
+					StringBundler.concat(
+						"select portletPreferenceValueId from ",
+						"PortletPreferenceValue where portletPreferencesId = ",
+						"?"));
+			PreparedStatement insertPreparedStatement =
+				AutoBatchPreparedStatementUtil.autoBatch(
+					connection.prepareStatement(
+						StringBundler.concat(
+							"insert into PortletPreferenceValue (mvccVersion, ",
+							"ctCollectionId, portletPreferenceValueId, ",
+							"companyId, portletPreferencesId, index_, ",
+							"largeValue, name, readOnly, smallValue) select 0 ",
+							"as mvccVersion, 0 as ctCollectionId, ? as ",
+							"portletPreferenceValueId, TEMP_TABLE.companyId, ",
+							"? as portletPreferencesId, TEMP_TABLE.index_, ",
+							"TEMP_TABLE.largeValue, TEMP_TABLE.name, ",
+							"TEMP_TABLE.readOnly, TEMP_TABLE.smallValue from ",
+							"PortletPreferenceValue TEMP_TABLE where ",
+							"TEMP_TABLE.portletPreferenceValueId = ?")))) {
+
+			selectPreparedStatement.setLong(1, oldPortletPreferencesId);
+
+			try (ResultSet resultSet = selectPreparedStatement.executeQuery()) {
+				while (resultSet.next()) {
+					insertPreparedStatement.setLong(
+						1, increment(PortletPreferenceValue.class.getName()));
+					insertPreparedStatement.setLong(2, newPortletPreferencesId);
+					insertPreparedStatement.setLong(3, resultSet.getLong(1));
+
+					insertPreparedStatement.addBatch();
+				}
+
+				insertPreparedStatement.executeBatch();
+			}
+		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

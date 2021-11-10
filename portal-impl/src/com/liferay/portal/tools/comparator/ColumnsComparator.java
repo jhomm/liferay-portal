@@ -23,7 +23,7 @@ import java.util.List;
 public class ColumnsComparator implements Comparator<Object> {
 
 	public ColumnsComparator(List<String> columnNames) {
-		this(columnNames.toArray(new String[columnNames.size()]));
+		this(columnNames.toArray(new String[0]));
 	}
 
 	public ColumnsComparator(String columnName) {
@@ -35,9 +35,9 @@ public class ColumnsComparator implements Comparator<Object> {
 	}
 
 	@Override
-	public int compare(Object obj1, Object obj2) {
-		Object[] column1 = (Object[])obj1;
-		Object[] column2 = (Object[])obj2;
+	public int compare(Object object1, Object object2) {
+		Object[] column1 = (Object[])object1;
+		Object[] column2 = (Object[])object2;
 
 		String columnName1 = (String)column1[0];
 		String columnName2 = (String)column2[0];

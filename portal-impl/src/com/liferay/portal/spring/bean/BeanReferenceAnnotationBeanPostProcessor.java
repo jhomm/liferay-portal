@@ -14,13 +14,14 @@
 
 package com.liferay.portal.spring.bean;
 
-import com.liferay.portal.cluster.ClusterableAdvice;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.internal.cluster.ClusterableAdvice;
 import com.liferay.portal.kernel.bean.BeanLocatorException;
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.bean.IdentifiableBean;
 import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -33,7 +34,6 @@ import java.util.Map;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.util.ReflectionUtils;
@@ -43,17 +43,9 @@ import org.springframework.util.ReflectionUtils;
  * @author Shuyang Zhou
  */
 public class BeanReferenceAnnotationBeanPostProcessor
-	implements BeanFactoryAware, BeanPostProcessor {
-
-	public BeanReferenceAnnotationBeanPostProcessor() {
-		if (_log.isDebugEnabled()) {
-			_log.debug("Creating instance " + this.hashCode());
-		}
-	}
+	implements BeanPostProcessor {
 
 	public BeanReferenceAnnotationBeanPostProcessor(BeanFactory beanFactory) {
-		this();
-
 		_beanFactory = beanFactory;
 	}
 
@@ -72,28 +64,19 @@ public class BeanReferenceAnnotationBeanPostProcessor
 	public Object postProcessBeforeInitialization(Object bean, String beanName)
 		throws BeansException {
 
-		if (bean instanceof IdentifiableBean) {
-			IdentifiableBean identifiableBean = (IdentifiableBean)bean;
+		if (!(bean instanceof IdentifiableOSGiService) &&
+			beanName.endsWith("Service") && _log.isWarnEnabled()) {
 
-			identifiableBean.setBeanIdentifier(beanName);
-		}
-		else if (beanName.endsWith("Service")) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(
-					beanName + " should implement " +
-						IdentifiableBean.class.getName() +
-							" for " + ClusterableAdvice.class.getName());
-			}
+			_log.warn(
+				StringBundler.concat(
+					beanName, " should implement ",
+					IdentifiableOSGiService.class.getName(), " for ",
+					ClusterableAdvice.class.getName()));
 		}
 
 		_autoInject(bean, beanName, bean.getClass());
 
 		return bean;
-	}
-
-	@Override
-	public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
-		_beanFactory = beanFactory;
 	}
 
 	private void _autoInject(
@@ -138,12 +121,14 @@ public class BeanReferenceAnnotationBeanPostProcessor
 				try {
 					referencedBean = _beanFactory.getBean(referencedBeanName);
 				}
-				catch (NoSuchBeanDefinitionException nsbde) {
+				catch (NoSuchBeanDefinitionException
+							noSuchBeanDefinitionException) {
+
 					try {
 						referencedBean = PortalBeanLocatorUtil.locate(
 							referencedBeanName);
 					}
-					catch (BeanLocatorException ble) {
+					catch (BeanLocatorException beanLocatorException) {
 						StringWriter stringWriter = new StringWriter();
 
 						try (PrintWriter printWriter = new PrintWriter(
@@ -152,15 +137,17 @@ public class BeanReferenceAnnotationBeanPostProcessor
 							printWriter.print(
 								"BeanFactory could not find bean: ");
 
-							nsbde.printStackTrace(printWriter);
+							noSuchBeanDefinitionException.printStackTrace(
+								printWriter);
 
 							printWriter.print(
 								" and PortalBeanLocator failed with: ");
-							printWriter.append(ble.getMessage());
+							printWriter.append(
+								beanLocatorException.getMessage());
 						}
 
 						throw new BeanLocatorException(
-							stringWriter.toString(), ble);
+							stringWriter.toString(), beanLocatorException);
 					}
 				}
 
@@ -169,15 +156,13 @@ public class BeanReferenceAnnotationBeanPostProcessor
 
 			ReflectionUtils.makeAccessible(field);
 
-			BeanReferenceRefreshUtil.registerRefreshPoint(
-				_beanFactory, targetBean, field, referencedBeanName);
-
 			try {
 				field.set(targetBean, referencedBean);
 			}
-			catch (Throwable t) {
+			catch (Throwable throwable) {
 				throw new BeanCreationException(
-					targetBeanName, "Could not inject BeanReference fields", t);
+					targetBeanName, "Could not inject BeanReference fields",
+					throwable);
 			}
 		}
 
@@ -191,7 +176,7 @@ public class BeanReferenceAnnotationBeanPostProcessor
 	private static final Log _log = LogFactoryUtil.getLog(
 		BeanReferenceAnnotationBeanPostProcessor.class);
 
-	private BeanFactory _beanFactory;
+	private final BeanFactory _beanFactory;
 	private final Map<String, Object> _beans = new HashMap<>();
 
 }

@@ -14,8 +14,8 @@
 
 package com.liferay.taglib.search;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchEntry;
-import com.liferay.portal.kernel.util.StringPool;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -35,41 +35,42 @@ import javax.servlet.http.HttpServletResponse;
 public class ResultRow
 	implements com.liferay.portal.kernel.dao.search.ResultRow {
 
-	public ResultRow(Object obj, long primaryKey, int pos) {
-		this(obj, String.valueOf(primaryKey), pos);
+	public ResultRow(Object object, long primaryKey, int pos) {
+		this(object, String.valueOf(primaryKey), pos);
 	}
 
-	public ResultRow(Object obj, long primaryKey, int pos, boolean bold) {
-		this(obj, String.valueOf(primaryKey), pos, bold);
+	public ResultRow(Object object, long primaryKey, int pos, boolean bold) {
+		this(object, String.valueOf(primaryKey), pos, bold);
 	}
 
-	public ResultRow(Object obj, String primaryKey, int pos) {
-		this(obj, primaryKey, pos, false);
+	public ResultRow(Object object, String primaryKey, int pos) {
+		this(object, primaryKey, pos, false);
 	}
 
-	public ResultRow(Object obj, String primaryKey, int pos, boolean bold) {
-		this(String.valueOf(pos + 1), obj, primaryKey, pos, bold);
+	public ResultRow(Object object, String primaryKey, int pos, boolean bold) {
+		this(String.valueOf(pos + 1), object, primaryKey, pos, bold);
 	}
 
 	public ResultRow(
-		String rowId, Object obj, String primaryKey, int pos, boolean bold) {
+		String rowId, Object object, String primaryKey, int pos, boolean bold) {
 
 		this(
-			rowId, obj, primaryKey, pos, bold, StringPool.BLANK,
+			rowId, object, primaryKey, pos, bold, StringPool.BLANK,
 			StringPool.BLANK);
 	}
 
 	public ResultRow(
-		String rowId, Object obj, String primaryKey, int pos, boolean bold,
+		String rowId, Object object, String primaryKey, int pos, boolean bold,
 		String cssClass, String state) {
 
 		_rowId = rowId;
-		_obj = obj;
+		_object = object;
 		_primaryKey = primaryKey;
 		_pos = pos;
 		_bold = bold;
 		_cssClass = cssClass;
 		_state = state;
+
 		_searchEntries = new ArrayList<>();
 	}
 
@@ -155,50 +156,30 @@ public class ResultRow
 	}
 
 	@Override
-	public void addJSP(int index, String path) {
-		addJSP(
-			index, SearchEntry.DEFAULT_ALIGN, SearchEntry.DEFAULT_VALIGN,
-			SearchEntry.DEFAULT_COLSPAN, path);
-	}
-
-	@Override
 	public void addJSP(
 		int index, String path, ServletContext servletContext,
-		HttpServletRequest request, HttpServletResponse response) {
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
 		addJSP(
 			index, SearchEntry.DEFAULT_ALIGN, SearchEntry.DEFAULT_VALIGN,
-			SearchEntry.DEFAULT_COLSPAN, path, servletContext, request,
-			response);
-	}
-
-	@Override
-	public void addJSP(
-		int index, String align, String valign, int colspan, String path) {
-
-		JSPSearchEntry jspSearchEntry = new JSPSearchEntry();
-
-		jspSearchEntry.setAlign(align);
-		jspSearchEntry.setColspan(colspan);
-		jspSearchEntry.setPath(path);
-		jspSearchEntry.setValign(valign);
-
-		_searchEntries.add(index, jspSearchEntry);
+			SearchEntry.DEFAULT_COLSPAN, path, servletContext,
+			httpServletRequest, httpServletResponse);
 	}
 
 	@Override
 	public void addJSP(
 		int index, String align, String valign, int colspan, String path,
-		ServletContext servletContext, HttpServletRequest request,
-		HttpServletResponse response) {
+		ServletContext servletContext, HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
 		JSPSearchEntry jspSearchEntry = new JSPSearchEntry();
 
 		jspSearchEntry.setAlign(align);
 		jspSearchEntry.setColspan(colspan);
 		jspSearchEntry.setPath(path);
-		jspSearchEntry.setRequest(request);
-		jspSearchEntry.setResponse(response);
+		jspSearchEntry.setRequest(httpServletRequest);
+		jspSearchEntry.setResponse(httpServletResponse);
 		jspSearchEntry.setServletContext(servletContext);
 		jspSearchEntry.setValign(valign);
 
@@ -206,51 +187,32 @@ public class ResultRow
 	}
 
 	@Override
-	public void addJSP(String path) {
-		addJSP(_searchEntries.size(), path);
-	}
-
-	@Override
 	public void addJSP(
-		String path, ServletContext servletContext, HttpServletRequest request,
-		HttpServletResponse response) {
+		String path, ServletContext servletContext,
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
-		addJSP(_searchEntries.size(), path, servletContext, request, response);
-	}
-
-	@Override
-	public void addJSP(String path, String cssClass) {
-		JSPSearchEntry jspSearchEntry = new JSPSearchEntry();
-
-		jspSearchEntry.setAlign(SearchEntry.DEFAULT_ALIGN);
-		jspSearchEntry.setColspan(SearchEntry.DEFAULT_COLSPAN);
-		jspSearchEntry.setCssClass(cssClass);
-		jspSearchEntry.setPath(path);
-		jspSearchEntry.setValign(SearchEntry.DEFAULT_VALIGN);
-
-		_searchEntries.add(_searchEntries.size(), jspSearchEntry);
-	}
-
-	@Override
-	public void addJSP(String align, String valign, int colspan, String path) {
-		addJSP(_searchEntries.size(), align, valign, colspan, path);
+		addJSP(
+			_searchEntries.size(), path, servletContext, httpServletRequest,
+			httpServletResponse);
 	}
 
 	@Override
 	public void addJSP(
 		String align, String valign, int colspan, String path,
-		ServletContext servletContext, HttpServletRequest request,
-		HttpServletResponse response) {
+		ServletContext servletContext, HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
 		addJSP(
 			_searchEntries.size(), align, valign, colspan, path, servletContext,
-			request, response);
+			httpServletRequest, httpServletResponse);
 	}
 
 	@Override
 	public void addJSP(
 		String path, String cssClass, ServletContext servletContext,
-		HttpServletRequest request, HttpServletResponse response) {
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
 		JSPSearchEntry jspSearchEntry = new JSPSearchEntry();
 
@@ -258,8 +220,8 @@ public class ResultRow
 		jspSearchEntry.setColspan(SearchEntry.DEFAULT_COLSPAN);
 		jspSearchEntry.setCssClass(cssClass);
 		jspSearchEntry.setPath(path);
-		jspSearchEntry.setRequest(request);
-		jspSearchEntry.setResponse(response);
+		jspSearchEntry.setRequest(httpServletRequest);
+		jspSearchEntry.setResponse(httpServletResponse);
 		jspSearchEntry.setServletContext(servletContext);
 		jspSearchEntry.setValign(SearchEntry.DEFAULT_VALIGN);
 
@@ -267,20 +229,14 @@ public class ResultRow
 	}
 
 	@Override
-	public void addJSP(String align, String valign, String path) {
-		addJSP(
-			_searchEntries.size(), align, valign, SearchEntry.DEFAULT_COLSPAN,
-			path);
-	}
-
-	@Override
 	public void addJSP(
 		String align, String valign, String path, ServletContext servletContext,
-		HttpServletRequest request, HttpServletResponse response) {
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
 		addJSP(
 			_searchEntries.size(), align, valign, SearchEntry.DEFAULT_COLSPAN,
-			path, servletContext, request, response);
+			path, servletContext, httpServletRequest, httpServletResponse);
 	}
 
 	@Override
@@ -319,15 +275,16 @@ public class ResultRow
 	@Override
 	public void addStatus(
 		int index, int status, String href, ServletContext servletContext,
-		HttpServletRequest request, HttpServletResponse response) {
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse) {
 
 		StatusSearchEntry statusSearchEntry = new StatusSearchEntry();
 
 		statusSearchEntry.setAlign(SearchEntry.DEFAULT_ALIGN);
 		statusSearchEntry.setColspan(SearchEntry.DEFAULT_COLSPAN);
 		statusSearchEntry.setHref(href);
-		statusSearchEntry.setRequest(request);
-		statusSearchEntry.setResponse(response);
+		statusSearchEntry.setRequest(httpServletRequest);
+		statusSearchEntry.setResponse(httpServletResponse);
 		statusSearchEntry.setServletContext(servletContext);
 		statusSearchEntry.setStatus(status);
 		statusSearchEntry.setValign(SearchEntry.DEFAULT_VALIGN);
@@ -562,7 +519,7 @@ public class ResultRow
 
 	@Override
 	public Object getObject() {
-		return _obj;
+		return _object;
 	}
 
 	@Override
@@ -640,8 +597,8 @@ public class ResultRow
 	}
 
 	@Override
-	public void setObject(Object obj) {
-		_obj = obj;
+	public void setObject(Object object) {
+		_object = object;
 	}
 
 	@Override
@@ -683,7 +640,7 @@ public class ResultRow
 	private String _className;
 	private String _cssClass;
 	private Map<String, Object> _data;
-	private Object _obj;
+	private Object _object;
 	private Map<String, Object> _params;
 	private final int _pos;
 	private String _primaryKey;

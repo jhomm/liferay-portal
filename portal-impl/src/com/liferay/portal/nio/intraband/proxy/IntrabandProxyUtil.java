@@ -14,6 +14,10 @@
 
 package com.liferay.portal.nio.intraband.proxy;
 
+import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.asm.ASMUtil;
 import com.liferay.portal.asm.MethodNodeGenerator;
 import com.liferay.portal.kernel.io.Deserializer;
@@ -30,11 +34,7 @@ import com.liferay.portal.kernel.nio.intraband.proxy.TargetLocator;
 import com.liferay.portal.kernel.nio.intraband.proxy.annotation.Id;
 import com.liferay.portal.kernel.nio.intraband.proxy.annotation.Proxy;
 import com.liferay.portal.kernel.nio.intraband.rpc.RPCResponse;
-import com.liferay.portal.kernel.util.CharPool;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.ReflectionUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.TextFormatter;
@@ -81,7 +81,7 @@ public class IntrabandProxyUtil {
 
 			return (String[])field.get(null);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			return null;
 		}
 	}
@@ -127,8 +127,8 @@ public class IntrabandProxyUtil {
 			return constructor.newInstance(
 				id, registrationReference, exceptionHandler);
 		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
 		}
 	}
 
@@ -141,9 +141,9 @@ public class IntrabandProxyUtil {
 					(Modifier.isStatic(field.getModifiers()) != isStatic)) {
 
 					throw new IllegalArgumentException(
-						"Field " + field + " is expected to be of type " +
-							clazz + " and " + (!isStatic ? "not " : "") +
-								"static");
+						StringBundler.concat(
+							"Field ", field, " is expected to be of type ",
+							clazz, " and ", !isStatic ? "not " : "", "static"));
 				}
 
 				break;
@@ -302,7 +302,7 @@ public class IntrabandProxyUtil {
 		List<Method> proxyMethods = new ArrayList<>();
 		List<Method> emptyMethods = new ArrayList<>();
 
-		for (Method method : ReflectionUtil.getVisibleMethods(clazz)) {
+		for (Method method : _getVisibleMethods(clazz)) {
 			Id id = method.getAnnotation(Id.class);
 
 			if (id != null) {
@@ -506,11 +506,11 @@ public class IntrabandProxyUtil {
 
 		List<MethodNode> templateMethodNodes = templateClassNode.methods;
 
-		MethodNode templateInitMethodNode = ASMUtil.findMethodNode(
-			templateMethodNodes, "<init>", Type.VOID_TYPE, _STRING_TYPE,
-			_REGISTRATION_REFERENCE_TYPE, _EXCEPTION_HANDLER_TYPE);
-
 		if (defaultInitMethodNode != null) {
+			MethodNode templateInitMethodNode = ASMUtil.findMethodNode(
+				templateMethodNodes, "<init>", Type.VOID_TYPE, _STRING_TYPE,
+				_REGISTRATION_REFERENCE_TYPE, _EXCEPTION_HANDLER_TYPE);
+
 			ASMUtil.mergeMethods(
 				templateInitMethodNode, defaultInitMethodNode,
 				templateInitMethodNode);
@@ -530,7 +530,7 @@ public class IntrabandProxyUtil {
 
 		methodNodes.addAll(templateMethodNodes);
 
-		Type stubType = Type.getType(classNode.name);
+		Type stubType = Type.getObjectType(classNode.name);
 
 		// Id methods
 
@@ -615,7 +615,7 @@ public class IntrabandProxyUtil {
 		try {
 			return Class.forName(className.concat(postfix), false, classLoader);
 		}
-		catch (ClassNotFoundException cnfe) {
+		catch (ClassNotFoundException classNotFoundException) {
 		}
 
 		return null;
@@ -701,8 +701,8 @@ public class IntrabandProxyUtil {
 					classNode.name, CharPool.SLASH, CharPool.PERIOD),
 				data, 0, data.length);
 		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
 		}
 	}
 
@@ -730,7 +730,7 @@ public class IntrabandProxyUtil {
 		try {
 			reloadedClass = Class.forName(clazz.getName(), false, classLoader);
 		}
-		catch (ClassNotFoundException cnfe) {
+		catch (ClassNotFoundException classNotFoundException) {
 		}
 
 		if (reloadedClass != clazz) {
@@ -771,7 +771,7 @@ public class IntrabandProxyUtil {
 			return methodId1.compareTo(methodId2);
 		}
 
-		private static String _getMethodId(Method method) {
+		private String _getMethodId(Method method) {
 			Proxy proxy = method.getAnnotation(Proxy.class);
 
 			String methodName = proxy.name();
@@ -780,8 +780,8 @@ public class IntrabandProxyUtil {
 				methodName = method.getName();
 			}
 
-			return methodName.concat(StringPool.DASH).concat(
-				Type.getMethodDescriptor(method));
+			return StringBundler.concat(
+				methodName, StringPool.DASH, Type.getMethodDescriptor(method));
 		}
 
 	}
@@ -803,9 +803,8 @@ public class IntrabandProxyUtil {
 			for (int i = 0; i < proxyMethods.size(); i++) {
 				Method proxyMethod = proxyMethods.get(i);
 
-				String name = proxyMethod.getName();
-
-				proxyMethodSignatures[i] = name.concat(StringPool.DASH).concat(
+				proxyMethodSignatures[i] = StringBundler.concat(
+					proxyMethod.getName(), StringPool.DASH,
 					Type.getMethodDescriptor(proxyMethod));
 			}
 		}
@@ -817,7 +816,7 @@ public class IntrabandProxyUtil {
 
 	}
 
-	protected static abstract class TemplateSkeleton
+	protected abstract static class TemplateSkeleton
 		implements IntrabandProxySkeleton {
 
 		public static final String[] PROXY_METHOD_SIGNATURES =
@@ -839,11 +838,12 @@ public class IntrabandProxyUtil {
 			try {
 				doDispatch(registrationReference, datagram, deserializer);
 			}
-			catch (Exception e) {
-				_log.error("Unable to dispatch", e);
+			catch (Exception exception) {
+				_log.error("Unable to dispatch", exception);
 
 				_sendResponse(
-					registrationReference, datagram, new RPCResponse(e));
+					registrationReference, datagram,
+					new RPCResponse(exception));
 			}
 		}
 
@@ -860,7 +860,7 @@ public class IntrabandProxyUtil {
 			String[] proxyMethodsSignatures) {
 
 			StringBundler sb = new StringBundler(
-				proxyMethodsSignatures.length * 4 + 1);
+				(proxyMethodsSignatures.length * 4) + 1);
 
 			sb.append(StringPool.OPEN_CURLY_BRACE);
 
@@ -899,8 +899,9 @@ public class IntrabandProxyUtil {
 		@SuppressWarnings("unused")
 		private void _unknownMethodIndex(int methodIndex) {
 			throw new IllegalArgumentException(
-				"Unknow method index " + methodIndex +
-					" for proxy methods mappings " + _PROXY_METHODS_MAPPING);
+				StringBundler.concat(
+					"Unknow method index ", methodIndex,
+					" for proxy methods mappings ", _PROXY_METHODS_MAPPING));
 		}
 
 		private static final String _PROXY_METHODS_MAPPING =
@@ -956,25 +957,25 @@ public class IntrabandProxyUtil {
 			try {
 				Datagram responseDatagram = _intraband.sendSyncDatagram(
 					_registrationReference,
-						Datagram.createRequestDatagram(
-							_PROXY_TYPE, serializer.toByteBuffer()));
+					Datagram.createRequestDatagram(
+						_PROXY_TYPE, serializer.toByteBuffer()));
 
 				Deserializer deserializer = new Deserializer(
 					responseDatagram.getDataByteBuffer());
 
 				RPCResponse rpcResponse = deserializer.readObject();
 
-				Exception e = rpcResponse.getException();
+				Exception exception = rpcResponse.getException();
 
-				if (e != null) {
-					throw e;
+				if (exception != null) {
+					throw exception;
 				}
 
 				return (T)rpcResponse.getResult();
 			}
-			catch (Exception e) {
+			catch (Exception exception) {
 				if (_exceptionHandler != null) {
-					_exceptionHandler.onException(e);
+					_exceptionHandler.onException(exception);
 				}
 
 				return null;
@@ -991,6 +992,27 @@ public class IntrabandProxyUtil {
 		private final Intraband _intraband;
 		private final RegistrationReference _registrationReference;
 
+	}
+
+	private static Set<Method> _getVisibleMethods(Class<?> clazz) {
+		Set<Method> visibleMethods = new HashSet<>(
+			Arrays.asList(clazz.getMethods()));
+
+		Collections.addAll(visibleMethods, clazz.getDeclaredMethods());
+
+		while ((clazz = clazz.getSuperclass()) != null) {
+			for (Method method : clazz.getDeclaredMethods()) {
+				int modifiers = method.getModifiers();
+
+				if (!Modifier.isPrivate(modifiers) &
+					!Modifier.isPublic(modifiers)) {
+
+					visibleMethods.add(method);
+				}
+			}
+		}
+
+		return visibleMethods;
 	}
 
 	private static final Type _DATAGRAM_TYPE = Type.getType(Datagram.class);
@@ -1034,10 +1056,9 @@ public class IntrabandProxyUtil {
 	private static final Log _log = LogFactoryUtil.getLog(
 		IntrabandProxyUtil.class);
 
-	private static final Set<String> _annotationDescriptors =
-		new HashSet<String>(
-			Arrays.asList(
-				Type.getDescriptor(Id.class), Type.getDescriptor(Proxy.class)));
+	private static final Set<String> _annotationDescriptors = new HashSet<>(
+		Arrays.asList(
+			Type.getDescriptor(Id.class), Type.getDescriptor(Proxy.class)));
 	private static final Method _defineClassMethod;
 	private static final Comparator<Method> _methodComparator =
 		new MethodComparator();
@@ -1048,8 +1069,8 @@ public class IntrabandProxyUtil {
 				ClassLoader.class, "defineClass", String.class, byte[].class,
 				int.class, int.class);
 		}
-		catch (Throwable t) {
-			throw new ExceptionInInitializerError(t);
+		catch (Throwable throwable) {
+			throw new ExceptionInInitializerError(throwable);
 		}
 	}
 

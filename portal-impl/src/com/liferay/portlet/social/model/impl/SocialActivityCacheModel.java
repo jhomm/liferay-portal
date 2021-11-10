@@ -14,14 +14,11 @@
 
 package com.liferay.portlet.social.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-
-import com.liferay.portlet.social.model.SocialActivity;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.social.kernel.model.SocialActivity;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -32,25 +29,27 @@ import java.io.ObjectOutput;
  * The cache model class for representing SocialActivity in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see SocialActivity
  * @generated
  */
-@ProviderType
-public class SocialActivityCacheModel implements CacheModel<SocialActivity>,
-	Externalizable {
+public class SocialActivityCacheModel
+	implements CacheModel<SocialActivity>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof SocialActivityCacheModel)) {
+		if (!(object instanceof SocialActivityCacheModel)) {
 			return false;
 		}
 
-		SocialActivityCacheModel socialActivityCacheModel = (SocialActivityCacheModel)obj;
+		SocialActivityCacheModel socialActivityCacheModel =
+			(SocialActivityCacheModel)object;
 
-		if (activityId == socialActivityCacheModel.activityId) {
+		if ((activityId == socialActivityCacheModel.activityId) &&
+			(mvccVersion == socialActivityCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -59,14 +58,30 @@ public class SocialActivityCacheModel implements CacheModel<SocialActivity>,
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, activityId);
+		int hashCode = HashUtil.hash(0, activityId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(29);
+		StringBundler sb = new StringBundler(33);
 
-		sb.append("{activityId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
+		sb.append(", activityId=");
 		sb.append(activityId);
 		sb.append(", groupId=");
 		sb.append(groupId);
@@ -103,6 +118,8 @@ public class SocialActivityCacheModel implements CacheModel<SocialActivity>,
 	public SocialActivity toEntityModel() {
 		SocialActivityImpl socialActivityImpl = new SocialActivityImpl();
 
+		socialActivityImpl.setMvccVersion(mvccVersion);
+		socialActivityImpl.setCtCollectionId(ctCollectionId);
 		socialActivityImpl.setActivityId(activityId);
 		socialActivityImpl.setGroupId(groupId);
 		socialActivityImpl.setCompanyId(companyId);
@@ -117,7 +134,7 @@ public class SocialActivityCacheModel implements CacheModel<SocialActivity>,
 		socialActivityImpl.setType(type);
 
 		if (extraData == null) {
-			socialActivityImpl.setExtraData(StringPool.BLANK);
+			socialActivityImpl.setExtraData("");
 		}
 		else {
 			socialActivityImpl.setExtraData(extraData);
@@ -132,40 +149,70 @@ public class SocialActivityCacheModel implements CacheModel<SocialActivity>,
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
+
 		activityId = objectInput.readLong();
+
 		groupId = objectInput.readLong();
+
 		companyId = objectInput.readLong();
+
 		userId = objectInput.readLong();
+
 		createDate = objectInput.readLong();
+
 		activitySetId = objectInput.readLong();
+
 		mirrorActivityId = objectInput.readLong();
+
 		classNameId = objectInput.readLong();
+
 		classPK = objectInput.readLong();
+
 		parentClassNameId = objectInput.readLong();
+
 		parentClassPK = objectInput.readLong();
+
 		type = objectInput.readInt();
 		extraData = objectInput.readUTF();
+
 		receiverUserId = objectInput.readLong();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
+
 		objectOutput.writeLong(activityId);
+
 		objectOutput.writeLong(groupId);
+
 		objectOutput.writeLong(companyId);
+
 		objectOutput.writeLong(userId);
+
 		objectOutput.writeLong(createDate);
+
 		objectOutput.writeLong(activitySetId);
+
 		objectOutput.writeLong(mirrorActivityId);
+
 		objectOutput.writeLong(classNameId);
+
 		objectOutput.writeLong(classPK);
+
 		objectOutput.writeLong(parentClassNameId);
+
 		objectOutput.writeLong(parentClassPK);
+
 		objectOutput.writeInt(type);
 
 		if (extraData == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(extraData);
@@ -174,6 +221,8 @@ public class SocialActivityCacheModel implements CacheModel<SocialActivity>,
 		objectOutput.writeLong(receiverUserId);
 	}
 
+	public long mvccVersion;
+	public long ctCollectionId;
 	public long activityId;
 	public long groupId;
 	public long companyId;
@@ -188,4 +237,5 @@ public class SocialActivityCacheModel implements CacheModel<SocialActivity>,
 	public int type;
 	public String extraData;
 	public long receiverUserId;
+
 }

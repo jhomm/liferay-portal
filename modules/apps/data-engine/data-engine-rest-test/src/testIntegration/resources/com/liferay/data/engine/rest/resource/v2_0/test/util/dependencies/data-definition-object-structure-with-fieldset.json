@@ -1,0 +1,96 @@
+{
+	"availableLanguageIds": [
+		"en_US"
+	],
+	"contentType": "test",
+	"dataDefinitionFields": [
+		{
+			"customProperties": {
+				"collapsible": false,
+				"ddmStructureLayoutId": "",
+				"fieldReference": "FieldsGroup4Test",
+				"labelAtStructureLevel": true,
+				"rows": "[{\"columns\":[{\"fields\":[\"Text4Test\"],\"size\":12}]}]",
+				"upgradedStructure": false
+			},
+			"fieldType": "fieldset",
+			"label": {
+				"en_US": "Fieldset Name Label",
+				"pt_BR": "Rótulo do Nome do Fieldset"
+			},
+			"name": "FieldsGroup4Test",
+			"nestedDataDefinitionFields": [
+				{
+					"customProperties": {
+						"autocomplete": false,
+						"dataSourceType": "manual",
+						"dataType": "string",
+						"ddmDataProviderInstanceId": "[]",
+						"ddmDataProviderInstanceOutput": "[]",
+						"displayStyle": "singleline",
+						"fieldNamespace": "",
+						"fieldReference": "Text4Test",
+						"labelAtStructureLevel": true,
+						"nativeField": false,
+						"options": {
+							"en_US": [
+								{
+									"label": "Option",
+									"reference": "",
+									"value": ""
+								}
+							]
+						},
+						"placeholder": {
+							"en_US": ""
+						},
+						"tooltip": {
+							"en_US": ""
+						},
+						"validation": {
+							"errorMessage": {
+							},
+							"expression": {
+							},
+							"parameter": {
+							}
+						},
+						"visibilityExpression": ""
+					},
+					"defaultValue": {
+						"en_US": ""
+					},
+					"fieldType": "text",
+					"indexType": "keyword",
+					"label": {
+						"en_US": "Text4Test Label",
+						"pt_BR": "Rótulo Text4Test"
+					},
+					"localizable": true,
+					"name": "Text4Test",
+					"nestedDataDefinitionFields": [
+					],
+					"readOnly": false,
+					"repeatable": false,
+					"required": false,
+					"showLabel": true,
+					"tip": {
+						"en_US": ""
+					}
+				}
+			],
+			"repeatable": false,
+			"required": false,
+			"showLabel": true
+		}
+	],
+	"dateCreated": "2021-03-12T17:16:23Z",
+	"dateModified": "2021-03-12T17:16:23Z",
+	"defaultLanguageId": "en_US",
+	"description": {
+	},
+	"name": {
+		"en_US": "Object Structure Name"
+	},
+	"storageType": "default"
+}

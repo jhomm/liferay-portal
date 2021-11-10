@@ -1,0 +1,8 @@
+@default = "sikuliRightMouseUp"
+definition {
+
+	function sikuliRightMouseUp {
+		selenium.sikuliRightMouseUp();
+	}
+
+}

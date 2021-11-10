@@ -14,11 +14,10 @@
 
 package com.liferay.portal.diff;
 
+import com.liferay.petra.io.unsync.UnsyncStringWriter;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.diff.DiffHtml;
-import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Reader;
@@ -48,7 +47,6 @@ import org.xml.sax.helpers.AttributesImpl;
  *
  * @author Julio Camarero
  */
-@DoPrivileged
 public class DiffHtmlImpl implements DiffHtml {
 
 	/**
@@ -75,66 +73,84 @@ public class DiffHtmlImpl implements DiffHtml {
 
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
-		SAXTransformerFactory saxTransformerFactory =
-			(SAXTransformerFactory)TransformerFactory.newInstance();
+		Thread currentThread = Thread.currentThread();
 
-		TransformerHandler tranformHandler =
-			saxTransformerFactory.newTransformerHandler();
+		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
 
-		tranformHandler.setResult(new StreamResult(unsyncStringWriter));
+		currentThread.setContextClassLoader(
+			DiffHtmlImpl.class.getClassLoader());
 
-		XslFilter xslFilter = new XslFilter();
+		try {
+			SAXTransformerFactory saxTransformerFactory =
+				(SAXTransformerFactory)TransformerFactory.newInstance();
 
-		ContentHandler contentHandler = xslFilter.xsl(
-			tranformHandler,
-			"com/liferay/portal/util/dependencies/diff_html.xsl");
+			TransformerHandler tranformHandler =
+				saxTransformerFactory.newTransformerHandler();
 
-		HtmlCleaner htmlCleaner = new HtmlCleaner();
+			tranformHandler.setResult(new StreamResult(unsyncStringWriter));
 
-		DomTreeBuilder oldDomTreeBuilder = new DomTreeBuilder();
+			XslFilter xslFilter = new XslFilter();
 
-		htmlCleaner.cleanAndParse(oldSource, oldDomTreeBuilder);
+			ContentHandler contentHandler = xslFilter.xsl(
+				tranformHandler,
+				"com/liferay/portal/util/dependencies/diff_html.xsl");
 
-		Locale locale = LocaleUtil.getDefault();
+			HtmlCleaner htmlCleaner = new HtmlCleaner();
 
-		TextNodeComparator leftTextNodeComparator = new TextNodeComparator(
-			oldDomTreeBuilder, locale);
+			DomTreeBuilder oldDomTreeBuilder = new DomTreeBuilder();
 
-		DomTreeBuilder newDomTreeBuilder = new DomTreeBuilder();
+			htmlCleaner.cleanAndParse(oldSource, oldDomTreeBuilder);
 
-		htmlCleaner.cleanAndParse(newSource, newDomTreeBuilder);
+			Locale locale = LocaleUtil.getDefault();
 
-		TextNodeComparator rightTextNodeComparator = new TextNodeComparator(
-			newDomTreeBuilder, locale);
+			TextNodeComparator leftTextNodeComparator = new TextNodeComparator(
+				oldDomTreeBuilder, locale);
 
-		contentHandler.startDocument();
-		contentHandler.startElement(
-			StringPool.BLANK, _DIFF_REPORT, _DIFF_REPORT, new AttributesImpl());
-		contentHandler.startElement(
-			StringPool.BLANK, _DIFF, _DIFF, new AttributesImpl());
+			DomTreeBuilder newDomTreeBuilder = new DomTreeBuilder();
 
-		HtmlSaxDiffOutput htmlSaxDiffOutput = new HtmlSaxDiffOutput(
-			contentHandler, _DIFF);
+			htmlCleaner.cleanAndParse(newSource, newDomTreeBuilder);
 
-		HTMLDiffer htmlDiffer = new HTMLDiffer(htmlSaxDiffOutput);
+			TextNodeComparator rightTextNodeComparator = new TextNodeComparator(
+				newDomTreeBuilder, locale);
 
-		htmlDiffer.diff(leftTextNodeComparator, rightTextNodeComparator);
+			contentHandler.startDocument();
 
-		contentHandler.endElement(StringPool.BLANK, _DIFF, _DIFF);
-		contentHandler.endElement(StringPool.BLANK, _DIFF_REPORT, _DIFF_REPORT);
-		contentHandler.endDocument();
+			contentHandler.startElement(
+				StringPool.BLANK, _DIFF_REPORT, _DIFF_REPORT,
+				new AttributesImpl());
 
-		unsyncStringWriter.flush();
+			contentHandler.startElement(
+				StringPool.BLANK, _DIFF, _DIFF, new AttributesImpl());
 
-		String string = unsyncStringWriter.toString();
+			HtmlSaxDiffOutput htmlSaxDiffOutput = new HtmlSaxDiffOutput(
+				contentHandler, _DIFF);
 
-		if (string.startsWith("<?xml")) {
-			int index = string.indexOf("?>");
+			HTMLDiffer htmlDiffer = new HTMLDiffer(htmlSaxDiffOutput);
 
-			string = string.substring(index + 2);
+			htmlDiffer.diff(leftTextNodeComparator, rightTextNodeComparator);
+
+			contentHandler.endElement(StringPool.BLANK, _DIFF, _DIFF);
+
+			contentHandler.endElement(
+				StringPool.BLANK, _DIFF_REPORT, _DIFF_REPORT);
+
+			contentHandler.endDocument();
+
+			unsyncStringWriter.flush();
+
+			String string = unsyncStringWriter.toString();
+
+			if (string.startsWith("<?xml")) {
+				int index = string.indexOf("?>");
+
+				string = string.substring(index + 2);
+			}
+
+			return string;
 		}
-
-		return string;
+		finally {
+			currentThread.setContextClassLoader(contextClassLoader);
+		}
 	}
 
 	@Override
@@ -156,8 +172,7 @@ public class DiffHtmlImpl implements DiffHtml {
 				"style=\"border-bottom: 2px dotted blue;\"",
 				"style=\"background-color: #FDC6C6; text-decoration: " +
 					"line-through;\""
-			}
-		);
+			});
 	}
 
 	private static final String _DIFF = "diff";

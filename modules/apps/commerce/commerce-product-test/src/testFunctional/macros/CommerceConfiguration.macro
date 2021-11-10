@@ -1,0 +1,335 @@
+definition {
+
+	macro accountGroupsTearDown {
+		var accountGroupsList = "";
+
+		var count = "1";
+
+		while (IsElementPresent(key_rowNumber = "${count}", locator1 = "CommerceNavigation#ENTRY_NAME_N")) {
+			var key_rowNumber = "${count}";
+
+			var entryName = selenium.getText("CommerceNavigation#ENTRY_NAME_N");
+
+			if ("${entryName}" != "Guest") {
+				accountGroupsList = StringUtil.add("${accountGroupsList}", "${entryName}");
+			}
+
+			var count = ${count} + 1;
+		}
+
+		if ("${accountGroupsList}" != "") {
+			for (var accountGroupName : list "${accountGroupsList}") {
+				ClickNoError(
+					key_entryName = "${accountGroupName}",
+					locator1 = "CommerceEntry#ENTRY_NAME_BODY_VERTICAL_ELLIPSIS_2");
+
+				CommerceEntry.clickNoError(menuItem = "Delete");
+
+				AssertElementPresent(locator1 = "Message#SUCCESS");
+
+				AssertElementNotPresent(locator1 = "Message#ERROR");
+			}
+		}
+	}
+
+	macro commerceAdminSetUp {
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		User.addCP(
+			userEmailAddress = "commerceuser@liferay.com",
+			userFirstName = "Commerce",
+			userLastName = "User",
+			userScreenName = "commerceuser");
+
+		CommerceEntry.createNewCurrenciesEntry(
+			code = "NCU",
+			entryName = "New Currency");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Store Management",
+			portlet = "Channels");
+
+		Click(locator1 = "Button#PLUS");
+
+		CommerceEntry.addNewChannelsEntry(
+			channelCurrency = "US Dollar",
+			channelName = "Test Channel",
+			channelType = "Site",
+			siteName = "Guest");
+
+		Button.clickSave();
+
+		AssertElementPresent(locator1 = "Message#SUCCESS");
+	}
+
+	macro commerceAdminTearDown {
+		Navigator.openURL();
+
+		CommerceJSONOrdersAPI._deleteAllCommerceOrders();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Order Management",
+			portlet = "Orders");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceJSONShipmentsAPI._deleteAllCommerceShipments();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Order Management",
+			portlet = "Shipments");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		JSONUser.tearDownNonAdminUsers();
+
+		CommerceJSONAccountsAPI._deleteAllCommerceAccounts();
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Accounts",
+			panel = "Control Panel",
+			portlet = "Accounts");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceJSONAccountGroupsAPI._deleteAllCommerceAccountGroups();
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Accounts",
+			panel = "Control Panel",
+			portlet = "Account Groups");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceJSONProductsAPI._deleteAllCommerceProducts();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceJSONOptionsAPI._deleteAllCommerceOptions();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Options");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceJSONSpecificationGroupsAPI._deleteAllCommerceSpecificationGroups();
+
+		CommerceJSONSpecificationsAPI._deleteAllCommerceSpecifications();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Specifications");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceNavigator.gotoCommercePortletNavItem(navItem = "Specification Groups");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceJSONChannelsAPI._deleteAllCommerceChannels();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Store Management",
+			portlet = "Channels");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceJSONCatalogsAPI._deleteAllNoSystemCommerceCatalogs();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Catalogs");
+
+		IsElementPresent(
+			key_rowNumber = "1",
+			locator1 = "CommerceNavigation#ENTRY_NAME_N");
+
+		CommerceJSONPriceListsAndPromotionsAPI._deleteAllNoMasterPriceListsAndPromotions();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Pricing",
+			portlet = "Price Lists");
+
+		IsElementPresent(
+			key_rowNumber = "1",
+			locator1 = "CommerceNavigation#ENTRY_NAME_N");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Pricing",
+			portlet = "Promotions");
+
+		IsElementPresent(
+			key_rowNumber = "1",
+			locator1 = "CommerceNavigation#ENTRY_NAME_N");
+
+		CommerceJSONDiscountsAPI._deleteAllCommerceDiscounts();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Pricing",
+			portlet = "Discounts");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceJSONAvailableEstimatesAPI._deleteCommerceAvailableEstimates();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Settings",
+			portlet = "Availability Estimates");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceJSONMeasurementUnitsAPI._deleteCommerceMeasurementUnits();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Settings",
+			portlet = "Measurement Units");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceNavigator.gotoCommercePortletNavItem(navItem = "Weight");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceJSONTaxCategoriesAPI._deleteCommerceTaxCategories();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Pricing",
+			portlet = "Tax Categories");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceJSONWarehousesAndInventoriesAPI._deleteAllWarehouseItems();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Inventory Management",
+			portlet = "Inventory");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Inventory Management",
+			portlet = "Warehouses");
+
+		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+	}
+
+	macro commerceInitializersTearDown {
+		ApplicationsMenu.gotoPortlet(
+			category = "Sites",
+			panel = "Control Panel",
+			portlet = "Sites");
+
+		CommerceJSONSitesAPI._deleteCommerceSites();
+	}
+
+	macro commerceStoreFrontSetUp {
+		CommerceNavigator.gotoPortlet(
+			category = "Settings",
+			portlet = "Health Check");
+
+		for (var buttonRowNumber : list "1,2,3,4,5") {
+			if (!(IsElementPresent(locator1 = "CommerceEntry#FIX_ISSUE_BUTTON_N", key_buttonStatus = "disabled"))) {
+				Click(
+					key_buttonRowNumber = "${buttonRowNumber}",
+					key_buttonStatus = "",
+					locator1 = "CommerceEntry#FIX_ISSUE_BUTTON_N");
+
+				WaitForElementPresent(
+					key_value = "${buttonRowNumber}",
+					locator1 = "CommerceEntry#HEALTH_CHECK_ICON_CHECK_N");
+			}
+		}
+
+		CommerceNavigator.gotoPortlet(
+			category = "Store Management",
+			portlet = "Channels");
+
+		Click(locator1 = "Button#PLUS");
+
+		CommerceEntry.addNewChannelsEntry(
+			channelCurrency = "US Dollar",
+			channelName = "Test Channel",
+			channelType = "Site",
+			siteName = "Guest");
+
+		Button.clickSave();
+
+		AssertElementPresent(locator1 = "Message#SUCCESS");
+
+		Click(
+			key_menuTab = "General",
+			locator1 = "CommerceEntry#MENU_TAB");
+
+		for (var fixIssueButtonName : list "Product Detail,Product Compare,Commerce Cart,Checkout") {
+			if (IsElementPresent(locator1 = "CommerceEntry#FIX_ISSUE_BUTTON", key_fixIssueButtonName = "${fixIssueButtonName}")) {
+				Click(
+					key_fixIssueButtonName = "${fixIssueButtonName}",
+					locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
+
+				Alert.viewSuccessMessage();
+			}
+		}
+	}
+
+	macro commerceStoreFrontTearDown {
+		Navigator.openURL();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Catalog");
+
+		if (IsElementNotPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER")) {
+			CommerceProducts.moveCatalogEntriesToRecycleBin();
+		}
+
+		CommerceNavigator.gotoPortlet(
+			category = "Settings",
+			portlet = "Options");
+
+		Pause(locator1 = "3000");
+
+		CommerceOptions.deleteOptionsEntries();
+
+		User.logoutPG();
+	}
+
+	@summary = "Deletes if present, catalogs, price lists or promotions, excluding Master occurrencies"
+	macro commerceTearDownExcludingMaster {
+		var elementsList= "";
+		var count = "1";
+
+		while (IsElementPresent(key_rowNumber = "${count}", locator1 = "CommerceNavigation#ENTRY_NAME_N")) {
+			var key_rowNumber = "${count}";
+			var entryName = selenium.getText("CommerceNavigation#ENTRY_NAME_N");
+
+			if (("${entryName}" != "Master") && ("${entryName}" != "Master Base Price List") && ("${entryName}" != "Master Base Promotion")) {
+				elementsList = StringUtil.add("${elementsList}", "${entryName}");
+			}
+			var count = ${count} + 1;
+		}
+
+		if ("${elementsList}" != "") {
+			for (var catalogName : list "${elementsList}") {
+				ClickNoError(
+					key_entryName = "${catalogName}",
+					locator1 = "CommerceEntry#ENTRY_NAME_BODY_VERTICAL_ELLIPSIS");
+				CommerceEntry.clickNoError(menuItem = "Delete");
+				AssertElementPresent(locator1 = "Message#SUCCESS");
+				AssertElementNotPresent(locator1 = "Message#ERROR");
+			}
+		}
+	}
+
+	macro reindexAllSearchIndexes {
+		SearchAdministration.executeReindex();
+	}
+
+}

@@ -1,0 +1,9 @@
+definition {
+
+	macro save {
+		Click(locator1 = "Modal#SAVE_BUTTON");
+
+		Alert.viewSuccessMessage();
+	}
+
+}

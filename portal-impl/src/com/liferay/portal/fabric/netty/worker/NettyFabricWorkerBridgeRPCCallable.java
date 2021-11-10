@@ -14,14 +14,14 @@
 
 package com.liferay.portal.fabric.netty.worker;
 
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.process.ProcessCallable;
+import com.liferay.petra.process.ProcessException;
 import com.liferay.portal.fabric.netty.handlers.NettyChannelAttributes;
 import com.liferay.portal.fabric.netty.rpc.ChannelThreadLocal;
 import com.liferay.portal.fabric.netty.rpc.RPCCallable;
 import com.liferay.portal.fabric.netty.util.NettyUtil;
 import com.liferay.portal.fabric.worker.FabricWorker;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.process.ProcessCallable;
-import com.liferay.portal.kernel.process.ProcessException;
 
 import io.netty.channel.Channel;
 
@@ -34,11 +34,11 @@ public class NettyFabricWorkerBridgeRPCCallable<T extends Serializable>
 	implements RPCCallable<T> {
 
 	public NettyFabricWorkerBridgeRPCCallable(
-		long id, ProcessCallable<T> processCallable, long rpcRelayTime) {
+		long id, ProcessCallable<T> processCallable, long rpcRelayTimeout) {
 
 		_id = id;
 		_processCallable = processCallable;
-		_rpcRelayTimeout = rpcRelayTime;
+		_rpcRelayTimeout = rpcRelayTimeout;
 	}
 
 	@Override

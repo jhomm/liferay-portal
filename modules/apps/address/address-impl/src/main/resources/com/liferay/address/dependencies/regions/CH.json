@@ -1,0 +1,106 @@
+[
+	{
+		"name": "Aargau",
+		"regionCode": "AG"
+	},
+	{
+		"name": "Appenzell Innerhoden",
+		"regionCode": "AI"
+	},
+	{
+		"name": "Appenzell Ausserrhoden",
+		"regionCode": "AR"
+	},
+	{
+		"name": "Bern",
+		"regionCode": "BE"
+	},
+	{
+		"name": "Basel-Landschaft",
+		"regionCode": "BL"
+	},
+	{
+		"name": "Basel-Stadt",
+		"regionCode": "BS"
+	},
+	{
+		"name": "Freiburg",
+		"regionCode": "FR"
+	},
+	{
+		"name": "Genève",
+		"regionCode": "GE"
+	},
+	{
+		"name": "Glarus",
+		"regionCode": "GL"
+	},
+	{
+		"name": "Graubünden",
+		"regionCode": "GR"
+	},
+	{
+		"name": "Jura",
+		"regionCode": "JU"
+	},
+	{
+		"name": "Luzern",
+		"regionCode": "LU"
+	},
+	{
+		"name": "Neuchâtel",
+		"regionCode": "NE"
+	},
+	{
+		"name": "Nidwalden",
+		"regionCode": "NW"
+	},
+	{
+		"name": "Obwalden",
+		"regionCode": "OW"
+	},
+	{
+		"name": "Sankt Gallen",
+		"regionCode": "SG"
+	},
+	{
+		"name": "Schaffhausen",
+		"regionCode": "SH"
+	},
+	{
+		"name": "Solothurn",
+		"regionCode": "SO"
+	},
+	{
+		"name": "Schwyz",
+		"regionCode": "SZ"
+	},
+	{
+		"name": "Thurgau",
+		"regionCode": "TG"
+	},
+	{
+		"name": "Ticino",
+		"regionCode": "TI"
+	},
+	{
+		"name": "Uri",
+		"regionCode": "UR"
+	},
+	{
+		"name": "Vaud",
+		"regionCode": "VD"
+	},
+	{
+		"name": "Valais",
+		"regionCode": "VS"
+	},
+	{
+		"name": "Zug",
+		"regionCode": "ZG"
+	},
+	{
+		"name": "Zürich",
+		"regionCode": "ZH"
+	}
+]

@@ -14,37 +14,27 @@
 
 package com.liferay.portal.util;
 
-import aQute.bnd.annotation.ProviderType;
-
 import com.liferay.portal.kernel.openid.OpenId;
-import com.liferay.registry.Registry;
-import com.liferay.registry.RegistryUtil;
-import com.liferay.registry.ServiceTracker;
+import com.liferay.portal.kernel.util.ServiceProxyFactory;
 
 /**
  * @author Jorge Ferrer
  */
-@ProviderType
 public class OpenIdUtil {
 
 	public static boolean isEnabled(long companyId) {
-		return getOpenId().isEnabled(companyId);
+		return _openId.isEnabled(companyId);
 	}
 
 	protected static OpenId getOpenId() {
-		return _instance._serviceTracker.getService();
+		return _openId;
 	}
 
 	private OpenIdUtil() {
-		Registry registry = RegistryUtil.getRegistry();
-
-		_serviceTracker = registry.trackServices(OpenId.class);
-
-		_serviceTracker.open();
 	}
 
-	private static final OpenIdUtil _instance = new OpenIdUtil();
-
-	private final ServiceTracker<OpenId, OpenId> _serviceTracker;
+	private static volatile OpenId _openId =
+		ServiceProxyFactory.newServiceTrackedInstance(
+			OpenId.class, OpenIdUtil.class, "_openId", false, true);
 
 }

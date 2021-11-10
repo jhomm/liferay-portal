@@ -23,7 +23,9 @@ import javax.security.auth.login.LoginException;
 
 /**
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), with no replacement
  */
+@Deprecated
 public class PortalLoginModule extends BasicLoginModule {
 
 	@Override
@@ -32,8 +34,8 @@ public class PortalLoginModule extends BasicLoginModule {
 			return (Principal)InstanceFactory.newInstance(
 				_WLS_USER_IMPL, String.class, name);
 		}
-		catch (Exception e) {
-			throw new LoginException(e.getMessage());
+		catch (Exception exception) {
+			throw new LoginException(exception.getMessage());
 		}
 	}
 

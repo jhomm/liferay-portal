@@ -14,14 +14,16 @@
 
 package com.liferay.portal.servlet.filters.aggregate;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.servlet.ServletContextUtil;
-import com.liferay.portal.kernel.test.CaptureHandler;
-import com.liferay.portal.kernel.test.JDKLoggerTestUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.SystemProperties;
-import com.liferay.portal.util.FileImpl;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -33,7 +35,6 @@ import java.net.URL;
 
 import java.util.List;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import javax.servlet.ServletContext;
 
@@ -51,15 +52,12 @@ import org.springframework.mock.web.MockServletContext;
 public class ServletPathsTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() {
-		FileUtil fileUtil = new FileUtil();
-
-		fileUtil.setFile(new FileImpl());
-
 		FileUtil.deltree(_testDir);
 	}
 
@@ -75,8 +73,9 @@ public class ServletPathsTest {
 
 			Assert.fail();
 		}
-		catch (NullPointerException npe) {
-			Assert.assertEquals("Servlet context is null", npe.getMessage());
+		catch (NullPointerException nullPointerException) {
+			Assert.assertEquals(
+				"Servlet context is null", nullPointerException.getMessage());
 		}
 
 		try {
@@ -84,8 +83,9 @@ public class ServletPathsTest {
 
 			Assert.fail();
 		}
-		catch (IllegalArgumentException iae) {
-			Assert.assertEquals("Resource path is null", iae.getMessage());
+		catch (IllegalArgumentException illegalArgumentException) {
+			Assert.assertEquals(
+				"Resource path is null", illegalArgumentException.getMessage());
 		}
 
 		ServletContext servletContext = _prepareServletContext(
@@ -124,6 +124,19 @@ public class ServletPathsTest {
 		ServletPaths servletPaths5 = servletPaths4.down("test2");
 
 		Assert.assertEquals("test1/test2", servletPaths5.getResourcePath());
+
+		ServletPaths servletPaths6 = servletPaths1.down(
+			"/test2?extraparameters");
+
+		Assert.assertEquals("/test1/test2", servletPaths6.getResourcePath());
+
+		ServletPaths servletPaths7 = servletPaths1.down("../test2");
+
+		Assert.assertEquals("/test2", servletPaths7.getResourcePath());
+
+		ServletPaths servletPaths8 = servletPaths1.down("./test2");
+
+		Assert.assertEquals("/test1/test2", servletPaths8.getResourcePath());
 	}
 
 	@Test
@@ -162,20 +175,20 @@ public class ServletPathsTest {
 
 		Assert.assertNull(servletPaths.getContent());
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					ServletPaths.class.getName(), Level.SEVERE)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				ServletPaths.class.getName(), Level.SEVERE)) {
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
 			servletPaths = new ServletPaths(servletContext, file1.getName());
 
 			Assert.assertNull(servletPaths.getContent());
-			Assert.assertEquals(1, logRecords.size());
 
-			LogRecord logRecord = logRecords.get(0);
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			Throwable throwable = logRecord.getThrown();
+			LogEntry logEntry = logEntries.get(0);
+
+			Throwable throwable = logEntry.getThrowable();
 
 			Assert.assertSame(
 				FileNotFoundException.class, throwable.getClass());
@@ -193,8 +206,9 @@ public class ServletPathsTest {
 
 			Assert.fail();
 		}
-		catch (IllegalArgumentException iae) {
-			Assert.assertEquals("Resource path is null", iae.getMessage());
+		catch (IllegalArgumentException illegalArgumentException) {
+			Assert.assertEquals(
+				"Resource path is null", illegalArgumentException.getMessage());
 		}
 
 		Assert.assertEquals(

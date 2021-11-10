@@ -14,8 +14,9 @@
 
 package com.liferay.taglib.theme;
 
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.theme.ThemeDisplay;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.tagext.TagSupport;
@@ -27,17 +28,25 @@ public class DefineObjectsTag extends TagSupport {
 
 	@Override
 	public int doStartTag() {
-		HttpServletRequest request =
+		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)pageContext.getRequest();
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
 		if (themeDisplay == null) {
 			return SKIP_BODY;
 		}
 
-		pageContext.setAttribute("account", themeDisplay.getAccount());
+		if (!GetterUtil.getBoolean(
+				pageContext.getAttribute(WebKeys.THEME_DEFINE_OBJECTS), true)) {
+
+			pageContext.setAttribute("themeDisplay", themeDisplay);
+
+			return SKIP_BODY;
+		}
+
 		pageContext.setAttribute("colorScheme", themeDisplay.getColorScheme());
 		pageContext.setAttribute("company", themeDisplay.getCompany());
 		pageContext.setAttribute("contact", themeDisplay.getContact());

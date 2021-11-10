@@ -14,18 +14,18 @@
 
 package com.liferay.portal.metadata;
 
+import com.liferay.document.library.kernel.util.AudioProcessorUtil;
+import com.liferay.document.library.kernel.util.VideoProcessorUtil;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xuggler.XugglerUtil;
-import com.liferay.portlet.documentlibrary.util.AudioProcessorUtil;
-import com.liferay.portlet.documentlibrary.util.VideoProcessorUtil;
-import com.liferay.portlet.exportimport.lar.PortletDataContext;
 
 import com.xuggle.xuggler.IContainer;
 
@@ -58,30 +58,24 @@ public class XugglerRawMetadataProcessor extends BaseRawMetadataProcessor {
 	protected String convertTime(long microseconds) {
 		long milliseconds = microseconds / 1000L;
 
-		StringBundler sb = new StringBundler(7);
-
-		sb.append(_decimalFormatter.format(milliseconds / Time.HOUR));
-		sb.append(StringPool.COLON);
-		sb.append(
-			_decimalFormatter.format(milliseconds % Time.HOUR / Time.MINUTE));
-		sb.append(StringPool.COLON);
-		sb.append(
-			_decimalFormatter.format(milliseconds % Time.MINUTE / Time.SECOND));
-		sb.append(StringPool.PERIOD);
-		sb.append(_decimalFormatter.format(milliseconds % Time.SECOND / 10));
-
-		return sb.toString();
+		return StringBundler.concat(
+			_decimalFormatter.format(milliseconds / Time.HOUR),
+			StringPool.COLON,
+			_decimalFormatter.format(milliseconds % Time.HOUR / Time.MINUTE),
+			StringPool.COLON,
+			_decimalFormatter.format(milliseconds % Time.MINUTE / Time.SECOND),
+			StringPool.PERIOD,
+			_decimalFormatter.format(milliseconds % Time.SECOND / 10));
 	}
 
 	protected Metadata extractMetadata(File file) throws Exception {
 		IContainer container = IContainer.make();
 
 		try {
-			Metadata metadata = new Metadata();
+			int result = container.open(
+				file.getCanonicalPath(), IContainer.Type.READ, null);
 
-			if (container.open(
-					file.getCanonicalPath(), IContainer.Type.READ, null) < 0) {
-
+			if (result < 0) {
 				throw new IllegalArgumentException("Could not open stream");
 			}
 
@@ -89,6 +83,8 @@ public class XugglerRawMetadataProcessor extends BaseRawMetadataProcessor {
 				throw new IllegalStateException(
 					"Could not query stream metadata");
 			}
+
+			Metadata metadata = new Metadata();
 
 			long microseconds = container.getDuration();
 
@@ -107,60 +103,53 @@ public class XugglerRawMetadataProcessor extends BaseRawMetadataProcessor {
 	protected Metadata extractMetadata(
 		String extension, String mimeType, File file) {
 
-		Metadata metadata = null;
-
 		if (!isSupported(mimeType)) {
-			return metadata;
+			return null;
 		}
 
 		try {
-			metadata = extractMetadata(file);
+			return extractMetadata(file);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 
-		return metadata;
+		return null;
 	}
 
 	@Override
 	protected Metadata extractMetadata(
 		String extension, String mimeType, InputStream inputStream) {
 
-		Metadata metadata = null;
+		if (!isSupported(mimeType)) {
+			return null;
+		}
 
 		File file = null;
-
-		if (!isSupported(mimeType)) {
-			return metadata;
-		}
 
 		try {
 			file = FileUtil.createTempFile(extension);
 
 			FileUtil.write(file, inputStream);
 
-			metadata = extractMetadata(file);
+			return extractMetadata(file);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 		finally {
 			FileUtil.delete(file);
 		}
 
-		return metadata;
+		return null;
 	}
 
 	protected boolean isSupported(String mimeType) {
-		if (XugglerUtil.isEnabled()) {
-			if (AudioProcessorUtil.isAudioSupported(mimeType)) {
-				return true;
-			}
+		if (XugglerUtil.isEnabled() &&
+			(AudioProcessorUtil.isAudioSupported(mimeType) ||
+			 VideoProcessorUtil.isVideoSupported(mimeType))) {
 
-			if (VideoProcessorUtil.isVideoSupported(mimeType)) {
-				return true;
-			}
+			return true;
 		}
 
 		return false;

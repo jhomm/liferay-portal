@@ -14,6 +14,7 @@
 
 package com.liferay.portal.json;
 
+import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -26,6 +27,11 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.Writer;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
 /**
  * @author Brian Wing Shun Chan
  */
@@ -33,6 +39,10 @@ public class JSONArrayImpl implements JSONArray {
 
 	public JSONArrayImpl() {
 		_jsonArray = new org.json.JSONArray();
+	}
+
+	public JSONArrayImpl(Collection<?> collection) {
+		_jsonArray = new org.json.JSONArray(collection);
 	}
 
 	public JSONArrayImpl(org.json.JSONArray jsonArray) {
@@ -47,9 +57,24 @@ public class JSONArrayImpl implements JSONArray {
 
 			_jsonArray = new org.json.JSONArray(json);
 		}
-		catch (Exception e) {
-			throw new JSONException(e);
+		catch (Exception exception) {
+			throw new JSONException(exception);
 		}
+	}
+
+	@Override
+	public Object get(int index) {
+		Object value = _jsonArray.opt(index);
+
+		if (value instanceof org.json.JSONArray) {
+			return new JSONArrayImpl((org.json.JSONArray)value);
+		}
+
+		if (value instanceof org.json.JSONObject) {
+			return new JSONObjectImpl((org.json.JSONObject)value);
+		}
+
+		return value;
 	}
 
 	@Override
@@ -109,12 +134,23 @@ public class JSONArrayImpl implements JSONArray {
 	}
 
 	@Override
+	public Iterator<Object> iterator() {
+		List<Object> list = new ArrayList<>();
+
+		for (int i = 0; i < length(); i++) {
+			list.add(get(i));
+		}
+
+		return list.iterator();
+	}
+
+	@Override
 	public String join(String separator) throws JSONException {
 		try {
 			return _jsonArray.join(separator);
 		}
-		catch (Exception e) {
-			throw new JSONException(e);
+		catch (Exception exception) {
+			throw new JSONException(exception);
 		}
 	}
 
@@ -135,9 +171,9 @@ public class JSONArrayImpl implements JSONArray {
 		try {
 			_jsonArray.put(value);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(e, e);
+				_log.warn(exception, exception);
 			}
 		}
 
@@ -152,22 +188,41 @@ public class JSONArrayImpl implements JSONArray {
 	}
 
 	@Override
-	public JSONArray put(JSONArray value) {
-		_jsonArray.put(((JSONArrayImpl)value).getJSONArray());
+	public JSONArray put(JSONArray jsonArray) {
+		JSONArrayImpl jsonArrayImpl = (JSONArrayImpl)jsonArray;
+
+		_jsonArray.put(jsonArrayImpl.getJSONArray());
 
 		return this;
 	}
 
 	@Override
-	public JSONArray put(JSONObject value) {
-		_jsonArray.put(((JSONObjectImpl)value).getJSONObject());
+	public JSONArray put(JSONObject jsonObject) {
+		JSONObjectImpl jsonObjectImpl = (JSONObjectImpl)jsonObject;
+
+		_jsonArray.put(jsonObjectImpl.getJSONObject());
 
 		return this;
 	}
 
 	@Override
 	public JSONArray put(long value) {
-		_jsonArray.put(value);
+		_jsonArray.put(String.valueOf(value));
+
+		return this;
+	}
+
+	@Override
+	public JSONArray put(Object value) {
+		if (value instanceof JSONArray) {
+			put((JSONArray)value);
+		}
+		else if (value instanceof JSONObject) {
+			put((JSONObject)value);
+		}
+		else {
+			_jsonArray.put(value);
+		}
 
 		return this;
 	}
@@ -180,13 +235,37 @@ public class JSONArrayImpl implements JSONArray {
 	}
 
 	@Override
+	public JSONArray put(
+		UnsafeSupplier<Object, Exception> valueUnsafeSupplier) {
+
+		try {
+			Object value = valueUnsafeSupplier.get();
+
+			if (value != null) {
+				return put(value);
+			}
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+
+		return this;
+	}
+
+	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		try {
-			_jsonArray = new org.json.JSONArray(objectInput.readUTF());
+			_jsonArray = new org.json.JSONArray(
+				(String)objectInput.readObject());
 		}
-		catch (Exception e) {
-			throw new IOException(e);
+		catch (Exception exception) {
+			throw new IOException(exception);
 		}
+	}
+
+	@Override
+	public String toJSONString() {
+		return toString();
 	}
 
 	@Override
@@ -199,8 +278,8 @@ public class JSONArrayImpl implements JSONArray {
 		try {
 			return _jsonArray.toString(indentFactor);
 		}
-		catch (Exception e) {
-			throw new JSONException(e);
+		catch (Exception exception) {
+			throw new JSONException(exception);
 		}
 	}
 
@@ -209,14 +288,14 @@ public class JSONArrayImpl implements JSONArray {
 		try {
 			return _jsonArray.write(writer);
 		}
-		catch (Exception e) {
-			throw new JSONException(e);
+		catch (Exception exception) {
+			throw new JSONException(exception);
 		}
 	}
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
-		objectOutput.writeUTF(toString());
+		objectOutput.writeObject(toString());
 	}
 
 	private static final String _NULL_JSON = "[]";

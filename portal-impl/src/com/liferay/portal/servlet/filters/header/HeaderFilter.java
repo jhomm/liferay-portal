@@ -15,25 +15,21 @@
 package com.liferay.portal.servlet.filters.header;
 
 import com.liferay.portal.kernel.servlet.HttpHeaders;
-import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
-import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.text.Format;
 
-import java.util.Calendar;
 import java.util.Enumeration;
-import java.util.GregorianCalendar;
-import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.FilterChain;
@@ -49,119 +45,111 @@ import javax.servlet.http.HttpSession;
  */
 public class HeaderFilter extends BasePortalFilter {
 
-	@Override
-	public void init(FilterConfig filterConfig) {
-		super.init(filterConfig);
+	protected long getLastModified(HttpServletRequest httpServletRequest) {
+		String value = httpServletRequest.getParameter("t");
 
-		_filterConfig = filterConfig;
-		_dateFormat = FastDateFormatFactoryUtil.getSimpleDateFormat(
-			_DATE_FORMAT, LocaleUtil.US, TimeZoneUtil.GMT);
-	}
-
-	protected long getLastModified(HttpServletRequest request) {
-		long lasModified = -1;
-
-		Map<String, String[]> parameterMap = HttpUtil.getParameterMap(
-			request.getQueryString());
-
-		String[] value = parameterMap.get("t");
-
-		if (ArrayUtil.isNotEmpty(value)) {
-			lasModified = GetterUtil.getLong(value[0]);
+		if (Validator.isNull(value)) {
+			return -1;
 		}
 
-		return lasModified;
+		return GetterUtil.getLong(value) / 1000 * 1000;
 	}
 
 	@Override
 	protected void processFilter(
-			HttpServletRequest request, HttpServletResponse response,
-			FilterChain filterChain)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, FilterChain filterChain)
 		throws Exception {
 
-		Enumeration<String> enu = _filterConfig.getInitParameterNames();
+		FilterConfig filterConfig = getFilterConfig();
 
-		while (enu.hasMoreElements()) {
-			String name = enu.nextElement();
+		Enumeration<String> enumeration = filterConfig.getInitParameterNames();
 
-			if (_requestHeaderIgnoreInitParams.contains(name)) {
-				continue;
-			}
+		while (enumeration.hasMoreElements()) {
+			String name = enumeration.nextElement();
 
-			String value = _filterConfig.getInitParameter(name);
-
-			if (name.equals(_EXPIRES) && Validator.isNumber(value)) {
-				int seconds = GetterUtil.getInteger(value);
-
-				Calendar cal = new GregorianCalendar();
-
-				cal.add(Calendar.SECOND, seconds);
-
-				value = _dateFormat.format(cal.getTime());
-			}
-
-			// LEP-5895 and LPS-15802
-
-			boolean addHeader = true;
-
-			if (StringUtil.equalsIgnoreCase(name, HttpHeaders.CACHE_CONTROL) ||
-				StringUtil.equalsIgnoreCase(name, HttpHeaders.EXPIRES)) {
-
-				boolean newSession = false;
-
-				HttpSession session = request.getSession(false);
-
-				if ((session == null) || session.isNew()) {
-					newSession = true;
-				}
-
-				String contextPath = request.getContextPath();
-
-				if (StringUtil.equalsIgnoreCase(name, HttpHeaders.EXPIRES) &&
-					newSession) {
-
-					addHeader = false;
-				}
-				else if (PropsValues.WEB_SERVER_PROXY_LEGACY_MODE &&
-						 newSession &&
-						 contextPath.equals(PortalUtil.getPathContext())) {
-
-					addHeader = false;
-				}
-			}
-
-			if (addHeader) {
-				response.addHeader(name, value);
+			if (!_requestHeaderIgnoreInitParams.contains(name)) {
+				_addHeader(
+					httpServletRequest, httpServletResponse, name,
+					filterConfig.getInitParameter(name));
 			}
 		}
 
-		long lastModified = getLastModified(request);
-		long ifModifiedSince = request.getDateHeader(
-			HttpHeaders.IF_MODIFIED_SINCE);
+		long lastModified = getLastModified(httpServletRequest);
 
 		if (lastModified > 0) {
-			response.setDateHeader(HttpHeaders.LAST_MODIFIED, lastModified);
+			long ifModifiedSince = httpServletRequest.getDateHeader(
+				HttpHeaders.IF_MODIFIED_SINCE);
+
+			httpServletResponse.setDateHeader(
+				HttpHeaders.LAST_MODIFIED, lastModified);
 
 			if (lastModified <= ifModifiedSince) {
-				response.setDateHeader(
+				httpServletResponse.setDateHeader(
 					HttpHeaders.LAST_MODIFIED, ifModifiedSince);
-				response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+				httpServletResponse.setStatus(
+					HttpServletResponse.SC_NOT_MODIFIED);
 
 				return;
 			}
 		}
 
-		processFilter(HeaderFilter.class, request, response, filterChain);
+		processFilter(
+			HeaderFilter.class.getName(), httpServletRequest,
+			httpServletResponse, filterChain);
 	}
 
-	private static final String _DATE_FORMAT = "EEE, dd MMM yyyy HH:mm:ss z";
+	private void _addHeader(
+		HttpServletRequest httpServletRequest,
+		HttpServletResponse httpServletResponse, String name, String value) {
 
-	private static final String _EXPIRES = "Expires";
+		// LEP-5895, LPS-15802, LPS-69908
 
+		if (StringUtil.equalsIgnoreCase(name, HttpHeaders.CACHE_CONTROL)) {
+			if (_isNewSession(httpServletRequest)) {
+				if (value.contains(HttpHeaders.CACHE_CONTROL_PUBLIC_VALUE)) {
+					return;
+				}
+
+				if (PropsValues.WEB_SERVER_PROXY_LEGACY_MODE) {
+					String contextPath = httpServletRequest.getContextPath();
+
+					if (contextPath.equals(PortalUtil.getPathContext())) {
+						return;
+					}
+				}
+			}
+		}
+		else if (StringUtil.equalsIgnoreCase(name, HttpHeaders.EXPIRES)) {
+			if (_isNewSession(httpServletRequest)) {
+				return;
+			}
+
+			if (Validator.isNumber(value)) {
+				int seconds = GetterUtil.getInteger(value);
+
+				value = _dateFormat.format(
+					System.currentTimeMillis() + (seconds * Time.SECOND));
+			}
+		}
+
+		httpServletResponse.addHeader(name, value);
+	}
+
+	private boolean _isNewSession(HttpServletRequest httpServletRequest) {
+		HttpSession httpSession = httpServletRequest.getSession(false);
+
+		if ((httpSession == null) || httpSession.isNew()) {
+			return true;
+		}
+
+		return false;
+	}
+
+	private static final Format _dateFormat =
+		FastDateFormatFactoryUtil.getSimpleDateFormat(
+			Time.RFC822_FORMAT, LocaleUtil.US, TimeZoneUtil.GMT);
 	private static final Set<String> _requestHeaderIgnoreInitParams =
 		SetUtil.fromArray(PropsValues.REQUEST_HEADER_IGNORE_INIT_PARAMS);
-
-	private Format _dateFormat;
-	private FilterConfig _filterConfig;
 
 }

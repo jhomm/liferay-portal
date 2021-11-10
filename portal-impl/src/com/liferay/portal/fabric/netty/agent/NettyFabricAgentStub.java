@@ -14,6 +14,11 @@
 
 package com.liferay.portal.fabric.netty.agent;
 
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.concurrent.FutureListener;
+import com.liferay.petra.process.ProcessCallable;
+import com.liferay.petra.process.ProcessConfig;
+import com.liferay.petra.reflect.ObjectGraphUtil;
 import com.liferay.portal.fabric.FabricPathMappingVisitor;
 import com.liferay.portal.fabric.InputResource;
 import com.liferay.portal.fabric.OutputResource;
@@ -24,11 +29,6 @@ import com.liferay.portal.fabric.repository.Repository;
 import com.liferay.portal.fabric.status.FabricStatus;
 import com.liferay.portal.fabric.status.RemoteFabricStatus;
 import com.liferay.portal.fabric.worker.FabricWorker;
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
-import com.liferay.portal.kernel.concurrent.FutureListener;
-import com.liferay.portal.kernel.process.ProcessCallable;
-import com.liferay.portal.kernel.process.ProcessConfig;
-import com.liferay.portal.kernel.util.ObjectGraphUtil;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -77,16 +77,17 @@ public class NettyFabricAgentStub implements FabricAgent {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof NettyFabricAgentStub)) {
+		if (!(object instanceof NettyFabricAgentStub)) {
 			return false;
 		}
 
-		NettyFabricAgentStub nettyFabricAgentStub = (NettyFabricAgentStub)obj;
+		NettyFabricAgentStub nettyFabricAgentStub =
+			(NettyFabricAgentStub)object;
 
 		if (_channel.equals(nettyFabricAgentStub._channel)) {
 			return true;
@@ -109,7 +110,7 @@ public class NettyFabricAgentStub implements FabricAgent {
 			processCallable, fabricPathMappingVisitor);
 
 		NettyFabricWorkerStub<T> nettyFabricWorkerStub =
-			new NettyFabricWorkerStub<T>(
+			new NettyFabricWorkerStub<>(
 				id, _channel, _repository,
 				fabricPathMappingVisitor.getPathMap(), _rpcRelayTimeout);
 
@@ -162,12 +163,12 @@ public class NettyFabricAgentStub implements FabricAgent {
 		final ChannelFutureListener channelFutureListener =
 			new ChannelFutureListener() {
 
-			@Override
-			public void operationComplete(ChannelFuture channelFuture) {
-				startupNoticeableFuture.cancel(true);
-			}
+				@Override
+				public void operationComplete(ChannelFuture channelFuture) {
+					startupNoticeableFuture.cancel(true);
+				}
 
-		};
+			};
 
 		final ChannelFuture closeChannelFuture = _channel.closeFuture();
 
@@ -188,15 +189,15 @@ public class NettyFabricAgentStub implements FabricAgent {
 
 			_nettyFabricWorkerStubs.put(id, nettyFabricWorkerStub);
 		}
-		catch (CancellationException ce) {
+		catch (CancellationException cancellationException) {
 			nettyFabricWorkerStub.setCancel();
 		}
-		catch (Throwable t) {
-			if (t instanceof ExecutionException) {
-				t = t.getCause();
+		catch (Throwable throwable) {
+			if (throwable instanceof ExecutionException) {
+				throwable = throwable.getCause();
 			}
 
-			nettyFabricWorkerStub.setException(t);
+			nettyFabricWorkerStub.setException(throwable);
 		}
 
 		return nettyFabricWorkerStub;
@@ -234,8 +235,8 @@ public class NettyFabricAgentStub implements FabricAgent {
 
 	private final Channel _channel;
 	private final AtomicLong _idGenerator = new AtomicLong();
-	private final Map<Long, NettyFabricWorkerStub<?>>
-		_nettyFabricWorkerStubs = new ConcurrentHashMap<>();
+	private final Map<Long, NettyFabricWorkerStub<?>> _nettyFabricWorkerStubs =
+		new ConcurrentHashMap<>();
 	private final Path _remoteRepositoryPath;
 	private final Repository<Channel> _repository;
 	private final long _rpcRelayTimeout;

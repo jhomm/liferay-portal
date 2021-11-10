@@ -1,0 +1,692 @@
+definition {
+
+	macro addLanguageManageTranslations {
+		Click.clickNoMouseOver(locator1 = "Button#LOCALIZATION_GENERIC");
+
+		Click(locator1 = "Translation#TRANSLATION_MANAGE_BUTTON");
+
+		Click(locator1 = "Button#PLUS");
+
+		Click(
+			key_language = "${key_language}",
+			locator1 = "Translation#TRANSLATION_MANAGE_OPTION");
+
+		Click(locator1 = "Button#DONE");
+	}
+
+	macro assertFileNameFromTempFolder {
+		if (isSet(pageName)) {
+			var translationZipFileName = TestCase.getDownloadedTempFileName(fileNamePattern = "${pageName}*.zip");
+		}
+		else {
+			var translationZipFileName = TestCase.getDownloadedTempFileName(fileNamePattern = "${webContentTitle}*.zip");
+		}
+
+		echo("## translationZipFileName: ${translationZipFileName}");
+
+		if (contains("${translationZipFileName}", "en_US")) {
+			echo("This is a exported translation file.");
+		}
+		else {
+			fail("FAIL!");
+		}
+	}
+
+	macro changeBaseLocale {
+		Portlet.waitForForm();
+
+		Click.clickNoMouseOver(
+			key_currentLocale = StringUtil.lowerCase("${currentBaseLocale}"),
+			locator1 = "Button#TRANSLATIONS_LOCALIZATION");
+
+		Click(
+			key_locale = "${newBaseLocale}",
+			locator1 = "Translation#DROPDOWN_MENU_ITEM");
+
+		AssertElementPresent(
+			key_locale = "${newBaseLocale}",
+			locator1 = "Translation#CONTENT_TITLE");
+	}
+
+	macro changeTargetLocale {
+		Portlet.waitForForm();
+
+		Click.clickNoMouseOver(
+			key_currentLocale = StringUtil.lowerCase("${currentTargetLocale}"),
+			locator1 = "Button#TRANSLATIONS_LOCALIZATION");
+
+		Click(
+			key_locale = "${newTargetLocale}",
+			locator1 = "Translation#DROPDOWN_MENU_ITEM");
+
+		AssertElementPresent(
+			key_locale = "${newTargetLocale}",
+			locator1 = "Translation#CONTENT_TITLE");
+	}
+
+	macro exportTranslation {
+		AssertElementPresent(
+			key_defaultLanguage = "English (United States)",
+			locator1 = "Language#EXPORT_TRANSLATION_DEFAULT_ORIGINAL_LANGUAGE");
+
+		AssertElementPresent(
+			key_checkboxName = "${defaultLanguage}",
+			locator1 = "Checkbox#DISABLED_EXPORT_TRANSLATION");
+
+		AssertElementPresent(locator1 = "Button#EXPORT_MODAL_DISABLED");
+
+		if (isSet(exportFileFormat)) {
+			Select(
+				locator1 = "Select#EXPORT_FILE_FORMAT",
+				value1 = "${exportFileFormat}");
+		}
+
+		for (var languageList : list "${languageList}") {
+			Check.checkNotVisible(
+				checkboxName = "${languageList}",
+				locator1 = "Checkbox#ANY_CHECKBOX");
+		}
+
+		Click(locator1 = "Button#EXPORT_MODAL");
+
+		DownloadTempFile();
+
+		Button.clickCancel();
+	}
+
+	macro gotoExportTranslation {
+		if (isSet(pageName)) {
+			WaitForPageLoad();
+
+			Click(
+				key_pageName = "${pageName}",
+				locator1 = "SitePages#LIST_GROUP_ITEM_ELLIPSIS_ICON");
+		}
+		else {
+			LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+			Click.waitForMenuToggleJSClick(
+				key_webContentTitle = "${webContentTitle}",
+				locator1 = "WC#ENTRY_LIST_MENULIST_ICON");
+		}
+
+		MenuItem.click(menuItem = "Export for Translation");
+	}
+
+	macro gotoImportTranslation {
+		if (isSet(pageName)) {
+			WaitForPageLoad();
+
+			Click(
+				key_pageName = "${pageName}",
+				locator1 = "SitePages#LIST_GROUP_ITEM_ELLIPSIS_ICON");
+		}
+		else {
+			Click.waitForMenuToggleJSClick(
+				key_webContentTitle = "${webContentTitle}",
+				locator1 = "WC#ENTRY_LIST_MENULIST_ICON");
+		}
+
+		MenuItem.click(menuItem = "Import Translation");
+	}
+
+	macro gotoTranslate {
+		Click.waitForMenuToggleJSClick(
+			key_webContentTitle = "${webContentTitle}",
+			locator1 = "WC#ENTRY_LIST_MENULIST_ICON");
+
+		MenuItem.click(menuItem = "Translate");
+	}
+
+	macro importTranslation {
+		if (isSet(pageName)) {
+			Translations.gotoImportTranslation(pageName = "${pageName}");
+		}
+		else {
+			Translations.gotoImportTranslation(webContentTitle = "${webContentTitle}");
+		}
+
+		AssertClick(
+			locator1 = "Button#SELECT_FILE",
+			value1 = "Select File");
+
+		if (isSet(uploadInvalidFile)) {
+			UploadCommonFile.uploadCommonFileHiddenNoMouseOver(
+				locator1 = "TextInput#FILE",
+				value1 = "${uploadInvalidFile}");
+		}
+		else {
+			UploadTempFile.uploadTempFileHiddenNoMouseOver(
+				locator1 = "TextInput#FILE",
+				value1 = "${fileName}");
+		}
+
+		if ("${workflow}" == "true") {
+			PortletEntry.submitForPublication();
+		}
+
+		else if ("${workflowResubmit}" == "true") {
+			PortletEntry.save();
+		}
+
+		else if ("${validateInvalidFile}" == "true") {
+			Button.clickPublish();
+		}
+
+		else {
+			Button.clickPublish();
+
+			Click(locator1 = "Button#TRANSLATIONS_DONE");
+		}
+	}
+
+	macro openToTranslateEntry {
+		var classNameId = JSONClassname._getClassNameId(value = "com.liferay.journal.model.JournalArticle");
+
+		var urlTitle = StringUtil.replace("${webContentTitle}", " ", "-");
+		var urlTitle = StringUtil.lowerCase("${urlTitle}");
+
+		var resourcePrimKey = JSONWebcontentAPI._getResourcePrimKeyByURLTitle(
+			groupName = "${groupName}",
+			urlTitle = "${urlTitle}");
+
+		Navigator.openWithAppendToBaseURL(
+			baseURL = "${baseURL}",
+			urlAppend = "group/${siteURLKey}/~/control_panel/manage?p_p_id=com_liferay_translation_web_internal_portlet_TranslationPortlet&_com_liferay_translation_web_internal_portlet_TranslationPortlet_mvcRenderCommandName=%2Ftranslation%2Ftranslate&_com_liferay_translation_web_internal_portlet_TranslationPortlet_classNameId=${classNameId}&_com_liferay_translation_web_internal_portlet_TranslationPortlet_classPK=${resourcePrimKey}&_com_liferay_translation_web_internal_portlet_TranslationPortlet_sourceLanguageId=${sourceLanguageId}&_com_liferay_translation_web_internal_portlet_TranslationPortlet_targetLanguageId=${targetLanguageId}");
+	}
+
+	macro openTranslationAdmin {
+		Navigator.openWithAppendToBaseURL(
+			baseURL = "${baseURL}",
+			urlAppend = "group/${siteURLKey}/~/control_panel/manage?p_p_id=com_liferay_translation_web_internal_portlet_TranslationPortlet");
+	}
+
+	macro saveInvalidConfiguration {
+		Check.toggleSwitch(
+			key_settingFieldName = "Enabled",
+			locator1 = "SystemSettings#SETTING_FIELD_NAME_CHECKBOX");
+
+		SystemSettings.editTextAreaSetting(
+			settingName = "Service Account Private Key",
+			settingValue = "${settingValue}");
+
+		Button.clickSave();
+
+		Alert.viewErrorMessage(errorMessage = " The service account private key must be in JSON format.");
+	}
+
+	macro setGoogleCloudTranslationServiceKey {
+		var lineSeparater = "\n";
+
+		var value1 = PropsUtil.get("google.cloud.translation.service.key.type");
+		var value2 = PropsUtil.get("google.cloud.translation.service.key.project.id");
+		var value3 = PropsUtil.get("google.cloud.translation.service.key.private.key.id");
+		var value5 = PropsUtil.get("google.cloud.translation.service.key.client.email");
+		var value6 = PropsUtil.get("google.cloud.translation.service.key.client.id");
+		var value7 = PropsUtil.get("google.cloud.translation.service.key.auth.uri");
+		var value8 = PropsUtil.get("google.cloud.translation.service.key.token.uri");
+		var value9 = PropsUtil.get("google.cloud.translation.service.key.auth.provider.x509.cert.url");
+		var value10 = PropsUtil.get("google.cloud.translation.service.key.client.x509.cert.url");
+
+		var keys = PropsUtil.get("google.cloud.translation.service.key.private.key");
+
+		var list = ListUtil.newList();
+
+		for (var key : list "${keys}") {
+			var value = '''${lineSeparater}${key}''';
+
+			ListUtil.add("${list}", "${value}");
+		}
+
+		var value4 = ListUtil.toString("${list}","");
+		var value4 = '''-----BEGIN PRIVATE KEY-----${value4}=${lineSeparater}-----END PRIVATE KEY-----${lineSeparater}''';
+
+		var attribute1 = '''"type" : "${value1}"''';
+		var attribute2 = '''"project_id" : "${value2}"''';
+		var attribute3 = '''"private_key_id" : "${value3}"''';
+		var attribute4 = '''"private_key" : "${value4}"''';
+		var attribute5 = '''"client_email" : "${value5}"''';
+		var attribute6 = '''"client_id" : "${value6}"''';
+		var attribute7 = '''"auth_uri" : "${value7}"''';
+		var attribute8 = '''"token_uri" : "${value8}"''';
+		var attribute9 = '''"auth_provider_x509_cert_url" : "${value9}"''';
+		var attribute10 = '''"client_x509_cert_url" : "${value10}"''';
+
+		var list = ListUtil.newList();
+
+		ListUtil.add("${list}", "${attribute1}");
+		ListUtil.add("${list}", "${attribute2}");
+		ListUtil.add("${list}", "${attribute3}");
+		ListUtil.add("${list}", "${attribute4}");
+		ListUtil.add("${list}", "${attribute5}");
+		ListUtil.add("${list}", "${attribute6}");
+		ListUtil.add("${list}", "${attribute7}");
+		ListUtil.add("${list}", "${attribute8}");
+		ListUtil.add("${list}", "${attribute9}");
+		ListUtil.add("${list}", "${attribute10}");
+
+		var attributes = ListUtil.toString("${list}");
+		var attributes = '''{${attributes}}''';
+
+		return "${attributes}";
+	}
+
+	macro translateContentPageFile {
+		AntCommand(
+			locator1 = "build-test.xml",
+			value1 = "update-translation-file -Dcontentpage.translation.fragment.target.original=<![CDATA[${fragmentContent}]]></target> -Dcontentpage.translation.fragment.target=<![CDATA[${fragmentContentTranslation}]]></target> -Dcontentpage.translation.title.target.original=<![CDATA[${pageName}]]></target> -Dcontentpage.translation.title.target=<![CDATA[${pageNameTranslation}]]></target> -Dtranslation.file.encoding=${encoding} -Dtranslation.file.name=${translationFileName} -Dcontentpage.translation.file=${contentPageTranslation} -Dtranslation.zip.file.name=${translationZipFileName}");
+	}
+
+	macro translateFields {
+		if (isSet(webContentTitle)) {
+			PortletEntry.inputTitle(title = "${webContentTitle}");
+		}
+
+		if (isSet(webContentContent)) {
+			SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
+
+			Type(
+				locator1 = "CKEditor#BODY",
+				value1 = "${webContentContent}");
+
+			SelectFrame(value1 = "relative=top");
+		}
+
+		if (isSet(webContentDescription)) {
+			SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
+
+			Type(
+				locator1 = "CKEditor#BODY",
+				value1 = "${webContentDescription}");
+
+			SelectFrame(value1 = "relative=top");
+		}
+
+		if (isSet(webContentSourceHTML)) {
+			Click(locator1 = "CKEditor#TOOLBAR_SOURCE_BUTTON_2");
+
+			Type.typeCodeMirrorEditorNoError(
+				locator1 = "CKEditor#BODY_FIELD_SOURCE_ON",
+				value1 = "${webContentSourceHTML}");
+
+			Click(locator1 = "CKEditor#TOOLBAR_SOURCE_BUTTON_2");
+		}
+
+		if (isSet(webContentText)) {
+			Type(
+				key_fieldName = "Text",
+				locator1 = "TextInput#TRANSLATIONS_TARGET_FIELD",
+				value1 = "${webContentText}");
+		}
+
+		if (isSet(webContentTextBox)) {
+			Type(
+				key_fieldName = "Text Box",
+				locator1 = "TextArea#TRANSLATIONS_TARGET_TEXT_BOX_FIELD",
+				value1 = "${webContentTextBox}");
+		}
+
+		if (isSet(webContentInteger)) {
+			Type(
+				key_fieldName = "Integer",
+				locator1 = "TextInput#TRANSLATIONS_TARGET_FIELD",
+				value1 = "${webContentInteger}");
+		}
+
+		if (isSet(webContentNumber)) {
+			Type(
+				key_fieldName = "Numeric",
+				locator1 = "TextInput#TRANSLATIONS_TARGET_FIELD",
+				value1 = "${webContentNumber}");
+		}
+
+		if (isSet(webContentDecimal)) {
+			Type(
+				key_fieldName = "Decimal",
+				locator1 = "TextInput#TRANSLATIONS_TARGET_FIELD",
+				value1 = "${webContentDecimal}");
+		}
+	}
+
+	macro translateFile {
+		AntCommand(
+			locator1 = "build-test.xml",
+			value1 = "update-translation-file -Dtranslation.content.target.original=<![CDATA[<p>${webContentContent}</p>]]></target> -Dtranslation.content.target=<![CDATA[<p>${contentTranslation}</p>]]></target> -Dtranslation.description.target.original=<![CDATA[<p>${webContentDescription}</p>]]></target> -Dtranslation.description.target=<![CDATA[<p>${descriptionTranslation}</p>]]></target> -Dtranslation.file.encoding=${encoding} -Dtranslation.title.target.original=<![CDATA[${webContentTitle}]]></target> -Dtranslation.title.target=<![CDATA[${titleTranslation}]]></target> -Dtranslation.zip.file.name=${translationZipFileName} -Dtranslation.file.name=${translationFileName} -Dtranslation.file.rename=${translationFileRename}");
+	}
+
+	macro translateFragmentField {
+		if ("${fieldName}" == "HTML") {
+			Click(locator1 = "CKEditor#TOOLBAR_SOURCE_BUTTON");
+
+			Type.typeCodeMirrorEditorNoError(
+				locator1 = "CKEditor#BODY_FIELD_SOURCE_ON",
+				value1 = "${fragmentText}");
+
+			Click(locator1 = "CKEditor#TOOLBAR_SOURCE_BUTTON");
+		}
+
+		else {
+			Type(
+				key_fieldName = "${fieldName}",
+				locator1 = "TextInput#TRANSLATIONS_TARGET_FIELD",
+				value1 = "${fragmentText}");
+		}
+	}
+
+	macro translateSpecificFieldsWithGoogle {
+		for (var fieldName : list "${fieldNameList}") {
+			Click.clickNoMouseOver(
+				key_title = "Auto Translate ${fieldName} Field",
+				locator1 = "Button#ANY_TITLE");
+
+			AssertTextEquals(
+				key_fieldName = "${fieldName}",
+				locator1 = "Message#SUCCESS_SPECIFIC_FORM_FIELD_REQUIRED",
+				value1 = "Field Translated");
+		}
+	}
+
+	macro translateWithGoogle {
+		Click(
+			key_text = "Auto Translate",
+			locator1 = "Button#ANY");
+
+		AssertTextEquals(
+			locator1 = "Toolbar#FEEDBACK",
+			value1 = "Successfully received translations.");
+	}
+
+	macro viewBaseFields {
+		if (isSet(webContentTitle)) {
+			AssertElementPresent(
+				key_fieldName = "Title",
+				key_fieldValue = "${webContentTitle}",
+				locator1 = "Translation#BASE_LANGUAGE_FIELD");
+		}
+
+		if (isSet(webContentContent)) {
+			AssertTextEquals.assertPartialText(
+				key_content = "${webContentContent}",
+				key_fieldName = "Content",
+				locator1 = "Translation#BASE_LANGUAGE_CONTENT_FIELD",
+				value1 = "${webContentContent}");
+		}
+
+		if (isSet(webContentDescription)) {
+			AssertTextEquals.assertPartialText(
+				key_content = "${webContentDescription}",
+				key_fieldName = "Description",
+				locator1 = "Translation#BASE_LANGUAGE_CONTENT_FIELD",
+				value1 = "${webContentDescription}");
+		}
+
+		if (isSet(webContentRichText)) {
+			AssertTextEquals.assertPartialText(
+				key_content = "${webContentRichText}",
+				key_fieldName = "HTML",
+				locator1 = "Translation#BASE_LANGUAGE_CONTENT_FIELD",
+				value1 = "${webContentRichText}");
+		}
+
+		if (isSet(webContentText)) {
+			if (!(isSet(webContentTextFieldLabel))) {
+				var webContentTextFieldLabel = "Text";
+			}
+
+			if ("${fieldType}" == "Multiple Lines") {
+				AssertElementPresent(
+					key_fieldName = "${webContentTextFieldLabel}",
+					key_fieldValue = "${webContentText}",
+					locator1 = "Translation#BASE_LANGUAGE_TEXT_BOX_FIELD");
+			}
+			else {
+				AssertElementPresent(
+					key_fieldName = "${webContentTextFieldLabel}",
+					key_fieldValue = "${webContentText}",
+					locator1 = "Translation#BASE_LANGUAGE_FIELD");
+			}
+		}
+
+		if (isSet(webContentNumeric)) {
+			if (!(isSet(webContentNumericFieldLabel))) {
+				var webContentNumericFieldLabel = "Numeric";
+			}
+
+			if ("${numericType}" == "Decimal") {
+				AssertElementPresent(
+					key_fieldName = "${webContentNumericFieldLabel}",
+					key_fieldValue = "${webContentNumeric}",
+					locator1 = "Translation#BASE_LANGUAGE_FIELD");
+			}
+			else {
+				AssertElementPresent(
+					key_fieldName = "${webContentNumericFieldLabel}",
+					key_fieldValue = "${webContentNumeric}",
+					locator1 = "Translation#BASE_LANGUAGE_FIELD");
+			}
+		}
+	}
+
+	macro viewDisabledFieldTranslationButtons {
+		for (var fieldName : list "${fieldNameList}") {
+			AssertVisible(
+				key_title = "Auto Translate ${fieldName} Field",
+				locator1 = "Button#ANY_TITLE_DISABLED");
+		}
+	}
+
+	macro viewEnabledFieldTranslationButtons {
+		for (var fieldName : list "${fieldNameList}") {
+			AssertVisible(
+				key_title = "Auto Translate ${fieldName} Field",
+				locator1 = "Button#ANY_TITLE");
+		}
+	}
+
+	macro viewErrorMessages {
+		AssertTextEquals.assertPartialText(
+			locator1 = "Message#ERROR_IMPORT_TRANSLATIONS",
+			value1 = "${errorMessage}");
+		AssertTextEquals.assertPartialText(
+			locator1 = "Message#ERROR_IMPORT_TRANSLATIONS_ITEM",
+			value1 = "${errorMessageItem}");
+	}
+
+	macro viewTargetFields {
+		if (isSet(webContentTitle)) {
+			AssertElementPresent(
+				key_fieldName = "Title",
+				key_fieldValue = "${webContentTitle}",
+				locator1 = "Translation#TARGET_LANGUAGE_FIELD");
+		}
+
+		if (isSet(webContentContent)) {
+			Pause(locator1 = "3000");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
+
+			if (IsTextNotEqual(locator1 = "CKEditor#BODY", value1 = "${webContentContent}")) {
+				Refresh();
+
+				SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
+			}
+
+			AssertTextEquals(
+				locator1 = "CKEditor#BODY",
+				value1 = "${webContentContent}");
+
+			SelectFrame(value1 = "relative=top");
+		}
+
+		if (isSet(webContentDescription)) {
+			Pause(locator1 = "3000");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
+
+			if (IsTextNotEqual(locator1 = "CKEditor#BODY", value1 = "${webContentDescription}")) {
+				Refresh();
+
+				SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
+			}
+
+			AssertTextEquals(
+				locator1 = "CKEditor#BODY",
+				value1 = "${webContentDescription}");
+
+			SelectFrame(value1 = "relative=top");
+		}
+
+		if (isSet(webContentHTML)) {
+			SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "CKEditor#BODY",
+				value1 = "${webContentHTML}");
+
+			SelectFrame(value1 = "relative=top");
+		}
+
+		if (isSet(webContentText)) {
+			AssertElementPresent(
+				key_fieldName = "Text",
+				key_fieldValue = "${webContentText}",
+				locator1 = "Translation#TARGET_LANGUAGE_FIELD");
+		}
+
+		if (isSet(webContentTextBox)) {
+			AssertElementPresent(
+				key_fieldName = "Text Box",
+				key_fieldValue = "${webContentTextBox}",
+				locator1 = "Translation#TARGET_LANGUAGE_TEXT_BOX_FIELD");
+		}
+
+		if (isSet(webContentInteger)) {
+			AssertElementPresent(
+				key_fieldName = "Integer",
+				key_fieldValue = "${webContentInteger}",
+				locator1 = "Translation#TARGET_LANGUAGE_FIELD");
+		}
+
+		if (isSet(webContentNumber)) {
+			AssertElementPresent(
+				key_fieldName = "Numeric",
+				key_fieldValue = "${webContentNumber}",
+				locator1 = "Translation#TARGET_LANGUAGE_FIELD");
+		}
+
+		if (isSet(webContentDecimal)) {
+			AssertElementPresent(
+				key_fieldName = "Decimal",
+				key_fieldValue = "${webContentDecimal}",
+				locator1 = "Translation#TARGET_LANGUAGE_FIELD");
+		}
+	}
+
+	macro viewTargetLocales {
+		Portlet.waitForForm();
+
+		Click.clickNoMouseOver(
+			key_currentLocale = StringUtil.lowerCase("${currentTargetLocale}"),
+			locator1 = "Button#TRANSLATIONS_LOCALIZATION");
+
+		for (var targetLocale : list "${targetLocale}" ) {
+			AssertElementPresent(
+				key_locale = "${targetLocale}",
+				locator1 = "Translation#DROPDOWN_MENU_ITEM");
+		}
+
+		if (isSet(noTargetLocale)) {
+			for (var noTargetLocale : list "${noTargetLocale}" ) {
+				AssertElementNotPresent(
+					key_locale = "${noTargetLocale}",
+					locator1 = "Translation#DROPDOWN_MENU_ITEM");
+			}
+		}
+	}
+
+	macro viewTranslationDetails {
+		AssertElementPresent(
+			key_currentLocale = StringUtil.lowerCase("${currentTargetLocale}"),
+			locator1 = "Button#TRANSLATIONS_LOCALIZATION");
+
+		Translations.viewTargetFields(
+			webContentContent = "${webContentContent}",
+			webContentDescription = "${webContentDescription}",
+			webContentNumber = "${webContentNumber}",
+			webContentText = "${webContentText}",
+			webContentTitle = "${webContentTitle}");
+	}
+
+	macro viewTranslationEntry {
+		AssertTextEquals(
+			key_rowEntry = "${title}",
+			locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_NAME",
+			value1 = "${title}");
+
+		AssertTextEquals.assertPartialText(
+			key_rowEntry = "${language}",
+			locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_DESCRIPTION_TD3",
+			value1 = "${language}");
+
+		if (isSet(status)) {
+			LexiconEntry.viewEntryStatus(
+				rowEntry = "${title}",
+				rowStatus = "${status}");
+		}
+
+		if (isSet(modifiedDate)) {
+			var toolTipModifiedDate = selenium.getAttribute("//td//span[contains(@class,'lfr-portal-tooltip')]@title");
+
+			LexiconEntry.viewEntryContent(
+				key_rowAny = "${modifiedDate}",
+				rowEntry = "${title}");
+
+			MouseOver(
+				key_rowAny = "${modifiedDate}",
+				key_rowEntry = "${title}",
+				locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_ANY");
+
+			AssertVisible(
+				key_content = "${toolTipModifiedDate}",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+		}
+	}
+
+	macro viewTranslationOptions {
+		LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+		Click.waitForMenuToggleJSClick(
+			key_webContentTitle = "${webContentTitle}",
+			locator1 = "WC#ENTRY_LIST_MENULIST_ICON");
+
+		if (isSet(noOptions)) {
+			MenuItem.viewNotPresent(menuItem = "Translate");
+
+			MenuItem.viewNotPresent(menuItem = "Export for Translation");
+
+			MenuItem.viewNotPresent(menuItem = "Import Translation");
+		}
+		else {
+			AssertTextEquals(
+				index = "3",
+				locator1 = "MenuItem#DROPDOWN_MENU_ITEM_SPECIFIC",
+				value1 = "Translate");
+
+			AssertTextEquals(
+				index = "7",
+				locator1 = "MenuItem#DROPDOWN_MENU_ITEM_SPECIFIC",
+				value1 = "View History");
+
+			AssertTextEquals(
+				index = "11",
+				locator1 = "MenuItem#DROPDOWN_MENU_ITEM_SPECIFIC",
+				value1 = "Export for Translation");
+
+			AssertTextEquals(
+				index = "12",
+				locator1 = "MenuItem#DROPDOWN_MENU_ITEM_SPECIFIC",
+				value1 = "Import Translation");
+		}
+	}
+
+}

@@ -14,19 +14,20 @@
 
 package com.liferay.portal.servlet;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.PredicateFilter;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.Portlet;
-import com.liferay.portal.util.comparator.PortletNameComparator;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.comparator.PortletNameComparator;
 import com.liferay.portlet.PortletResourceAccessor;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 /**
  * @author Carlos Sierra Andrés
@@ -40,6 +41,8 @@ public class ComboServletStaticURLGenerator {
 
 		long timestamp = _timestamp;
 
+		portlets = ListUtil.copy(portlets);
+
 		portlets = ListUtil.sort(portlets, _portletNameComparator);
 
 		for (Portlet portlet : portlets) {
@@ -50,14 +53,16 @@ public class ComboServletStaticURLGenerator {
 					portlet);
 
 				for (String portletResource : portletResources) {
-					if (!_predicateFilter.filter(portletResource)) {
+					if (!_predicate.test(portletResource)) {
 						continue;
 					}
 
 					String url = portletResource;
 
 					if (!HttpUtil.hasProtocol(portletResource)) {
-						url = portlet.getContextPath() + portletResource;
+						url =
+							PortalUtil.getPathProxy() +
+								portlet.getContextPath() + portletResource;
 					}
 
 					if (_visitedURLs.contains(url)) {
@@ -102,8 +107,8 @@ public class ComboServletStaticURLGenerator {
 		_portletResourceAccessors = portletResourceAccessors;
 	}
 
-	public void setPredicateFilter(PredicateFilter<String> predicateFilter) {
-		_predicateFilter = predicateFilter;
+	public void setPredicate(Predicate<String> predicate) {
+		_predicate = predicate;
 	}
 
 	public void setTimestamp(long timestamp) {
@@ -122,7 +127,7 @@ public class ComboServletStaticURLGenerator {
 		new PortletNameComparator();
 
 	private PortletResourceAccessor[] _portletResourceAccessors;
-	private PredicateFilter<String> _predicateFilter = PredicateFilter.ALL;
+	private Predicate<String> _predicate = s -> true;
 	private long _timestamp;
 	private String _urlPrefix;
 	private Set<String> _visitedURLs;

@@ -14,13 +14,14 @@
 
 package com.liferay.taglib.aui;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.servlet.FileAvailabilityUtil;
 import com.liferay.portal.kernel.servlet.taglib.BodyContentWrapper;
 import com.liferay.portal.kernel.servlet.taglib.aui.ScriptData;
-import com.liferay.portal.kernel.util.ServerDetector;
-import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.model.Portlet;
-import com.liferay.taglib.FileAvailabilityUtil;
 import com.liferay.taglib.aui.base.BaseScriptTag;
 import com.liferay.taglib.util.PortalIncludeUtil;
 
@@ -83,59 +84,119 @@ public class ScriptTag extends BaseScriptTag {
 	public static void flushScriptData(PageContext pageContext)
 		throws Exception {
 
-		HttpServletRequest request =
+		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)pageContext.getRequest();
 
-		ScriptData scriptData = (ScriptData)request.getAttribute(
+		ScriptData scriptData = (ScriptData)httpServletRequest.getAttribute(
 			WebKeys.AUI_SCRIPT_DATA);
 
 		if (scriptData == null) {
 			return;
 		}
 
-		request.removeAttribute(WebKeys.AUI_SCRIPT_DATA);
+		httpServletRequest.removeAttribute(WebKeys.AUI_SCRIPT_DATA);
 
-		scriptData.writeTo(request, pageContext.getOut());
+		scriptData.writeTo(pageContext.getOut());
 	}
 
 	@Override
 	public int doEndTag() throws JspException {
-		HttpServletRequest request =
+		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)pageContext.getRequest();
 
 		try {
 			String portletId = null;
 
-			Portlet portlet = (Portlet)request.getAttribute(
+			Portlet portlet = (Portlet)httpServletRequest.getAttribute(
 				WebKeys.RENDER_PORTLET);
 
 			if (portlet != null) {
 				portletId = portlet.getPortletId();
 			}
 
-			StringBundler bodyContentSB = getBodyContentAsStringBundler();
-
+			String load = getLoad();
 			String require = getRequire();
 			String use = getUse();
 
-			if ((require != null) && (use != null)) {
+			if ((use != null) && ((load != null) || (require != null))) {
 				throw new JspException(
-					"Attributes \"require\" and \"use\" are both set");
+					"Attribute \"use\" cannot be used with \"load\" or " +
+						"\"require\"");
 			}
 
+			StringBundler bodyContentSB = getBodyContentAsStringBundler();
+
 			if (getSandbox() || (require != null) || (use != null)) {
-				StringBundler sb = new StringBundler();
+				StringBundler sb = new StringBundler(4);
 
 				if ((require == null) && (use == null)) {
 					sb.append("(function() {");
 				}
 
-				sb.append("var $ = AUI.$;");
-				sb.append("var _ = AUI._;");
+				sb.append("var $ = AUI.$;var _ = AUI._;");
 				sb.append(bodyContentSB);
 
 				if ((require == null) && (use == null)) {
 					sb.append("})();");
+				}
+
+				bodyContentSB = sb;
+			}
+
+			if (load != null) {
+				StringBundler sb = null;
+
+				String[] modulesAndVariables = StringUtil.split(load);
+
+				if (modulesAndVariables.length == 1) {
+					sb = new StringBundler(9);
+
+					sb.append("(function() {window[Symbol.for('");
+					sb.append("__LIFERAY_WEBPACK_GET_MODULE__')]('");
+
+					String moduleAndVariable = modulesAndVariables[0];
+
+					String[] parts = StringUtil.split(
+						moduleAndVariable, " as ");
+
+					sb.append(parts[0]);
+
+					sb.append("').then((");
+					sb.append(parts[1]);
+					sb.append(") => {");
+					sb.append(bodyContentSB);
+					sb.append("});})();");
+				}
+				else {
+					sb = new StringBundler(
+						6 + (5 * modulesAndVariables.length));
+
+					sb.append("(function() {Promise.all([");
+
+					for (String moduleAndVariable : modulesAndVariables) {
+						String[] parts = StringUtil.split(
+							moduleAndVariable, " as ");
+
+						sb.append(StringPool.APOSTROPHE);
+						sb.append(parts[0]);
+						sb.append("', ");
+					}
+
+					sb.append("].map(window[Symbol.for('");
+					sb.append("__LIFERAY_WEBPACK_GET_MODULE__')])).then(([");
+
+					for (String moduleAndVariable : modulesAndVariables) {
+						String[] parts = StringUtil.split(
+							moduleAndVariable, " as ");
+
+						sb.append(parts[1]);
+
+						sb.append(StringPool.COMMA);
+					}
+
+					sb.append("]) => {");
+					sb.append(bodyContentSB);
+					sb.append("});})();");
 				}
 
 				bodyContentSB = sb;
@@ -163,17 +224,19 @@ public class ScriptTag extends BaseScriptTag {
 					PortalIncludeUtil.include(pageContext, page);
 				}
 				else {
-					scriptData.writeTo(request, pageContext.getOut());
+					scriptData.writeTo(pageContext.getOut());
 				}
 			}
 			else {
-				ScriptData scriptData = (ScriptData)request.getAttribute(
-					WebKeys.AUI_SCRIPT_DATA);
+				ScriptData scriptData =
+					(ScriptData)httpServletRequest.getAttribute(
+						WebKeys.AUI_SCRIPT_DATA);
 
 				if (scriptData == null) {
 					scriptData = new ScriptData();
 
-					request.setAttribute(WebKeys.AUI_SCRIPT_DATA, scriptData);
+					httpServletRequest.setAttribute(
+						WebKeys.AUI_SCRIPT_DATA, scriptData);
 				}
 
 				if (require != null) {
@@ -190,30 +253,31 @@ public class ScriptTag extends BaseScriptTag {
 
 			return EVAL_PAGE;
 		}
-		catch (Exception e) {
-			throw new JspException(e);
+		catch (Exception exception) {
+			throw new JspException(exception);
 		}
 		finally {
-			if (!ServerDetector.isResin()) {
-				cleanUp();
-			}
+			cleanUp();
 
-			request.removeAttribute(WebKeys.JAVASCRIPT_CONTEXT);
+			httpServletRequest.removeAttribute(WebKeys.JAVASCRIPT_CONTEXT);
 		}
 	}
 
 	@Override
 	public int doStartTag() throws JspException {
-		HttpServletRequest request =
+		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)pageContext.getRequest();
 
-		request.setAttribute(WebKeys.JAVASCRIPT_CONTEXT, Boolean.TRUE);
+		httpServletRequest.setAttribute(
+			WebKeys.JAVASCRIPT_CONTEXT, Boolean.TRUE);
 
 		return super.doStartTag();
 	}
 
 	@Override
 	protected void cleanUp() {
+		super.cleanUp();
+
 		setPosition(null);
 		setRequire(null);
 		setUse(null);

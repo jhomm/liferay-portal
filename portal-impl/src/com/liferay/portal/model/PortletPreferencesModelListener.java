@@ -14,15 +14,22 @@
 
 package com.liferay.portal.model;
 
+import com.liferay.asset.kernel.util.NotifiedAssetEntryThreadLocal;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.service.GroupLocalServiceUtil;
-import com.liferay.portal.service.LayoutLocalServiceUtil;
-import com.liferay.portal.service.LayoutSetPrototypeLocalServiceUtil;
-import com.liferay.portal.service.persistence.LayoutRevisionUtil;
-import com.liferay.portal.service.persistence.LayoutUtil;
+import com.liferay.portal.kernel.model.BaseModelListener;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutRevision;
+import com.liferay.portal.kernel.model.LayoutSetPrototype;
+import com.liferay.portal.kernel.model.PortletPreferences;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutSetPrototypeLocalServiceUtil;
+import com.liferay.portal.kernel.service.persistence.LayoutRevisionUtil;
+import com.liferay.portal.kernel.service.persistence.LayoutUtil;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.servlet.filters.cache.CacheUtil;
-import com.liferay.portal.util.PortletKeys;
 
 import java.util.Date;
 
@@ -39,7 +46,10 @@ public class PortletPreferencesModelListener
 	}
 
 	@Override
-	public void onAfterUpdate(PortletPreferences portletPreferences) {
+	public void onAfterUpdate(
+		PortletPreferences originalPortletPreferences,
+		PortletPreferences portletPreferences) {
+
 		clearCache(portletPreferences);
 
 		updateLayout(portletPreferences);
@@ -75,7 +85,11 @@ public class PortletPreferencesModelListener
 				CacheUtil.clearCache(companyId);
 			}
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
+
 			CacheUtil.clearCache();
 		}
 	}
@@ -119,17 +133,23 @@ public class PortletPreferencesModelListener
 				Layout layout = LayoutLocalServiceUtil.fetchLayout(
 					portletPreferences.getPlid());
 
-				if (layout == null) {
+				if ((layout == null) ||
+					NotifiedAssetEntryThreadLocal.
+						isNotifiedAssetEntryIdsModified()) {
+
 					return;
 				}
 
 				layout.setModifiedDate(new Date());
 
-				LayoutLocalServiceUtil.updateLayout(layout);
+				LayoutLocalServiceUtil.updateLayout(
+					layout.getGroupId(), layout.isPrivateLayout(),
+					layout.getLayoutId(), layout.getTypeSettings());
 			}
 		}
-		catch (Exception e) {
-			_log.error("Unable to update the layout's modified date", e);
+		catch (Exception exception) {
+			_log.error(
+				"Unable to update the layout's modified date", exception);
 		}
 	}
 

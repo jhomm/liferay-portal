@@ -1,0 +1,4 @@
+dependencies {
+	testIntegrationCompile project(":apps:archived:chat-api")
+	testIntegrationCompile project(":test:arquillian-extension-junit-bridge")
+}

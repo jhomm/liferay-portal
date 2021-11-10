@@ -1,0 +1,12 @@
+@default = "addSelection"
+definition {
+
+	function addSelection {
+		selenium.waitForVisible();
+
+		selenium.mouseOver();
+
+		selenium.addSelection();
+	}
+
+}

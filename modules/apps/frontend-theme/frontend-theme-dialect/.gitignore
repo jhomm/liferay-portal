@@ -1,0 +1,11 @@
+!/src/WEB-INF
+!/src/css/_clay_variables.scss
+!/src/css/_custom.scss
+!/src/css/dialect
+!/src/images
+*.lar
+/.web_bundle_build
+/build_gradle
+/dist
+/liferay-theme.json
+/src

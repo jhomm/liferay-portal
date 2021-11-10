@@ -1,45 +1,54 @@
-<definition default="assertClickNoError" summary="Click on '${locator1}' that should have a value of '${value1}'">
-	<command name="assertClickNoError">
-		<if>
-			<contains string="${locator1}" substring="/input" />
-			<then>
-				<execute function="AssertClickNoError#assertValueClick" />
-			</then>
-			<else>
-				<execute function="AssertClickNoError#assertTextClick" />
-			</else>
-		</if>
-	</command>
+@default = "assertClickNoError"
+@summary = "Click on '${locator1}' that should have a value of '${value1}'"
+definition {
 
-	<command name="assertPartialTextClickAt">
-		<execute function="AssertTextEquals#assertPartialText" />
+	function assertClickNoError {
+		WaitForSPARefresh();
 
-		<execute selenium="mouseOver" />
+		if (contains("${locator1}", "/input")) {
+			AssertClickNoError.assertValueClick();
+		}
+		else {
+			AssertClickNoError.assertTextClick();
+		}
+	}
 
-		<execute selenium="clickAt" />
-	</command>
+	function assertPartialTextClickAt {
+		WaitForSPARefresh();
 
-	<command name="assertTextClick">
-		<execute selenium="waitForVisible" />
+		AssertTextEquals.assertPartialText();
 
-		<execute selenium="waitForText" />
+		selenium.mouseOver();
 
-		<execute selenium="assertText" />
+		selenium.clickAt();
+	}
 
-		<execute selenium="mouseOver" />
+	function assertTextClick {
+		WaitForSPARefresh();
 
-		<execute selenium="click" />
-	</command>
+		selenium.waitForVisible();
 
-	<command name="assertValueClick">
-		<execute selenium="waitForVisible" />
+		selenium.waitForTextCaseInsensitive();
 
-		<execute selenium="waitForValue" />
+		selenium.assertTextCaseInsensitive();
 
-		<execute selenium="assertValue" />
+		selenium.mouseOver();
 
-		<execute selenium="mouseOver" />
+		selenium.click();
+	}
 
-		<execute selenium="click" />
-	</command>
-</definition>
+	function assertValueClick {
+		WaitForSPARefresh();
+
+		selenium.waitForVisible();
+
+		selenium.waitForValue();
+
+		selenium.assertValue();
+
+		selenium.mouseOver();
+
+		selenium.click();
+	}
+
+}

@@ -14,18 +14,20 @@
 
 package com.liferay.portlet.documentlibrary.model.impl;
 
+import com.liferay.document.library.kernel.exception.NoSuchFolderException;
+import com.liferay.document.library.kernel.model.DLFolder;
+import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.service.DLFolderLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLFolderServiceUtil;
+import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.util.CharPool;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Repository;
+import com.liferay.portal.kernel.service.RepositoryLocalServiceUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.model.Repository;
-import com.liferay.portal.service.RepositoryLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.NoSuchFolderException;
-import com.liferay.portlet.documentlibrary.model.DLFolder;
-import com.liferay.portlet.documentlibrary.model.DLFolderConstants;
-import com.liferay.portlet.documentlibrary.service.DLFolderLocalServiceUtil;
-import com.liferay.portlet.documentlibrary.service.DLFolderServiceUtil;
-import com.liferay.portlet.exportimport.lar.StagedModelType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,12 +49,12 @@ public class DLFolderImpl extends DLFolderBaseImpl {
 
 				ancestorFolderIds.add(folder.getFolderId());
 			}
-			catch (NoSuchFolderException nsfe) {
+			catch (NoSuchFolderException noSuchFolderException) {
 				if (folder.isInTrash()) {
 					break;
 				}
 
-				throw nsfe;
+				throw noSuchFolderException;
 			}
 		}
 
@@ -71,12 +73,12 @@ public class DLFolderImpl extends DLFolderBaseImpl {
 
 				ancestors.add(folder);
 			}
-			catch (NoSuchFolderException nsfe) {
+			catch (NoSuchFolderException noSuchFolderException) {
 				if (folder.isInTrash()) {
 					break;
 				}
 
-				throw nsfe;
+				throw noSuchFolderException;
 			}
 		}
 
@@ -126,13 +128,7 @@ public class DLFolderImpl extends DLFolderBaseImpl {
 
 	@Override
 	public boolean hasInheritableLock() {
-		try {
-			return DLFolderServiceUtil.hasInheritableLock(getFolderId());
-		}
-		catch (Exception e) {
-		}
-
-		return false;
+		return DLFolderLocalServiceUtil.hasInheritableLock(getFolderId());
 	}
 
 	@Override
@@ -140,7 +136,10 @@ public class DLFolderImpl extends DLFolderBaseImpl {
 		try {
 			return DLFolderServiceUtil.hasFolderLock(getFolderId());
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception, exception);
+			}
 		}
 
 		return false;
@@ -149,16 +148,24 @@ public class DLFolderImpl extends DLFolderBaseImpl {
 	@Override
 	public boolean isInHiddenFolder() {
 		try {
+			long repositoryId = getRepositoryId();
+
+			if (getGroupId() == repositoryId) {
+				return false;
+			}
+
 			Repository repository = RepositoryLocalServiceUtil.getRepository(
-				getRepositoryId());
+				repositoryId);
 
-			long dlFolderId = repository.getDlFolderId();
-
-			DLFolder dlFolder = DLFolderLocalServiceUtil.getFolder(dlFolderId);
+			DLFolder dlFolder = DLFolderLocalServiceUtil.getFolder(
+				repository.getDlFolderId());
 
 			return dlFolder.isHidden();
 		}
-		catch (Exception e) {
+		catch (PortalException portalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(portalException, portalException);
+			}
 		}
 
 		return false;
@@ -166,13 +173,7 @@ public class DLFolderImpl extends DLFolderBaseImpl {
 
 	@Override
 	public boolean isLocked() {
-		try {
-			return DLFolderServiceUtil.isFolderLocked(getFolderId());
-		}
-		catch (Exception e) {
-		}
-
-		return false;
+		return DLFolderServiceUtil.isFolderLocked(getFolderId());
 	}
 
 	@Override
@@ -183,5 +184,7 @@ public class DLFolderImpl extends DLFolderBaseImpl {
 
 		return false;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(DLFolderImpl.class);
 
 }

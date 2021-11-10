@@ -14,9 +14,9 @@
 
 package com.liferay.portal.model.impl;
 
+import com.liferay.portal.kernel.model.EventDefinition;
+import com.liferay.portal.kernel.model.PortletApp;
 import com.liferay.portal.kernel.xml.QName;
-import com.liferay.portal.model.EventDefinition;
-import com.liferay.portal.model.PortletApp;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -32,8 +32,6 @@ public class EventDefinitionImpl implements EventDefinition {
 		_qName = qName;
 		_valueType = valueType;
 		_portletApp = portletApp;
-
-		_qNames = new HashSet<>();
 
 		_qNames.add(_qName);
 	}
@@ -80,7 +78,7 @@ public class EventDefinitionImpl implements EventDefinition {
 
 	private PortletApp _portletApp;
 	private QName _qName;
-	private final Set<QName> _qNames;
+	private final Set<QName> _qNames = new HashSet<>();
 	private String _valueType;
 
 }

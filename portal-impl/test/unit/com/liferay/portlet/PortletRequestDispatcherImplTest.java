@@ -14,14 +14,21 @@
 
 package com.liferay.portlet;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.model.PortletApp;
 import com.liferay.portal.kernel.servlet.URLEncoder;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.Portlet;
-import com.liferay.portal.model.PortletApp;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.model.impl.PortletAppImpl;
 import com.liferay.portal.model.impl.PortletImpl;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.util.PortalImpl;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portlet.internal.PortletContextImpl;
+import com.liferay.portlet.internal.PortletRequestDispatcherImpl;
+import com.liferay.portlet.internal.RenderRequestImpl;
+import com.liferay.portlet.internal.RenderResponseImpl;
 
 import java.util.Collections;
 import java.util.Set;
@@ -38,6 +45,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -56,41 +65,46 @@ public class PortletRequestDispatcherImplTest {
 		portalUtil.setPortal(new PortalImpl());
 	}
 
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
 	@Test
 	public void testInclude() throws Exception {
-		PortletRequestDispatcherImpl portletRequestDispatcher =
+		PortletRequestDispatcherImpl portletRequestDispatcherImpl =
 			new PortletRequestDispatcherImpl(
-				new TestRequestDispatcher("/testPath", null, "/testPath", ""),
+				new TestRequestDispatcher(null, null, "/testPath", "/testPath"),
 				true, _portletContext, "/testPath");
 
-		portletRequestDispatcher.include(_portletRequest, _portletResponse);
+		portletRequestDispatcherImpl.include(_portletRequest, _portletResponse);
 	}
 
 	@Test
 	public void testIncludeAlternateContextPath() throws Exception {
-		PortletRequestDispatcherImpl portletRequestDispatcher =
+		PortletRequestDispatcherImpl portletRequestDispatcherImpl =
 			new PortletRequestDispatcherImpl(
 				new TestRequestDispatcher(
-					"/testPath", null, "/test/testPath", ""),
+					null, null, "/test/testPath", "/testPath"),
 				true, _portletContext, "/testPath");
 
-		portletRequestDispatcher.include(
+		portletRequestDispatcherImpl.include(
 			new TestPortletRequest("/test", _portlet), _portletResponse);
 	}
 
 	@Test
 	public void testIncludeNoPath() throws Exception {
-		PortletRequestDispatcherImpl portletRequestDispatcher =
+		PortletRequestDispatcherImpl portletRequestDispatcherImpl =
 			new PortletRequestDispatcherImpl(
 				new TestRequestDispatcher(null, null, "", ""), true,
 				_portletContext);
 
-		portletRequestDispatcher.include(_portletRequest, _portletResponse);
+		portletRequestDispatcherImpl.include(_portletRequest, _portletResponse);
 	}
 
 	@Test
 	public void testIncludeWithQueryString() throws Exception {
-		PortletRequestDispatcherImpl portletRequestDispatcher =
+		PortletRequestDispatcherImpl portletRequestDispatcherImpl =
 			new PortletRequestDispatcherImpl(
 				new TestRequestDispatcher(
 					"/moreTestPath",
@@ -100,28 +114,29 @@ public class PortletRequestDispatcherImplTest {
 				"/testPath/moreTestPath?testName=&testname=testvalue&" +
 					"testname=testvalue2");
 
-		portletRequestDispatcher.include(_portletRequest, _portletResponse);
+		portletRequestDispatcherImpl.include(_portletRequest, _portletResponse);
 	}
 
 	@Test
 	public void testIncludeWithUnmatchedPath() throws Exception {
-		PortletRequestDispatcherImpl portletRequestDispatcher =
+		PortletRequestDispatcherImpl portletRequestDispatcherImpl =
 			new PortletRequestDispatcherImpl(
 				new TestRequestDispatcher(
-					"/unmatchedPath", null, "/unmatchedPath", ""),
+					null, null, "/unmatchedPath", "/unmatchedPath"),
 				true, _portletContext, "/unmatchedPath");
 
-		portletRequestDispatcher.include(_portletRequest, _portletResponse);
+		portletRequestDispatcherImpl.include(_portletRequest, _portletResponse);
 	}
 
 	@Test
 	public void testIncludeWithUnrecognizedSeparator() throws Exception {
-		PortletRequestDispatcherImpl portletRequestDispatcher =
+		PortletRequestDispatcherImpl portletRequestDispatcherImpl =
 			new PortletRequestDispatcherImpl(
-				new TestRequestDispatcher("/testPath|", null, "/testPath|", ""),
+				new TestRequestDispatcher(
+					null, null, "/testPath|", "/testPath|"),
 				true, _portletContext, "/testPath|");
 
-		portletRequestDispatcher.include(_portletRequest, _portletResponse);
+		portletRequestDispatcherImpl.include(_portletRequest, _portletResponse);
 	}
 
 	private static final Portlet _portlet = new PortletImpl() {
@@ -136,6 +151,11 @@ public class PortletRequestDispatcherImplTest {
 				}
 
 			};
+		}
+
+		@Override
+		public String getPortletName() {
+			return RandomTestUtil.randomString();
 		}
 
 		@Override
@@ -186,14 +206,12 @@ public class PortletRequestDispatcherImplTest {
 			return _portlet;
 		}
 
-		@Override
-		public boolean isPrivateRequestAttributes() {
-			return false;
-		}
-
 		private TestPortletRequest(String contextPath, Portlet portlet) {
 			_contextPath = contextPath;
 			_portlet = portlet;
+
+			ReflectionTestUtil.setFieldValue(
+				this, "_httpServletRequest", new MockHttpServletRequest());
 		}
 
 		private final String _contextPath;
@@ -201,7 +219,7 @@ public class PortletRequestDispatcherImplTest {
 
 	}
 
-	private class TestRequestDispatcher implements RequestDispatcher {
+	private static class TestRequestDispatcher implements RequestDispatcher {
 
 		public void assertPropogatedInformation(
 			HttpServletRequest httpServletRequest) {

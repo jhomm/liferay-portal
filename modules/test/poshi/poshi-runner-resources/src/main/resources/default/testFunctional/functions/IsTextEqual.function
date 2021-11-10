@@ -1,0 +1,37 @@
+@default = "isTextEqual"
+definition {
+
+	function isPartialText {
+		selenium.waitForElementPresent();
+
+		selenium.waitForVisible();
+
+		selenium.isPartialText();
+	}
+
+	function isText {
+		selenium.waitForElementPresent();
+
+		selenium.waitForVisible();
+
+		selenium.isText();
+	}
+
+	function isTextEqual {
+		if (contains("${locator1}", "/input")) {
+			IsTextEqual.isValue();
+		}
+		else {
+			IsTextEqual.isText();
+		}
+	}
+
+	function isValue {
+		selenium.waitForElementPresent();
+
+		selenium.waitForVisible();
+
+		selenium.isValue();
+	}
+
+}

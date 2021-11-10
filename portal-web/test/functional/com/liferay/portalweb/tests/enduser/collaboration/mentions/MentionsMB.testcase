@@ -1,0 +1,151 @@
+@component-name = "portal-collaboration"
+definition {
+
+	property custom.properties = "jsonws.web.service.paths.excludes=";
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Mentions";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONUser.addUser(
+			userEmailAddress = "userea@liferay.com",
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "userea@liferay.com");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "userea@liferay.com",
+			userLoginFullName = "userfn userln");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "test@liferay.com",
+			userLoginFullName = "Test Test");
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			MessageboardsThread.tearDownCP(assetType = "Thread Subject");
+		}
+	}
+
+	@priority = "5"
+	@refactordone
+	test CanViewMentionViaMBThread {
+		Mentions.addMentionViaMessageBoardThread(
+			mentionsUserFullName = "userfn userln",
+			mentionsUserScreenName = "usersn",
+			siteURLKey = "guest",
+			threadSubject = "Thread Subject");
+
+		Mentions.viewMentionTagLink(
+			mentionsUserFullName = "userfn userln",
+			mentionsUserScreenName = "usersn");
+	}
+
+	@priority = "5"
+	@refactordone
+	test CanViewMentionViaMBThreadReply {
+		JSONMBMessage.addMessage(
+			groupName = "Guest",
+			threadBody = "Thread Body",
+			threadSubject = "Thread Subject");
+
+		Mentions.addMentionViaMessageBoardsReply(
+			groupName = "Guest",
+			mentionsUserFullName = "userfn userln",
+			mentionsUserScreenName = "usersn",
+			siteURLKey = "guest",
+			threadBody = "Thread Reply Body",
+			threadSubject = "Thread Subject");
+
+		Mentions.viewMentionTagLink(
+			mentionsUserFullName = "userfn userln",
+			mentionsUserScreenName = "usersn");
+	}
+
+	@priority = "5"
+	@refactorneeded
+	test CanViewMentionViaUpdatedMBThread {
+		JSONMBMessage.addMessage(
+			groupName = "Guest",
+			threadBody = "Thread Body",
+			threadSubject = "Thread Subject");
+
+		Mentions.addMentionViaMessageBoardThreadEdit(
+			groupName = "Guest",
+			mentionsUserFullName = "userfn userln",
+			mentionsUserScreenName = "usersn",
+			siteURLKey = "guest",
+			threadBody = "Thread Body Edit",
+			threadSubject = "Thread Subject");
+
+		MessageBoardsAdmin.openMessageBoardsAdmin(siteURLKey = "guest");
+
+		MessageboardsThread.viewCP(
+			replyCount = "0",
+			threadBody = "Thread Body Edit",
+			threadSubject = "Thread Subject");
+
+		Mentions.viewMentionTagLink(
+			mentionsUserFullName = "userfn userln",
+			mentionsUserScreenName = "usersn");
+	}
+
+	@description = "This test covers LPS-117986. It ensures that multiple mentions can be added to thread."
+	@priority = "4"
+	@refactordone
+	test MultipleMentionsCanBeAddedToThread {
+		JSONUser.addUser(
+			userEmailAddress = "userea2@liferay.com",
+			userFirstName = "userfn2",
+			userLastName = "userln2",
+			userScreenName = "usersn2");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "userea2@liferay.com");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "userea2@liferay.com",
+			userLoginFullName = "userfn2 userln2");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "test@liferay.com",
+			userLoginFullName = "Test Test");
+
+		Mentions.addMentionViaMessageBoardThread(
+			mentionsUserScreenNameList = "usersn,usersn2",
+			multipleMentions = "true",
+			siteURLKey = "guest",
+			threadSubject = "Thread Subject");
+
+		Mentions.viewMentionTagLink(
+			mentionsUserFullName = "userfn userln",
+			mentionsUserScreenName = "usersn");
+
+		MessageboardsThread.openToThread(
+			groupName = "Guest",
+			siteURLKey = "guest",
+			threadSubject = "Thread Subject");
+
+		Mentions.viewMentionTagLink(
+			mentionsUserFullName = "userfn2 userln2",
+			mentionsUserScreenName = "usersn2");
+	}
+
+}

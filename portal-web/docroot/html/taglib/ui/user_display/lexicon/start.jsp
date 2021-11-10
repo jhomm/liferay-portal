@@ -16,10 +16,14 @@
 
 <%@ include file="/html/taglib/ui/user_display/init.jsp" %>
 
-<liferay-util:buffer var="html">
-	<div class="<%= userIconCssClass %> user-icon user-icon-lg">
-		<img alt="thumbnail" class="img-responsive <%= imageCssClass %>" src="<%= HtmlUtil.escape(taglibSrc) %>">
-	</div>
+<liferay-util:buffer
+	var="html"
+>
+	<liferay-ui:user-portrait
+		imageCssClass="<%= imageCssClass %>"
+		user="<%= userDisplay %>"
+		userName="<%= (userDisplay != null) ? userDisplay.getFullName() : userName %>"
+	/>
 </liferay-util:buffer>
 
 <c:choose>
@@ -33,6 +37,13 @@
 				<c:if test="<%= showUserName %>">
 					<div class="nameplate-content">
 						<div class="heading4">
+
+							<%
+							if (Validator.isNull(url) && (userDisplay != null)) {
+								url = userDisplay.getDisplayURL(themeDisplay);
+							}
+							%>
+
 							<aui:a href="<%= showLink ? url : null %>">
 								<%= (userDisplay != null) ? HtmlUtil.escape(userDisplay.getFullName()) : HtmlUtil.escape(userName) %>
 							</aui:a>

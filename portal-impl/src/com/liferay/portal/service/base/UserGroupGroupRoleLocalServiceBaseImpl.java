@@ -14,39 +14,41 @@
 
 package com.liferay.portal.service.base;
 
-import aQute.bnd.annotation.ProviderType;
-
+import com.liferay.petra.function.UnsafeFunction;
+import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.bean.IdentifiableBean;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.model.UserGroupGroupRole;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
+import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
+import com.liferay.portal.kernel.service.UserGroupGroupRoleLocalService;
+import com.liferay.portal.kernel.service.UserGroupGroupRoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.UserGroupGroupRoleFinder;
+import com.liferay.portal.kernel.service.persistence.UserGroupGroupRolePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.model.PersistedModel;
-import com.liferay.portal.model.UserGroupGroupRole;
-import com.liferay.portal.service.BaseLocalServiceImpl;
-import com.liferay.portal.service.PersistedModelLocalServiceRegistry;
-import com.liferay.portal.service.UserGroupGroupRoleLocalService;
-import com.liferay.portal.service.persistence.RoleFinder;
-import com.liferay.portal.service.persistence.RolePersistence;
-import com.liferay.portal.service.persistence.UserGroupFinder;
-import com.liferay.portal.service.persistence.UserGroupGroupRoleFinder;
-import com.liferay.portal.service.persistence.UserGroupGroupRolePK;
-import com.liferay.portal.service.persistence.UserGroupGroupRolePersistence;
-import com.liferay.portal.service.persistence.UserGroupPersistence;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
+
+import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -61,21 +63,24 @@ import javax.sql.DataSource;
  *
  * @author Brian Wing Shun Chan
  * @see com.liferay.portal.service.impl.UserGroupGroupRoleLocalServiceImpl
- * @see com.liferay.portal.service.UserGroupGroupRoleLocalServiceUtil
  * @generated
  */
-@ProviderType
 public abstract class UserGroupGroupRoleLocalServiceBaseImpl
-	extends BaseLocalServiceImpl implements UserGroupGroupRoleLocalService,
-		IdentifiableBean {
+	extends BaseLocalServiceImpl
+	implements IdentifiableOSGiService, UserGroupGroupRoleLocalService {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Always use {@link com.liferay.portal.service.UserGroupGroupRoleLocalServiceUtil} to access the user group group role local service.
+	 * Never modify or reference this class directly. Use <code>UserGroupGroupRoleLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>UserGroupGroupRoleLocalServiceUtil</code>.
 	 */
 
 	/**
 	 * Adds the user group group role to the database. Also notifies the appropriate model listeners.
+	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect UserGroupGroupRoleLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
 	 *
 	 * @param userGroupGroupRole the user group group role
 	 * @return the user group group role that was added
@@ -84,6 +89,7 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	@Override
 	public UserGroupGroupRole addUserGroupGroupRole(
 		UserGroupGroupRole userGroupGroupRole) {
+
 		userGroupGroupRole.setNew(true);
 
 		return userGroupGroupRolePersistence.update(userGroupGroupRole);
@@ -92,31 +98,43 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	/**
 	 * Creates a new user group group role with the primary key. Does not add the user group group role to the database.
 	 *
-	 * @param userGroupGroupRolePK the primary key for the new user group group role
+	 * @param userGroupGroupRoleId the primary key for the new user group group role
 	 * @return the new user group group role
 	 */
 	@Override
+	@Transactional(enabled = false)
 	public UserGroupGroupRole createUserGroupGroupRole(
-		UserGroupGroupRolePK userGroupGroupRolePK) {
-		return userGroupGroupRolePersistence.create(userGroupGroupRolePK);
+		long userGroupGroupRoleId) {
+
+		return userGroupGroupRolePersistence.create(userGroupGroupRoleId);
 	}
 
 	/**
 	 * Deletes the user group group role with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
-	 * @param userGroupGroupRolePK the primary key of the user group group role
+	 * <p>
+	 * <strong>Important:</strong> Inspect UserGroupGroupRoleLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
+	 *
+	 * @param userGroupGroupRoleId the primary key of the user group group role
 	 * @return the user group group role that was removed
 	 * @throws PortalException if a user group group role with the primary key could not be found
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	@Override
 	public UserGroupGroupRole deleteUserGroupGroupRole(
-		UserGroupGroupRolePK userGroupGroupRolePK) throws PortalException {
-		return userGroupGroupRolePersistence.remove(userGroupGroupRolePK);
+			long userGroupGroupRoleId)
+		throws PortalException {
+
+		return userGroupGroupRolePersistence.remove(userGroupGroupRoleId);
 	}
 
 	/**
 	 * Deletes the user group group role from the database. Also notifies the appropriate model listeners.
+	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect UserGroupGroupRoleLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
 	 *
 	 * @param userGroupGroupRole the user group group role
 	 * @return the user group group role that was removed
@@ -125,15 +143,28 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	@Override
 	public UserGroupGroupRole deleteUserGroupGroupRole(
 		UserGroupGroupRole userGroupGroupRole) {
+
 		return userGroupGroupRolePersistence.remove(userGroupGroupRole);
+	}
+
+	@Override
+	public <T> T dslQuery(DSLQuery dslQuery) {
+		return userGroupGroupRolePersistence.dslQuery(dslQuery);
+	}
+
+	@Override
+	public int dslQueryCount(DSLQuery dslQuery) {
+		Long count = dslQuery(dslQuery);
+
+		return count.intValue();
 	}
 
 	@Override
 	public DynamicQuery dynamicQuery() {
 		Class<?> clazz = getClass();
 
-		return DynamicQueryFactoryUtil.forClass(UserGroupGroupRole.class,
-			clazz.getClassLoader());
+		return DynamicQueryFactoryUtil.forClass(
+			UserGroupGroupRole.class, clazz.getClassLoader());
 	}
 
 	/**
@@ -151,7 +182,7 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 * Performs a dynamic query on the database and returns a range of the matching rows.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link com.liferay.portal.model.impl.UserGroupGroupRoleModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.UserGroupGroupRoleModelImpl</code>.
 	 * </p>
 	 *
 	 * @param dynamicQuery the dynamic query
@@ -160,17 +191,18 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 * @return the range of matching rows
 	 */
 	@Override
-	public <T> List<T> dynamicQuery(DynamicQuery dynamicQuery, int start,
-		int end) {
-		return userGroupGroupRolePersistence.findWithDynamicQuery(dynamicQuery,
-			start, end);
+	public <T> List<T> dynamicQuery(
+		DynamicQuery dynamicQuery, int start, int end) {
+
+		return userGroupGroupRolePersistence.findWithDynamicQuery(
+			dynamicQuery, start, end);
 	}
 
 	/**
 	 * Performs a dynamic query on the database and returns an ordered range of the matching rows.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link com.liferay.portal.model.impl.UserGroupGroupRoleModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.UserGroupGroupRoleModelImpl</code>.
 	 * </p>
 	 *
 	 * @param dynamicQuery the dynamic query
@@ -180,10 +212,12 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 * @return the ordered range of matching rows
 	 */
 	@Override
-	public <T> List<T> dynamicQuery(DynamicQuery dynamicQuery, int start,
-		int end, OrderByComparator<T> orderByComparator) {
-		return userGroupGroupRolePersistence.findWithDynamicQuery(dynamicQuery,
-			start, end, orderByComparator);
+	public <T> List<T> dynamicQuery(
+		DynamicQuery dynamicQuery, int start, int end,
+		OrderByComparator<T> orderByComparator) {
+
+		return userGroupGroupRolePersistence.findWithDynamicQuery(
+			dynamicQuery, start, end, orderByComparator);
 	}
 
 	/**
@@ -194,7 +228,8 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 */
 	@Override
 	public long dynamicQueryCount(DynamicQuery dynamicQuery) {
-		return userGroupGroupRolePersistence.countWithDynamicQuery(dynamicQuery);
+		return userGroupGroupRolePersistence.countWithDynamicQuery(
+			dynamicQuery);
 	}
 
 	/**
@@ -205,57 +240,91 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 * @return the number of rows matching the dynamic query
 	 */
 	@Override
-	public long dynamicQueryCount(DynamicQuery dynamicQuery,
-		Projection projection) {
-		return userGroupGroupRolePersistence.countWithDynamicQuery(dynamicQuery,
-			projection);
+	public long dynamicQueryCount(
+		DynamicQuery dynamicQuery, Projection projection) {
+
+		return userGroupGroupRolePersistence.countWithDynamicQuery(
+			dynamicQuery, projection);
 	}
 
 	@Override
 	public UserGroupGroupRole fetchUserGroupGroupRole(
-		UserGroupGroupRolePK userGroupGroupRolePK) {
-		return userGroupGroupRolePersistence.fetchByPrimaryKey(userGroupGroupRolePK);
+		long userGroupGroupRoleId) {
+
+		return userGroupGroupRolePersistence.fetchByPrimaryKey(
+			userGroupGroupRoleId);
 	}
 
 	/**
 	 * Returns the user group group role with the primary key.
 	 *
-	 * @param userGroupGroupRolePK the primary key of the user group group role
+	 * @param userGroupGroupRoleId the primary key of the user group group role
 	 * @return the user group group role
 	 * @throws PortalException if a user group group role with the primary key could not be found
 	 */
 	@Override
-	public UserGroupGroupRole getUserGroupGroupRole(
-		UserGroupGroupRolePK userGroupGroupRolePK) throws PortalException {
-		return userGroupGroupRolePersistence.findByPrimaryKey(userGroupGroupRolePK);
+	public UserGroupGroupRole getUserGroupGroupRole(long userGroupGroupRoleId)
+		throws PortalException {
+
+		return userGroupGroupRolePersistence.findByPrimaryKey(
+			userGroupGroupRoleId);
 	}
 
 	@Override
 	public ActionableDynamicQuery getActionableDynamicQuery() {
-		ActionableDynamicQuery actionableDynamicQuery = new DefaultActionableDynamicQuery();
+		ActionableDynamicQuery actionableDynamicQuery =
+			new DefaultActionableDynamicQuery();
 
-		actionableDynamicQuery.setBaseLocalService(com.liferay.portal.service.UserGroupGroupRoleLocalServiceUtil.getService());
-		actionableDynamicQuery.setClass(UserGroupGroupRole.class);
+		actionableDynamicQuery.setBaseLocalService(
+			userGroupGroupRoleLocalService);
 		actionableDynamicQuery.setClassLoader(getClassLoader());
+		actionableDynamicQuery.setModelClass(UserGroupGroupRole.class);
 
 		actionableDynamicQuery.setPrimaryKeyPropertyName(
-			"primaryKey.userGroupId");
-
-		actionableDynamicQuery.setGroupIdPropertyName("primaryKey.groupId");
+			"userGroupGroupRoleId");
 
 		return actionableDynamicQuery;
 	}
 
+	@Override
+	public IndexableActionableDynamicQuery
+		getIndexableActionableDynamicQuery() {
+
+		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
+			new IndexableActionableDynamicQuery();
+
+		indexableActionableDynamicQuery.setBaseLocalService(
+			userGroupGroupRoleLocalService);
+		indexableActionableDynamicQuery.setClassLoader(getClassLoader());
+		indexableActionableDynamicQuery.setModelClass(UserGroupGroupRole.class);
+
+		indexableActionableDynamicQuery.setPrimaryKeyPropertyName(
+			"userGroupGroupRoleId");
+
+		return indexableActionableDynamicQuery;
+	}
+
 	protected void initActionableDynamicQuery(
 		ActionableDynamicQuery actionableDynamicQuery) {
-		actionableDynamicQuery.setBaseLocalService(com.liferay.portal.service.UserGroupGroupRoleLocalServiceUtil.getService());
-		actionableDynamicQuery.setClass(UserGroupGroupRole.class);
+
+		actionableDynamicQuery.setBaseLocalService(
+			userGroupGroupRoleLocalService);
 		actionableDynamicQuery.setClassLoader(getClassLoader());
+		actionableDynamicQuery.setModelClass(UserGroupGroupRole.class);
 
 		actionableDynamicQuery.setPrimaryKeyPropertyName(
-			"primaryKey.userGroupId");
+			"userGroupGroupRoleId");
+	}
 
-		actionableDynamicQuery.setGroupIdPropertyName("primaryKey.groupId");
+	/**
+	 * @throws PortalException
+	 */
+	@Override
+	public PersistedModel createPersistedModel(Serializable primaryKeyObj)
+		throws PortalException {
+
+		return userGroupGroupRolePersistence.create(
+			((Long)primaryKeyObj).longValue());
 	}
 
 	/**
@@ -264,12 +333,23 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	@Override
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
-		return userGroupGroupRoleLocalService.deleteUserGroupGroupRole((UserGroupGroupRole)persistedModel);
+
+		return userGroupGroupRoleLocalService.deleteUserGroupGroupRole(
+			(UserGroupGroupRole)persistedModel);
 	}
 
 	@Override
+	public BasePersistence<UserGroupGroupRole> getBasePersistence() {
+		return userGroupGroupRolePersistence;
+	}
+
+	/**
+	 * @throws PortalException
+	 */
+	@Override
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException {
+
 		return userGroupGroupRolePersistence.findByPrimaryKey(primaryKeyObj);
 	}
 
@@ -277,7 +357,7 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 * Returns a range of all the user group group roles.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link com.liferay.portal.model.impl.UserGroupGroupRoleModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.UserGroupGroupRoleModelImpl</code>.
 	 * </p>
 	 *
 	 * @param start the lower bound of the range of user group group roles
@@ -302,6 +382,10 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	/**
 	 * Updates the user group group role in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect UserGroupGroupRoleLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
+	 *
 	 * @param userGroupGroupRole the user group group role
 	 * @return the user group group role that was updated
 	 */
@@ -309,6 +393,7 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	@Override
 	public UserGroupGroupRole updateUserGroupGroupRole(
 		UserGroupGroupRole userGroupGroupRole) {
+
 		return userGroupGroupRolePersistence.update(userGroupGroupRole);
 	}
 
@@ -328,26 +413,8 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 */
 	public void setUserGroupGroupRoleLocalService(
 		UserGroupGroupRoleLocalService userGroupGroupRoleLocalService) {
+
 		this.userGroupGroupRoleLocalService = userGroupGroupRoleLocalService;
-	}
-
-	/**
-	 * Returns the user group group role remote service.
-	 *
-	 * @return the user group group role remote service
-	 */
-	public com.liferay.portal.service.UserGroupGroupRoleService getUserGroupGroupRoleService() {
-		return userGroupGroupRoleService;
-	}
-
-	/**
-	 * Sets the user group group role remote service.
-	 *
-	 * @param userGroupGroupRoleService the user group group role remote service
-	 */
-	public void setUserGroupGroupRoleService(
-		com.liferay.portal.service.UserGroupGroupRoleService userGroupGroupRoleService) {
-		this.userGroupGroupRoleService = userGroupGroupRoleService;
 	}
 
 	/**
@@ -366,6 +433,7 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 */
 	public void setUserGroupGroupRolePersistence(
 		UserGroupGroupRolePersistence userGroupGroupRolePersistence) {
+
 		this.userGroupGroupRolePersistence = userGroupGroupRolePersistence;
 	}
 
@@ -385,6 +453,7 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 */
 	public void setUserGroupGroupRoleFinder(
 		UserGroupGroupRoleFinder userGroupGroupRoleFinder) {
+
 		this.userGroupGroupRoleFinder = userGroupGroupRoleFinder;
 	}
 
@@ -393,7 +462,9 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 *
 	 * @return the counter local service
 	 */
-	public com.liferay.counter.service.CounterLocalService getCounterLocalService() {
+	public com.liferay.counter.kernel.service.CounterLocalService
+		getCounterLocalService() {
+
 		return counterLocalService;
 	}
 
@@ -403,191 +474,54 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 * @param counterLocalService the counter local service
 	 */
 	public void setCounterLocalService(
-		com.liferay.counter.service.CounterLocalService counterLocalService) {
+		com.liferay.counter.kernel.service.CounterLocalService
+			counterLocalService) {
+
 		this.counterLocalService = counterLocalService;
 	}
 
-	/**
-	 * Returns the role local service.
-	 *
-	 * @return the role local service
-	 */
-	public com.liferay.portal.service.RoleLocalService getRoleLocalService() {
-		return roleLocalService;
-	}
-
-	/**
-	 * Sets the role local service.
-	 *
-	 * @param roleLocalService the role local service
-	 */
-	public void setRoleLocalService(
-		com.liferay.portal.service.RoleLocalService roleLocalService) {
-		this.roleLocalService = roleLocalService;
-	}
-
-	/**
-	 * Returns the role remote service.
-	 *
-	 * @return the role remote service
-	 */
-	public com.liferay.portal.service.RoleService getRoleService() {
-		return roleService;
-	}
-
-	/**
-	 * Sets the role remote service.
-	 *
-	 * @param roleService the role remote service
-	 */
-	public void setRoleService(
-		com.liferay.portal.service.RoleService roleService) {
-		this.roleService = roleService;
-	}
-
-	/**
-	 * Returns the role persistence.
-	 *
-	 * @return the role persistence
-	 */
-	public RolePersistence getRolePersistence() {
-		return rolePersistence;
-	}
-
-	/**
-	 * Sets the role persistence.
-	 *
-	 * @param rolePersistence the role persistence
-	 */
-	public void setRolePersistence(RolePersistence rolePersistence) {
-		this.rolePersistence = rolePersistence;
-	}
-
-	/**
-	 * Returns the role finder.
-	 *
-	 * @return the role finder
-	 */
-	public RoleFinder getRoleFinder() {
-		return roleFinder;
-	}
-
-	/**
-	 * Sets the role finder.
-	 *
-	 * @param roleFinder the role finder
-	 */
-	public void setRoleFinder(RoleFinder roleFinder) {
-		this.roleFinder = roleFinder;
-	}
-
-	/**
-	 * Returns the user group local service.
-	 *
-	 * @return the user group local service
-	 */
-	public com.liferay.portal.service.UserGroupLocalService getUserGroupLocalService() {
-		return userGroupLocalService;
-	}
-
-	/**
-	 * Sets the user group local service.
-	 *
-	 * @param userGroupLocalService the user group local service
-	 */
-	public void setUserGroupLocalService(
-		com.liferay.portal.service.UserGroupLocalService userGroupLocalService) {
-		this.userGroupLocalService = userGroupLocalService;
-	}
-
-	/**
-	 * Returns the user group remote service.
-	 *
-	 * @return the user group remote service
-	 */
-	public com.liferay.portal.service.UserGroupService getUserGroupService() {
-		return userGroupService;
-	}
-
-	/**
-	 * Sets the user group remote service.
-	 *
-	 * @param userGroupService the user group remote service
-	 */
-	public void setUserGroupService(
-		com.liferay.portal.service.UserGroupService userGroupService) {
-		this.userGroupService = userGroupService;
-	}
-
-	/**
-	 * Returns the user group persistence.
-	 *
-	 * @return the user group persistence
-	 */
-	public UserGroupPersistence getUserGroupPersistence() {
-		return userGroupPersistence;
-	}
-
-	/**
-	 * Sets the user group persistence.
-	 *
-	 * @param userGroupPersistence the user group persistence
-	 */
-	public void setUserGroupPersistence(
-		UserGroupPersistence userGroupPersistence) {
-		this.userGroupPersistence = userGroupPersistence;
-	}
-
-	/**
-	 * Returns the user group finder.
-	 *
-	 * @return the user group finder
-	 */
-	public UserGroupFinder getUserGroupFinder() {
-		return userGroupFinder;
-	}
-
-	/**
-	 * Sets the user group finder.
-	 *
-	 * @param userGroupFinder the user group finder
-	 */
-	public void setUserGroupFinder(UserGroupFinder userGroupFinder) {
-		this.userGroupFinder = userGroupFinder;
-	}
-
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register("com.liferay.portal.model.UserGroupGroupRole",
+		persistedModelLocalServiceRegistry.register(
+			"com.liferay.portal.kernel.model.UserGroupGroupRole",
 			userGroupGroupRoleLocalService);
+
+		_setLocalServiceUtilService(userGroupGroupRoleLocalService);
 	}
 
 	public void destroy() {
 		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.portal.model.UserGroupGroupRole");
+			"com.liferay.portal.kernel.model.UserGroupGroupRole");
+
+		_setLocalServiceUtilService(null);
 	}
 
 	/**
-	 * Returns the Spring bean ID for this bean.
+	 * Returns the OSGi service identifier.
 	 *
-	 * @return the Spring bean ID for this bean
+	 * @return the OSGi service identifier
 	 */
 	@Override
-	public String getBeanIdentifier() {
-		return _beanIdentifier;
+	public String getOSGiServiceIdentifier() {
+		return UserGroupGroupRoleLocalService.class.getName();
 	}
 
-	/**
-	 * Sets the Spring bean ID for this bean.
-	 *
-	 * @param beanIdentifier the Spring bean ID for this bean
-	 */
 	@Override
-	public void setBeanIdentifier(String beanIdentifier) {
-		_beanIdentifier = beanIdentifier;
+	public CTPersistence<UserGroupGroupRole> getCTPersistence() {
+		return userGroupGroupRolePersistence;
 	}
 
-	protected Class<?> getModelClass() {
+	@Override
+	public Class<UserGroupGroupRole> getModelClass() {
 		return UserGroupGroupRole.class;
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<UserGroupGroupRole>, R, E>
+				updateUnsafeFunction)
+		throws E {
+
+		return updateUnsafeFunction.apply(userGroupGroupRolePersistence);
 	}
 
 	protected String getModelClassName() {
@@ -601,50 +535,58 @@ public abstract class UserGroupGroupRoleLocalServiceBaseImpl
 	 */
 	protected void runSQL(String sql) {
 		try {
-			DataSource dataSource = userGroupGroupRolePersistence.getDataSource();
+			DataSource dataSource =
+				userGroupGroupRolePersistence.getDataSource();
 
-			DB db = DBFactoryUtil.getDB();
+			DB db = DBManagerUtil.getDB();
 
 			sql = db.buildSQL(sql);
 			sql = PortalUtil.transformSQL(sql);
 
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(dataSource,
-					sql, new int[0]);
+			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
+				dataSource, sql);
 
 			sqlUpdate.update();
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 	}
 
-	@BeanReference(type = com.liferay.portal.service.UserGroupGroupRoleLocalService.class)
+	private void _setLocalServiceUtilService(
+		UserGroupGroupRoleLocalService userGroupGroupRoleLocalService) {
+
+		try {
+			Field field =
+				UserGroupGroupRoleLocalServiceUtil.class.getDeclaredField(
+					"_service");
+
+			field.setAccessible(true);
+
+			field.set(null, userGroupGroupRoleLocalService);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new RuntimeException(reflectiveOperationException);
+		}
+	}
+
+	@BeanReference(type = UserGroupGroupRoleLocalService.class)
 	protected UserGroupGroupRoleLocalService userGroupGroupRoleLocalService;
-	@BeanReference(type = com.liferay.portal.service.UserGroupGroupRoleService.class)
-	protected com.liferay.portal.service.UserGroupGroupRoleService userGroupGroupRoleService;
+
 	@BeanReference(type = UserGroupGroupRolePersistence.class)
 	protected UserGroupGroupRolePersistence userGroupGroupRolePersistence;
+
 	@BeanReference(type = UserGroupGroupRoleFinder.class)
 	protected UserGroupGroupRoleFinder userGroupGroupRoleFinder;
-	@BeanReference(type = com.liferay.counter.service.CounterLocalService.class)
-	protected com.liferay.counter.service.CounterLocalService counterLocalService;
-	@BeanReference(type = com.liferay.portal.service.RoleLocalService.class)
-	protected com.liferay.portal.service.RoleLocalService roleLocalService;
-	@BeanReference(type = com.liferay.portal.service.RoleService.class)
-	protected com.liferay.portal.service.RoleService roleService;
-	@BeanReference(type = RolePersistence.class)
-	protected RolePersistence rolePersistence;
-	@BeanReference(type = RoleFinder.class)
-	protected RoleFinder roleFinder;
-	@BeanReference(type = com.liferay.portal.service.UserGroupLocalService.class)
-	protected com.liferay.portal.service.UserGroupLocalService userGroupLocalService;
-	@BeanReference(type = com.liferay.portal.service.UserGroupService.class)
-	protected com.liferay.portal.service.UserGroupService userGroupService;
-	@BeanReference(type = UserGroupPersistence.class)
-	protected UserGroupPersistence userGroupPersistence;
-	@BeanReference(type = UserGroupFinder.class)
-	protected UserGroupFinder userGroupFinder;
+
+	@BeanReference(
+		type = com.liferay.counter.kernel.service.CounterLocalService.class
+	)
+	protected com.liferay.counter.kernel.service.CounterLocalService
+		counterLocalService;
+
 	@BeanReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry persistedModelLocalServiceRegistry;
-	private String _beanIdentifier;
+	protected PersistedModelLocalServiceRegistry
+		persistedModelLocalServiceRegistry;
+
 }

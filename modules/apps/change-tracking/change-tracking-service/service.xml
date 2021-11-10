@@ -1,0 +1,274 @@
+<?xml version="1.0"?>
+<!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.4.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_4_0.dtd">
+
+<service-builder auto-import-default-references="false" auto-namespace-tables="false" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.change.tracking">
+	<namespace>CT</namespace>
+	<entity local-service="false" name="CTAutoResolutionInfo" remote-service="false" trash-enabled="false" uuid="false">
+
+		<!-- PK fields -->
+
+		<column name="ctAutoResolutionInfoId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="createDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="ctCollectionId" type="long" />
+		<column name="modelClassNameId" type="long" />
+		<column name="sourceModelClassPK" type="long" />
+		<column name="targetModelClassPK" type="long" />
+		<column name="conflictIdentifier" type="String" />
+
+		<!-- Order -->
+
+		<order by="asc">
+			<order-column name="createDate" />
+		</order>
+
+		<!-- Finder methods -->
+
+		<finder name="CtCollectionId" return-type="Collection">
+			<finder-column name="ctCollectionId" />
+		</finder>
+		<finder name="C_MCNI_SMCPK" return-type="Collection">
+			<finder-column name="ctCollectionId" />
+			<finder-column name="modelClassNameId" />
+			<finder-column arrayable-operator="OR" name="sourceModelClassPK" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="CTCollection" remote-service="true" trash-enabled="false" uuid="false">
+
+		<!-- PK fields -->
+
+		<column name="ctCollectionId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="schemaVersionId" type="long" />
+		<column name="name" type="String" />
+		<column name="description" type="String" />
+		<column name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusDate" type="Date" />
+
+		<!-- Order -->
+
+		<order by="asc">
+			<order-column name="createDate" />
+		</order>
+
+		<!-- Finder methods -->
+
+		<finder name="CompanyId" return-type="Collection">
+			<finder-column name="companyId" />
+		</finder>
+		<finder name="SchemaVersionId" return-type="Collection">
+			<finder-column name="schemaVersionId" />
+		</finder>
+		<finder name="C_S" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column arrayable-operator="OR" name="status" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="CTComment" remote-service="false" trash-enabled="false" uuid="false">
+
+		<!-- PK fields -->
+
+		<column name="ctCommentId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="ctCollectionId" type="long" />
+		<column name="ctEntryId" type="long" />
+		<column name="value" type="String" />
+
+		<!-- Order -->
+
+		<order by="desc">
+			<order-column name="ctCommentId" />
+		</order>
+
+		<!-- Finder methods -->
+
+		<finder name="CtCollectionId" return-type="Collection">
+			<finder-column name="ctCollectionId" />
+		</finder>
+		<finder name="CtEntryId" return-type="Collection">
+			<finder-column name="ctEntryId" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="CTEntry" remote-service="false" trash-enabled="false" uuid="false">
+
+		<!-- PK fields -->
+
+		<column name="ctEntryId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="ctCollectionId" type="long" />
+		<column name="modelClassNameId" type="long" />
+		<column name="modelClassPK" type="long" />
+		<column name="modelMvccVersion" type="long" />
+		<column name="changeType" type="int" />
+
+		<!-- Finder methods -->
+
+		<finder name="CtCollectionId" return-type="Collection">
+			<finder-column name="ctCollectionId" />
+		</finder>
+		<finder name="C_MCNI" return-type="Collection">
+			<finder-column name="ctCollectionId" />
+			<finder-column name="modelClassNameId" />
+		</finder>
+		<finder name="C_MCNI_MCPK" return-type="CTEntry" unique="true">
+			<finder-column name="ctCollectionId" />
+			<finder-column name="modelClassNameId" />
+			<finder-column name="modelClassPK" />
+		</finder>
+		<finder name="NotC_MCNI_MCPK" return-type="Collection">
+			<finder-column comparator="!=" name="ctCollectionId" />
+			<finder-column name="modelClassNameId" />
+			<finder-column arrayable-operator="OR" name="modelClassPK" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="CTMessage" remote-service="false" trash-enabled="false" uuid="false">
+
+		<!-- PK fields -->
+
+		<column name="ctMessageId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="ctCollectionId" type="long" />
+		<column name="messageContent" type="String" />
+
+		<!-- Finder methods -->
+
+		<finder name="CtCollectionId" return-type="Collection">
+			<finder-column name="ctCollectionId" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="CTPreferences" remote-service="true" trash-enabled="false" uuid="false">
+
+		<!-- PK fields -->
+
+		<column name="ctPreferencesId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="ctCollectionId" type="long" />
+		<column name="previousCtCollectionId" type="long" />
+		<column name="confirmationEnabled" type="boolean" />
+
+		<!-- Finder methods -->
+
+		<finder name="CtCollectionId" return-type="Collection">
+			<finder-column name="ctCollectionId" />
+		</finder>
+		<finder name="PreviousCtCollectionId" return-type="Collection">
+			<finder-column name="previousCtCollectionId" />
+		</finder>
+		<finder name="C_U" return-type="CTPreferences" unique="true">
+			<finder-column name="companyId" />
+			<finder-column name="userId" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="CTProcess" remote-service="true" trash-enabled="false" uuid="false">
+
+		<!-- PK fields -->
+
+		<column name="ctProcessId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="createDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="ctCollectionId" type="long" />
+		<column name="backgroundTaskId" type="long" />
+
+		<!-- Order -->
+
+		<order by="desc">
+			<order-column name="createDate" />
+		</order>
+
+		<!-- Finder methods -->
+
+		<finder name="CompanyId" return-type="Collection">
+			<finder-column name="companyId" />
+		</finder>
+		<finder name="CtCollectionId" return-type="Collection">
+			<finder-column name="ctCollectionId" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="CTSchemaVersion" remote-service="false" trash-enabled="false" uuid="false">
+
+		<!-- PK fields -->
+
+		<column name="schemaVersionId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="schemaContext" type="Map" />
+
+		<!-- Order -->
+
+		<order by="desc">
+			<order-column name="schemaVersionId" />
+		</order>
+
+		<!-- Finder methods -->
+
+		<finder name="CompanyId" return-type="Collection">
+			<finder-column name="companyId" />
+		</finder>
+	</entity>
+	<exceptions>
+		<exception>CTCollectionDescription</exception>
+		<exception>CTCollectionName</exception>
+		<exception>CTEnclosure</exception>
+		<exception>CTLocalized</exception>
+		<exception>CTStagingEnabled</exception>
+	</exceptions>
+</service-builder>

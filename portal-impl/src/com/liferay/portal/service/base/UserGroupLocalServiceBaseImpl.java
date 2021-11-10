@@ -14,12 +14,16 @@
 
 package com.liferay.portal.service.base;
 
-import aQute.bnd.annotation.ProviderType;
-
+import com.liferay.exportimport.kernel.lar.ExportImportHelperUtil;
+import com.liferay.exportimport.kernel.lar.ManifestSummary;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
+import com.liferay.exportimport.kernel.lar.StagedModelType;
+import com.liferay.petra.function.UnsafeFunction;
+import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.bean.IdentifiableBean;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
@@ -27,40 +31,33 @@ import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
+import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
+import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
+import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.GroupPersistence;
+import com.liferay.portal.kernel.service.persistence.TeamPersistence;
+import com.liferay.portal.kernel.service.persistence.UserGroupFinder;
+import com.liferay.portal.kernel.service.persistence.UserGroupPersistence;
+import com.liferay.portal.kernel.service.persistence.UserPersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.model.PersistedModel;
-import com.liferay.portal.model.UserGroup;
-import com.liferay.portal.service.BaseLocalServiceImpl;
-import com.liferay.portal.service.PersistedModelLocalServiceRegistry;
-import com.liferay.portal.service.UserGroupLocalService;
-import com.liferay.portal.service.persistence.GroupFinder;
-import com.liferay.portal.service.persistence.GroupPersistence;
-import com.liferay.portal.service.persistence.LayoutFinder;
-import com.liferay.portal.service.persistence.LayoutPersistence;
-import com.liferay.portal.service.persistence.TeamFinder;
-import com.liferay.portal.service.persistence.TeamPersistence;
-import com.liferay.portal.service.persistence.UserFinder;
-import com.liferay.portal.service.persistence.UserGroupFinder;
-import com.liferay.portal.service.persistence.UserGroupGroupRoleFinder;
-import com.liferay.portal.service.persistence.UserGroupGroupRolePersistence;
-import com.liferay.portal.service.persistence.UserGroupPersistence;
-import com.liferay.portal.service.persistence.UserPersistence;
-import com.liferay.portal.util.PortalUtil;
-
-import com.liferay.portlet.expando.service.persistence.ExpandoRowPersistence;
-import com.liferay.portlet.exportimport.lar.ExportImportHelperUtil;
-import com.liferay.portlet.exportimport.lar.ManifestSummary;
-import com.liferay.portlet.exportimport.lar.PortletDataContext;
-import com.liferay.portlet.exportimport.lar.StagedModelDataHandlerUtil;
-import com.liferay.portlet.exportimport.lar.StagedModelType;
-import com.liferay.portlet.exportimport.service.persistence.ExportImportConfigurationPersistence;
+import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
+
+import java.lang.reflect.Field;
 
 import java.util.List;
 
@@ -75,20 +72,24 @@ import javax.sql.DataSource;
  *
  * @author Brian Wing Shun Chan
  * @see com.liferay.portal.service.impl.UserGroupLocalServiceImpl
- * @see com.liferay.portal.service.UserGroupLocalServiceUtil
  * @generated
  */
-@ProviderType
-public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
-	implements UserGroupLocalService, IdentifiableBean {
+public abstract class UserGroupLocalServiceBaseImpl
+	extends BaseLocalServiceImpl
+	implements IdentifiableOSGiService, UserGroupLocalService {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Always use {@link com.liferay.portal.service.UserGroupLocalServiceUtil} to access the user group local service.
+	 * Never modify or reference this class directly. Use <code>UserGroupLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>UserGroupLocalServiceUtil</code>.
 	 */
 
 	/**
 	 * Adds the user group to the database. Also notifies the appropriate model listeners.
+	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect UserGroupLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
 	 *
 	 * @param userGroup the user group
 	 * @return the user group that was added
@@ -108,6 +109,7 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @return the new user group
 	 */
 	@Override
+	@Transactional(enabled = false)
 	public UserGroup createUserGroup(long userGroupId) {
 		return userGroupPersistence.create(userGroupId);
 	}
@@ -115,19 +117,26 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 * Deletes the user group with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect UserGroupLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
+	 *
 	 * @param userGroupId the primary key of the user group
 	 * @return the user group that was removed
 	 * @throws PortalException if a user group with the primary key could not be found
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	@Override
-	public UserGroup deleteUserGroup(long userGroupId)
-		throws PortalException {
+	public UserGroup deleteUserGroup(long userGroupId) throws PortalException {
 		return userGroupPersistence.remove(userGroupId);
 	}
 
 	/**
 	 * Deletes the user group from the database. Also notifies the appropriate model listeners.
+	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect UserGroupLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
 	 *
 	 * @param userGroup the user group
 	 * @return the user group that was removed
@@ -137,15 +146,28 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	@Override
 	public UserGroup deleteUserGroup(UserGroup userGroup)
 		throws PortalException {
+
 		return userGroupPersistence.remove(userGroup);
+	}
+
+	@Override
+	public <T> T dslQuery(DSLQuery dslQuery) {
+		return userGroupPersistence.dslQuery(dslQuery);
+	}
+
+	@Override
+	public int dslQueryCount(DSLQuery dslQuery) {
+		Long count = dslQuery(dslQuery);
+
+		return count.intValue();
 	}
 
 	@Override
 	public DynamicQuery dynamicQuery() {
 		Class<?> clazz = getClass();
 
-		return DynamicQueryFactoryUtil.forClass(UserGroup.class,
-			clazz.getClassLoader());
+		return DynamicQueryFactoryUtil.forClass(
+			UserGroup.class, clazz.getClassLoader());
 	}
 
 	/**
@@ -163,7 +185,7 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * Performs a dynamic query on the database and returns a range of the matching rows.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link com.liferay.portal.model.impl.UserGroupModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.UserGroupModelImpl</code>.
 	 * </p>
 	 *
 	 * @param dynamicQuery the dynamic query
@@ -172,17 +194,18 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @return the range of matching rows
 	 */
 	@Override
-	public <T> List<T> dynamicQuery(DynamicQuery dynamicQuery, int start,
-		int end) {
-		return userGroupPersistence.findWithDynamicQuery(dynamicQuery, start,
-			end);
+	public <T> List<T> dynamicQuery(
+		DynamicQuery dynamicQuery, int start, int end) {
+
+		return userGroupPersistence.findWithDynamicQuery(
+			dynamicQuery, start, end);
 	}
 
 	/**
 	 * Performs a dynamic query on the database and returns an ordered range of the matching rows.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link com.liferay.portal.model.impl.UserGroupModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.UserGroupModelImpl</code>.
 	 * </p>
 	 *
 	 * @param dynamicQuery the dynamic query
@@ -192,10 +215,12 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @return the ordered range of matching rows
 	 */
 	@Override
-	public <T> List<T> dynamicQuery(DynamicQuery dynamicQuery, int start,
-		int end, OrderByComparator<T> orderByComparator) {
-		return userGroupPersistence.findWithDynamicQuery(dynamicQuery, start,
-			end, orderByComparator);
+	public <T> List<T> dynamicQuery(
+		DynamicQuery dynamicQuery, int start, int end,
+		OrderByComparator<T> orderByComparator) {
+
+		return userGroupPersistence.findWithDynamicQuery(
+			dynamicQuery, start, end, orderByComparator);
 	}
 
 	/**
@@ -217,10 +242,11 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @return the number of rows matching the dynamic query
 	 */
 	@Override
-	public long dynamicQueryCount(DynamicQuery dynamicQuery,
-		Projection projection) {
-		return userGroupPersistence.countWithDynamicQuery(dynamicQuery,
-			projection);
+	public long dynamicQueryCount(
+		DynamicQuery dynamicQuery, Projection projection) {
+
+		return userGroupPersistence.countWithDynamicQuery(
+			dynamicQuery, projection);
 	}
 
 	@Override
@@ -236,9 +262,54 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @return the matching user group, or <code>null</code> if a matching user group could not be found
 	 */
 	@Override
-	public UserGroup fetchUserGroupByUuidAndCompanyId(String uuid,
-		long companyId) {
+	public UserGroup fetchUserGroupByUuidAndCompanyId(
+		String uuid, long companyId) {
+
 		return userGroupPersistence.fetchByUuid_C_First(uuid, companyId, null);
+	}
+
+	/**
+	 * Returns the user group with the matching external reference code and company.
+	 *
+	 * @param companyId the primary key of the company
+	 * @param externalReferenceCode the user group's external reference code
+	 * @return the matching user group, or <code>null</code> if a matching user group could not be found
+	 */
+	@Override
+	public UserGroup fetchUserGroupByExternalReferenceCode(
+		long companyId, String externalReferenceCode) {
+
+		return userGroupPersistence.fetchByC_ERC(
+			companyId, externalReferenceCode);
+	}
+
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchUserGroupByExternalReferenceCode(long, String)}
+	 */
+	@Deprecated
+	@Override
+	public UserGroup fetchUserGroupByReferenceCode(
+		long companyId, String externalReferenceCode) {
+
+		return fetchUserGroupByExternalReferenceCode(
+			companyId, externalReferenceCode);
+	}
+
+	/**
+	 * Returns the user group with the matching external reference code and company.
+	 *
+	 * @param companyId the primary key of the company
+	 * @param externalReferenceCode the user group's external reference code
+	 * @return the matching user group
+	 * @throws PortalException if a matching user group could not be found
+	 */
+	@Override
+	public UserGroup getUserGroupByExternalReferenceCode(
+			long companyId, String externalReferenceCode)
+		throws PortalException {
+
+		return userGroupPersistence.findByC_ERC(
+			companyId, externalReferenceCode);
 	}
 
 	/**
@@ -255,22 +326,42 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 
 	@Override
 	public ActionableDynamicQuery getActionableDynamicQuery() {
-		ActionableDynamicQuery actionableDynamicQuery = new DefaultActionableDynamicQuery();
+		ActionableDynamicQuery actionableDynamicQuery =
+			new DefaultActionableDynamicQuery();
 
-		actionableDynamicQuery.setBaseLocalService(com.liferay.portal.service.UserGroupLocalServiceUtil.getService());
-		actionableDynamicQuery.setClass(UserGroup.class);
+		actionableDynamicQuery.setBaseLocalService(userGroupLocalService);
 		actionableDynamicQuery.setClassLoader(getClassLoader());
+		actionableDynamicQuery.setModelClass(UserGroup.class);
 
 		actionableDynamicQuery.setPrimaryKeyPropertyName("userGroupId");
 
 		return actionableDynamicQuery;
 	}
 
+	@Override
+	public IndexableActionableDynamicQuery
+		getIndexableActionableDynamicQuery() {
+
+		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
+			new IndexableActionableDynamicQuery();
+
+		indexableActionableDynamicQuery.setBaseLocalService(
+			userGroupLocalService);
+		indexableActionableDynamicQuery.setClassLoader(getClassLoader());
+		indexableActionableDynamicQuery.setModelClass(UserGroup.class);
+
+		indexableActionableDynamicQuery.setPrimaryKeyPropertyName(
+			"userGroupId");
+
+		return indexableActionableDynamicQuery;
+	}
+
 	protected void initActionableDynamicQuery(
 		ActionableDynamicQuery actionableDynamicQuery) {
-		actionableDynamicQuery.setBaseLocalService(com.liferay.portal.service.UserGroupLocalServiceUtil.getService());
-		actionableDynamicQuery.setClass(UserGroup.class);
+
+		actionableDynamicQuery.setBaseLocalService(userGroupLocalService);
 		actionableDynamicQuery.setClassLoader(getClassLoader());
+		actionableDynamicQuery.setModelClass(UserGroup.class);
 
 		actionableDynamicQuery.setPrimaryKeyPropertyName("userGroupId");
 	}
@@ -278,51 +369,64 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	@Override
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
 		final PortletDataContext portletDataContext) {
-		final ExportActionableDynamicQuery exportActionableDynamicQuery = new ExportActionableDynamicQuery() {
+
+		final ExportActionableDynamicQuery exportActionableDynamicQuery =
+			new ExportActionableDynamicQuery() {
+
 				@Override
 				public long performCount() throws PortalException {
-					ManifestSummary manifestSummary = portletDataContext.getManifestSummary();
+					ManifestSummary manifestSummary =
+						portletDataContext.getManifestSummary();
 
 					StagedModelType stagedModelType = getStagedModelType();
 
 					long modelAdditionCount = super.performCount();
 
-					manifestSummary.addModelAdditionCount(stagedModelType.toString(),
-						modelAdditionCount);
+					manifestSummary.addModelAdditionCount(
+						stagedModelType, modelAdditionCount);
 
-					long modelDeletionCount = ExportImportHelperUtil.getModelDeletionCount(portletDataContext,
-							stagedModelType);
+					long modelDeletionCount =
+						ExportImportHelperUtil.getModelDeletionCount(
+							portletDataContext, stagedModelType);
 
-					manifestSummary.addModelDeletionCount(stagedModelType.toString(),
-						modelDeletionCount);
+					manifestSummary.addModelDeletionCount(
+						stagedModelType, modelDeletionCount);
 
 					return modelAdditionCount;
 				}
+
 			};
 
 		initActionableDynamicQuery(exportActionableDynamicQuery);
 
-		exportActionableDynamicQuery.setAddCriteriaMethod(new ActionableDynamicQuery.AddCriteriaMethod() {
+		exportActionableDynamicQuery.setAddCriteriaMethod(
+			new ActionableDynamicQuery.AddCriteriaMethod() {
+
 				@Override
 				public void addCriteria(DynamicQuery dynamicQuery) {
-					portletDataContext.addDateRangeCriteria(dynamicQuery,
-						"modifiedDate");
+					portletDataContext.addDateRangeCriteria(
+						dynamicQuery, "modifiedDate");
 				}
+
 			});
 
-		exportActionableDynamicQuery.setCompanyId(portletDataContext.getCompanyId());
+		exportActionableDynamicQuery.setCompanyId(
+			portletDataContext.getCompanyId());
 
-		exportActionableDynamicQuery.setPerformActionMethod(new ActionableDynamicQuery.PerformActionMethod() {
+		exportActionableDynamicQuery.setPerformActionMethod(
+			new ActionableDynamicQuery.PerformActionMethod<UserGroup>() {
+
 				@Override
-				public void performAction(Object object)
+				public void performAction(UserGroup userGroup)
 					throws PortalException {
-					UserGroup stagedModel = (UserGroup)object;
 
-					StagedModelDataHandlerUtil.exportStagedModel(portletDataContext,
-						stagedModel);
+					StagedModelDataHandlerUtil.exportStagedModel(
+						portletDataContext, userGroup);
 				}
+
 			});
-		exportActionableDynamicQuery.setStagedModelType(new StagedModelType(
+		exportActionableDynamicQuery.setStagedModelType(
+			new StagedModelType(
 				PortalUtil.getClassNameId(UserGroup.class.getName())));
 
 		return exportActionableDynamicQuery;
@@ -332,14 +436,34 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @throws PortalException
 	 */
 	@Override
+	public PersistedModel createPersistedModel(Serializable primaryKeyObj)
+		throws PortalException {
+
+		return userGroupPersistence.create(((Long)primaryKeyObj).longValue());
+	}
+
+	/**
+	 * @throws PortalException
+	 */
+	@Override
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
+
 		return userGroupLocalService.deleteUserGroup((UserGroup)persistedModel);
 	}
 
 	@Override
+	public BasePersistence<UserGroup> getBasePersistence() {
+		return userGroupPersistence;
+	}
+
+	/**
+	 * @throws PortalException
+	 */
+	@Override
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException {
+
 		return userGroupPersistence.findByPrimaryKey(primaryKeyObj);
 	}
 
@@ -354,6 +478,7 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	@Override
 	public UserGroup getUserGroupByUuidAndCompanyId(String uuid, long companyId)
 		throws PortalException {
+
 		return userGroupPersistence.findByUuid_C_First(uuid, companyId, null);
 	}
 
@@ -361,7 +486,7 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * Returns a range of all the user groups.
 	 *
 	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS} will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent and pagination is required (<code>start</code> and <code>end</code> are not {@link com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS}), then the query will include the default ORDER BY logic from {@link com.liferay.portal.model.impl.UserGroupModelImpl}. If both <code>orderByComparator</code> and pagination are absent, for performance reasons, the query will not have an ORDER BY clause and the returned result set will be sorted on by the primary key in an ascending order.
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>com.liferay.portal.kernel.dao.orm.QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>com.liferay.portal.model.impl.UserGroupModelImpl</code>.
 	 * </p>
 	 *
 	 * @param start the lower bound of the range of user groups
@@ -385,6 +510,10 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 
 	/**
 	 * Updates the user group in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
+	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect UserGroupLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
 	 *
 	 * @param userGroup the user group
 	 * @return the user group that was updated
@@ -419,8 +548,8 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 */
 	@Override
-	public void addGroupUserGroups(long groupId, List<UserGroup> UserGroups) {
-		groupPersistence.addUserGroups(groupId, UserGroups);
+	public void addGroupUserGroups(long groupId, List<UserGroup> userGroups) {
+		groupPersistence.addUserGroups(groupId, userGroups);
 	}
 
 	/**
@@ -454,8 +583,10 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 */
 	@Override
-	public void deleteGroupUserGroups(long groupId, List<UserGroup> UserGroups) {
-		groupPersistence.removeUserGroups(groupId, UserGroups);
+	public void deleteGroupUserGroups(
+		long groupId, List<UserGroup> userGroups) {
+
+		groupPersistence.removeUserGroups(groupId, userGroups);
 	}
 
 	/**
@@ -479,17 +610,21 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 */
 	@Override
-	public List<UserGroup> getGroupUserGroups(long groupId, int start, int end) {
+	public List<UserGroup> getGroupUserGroups(
+		long groupId, int start, int end) {
+
 		return groupPersistence.getUserGroups(groupId, start, end);
 	}
 
 	/**
 	 */
 	@Override
-	public List<UserGroup> getGroupUserGroups(long groupId, int start, int end,
+	public List<UserGroup> getGroupUserGroups(
+		long groupId, int start, int end,
 		OrderByComparator<UserGroup> orderByComparator) {
-		return groupPersistence.getUserGroups(groupId, start, end,
-			orderByComparator);
+
+		return groupPersistence.getUserGroups(
+			groupId, start, end, orderByComparator);
 	}
 
 	/**
@@ -544,8 +679,8 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 */
 	@Override
-	public void addTeamUserGroups(long teamId, List<UserGroup> UserGroups) {
-		teamPersistence.addUserGroups(teamId, UserGroups);
+	public void addTeamUserGroups(long teamId, List<UserGroup> userGroups) {
+		teamPersistence.addUserGroups(teamId, userGroups);
 	}
 
 	/**
@@ -579,8 +714,8 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 */
 	@Override
-	public void deleteTeamUserGroups(long teamId, List<UserGroup> UserGroups) {
-		teamPersistence.removeUserGroups(teamId, UserGroups);
+	public void deleteTeamUserGroups(long teamId, List<UserGroup> userGroups) {
+		teamPersistence.removeUserGroups(teamId, userGroups);
 	}
 
 	/**
@@ -611,10 +746,12 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 */
 	@Override
-	public List<UserGroup> getTeamUserGroups(long teamId, int start, int end,
+	public List<UserGroup> getTeamUserGroups(
+		long teamId, int start, int end,
 		OrderByComparator<UserGroup> orderByComparator) {
-		return teamPersistence.getUserGroups(teamId, start, end,
-			orderByComparator);
+
+		return teamPersistence.getUserGroups(
+			teamId, start, end, orderByComparator);
 	}
 
 	/**
@@ -669,8 +806,8 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 */
 	@Override
-	public void addUserUserGroups(long userId, List<UserGroup> UserGroups) {
-		userPersistence.addUserGroups(userId, UserGroups);
+	public void addUserUserGroups(long userId, List<UserGroup> userGroups) {
+		userPersistence.addUserGroups(userId, userGroups);
 	}
 
 	/**
@@ -704,8 +841,8 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 */
 	@Override
-	public void deleteUserUserGroups(long userId, List<UserGroup> UserGroups) {
-		userPersistence.removeUserGroups(userId, UserGroups);
+	public void deleteUserUserGroups(long userId, List<UserGroup> userGroups) {
+		userPersistence.removeUserGroups(userId, userGroups);
 	}
 
 	/**
@@ -736,10 +873,12 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	/**
 	 */
 	@Override
-	public List<UserGroup> getUserUserGroups(long userId, int start, int end,
+	public List<UserGroup> getUserUserGroups(
+		long userId, int start, int end,
 		OrderByComparator<UserGroup> orderByComparator) {
-		return userPersistence.getUserGroups(userId, start, end,
-			orderByComparator);
+
+		return userPersistence.getUserGroups(
+			userId, start, end, orderByComparator);
 	}
 
 	/**
@@ -769,6 +908,7 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	@Override
 	public void setUserUserGroups(long userId, long[] userGroupIds)
 		throws PortalException {
+
 		userPersistence.setUserGroups(userId, userGroupIds);
 	}
 
@@ -788,26 +928,8 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 */
 	public void setUserGroupLocalService(
 		UserGroupLocalService userGroupLocalService) {
+
 		this.userGroupLocalService = userGroupLocalService;
-	}
-
-	/**
-	 * Returns the user group remote service.
-	 *
-	 * @return the user group remote service
-	 */
-	public com.liferay.portal.service.UserGroupService getUserGroupService() {
-		return userGroupService;
-	}
-
-	/**
-	 * Sets the user group remote service.
-	 *
-	 * @param userGroupService the user group remote service
-	 */
-	public void setUserGroupService(
-		com.liferay.portal.service.UserGroupService userGroupService) {
-		this.userGroupService = userGroupService;
 	}
 
 	/**
@@ -826,6 +948,7 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 */
 	public void setUserGroupPersistence(
 		UserGroupPersistence userGroupPersistence) {
+
 		this.userGroupPersistence = userGroupPersistence;
 	}
 
@@ -852,7 +975,9 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 *
 	 * @return the counter local service
 	 */
-	public com.liferay.counter.service.CounterLocalService getCounterLocalService() {
+	public com.liferay.counter.kernel.service.CounterLocalService
+		getCounterLocalService() {
+
 		return counterLocalService;
 	}
 
@@ -862,566 +987,52 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 	 * @param counterLocalService the counter local service
 	 */
 	public void setCounterLocalService(
-		com.liferay.counter.service.CounterLocalService counterLocalService) {
+		com.liferay.counter.kernel.service.CounterLocalService
+			counterLocalService) {
+
 		this.counterLocalService = counterLocalService;
 	}
 
-	/**
-	 * Returns the group local service.
-	 *
-	 * @return the group local service
-	 */
-	public com.liferay.portal.service.GroupLocalService getGroupLocalService() {
-		return groupLocalService;
-	}
-
-	/**
-	 * Sets the group local service.
-	 *
-	 * @param groupLocalService the group local service
-	 */
-	public void setGroupLocalService(
-		com.liferay.portal.service.GroupLocalService groupLocalService) {
-		this.groupLocalService = groupLocalService;
-	}
-
-	/**
-	 * Returns the group remote service.
-	 *
-	 * @return the group remote service
-	 */
-	public com.liferay.portal.service.GroupService getGroupService() {
-		return groupService;
-	}
-
-	/**
-	 * Sets the group remote service.
-	 *
-	 * @param groupService the group remote service
-	 */
-	public void setGroupService(
-		com.liferay.portal.service.GroupService groupService) {
-		this.groupService = groupService;
-	}
-
-	/**
-	 * Returns the group persistence.
-	 *
-	 * @return the group persistence
-	 */
-	public GroupPersistence getGroupPersistence() {
-		return groupPersistence;
-	}
-
-	/**
-	 * Sets the group persistence.
-	 *
-	 * @param groupPersistence the group persistence
-	 */
-	public void setGroupPersistence(GroupPersistence groupPersistence) {
-		this.groupPersistence = groupPersistence;
-	}
-
-	/**
-	 * Returns the group finder.
-	 *
-	 * @return the group finder
-	 */
-	public GroupFinder getGroupFinder() {
-		return groupFinder;
-	}
-
-	/**
-	 * Sets the group finder.
-	 *
-	 * @param groupFinder the group finder
-	 */
-	public void setGroupFinder(GroupFinder groupFinder) {
-		this.groupFinder = groupFinder;
-	}
-
-	/**
-	 * Returns the layout local service.
-	 *
-	 * @return the layout local service
-	 */
-	public com.liferay.portal.service.LayoutLocalService getLayoutLocalService() {
-		return layoutLocalService;
-	}
-
-	/**
-	 * Sets the layout local service.
-	 *
-	 * @param layoutLocalService the layout local service
-	 */
-	public void setLayoutLocalService(
-		com.liferay.portal.service.LayoutLocalService layoutLocalService) {
-		this.layoutLocalService = layoutLocalService;
-	}
-
-	/**
-	 * Returns the layout remote service.
-	 *
-	 * @return the layout remote service
-	 */
-	public com.liferay.portal.service.LayoutService getLayoutService() {
-		return layoutService;
-	}
-
-	/**
-	 * Sets the layout remote service.
-	 *
-	 * @param layoutService the layout remote service
-	 */
-	public void setLayoutService(
-		com.liferay.portal.service.LayoutService layoutService) {
-		this.layoutService = layoutService;
-	}
-
-	/**
-	 * Returns the layout persistence.
-	 *
-	 * @return the layout persistence
-	 */
-	public LayoutPersistence getLayoutPersistence() {
-		return layoutPersistence;
-	}
-
-	/**
-	 * Sets the layout persistence.
-	 *
-	 * @param layoutPersistence the layout persistence
-	 */
-	public void setLayoutPersistence(LayoutPersistence layoutPersistence) {
-		this.layoutPersistence = layoutPersistence;
-	}
-
-	/**
-	 * Returns the layout finder.
-	 *
-	 * @return the layout finder
-	 */
-	public LayoutFinder getLayoutFinder() {
-		return layoutFinder;
-	}
-
-	/**
-	 * Sets the layout finder.
-	 *
-	 * @param layoutFinder the layout finder
-	 */
-	public void setLayoutFinder(LayoutFinder layoutFinder) {
-		this.layoutFinder = layoutFinder;
-	}
-
-	/**
-	 * Returns the resource local service.
-	 *
-	 * @return the resource local service
-	 */
-	public com.liferay.portal.service.ResourceLocalService getResourceLocalService() {
-		return resourceLocalService;
-	}
-
-	/**
-	 * Sets the resource local service.
-	 *
-	 * @param resourceLocalService the resource local service
-	 */
-	public void setResourceLocalService(
-		com.liferay.portal.service.ResourceLocalService resourceLocalService) {
-		this.resourceLocalService = resourceLocalService;
-	}
-
-	/**
-	 * Returns the team local service.
-	 *
-	 * @return the team local service
-	 */
-	public com.liferay.portal.service.TeamLocalService getTeamLocalService() {
-		return teamLocalService;
-	}
-
-	/**
-	 * Sets the team local service.
-	 *
-	 * @param teamLocalService the team local service
-	 */
-	public void setTeamLocalService(
-		com.liferay.portal.service.TeamLocalService teamLocalService) {
-		this.teamLocalService = teamLocalService;
-	}
-
-	/**
-	 * Returns the team remote service.
-	 *
-	 * @return the team remote service
-	 */
-	public com.liferay.portal.service.TeamService getTeamService() {
-		return teamService;
-	}
-
-	/**
-	 * Sets the team remote service.
-	 *
-	 * @param teamService the team remote service
-	 */
-	public void setTeamService(
-		com.liferay.portal.service.TeamService teamService) {
-		this.teamService = teamService;
-	}
-
-	/**
-	 * Returns the team persistence.
-	 *
-	 * @return the team persistence
-	 */
-	public TeamPersistence getTeamPersistence() {
-		return teamPersistence;
-	}
-
-	/**
-	 * Sets the team persistence.
-	 *
-	 * @param teamPersistence the team persistence
-	 */
-	public void setTeamPersistence(TeamPersistence teamPersistence) {
-		this.teamPersistence = teamPersistence;
-	}
-
-	/**
-	 * Returns the team finder.
-	 *
-	 * @return the team finder
-	 */
-	public TeamFinder getTeamFinder() {
-		return teamFinder;
-	}
-
-	/**
-	 * Sets the team finder.
-	 *
-	 * @param teamFinder the team finder
-	 */
-	public void setTeamFinder(TeamFinder teamFinder) {
-		this.teamFinder = teamFinder;
-	}
-
-	/**
-	 * Returns the user local service.
-	 *
-	 * @return the user local service
-	 */
-	public com.liferay.portal.service.UserLocalService getUserLocalService() {
-		return userLocalService;
-	}
-
-	/**
-	 * Sets the user local service.
-	 *
-	 * @param userLocalService the user local service
-	 */
-	public void setUserLocalService(
-		com.liferay.portal.service.UserLocalService userLocalService) {
-		this.userLocalService = userLocalService;
-	}
-
-	/**
-	 * Returns the user remote service.
-	 *
-	 * @return the user remote service
-	 */
-	public com.liferay.portal.service.UserService getUserService() {
-		return userService;
-	}
-
-	/**
-	 * Sets the user remote service.
-	 *
-	 * @param userService the user remote service
-	 */
-	public void setUserService(
-		com.liferay.portal.service.UserService userService) {
-		this.userService = userService;
-	}
-
-	/**
-	 * Returns the user persistence.
-	 *
-	 * @return the user persistence
-	 */
-	public UserPersistence getUserPersistence() {
-		return userPersistence;
-	}
-
-	/**
-	 * Sets the user persistence.
-	 *
-	 * @param userPersistence the user persistence
-	 */
-	public void setUserPersistence(UserPersistence userPersistence) {
-		this.userPersistence = userPersistence;
-	}
-
-	/**
-	 * Returns the user finder.
-	 *
-	 * @return the user finder
-	 */
-	public UserFinder getUserFinder() {
-		return userFinder;
-	}
-
-	/**
-	 * Sets the user finder.
-	 *
-	 * @param userFinder the user finder
-	 */
-	public void setUserFinder(UserFinder userFinder) {
-		this.userFinder = userFinder;
-	}
-
-	/**
-	 * Returns the expando row local service.
-	 *
-	 * @return the expando row local service
-	 */
-	public com.liferay.portlet.expando.service.ExpandoRowLocalService getExpandoRowLocalService() {
-		return expandoRowLocalService;
-	}
-
-	/**
-	 * Sets the expando row local service.
-	 *
-	 * @param expandoRowLocalService the expando row local service
-	 */
-	public void setExpandoRowLocalService(
-		com.liferay.portlet.expando.service.ExpandoRowLocalService expandoRowLocalService) {
-		this.expandoRowLocalService = expandoRowLocalService;
-	}
-
-	/**
-	 * Returns the expando row persistence.
-	 *
-	 * @return the expando row persistence
-	 */
-	public ExpandoRowPersistence getExpandoRowPersistence() {
-		return expandoRowPersistence;
-	}
-
-	/**
-	 * Sets the expando row persistence.
-	 *
-	 * @param expandoRowPersistence the expando row persistence
-	 */
-	public void setExpandoRowPersistence(
-		ExpandoRowPersistence expandoRowPersistence) {
-		this.expandoRowPersistence = expandoRowPersistence;
-	}
-
-	/**
-	 * Returns the export import local service.
-	 *
-	 * @return the export import local service
-	 */
-	public com.liferay.portlet.exportimport.service.ExportImportLocalService getExportImportLocalService() {
-		return exportImportLocalService;
-	}
-
-	/**
-	 * Sets the export import local service.
-	 *
-	 * @param exportImportLocalService the export import local service
-	 */
-	public void setExportImportLocalService(
-		com.liferay.portlet.exportimport.service.ExportImportLocalService exportImportLocalService) {
-		this.exportImportLocalService = exportImportLocalService;
-	}
-
-	/**
-	 * Returns the export import remote service.
-	 *
-	 * @return the export import remote service
-	 */
-	public com.liferay.portlet.exportimport.service.ExportImportService getExportImportService() {
-		return exportImportService;
-	}
-
-	/**
-	 * Sets the export import remote service.
-	 *
-	 * @param exportImportService the export import remote service
-	 */
-	public void setExportImportService(
-		com.liferay.portlet.exportimport.service.ExportImportService exportImportService) {
-		this.exportImportService = exportImportService;
-	}
-
-	/**
-	 * Returns the export import configuration local service.
-	 *
-	 * @return the export import configuration local service
-	 */
-	public com.liferay.portlet.exportimport.service.ExportImportConfigurationLocalService getExportImportConfigurationLocalService() {
-		return exportImportConfigurationLocalService;
-	}
-
-	/**
-	 * Sets the export import configuration local service.
-	 *
-	 * @param exportImportConfigurationLocalService the export import configuration local service
-	 */
-	public void setExportImportConfigurationLocalService(
-		com.liferay.portlet.exportimport.service.ExportImportConfigurationLocalService exportImportConfigurationLocalService) {
-		this.exportImportConfigurationLocalService = exportImportConfigurationLocalService;
-	}
-
-	/**
-	 * Returns the export import configuration remote service.
-	 *
-	 * @return the export import configuration remote service
-	 */
-	public com.liferay.portlet.exportimport.service.ExportImportConfigurationService getExportImportConfigurationService() {
-		return exportImportConfigurationService;
-	}
-
-	/**
-	 * Sets the export import configuration remote service.
-	 *
-	 * @param exportImportConfigurationService the export import configuration remote service
-	 */
-	public void setExportImportConfigurationService(
-		com.liferay.portlet.exportimport.service.ExportImportConfigurationService exportImportConfigurationService) {
-		this.exportImportConfigurationService = exportImportConfigurationService;
-	}
-
-	/**
-	 * Returns the export import configuration persistence.
-	 *
-	 * @return the export import configuration persistence
-	 */
-	public ExportImportConfigurationPersistence getExportImportConfigurationPersistence() {
-		return exportImportConfigurationPersistence;
-	}
-
-	/**
-	 * Sets the export import configuration persistence.
-	 *
-	 * @param exportImportConfigurationPersistence the export import configuration persistence
-	 */
-	public void setExportImportConfigurationPersistence(
-		ExportImportConfigurationPersistence exportImportConfigurationPersistence) {
-		this.exportImportConfigurationPersistence = exportImportConfigurationPersistence;
-	}
-
-	/**
-	 * Returns the user group group role local service.
-	 *
-	 * @return the user group group role local service
-	 */
-	public com.liferay.portal.service.UserGroupGroupRoleLocalService getUserGroupGroupRoleLocalService() {
-		return userGroupGroupRoleLocalService;
-	}
-
-	/**
-	 * Sets the user group group role local service.
-	 *
-	 * @param userGroupGroupRoleLocalService the user group group role local service
-	 */
-	public void setUserGroupGroupRoleLocalService(
-		com.liferay.portal.service.UserGroupGroupRoleLocalService userGroupGroupRoleLocalService) {
-		this.userGroupGroupRoleLocalService = userGroupGroupRoleLocalService;
-	}
-
-	/**
-	 * Returns the user group group role remote service.
-	 *
-	 * @return the user group group role remote service
-	 */
-	public com.liferay.portal.service.UserGroupGroupRoleService getUserGroupGroupRoleService() {
-		return userGroupGroupRoleService;
-	}
-
-	/**
-	 * Sets the user group group role remote service.
-	 *
-	 * @param userGroupGroupRoleService the user group group role remote service
-	 */
-	public void setUserGroupGroupRoleService(
-		com.liferay.portal.service.UserGroupGroupRoleService userGroupGroupRoleService) {
-		this.userGroupGroupRoleService = userGroupGroupRoleService;
-	}
-
-	/**
-	 * Returns the user group group role persistence.
-	 *
-	 * @return the user group group role persistence
-	 */
-	public UserGroupGroupRolePersistence getUserGroupGroupRolePersistence() {
-		return userGroupGroupRolePersistence;
-	}
-
-	/**
-	 * Sets the user group group role persistence.
-	 *
-	 * @param userGroupGroupRolePersistence the user group group role persistence
-	 */
-	public void setUserGroupGroupRolePersistence(
-		UserGroupGroupRolePersistence userGroupGroupRolePersistence) {
-		this.userGroupGroupRolePersistence = userGroupGroupRolePersistence;
-	}
-
-	/**
-	 * Returns the user group group role finder.
-	 *
-	 * @return the user group group role finder
-	 */
-	public UserGroupGroupRoleFinder getUserGroupGroupRoleFinder() {
-		return userGroupGroupRoleFinder;
-	}
-
-	/**
-	 * Sets the user group group role finder.
-	 *
-	 * @param userGroupGroupRoleFinder the user group group role finder
-	 */
-	public void setUserGroupGroupRoleFinder(
-		UserGroupGroupRoleFinder userGroupGroupRoleFinder) {
-		this.userGroupGroupRoleFinder = userGroupGroupRoleFinder;
-	}
-
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register("com.liferay.portal.model.UserGroup",
-			userGroupLocalService);
+		persistedModelLocalServiceRegistry.register(
+			"com.liferay.portal.kernel.model.UserGroup", userGroupLocalService);
+
+		_setLocalServiceUtilService(userGroupLocalService);
 	}
 
 	public void destroy() {
 		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.portal.model.UserGroup");
+			"com.liferay.portal.kernel.model.UserGroup");
+
+		_setLocalServiceUtilService(null);
 	}
 
 	/**
-	 * Returns the Spring bean ID for this bean.
+	 * Returns the OSGi service identifier.
 	 *
-	 * @return the Spring bean ID for this bean
+	 * @return the OSGi service identifier
 	 */
 	@Override
-	public String getBeanIdentifier() {
-		return _beanIdentifier;
+	public String getOSGiServiceIdentifier() {
+		return UserGroupLocalService.class.getName();
 	}
 
-	/**
-	 * Sets the Spring bean ID for this bean.
-	 *
-	 * @param beanIdentifier the Spring bean ID for this bean
-	 */
 	@Override
-	public void setBeanIdentifier(String beanIdentifier) {
-		_beanIdentifier = beanIdentifier;
+	public CTPersistence<UserGroup> getCTPersistence() {
+		return userGroupPersistence;
 	}
 
-	protected Class<?> getModelClass() {
+	@Override
+	public Class<UserGroup> getModelClass() {
 		return UserGroup.class;
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<UserGroup>, R, E> updateUnsafeFunction)
+		throws E {
+
+		return updateUnsafeFunction.apply(userGroupPersistence);
 	}
 
 	protected String getModelClassName() {
@@ -1437,88 +1048,63 @@ public abstract class UserGroupLocalServiceBaseImpl extends BaseLocalServiceImpl
 		try {
 			DataSource dataSource = userGroupPersistence.getDataSource();
 
-			DB db = DBFactoryUtil.getDB();
+			DB db = DBManagerUtil.getDB();
 
 			sql = db.buildSQL(sql);
 			sql = PortalUtil.transformSQL(sql);
 
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(dataSource,
-					sql, new int[0]);
+			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
+				dataSource, sql);
 
 			sqlUpdate.update();
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 	}
 
-	@BeanReference(type = com.liferay.portal.service.UserGroupLocalService.class)
+	private void _setLocalServiceUtilService(
+		UserGroupLocalService userGroupLocalService) {
+
+		try {
+			Field field = UserGroupLocalServiceUtil.class.getDeclaredField(
+				"_service");
+
+			field.setAccessible(true);
+
+			field.set(null, userGroupLocalService);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new RuntimeException(reflectiveOperationException);
+		}
+	}
+
+	@BeanReference(type = UserGroupLocalService.class)
 	protected UserGroupLocalService userGroupLocalService;
-	@BeanReference(type = com.liferay.portal.service.UserGroupService.class)
-	protected com.liferay.portal.service.UserGroupService userGroupService;
+
 	@BeanReference(type = UserGroupPersistence.class)
 	protected UserGroupPersistence userGroupPersistence;
+
 	@BeanReference(type = UserGroupFinder.class)
 	protected UserGroupFinder userGroupFinder;
-	@BeanReference(type = com.liferay.counter.service.CounterLocalService.class)
-	protected com.liferay.counter.service.CounterLocalService counterLocalService;
-	@BeanReference(type = com.liferay.portal.service.GroupLocalService.class)
-	protected com.liferay.portal.service.GroupLocalService groupLocalService;
-	@BeanReference(type = com.liferay.portal.service.GroupService.class)
-	protected com.liferay.portal.service.GroupService groupService;
+
+	@BeanReference(
+		type = com.liferay.counter.kernel.service.CounterLocalService.class
+	)
+	protected com.liferay.counter.kernel.service.CounterLocalService
+		counterLocalService;
+
 	@BeanReference(type = GroupPersistence.class)
 	protected GroupPersistence groupPersistence;
-	@BeanReference(type = GroupFinder.class)
-	protected GroupFinder groupFinder;
-	@BeanReference(type = com.liferay.portal.service.LayoutLocalService.class)
-	protected com.liferay.portal.service.LayoutLocalService layoutLocalService;
-	@BeanReference(type = com.liferay.portal.service.LayoutService.class)
-	protected com.liferay.portal.service.LayoutService layoutService;
-	@BeanReference(type = LayoutPersistence.class)
-	protected LayoutPersistence layoutPersistence;
-	@BeanReference(type = LayoutFinder.class)
-	protected LayoutFinder layoutFinder;
-	@BeanReference(type = com.liferay.portal.service.ResourceLocalService.class)
-	protected com.liferay.portal.service.ResourceLocalService resourceLocalService;
-	@BeanReference(type = com.liferay.portal.service.TeamLocalService.class)
-	protected com.liferay.portal.service.TeamLocalService teamLocalService;
-	@BeanReference(type = com.liferay.portal.service.TeamService.class)
-	protected com.liferay.portal.service.TeamService teamService;
+
 	@BeanReference(type = TeamPersistence.class)
 	protected TeamPersistence teamPersistence;
-	@BeanReference(type = TeamFinder.class)
-	protected TeamFinder teamFinder;
-	@BeanReference(type = com.liferay.portal.service.UserLocalService.class)
-	protected com.liferay.portal.service.UserLocalService userLocalService;
-	@BeanReference(type = com.liferay.portal.service.UserService.class)
-	protected com.liferay.portal.service.UserService userService;
+
 	@BeanReference(type = UserPersistence.class)
 	protected UserPersistence userPersistence;
-	@BeanReference(type = UserFinder.class)
-	protected UserFinder userFinder;
-	@BeanReference(type = com.liferay.portlet.expando.service.ExpandoRowLocalService.class)
-	protected com.liferay.portlet.expando.service.ExpandoRowLocalService expandoRowLocalService;
-	@BeanReference(type = ExpandoRowPersistence.class)
-	protected ExpandoRowPersistence expandoRowPersistence;
-	@BeanReference(type = com.liferay.portlet.exportimport.service.ExportImportLocalService.class)
-	protected com.liferay.portlet.exportimport.service.ExportImportLocalService exportImportLocalService;
-	@BeanReference(type = com.liferay.portlet.exportimport.service.ExportImportService.class)
-	protected com.liferay.portlet.exportimport.service.ExportImportService exportImportService;
-	@BeanReference(type = com.liferay.portlet.exportimport.service.ExportImportConfigurationLocalService.class)
-	protected com.liferay.portlet.exportimport.service.ExportImportConfigurationLocalService exportImportConfigurationLocalService;
-	@BeanReference(type = com.liferay.portlet.exportimport.service.ExportImportConfigurationService.class)
-	protected com.liferay.portlet.exportimport.service.ExportImportConfigurationService exportImportConfigurationService;
-	@BeanReference(type = ExportImportConfigurationPersistence.class)
-	protected ExportImportConfigurationPersistence exportImportConfigurationPersistence;
-	@BeanReference(type = com.liferay.portal.service.UserGroupGroupRoleLocalService.class)
-	protected com.liferay.portal.service.UserGroupGroupRoleLocalService userGroupGroupRoleLocalService;
-	@BeanReference(type = com.liferay.portal.service.UserGroupGroupRoleService.class)
-	protected com.liferay.portal.service.UserGroupGroupRoleService userGroupGroupRoleService;
-	@BeanReference(type = UserGroupGroupRolePersistence.class)
-	protected UserGroupGroupRolePersistence userGroupGroupRolePersistence;
-	@BeanReference(type = UserGroupGroupRoleFinder.class)
-	protected UserGroupGroupRoleFinder userGroupGroupRoleFinder;
+
 	@BeanReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry persistedModelLocalServiceRegistry;
-	private String _beanIdentifier;
+	protected PersistedModelLocalServiceRegistry
+		persistedModelLocalServiceRegistry;
+
 }

@@ -1,0 +1,156 @@
+@component-name = "portal-publications"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Publications";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		Publications.enablePublications();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			Publications.disablePublications();
+		}
+	}
+
+	@priority = "3"
+	test CancelPublicationCreation {
+		Publications.cancelPublicationCreation(publicationName = "Publication Name");
+
+		AssertElementNotPresent(
+			locator1 = "Publications#PUBLISHED_PUBLICATION_NAME",
+			value1 = "Publication Name");
+	}
+
+	@priority = "3"
+	test CreateNewPublicationWithLongName {
+		Publications.createNewPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Lopadotemachoselachogaleokranioleipsanodrimhypotrimmatosilphioparaomelitokatakechymenokichlepikossyphophattoperisteralektryonoptekephalliokigklopeleiolagoiosiraiobaphetraganopterygon");
+
+		Alert.viewLengthValidationField();
+	}
+
+	@priority = "3"
+	test CreateNewPublicationWithoutName {
+		Publications.createNewPublication(gotoPublicationsAdmin = "true");
+
+		Alert.viewRequiredField();
+	}
+
+	@priority = "5"
+	test DeletePublication {
+		property portal.acceptance = "true";
+
+		Publications.createNewPublication(
+			gotoPublicationsAdmin = "true",
+			publicationDescription = "Publication Description",
+			publicationName = "Publication Name");
+
+		SitePages.openPagesAdmin(siteURLKey = "guest");
+
+		SitePages.addPublicPage(pageName = "Test Page");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Publications",
+			panel = "Applications",
+			portlet = "Publications");
+
+		Publications.deletePublication(publicationName = "Publication Name");
+
+		AssertElementNotPresent(
+			key_publicationName = "Publication Name",
+			locator1 = "Publications#PUBLISHED_PUBLICATION_NAME");
+
+		AssertTextPresent(
+			locator1 = "Publications#PUBLICATIONS_INDICATOR_TITLE",
+			value1 = "Production");
+
+		Navigator.openURL();
+
+		Page.viewNoPG(pageName = "Test Page");
+	}
+
+	@priority = "4"
+	test SwitchPublication {
+		Publications.createNewPublication(publicationName = "Publication Name");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			portlet = "Web Content");
+
+		WebContentNavigator.gotoAddCP();
+
+		WebContent.addCP(
+			webContentContent = "WC WebContent Content 1",
+			webContentTitle = "Web Content Title 1");
+
+		PortletEntry.publish();
+
+		Publications.createNewPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication 2 Name");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			portlet = "Web Content");
+
+		WebContentNavigator.gotoAddCP();
+
+		WebContent.addCP(
+			webContentContent = "WC WebContent Content 2",
+			webContentTitle = "Web Content Title 2");
+
+		PortletEntry.publish();
+
+		Publications.selectPublication(publicationName = "Publication Name");
+
+		AssertElementPresent(
+			key_webContentTitle = "Web Content Title 1",
+			locator1 = "WC#ENTRY_LIST_TITLE");
+
+		AssertElementNotPresent(
+			key_webContentTitle = "Web Content Title 2",
+			locator1 = "WC#ENTRY_LIST_TITLE");
+
+		Publications.selectPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication 2 Name");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			portlet = "Web Content");
+
+		AssertElementPresent(
+			key_webContentTitle = "Web Content Title 2",
+			locator1 = "WC#ENTRY_LIST_TITLE");
+
+		AssertElementNotPresent(
+			key_webContentTitle = "Web Content Title 1",
+			locator1 = "WC#ENTRY_LIST_TITLE");
+
+		Publications.workOnProduction();
+
+		AssertTextEquals(
+			locator1 = "Message#EMPTY_INFO",
+			value1 = "No web content was found.");
+	}
+
+}

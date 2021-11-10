@@ -14,12 +14,14 @@
 
 package com.liferay.portal.servlet;
 
+import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
 import com.liferay.portal.kernel.servlet.DirectServletRegistry;
-import com.liferay.portal.kernel.util.ReflectionUtil;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
@@ -38,7 +40,6 @@ import javax.servlet.ServletContext;
 /**
  * @author Shuyang Zhou
  */
-@DoPrivileged
 public class DirectServletRegistryImpl implements DirectServletRegistry {
 
 	@Override
@@ -80,7 +81,9 @@ public class DirectServletRegistryImpl implements DirectServletRegistry {
 
 	@Override
 	public void putServlet(String path, Servlet servlet) {
-		if (_servletInfos.containsKey(path)) {
+		if (path.startsWith(PathModulePrefixHolder._PATH_MODULE_PREFIX) ||
+			_servletInfos.containsKey(path)) {
+
 			return;
 		}
 
@@ -179,17 +182,18 @@ public class DirectServletRegistryImpl implements DirectServletRegistry {
 				servlet = null;
 			}
 		}
-		catch (NoSuchMethodException nsme) {
+		catch (NoSuchMethodException noSuchMethodException) {
 			if (_log.isWarnEnabled()) {
 				_log.warn(
 					"Reloading of dependant JSP is disabled because your " +
-						"Servlet container is not a variant of Jasper");
+						"Servlet container is not a variant of Jasper",
+					noSuchMethodException);
 			}
 
 			_reloadDependants = false;
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 
 		return servlet;
@@ -216,7 +220,15 @@ public class DirectServletRegistryImpl implements DirectServletRegistry {
 	private final Map<String, ServletInfo> _servletInfos =
 		new ConcurrentHashMap<>();
 
-	private class ServletInfo {
+	private static class PathModulePrefixHolder {
+
+		private static final String _PATH_MODULE_PREFIX = StringBundler.concat(
+			PortalUtil.getPathProxy(), PortalUtil.getPathContext(),
+			Portal.PATH_MODULE, StringPool.SLASH);
+
+	}
+
+	private static class ServletInfo {
 
 		public long getLastModified() {
 			return _lastModified;

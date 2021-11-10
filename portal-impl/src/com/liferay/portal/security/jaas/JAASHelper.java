@@ -15,31 +15,33 @@
 package com.liferay.portal.security.jaas;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.CompanyConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.model.Company;
-import com.liferay.portal.model.CompanyConstants;
-import com.liferay.portal.model.User;
-import com.liferay.portal.service.CompanyLocalServiceUtil;
-import com.liferay.portal.service.UserLocalServiceUtil;
 import com.liferay.portal.util.PropsValues;
 
 /**
  * @author Raymond Augé
+ * @deprecated As of Cavanaugh (7.4.x), with no replacement
  */
+@Deprecated
 public class JAASHelper {
 
 	public static JAASHelper getInstance() {
-		return _instance;
+		return _jaasHelper;
 	}
 
 	public static long getJaasUserId(long companyId, String name)
 		throws PortalException {
 
-		return _instance.doGetJaasUserId(companyId, name);
+		return _jaasHelper.doGetJaasUserId(companyId, name);
 	}
 
 	public static void setInstance(JAASHelper instance) {
-		_instance = instance;
+		_jaasHelper = instance;
 	}
 
 	protected long doGetJaasUserId(long companyId, String name)
@@ -49,6 +51,7 @@ public class JAASHelper {
 
 		if (jaasAuthType.equals("login")) {
 			Company company = CompanyLocalServiceUtil.getCompany(companyId);
+
 			String authType = company.getAuthType();
 
 			if (authType.equals(CompanyConstants.AUTH_TYPE_EA)) {
@@ -87,6 +90,6 @@ public class JAASHelper {
 		return userId;
 	}
 
-	private static JAASHelper _instance = new JAASHelper();
+	private static JAASHelper _jaasHelper = new JAASHelper();
 
 }

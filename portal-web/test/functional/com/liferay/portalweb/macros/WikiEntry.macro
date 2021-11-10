@@ -1,31 +1,66 @@
-<definition>
-	<command name="addMediaWikiDescription">
-		<execute function="Type" locator1="TextArea#WEB_EDITOR" value1="${wikiPageContent}" />
-	</command>
+definition {
 
-	<command name="addPageContent">
-		<execute function="SelectFrame" locator1="CKEditor#BODY_FIELD_IFRAME" />
+	macro addPageContent {
+		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
 
-		<execute function="Type#sendKeys" locator1="CKEditor#BODY" value1="${wikiPageContent}" />
+		Type(
+			locator1 = "CKEditor#BODY",
+			value1 = "${wikiPageContent}");
 
-		<execute function="SelectFrame" value1="relative=top" />
-	</command>
+		SelectFrame(value1 = "relative=top");
+	}
 
-	<command name="addPageTitle">
-		<execute function="Type" locator1="TextInput#TITLE" value1="${wikiPageTitle}" />
-	</command>
+	macro addPageTitle {
+		if (isSet(wikiPageTitle)) {
+			var title = "${wikiPageTitle}";
+		}
 
-	<command name="confirmMediaWiki">
-		<execute function="Confirm" value1="You may lose some formatting when switching from Creole to MediaWiki. Do you want to continue?" />
-	</command>
+		else if (isSet(wikiChildPageTitle)) {
+			var title = "${wikiChildPageTitle}";
+		}
 
-	<command name="publish">
-		<execute function="AssertClick" locator1="Button#PUBLISH" value1="Publish" />
+		Type(
+			locator1 = "Wiki#ENTRY_TITLE",
+			value1 = "${title}");
+	}
 
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request has completed successfully." />
-	</command>
+	macro cancel {
+		AssertClick(
+			locator1 = "Button#CANCEL",
+			value1 = "Cancel");
+	}
 
-	<command name="selectPageFormat">
-		<execute function="SelectNoError#pauseSelect" locator1="Wiki#ADD_PAGE_FORMAT_DROPDOWN" value1="${pageFormat}" />
-	</command>
-</definition>
+	macro confirmHTML {
+		AssertConfirm(value1 = "You may lose some formatting when switching from Creole to HTML. Do you want to continue?");
+	}
+
+	macro saveAsDraft {
+		AssertClick(
+			locator1 = "Button#SAVE",
+			value1 = "Save as Draft");
+
+		Alert.viewSuccessMessage();
+	}
+
+	macro selectPageFormat {
+		if (IsNotVisible(locator1 = "Wiki#ADD_PAGE_FORMAT_DROPDOWN")) {
+			Panel.expandPanel(panel = "Configuration");
+
+			SelectNoError(
+				locator1 = "Wiki#ADD_PAGE_FORMAT_DROPDOWN",
+				value1 = "${pageFormat}");
+		}
+		else if (IsVisible(locator1 = "Wiki#ADD_PAGE_FORMAT_DROPDOWN")) {
+			SelectNoError(
+				locator1 = "Wiki#ADD_PAGE_FORMAT_DROPDOWN",
+				value1 = "${pageFormat}");
+		}
+	}
+
+	macro viewPageContentBody {
+		AssertTextEquals(
+			locator1 = "WikiEntry#BODY",
+			value1 = "${wikiPageContent}");
+	}
+
+}

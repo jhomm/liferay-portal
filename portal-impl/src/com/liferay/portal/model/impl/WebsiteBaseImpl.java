@@ -14,10 +14,8 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.model.Website;
-import com.liferay.portal.service.WebsiteLocalServiceUtil;
+import com.liferay.portal.kernel.model.Website;
+import com.liferay.portal.kernel.service.WebsiteLocalServiceUtil;
 
 /**
  * The extended model base implementation for the Website service. Represents a row in the &quot;Website&quot; database table, with each column mapped to a property of this class.
@@ -31,13 +29,13 @@ import com.liferay.portal.service.WebsiteLocalServiceUtil;
  * @see Website
  * @generated
  */
-@ProviderType
-public abstract class WebsiteBaseImpl extends WebsiteModelImpl
-	implements Website {
+public abstract class WebsiteBaseImpl
+	extends WebsiteModelImpl implements Website {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. All methods that expect a website model instance should use the {@link Website} interface instead.
+	 * Never modify or reference this class directly. All methods that expect a website model instance should use the <code>Website</code> interface instead.
 	 */
 	@Override
 	public void persist() {
@@ -48,4 +46,5 @@ public abstract class WebsiteBaseImpl extends WebsiteModelImpl
 			WebsiteLocalServiceUtil.updateWebsite(this);
 		}
 	}
+
 }

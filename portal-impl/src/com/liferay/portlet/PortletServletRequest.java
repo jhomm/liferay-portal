@@ -14,22 +14,17 @@
 
 package com.liferay.portlet;
 
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.servlet.ServletInputStreamAdapter;
-import com.liferay.portal.kernel.util.ClassLoaderUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
-import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portlet.internal.PortletRequestDispatcherImpl;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
-
-import java.lang.reflect.Constructor;
 
 import java.security.Principal;
 
@@ -42,6 +37,7 @@ import javax.portlet.EventRequest;
 import javax.portlet.PortletRequest;
 
 import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -55,16 +51,19 @@ import javax.servlet.http.HttpSession;
 public class PortletServletRequest extends HttpServletRequestWrapper {
 
 	public PortletServletRequest(
-		HttpServletRequest request, PortletRequest portletRequest,
+		HttpServletRequest httpServletRequest, PortletRequest portletRequest,
 		String pathInfo, String queryString, String requestURI,
 		String servletPath, boolean named, boolean include) {
 
-		super(request);
+		super(httpServletRequest);
 
-		_request = request;
+		_httpServletRequest = httpServletRequest;
+
 		_portletRequest = portletRequest;
-		_portletRequestImpl = PortletRequestImpl.getPortletRequestImpl(
+
+		_liferayPortletRequest = LiferayPortletUtil.getLiferayPortletRequest(
 			_portletRequest);
+
 		_pathInfo = pathInfo;
 		_queryString = queryString;
 		_requestURI = GetterUtil.getString(requestURI);
@@ -72,75 +71,71 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 		_named = named;
 		_include = include;
 
-		_lifecycle = _portletRequestImpl.getLifecycle();
+		_lifecycle = _liferayPortletRequest.getLifecycle();
 
 		if (Validator.isNotNull(_queryString)) {
-			_portletRequestImpl.setPortletRequestDispatcherRequest(request);
+			_liferayPortletRequest.setPortletRequestDispatcherRequest(
+				httpServletRequest);
 		}
 	}
 
 	@Override
 	public Object getAttribute(String name) {
 		if (_include || (name == null)) {
-			return _request.getAttribute(name);
+			return _httpServletRequest.getAttribute(name);
 		}
 
 		if (name.equals(JavaConstants.JAVAX_SERVLET_FORWARD_CONTEXT_PATH)) {
 			if (_named) {
 				return null;
 			}
-			else {
-				return _portletRequest.getContextPath();
-			}
+
+			return _portletRequest.getContextPath();
 		}
 
 		if (name.equals(JavaConstants.JAVAX_SERVLET_FORWARD_PATH_INFO)) {
 			if (_named) {
 				return null;
 			}
-			else {
-				return _pathInfo;
-			}
+
+			return _pathInfo;
 		}
 
 		if (name.equals(JavaConstants.JAVAX_SERVLET_FORWARD_QUERY_STRING)) {
 			if (_named) {
 				return null;
 			}
-			else {
-				return _queryString;
-			}
+
+			return _queryString;
 		}
 
 		if (name.equals(JavaConstants.JAVAX_SERVLET_FORWARD_REQUEST_URI)) {
 			if (_named) {
 				return null;
 			}
-			else {
-				return _requestURI;
-			}
+
+			return _requestURI;
 		}
 
 		if (name.equals(JavaConstants.JAVAX_SERVLET_FORWARD_SERVLET_PATH)) {
 			if (_named) {
 				return null;
 			}
-			else {
-				return _servletPath;
-			}
+
+			return _servletPath;
 		}
 
-		return _request.getAttribute(name);
+		return _httpServletRequest.getAttribute(name);
 	}
 
 	@Override
 	public Enumeration<String> getAttributeNames() {
-		return _request.getAttributeNames();
+		return _portletRequest.getAttributeNames();
 	}
 
 	@Override
 	public String getAuthType() {
-		return _request.getAuthType();
+		return _httpServletRequest.getAuthType();
 	}
 
 	@Override
@@ -148,11 +143,10 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 		if (_lifecycle.equals(PortletRequest.ACTION_PHASE) ||
 			_lifecycle.equals(PortletRequest.RESOURCE_PHASE)) {
 
-			return _request.getCharacterEncoding();
+			return _httpServletRequest.getCharacterEncoding();
 		}
-		else {
-			return null;
-		}
+
+		return null;
 	}
 
 	@Override
@@ -160,11 +154,10 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 		if (_lifecycle.equals(PortletRequest.ACTION_PHASE) ||
 			_lifecycle.equals(PortletRequest.RESOURCE_PHASE)) {
 
-			return _request.getContentLength();
+			return _httpServletRequest.getContentLength();
 		}
-		else {
-			return 0;
-		}
+
+		return 0;
 	}
 
 	@Override
@@ -172,11 +165,10 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 		if (_lifecycle.equals(PortletRequest.ACTION_PHASE) ||
 			_lifecycle.equals(PortletRequest.RESOURCE_PHASE)) {
 
-			return _request.getContentType();
+			return _httpServletRequest.getContentType();
 		}
-		else {
-			return null;
-		}
+
+		return null;
 	}
 
 	@Override
@@ -186,27 +178,33 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public Cookie[] getCookies() {
-		return _request.getCookies();
+		return _httpServletRequest.getCookies();
 	}
 
 	@Override
 	public long getDateHeader(String name) {
-		return GetterUtil.getLong(getHeader(name), -1);
+		String header = getHeader(name);
+
+		if (header == null) {
+			return -1;
+		}
+
+		return GetterUtil.getLongStrict(getHeader(name));
 	}
 
 	@Override
 	public String getHeader(String name) {
-		return _request.getHeader(name);
+		return _httpServletRequest.getHeader(name);
 	}
 
 	@Override
 	public Enumeration<String> getHeaderNames() {
-		return _request.getHeaderNames();
+		return _httpServletRequest.getHeaderNames();
 	}
 
 	@Override
 	public Enumeration<String> getHeaders(String name) {
-		return _request.getHeaders(name);
+		return _httpServletRequest.getHeaders(name);
 	}
 
 	@Override
@@ -216,22 +214,22 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 
 			ClientDataRequest clientDataRequest = _getClientDataRequest();
 
-			InputStream portletInputStream =
-				clientDataRequest.getPortletInputStream();
-
-			ServletInputStream servletInputStream =
-				new ServletInputStreamAdapter(portletInputStream);
-
-			return servletInputStream;
+			return new ServletInputStreamAdapter(
+				clientDataRequest.getPortletInputStream());
 		}
-		else {
-			return null;
-		}
+
+		return null;
 	}
 
 	@Override
 	public int getIntHeader(String name) {
-		return GetterUtil.getInteger(getHeader(name));
+		String header = getHeader(name);
+
+		if (header == null) {
+			return -1;
+		}
+
+		return GetterUtil.getIntegerStrict(header);
 	}
 
 	@Override
@@ -269,7 +267,9 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 			return clientDataRequest.getMethod();
 		}
 
-		if (_lifecycle.equals(PortletRequest.RENDER_PHASE)) {
+		if (_lifecycle.equals(PortletRequest.HEADER_PHASE) ||
+			_lifecycle.equals(PortletRequest.RENDER_PHASE)) {
+
 			return HttpMethods.GET;
 		}
 
@@ -305,7 +305,13 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public String getPathTranslated() {
-		return _request.getPathTranslated();
+		ServletContext servletContext = _httpServletRequest.getServletContext();
+
+		if ((_pathInfo != null) && (servletContext != null)) {
+			return servletContext.getRealPath(_pathInfo);
+		}
+
+		return null;
 	}
 
 	@Override
@@ -327,13 +333,12 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 
 			return clientDataRequest.getReader();
 		}
-		else {
-			return null;
-		}
+
+		return null;
 	}
 
 	/**
-	 * @deprecated As of 7.0.0
+	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
 	@Override
@@ -363,7 +368,15 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public RequestDispatcher getRequestDispatcher(String path) {
-		return _request.getRequestDispatcher(path);
+		RequestDispatcher requestDispatcher =
+			_httpServletRequest.getRequestDispatcher(path);
+
+		if (requestDispatcher != null) {
+			requestDispatcher = new PortletRequestDispatcherImpl(
+				requestDispatcher, path);
+		}
+
+		return requestDispatcher;
 	}
 
 	@Override
@@ -408,24 +421,13 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public HttpSession getSession(boolean create) {
-		HttpSession session = _request.getSession(create);
+		HttpSession httpSession = _httpServletRequest.getSession(create);
 
-		if (session == null) {
+		if (httpSession == null) {
 			return null;
 		}
 
-		session = new PortletServletSession(session, _portletRequestImpl);
-
-		if (ServerDetector.isJetty()) {
-			try {
-				session = wrapJettySession(session);
-			}
-			catch (Exception e) {
-				_log.error(e, e);
-			}
-		}
-
-		return session;
+		return new PortletServletSession(httpSession, _liferayPortletRequest);
 	}
 
 	@Override
@@ -435,21 +437,12 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 
 	@Override
 	public boolean isRequestedSessionIdFromCookie() {
-		return _request.isRequestedSessionIdFromCookie();
-	}
-
-	/**
-	 * @deprecated As of 6.1.0
-	 */
-	@Deprecated
-	@Override
-	public boolean isRequestedSessionIdFromUrl() {
-		return _request.isRequestedSessionIdFromUrl();
+		return _httpServletRequest.isRequestedSessionIdFromCookie();
 	}
 
 	@Override
 	public boolean isRequestedSessionIdFromURL() {
-		return _request.isRequestedSessionIdFromURL();
+		return _httpServletRequest.isRequestedSessionIdFromURL();
 	}
 
 	@Override
@@ -473,8 +466,8 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 	}
 
 	@Override
-	public void setAttribute(String name, Object obj) {
-		_portletRequest.setAttribute(name, obj);
+	public void setAttribute(String name, Object object) {
+		_portletRequest.setAttribute(name, object);
 	}
 
 	@Override
@@ -490,24 +483,6 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 		}
 	}
 
-	protected HttpSession wrapJettySession(HttpSession session)
-		throws Exception {
-
-		// This must be called through reflection because Resin tries to load
-		// org/mortbay/jetty/servlet/AbstractSessionManager$SessionIf
-
-		ClassLoader classLoader = ClassLoaderUtil.getPortalClassLoader();
-
-		Class<?> jettyHttpSessionWrapperClass = classLoader.loadClass(
-			"com.liferay.portal.servlet.JettyHttpSessionWrapper");
-
-		Constructor<?> constructor =
-			jettyHttpSessionWrapperClass.getConstructor(
-				new Class[] {HttpSession.class});
-
-		return(HttpSession)constructor.newInstance(new Object[] {session});
-	}
-
 	private ClientDataRequest _getClientDataRequest() {
 		return (ClientDataRequest)_portletRequest;
 	}
@@ -516,17 +491,14 @@ public class PortletServletRequest extends HttpServletRequestWrapper {
 		return (EventRequest)_portletRequest;
 	}
 
-	private static final Log _log = LogFactoryUtil.getLog(
-		PortletServletRequest.class);
-
+	private final HttpServletRequest _httpServletRequest;
 	private final boolean _include;
 	private final String _lifecycle;
+	private final LiferayPortletRequest _liferayPortletRequest;
 	private final boolean _named;
 	private final String _pathInfo;
 	private final PortletRequest _portletRequest;
-	private final PortletRequestImpl _portletRequestImpl;
 	private final String _queryString;
-	private final HttpServletRequest _request;
 	private final String _requestURI;
 	private final String _servletPath;
 

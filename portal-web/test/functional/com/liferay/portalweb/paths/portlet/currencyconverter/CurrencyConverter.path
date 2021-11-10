@@ -2,11 +2,13 @@
 <head>
 <title>CurrencyConverter</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">CurrencyConverter</td></tr>
 </thead>
+
 <tbody>
 <tr>
 	<td>NUMBER_FIELD</td>
@@ -37,11 +39,6 @@
 <tr>
 	<td>DATA_TABLE_TO</td>
 	<td>//table[contains(@class,'conversion-data')]/tbody/tr/td[2]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>DATA_TABLE_HISTORICAL_CHARTS</td>
-	<td>//table[contains(@class,'conversion-data')]/tbody/tr/td[3]</td>
 	<td></td>
 </tr>
 <tr>

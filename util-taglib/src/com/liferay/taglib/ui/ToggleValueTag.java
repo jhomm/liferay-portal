@@ -14,8 +14,8 @@
 
 package com.liferay.taglib.ui;
 
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.util.SessionClicks;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.util.SessionClicks;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.jsp.JspException;
@@ -28,25 +28,15 @@ import javax.servlet.jsp.tagext.TagSupport;
  */
 public class ToggleValueTag extends TagSupport {
 
-	/**
-	 * @deprecated As of 6.1.0
-	 */
-	@Deprecated
-	public static void doTag(
-			String id, PageContext pageContext, HttpServletRequest request)
-		throws Exception {
-
-		doTag(id, "block", pageContext);
-	}
-
 	public static void doTag(
 			String id, String defaultValue, PageContext pageContext)
 		throws Exception {
 
-		HttpServletRequest request =
+		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)pageContext.getRequest();
 
-		String value = SessionClicks.get(request, id, StringPool.BLANK);
+		String value = SessionClicks.get(
+			httpServletRequest, id, StringPool.BLANK);
 
 		if (value.equals(StringPool.BLANK)) {
 			value = defaultValue;
@@ -64,8 +54,8 @@ public class ToggleValueTag extends TagSupport {
 
 			return EVAL_PAGE;
 		}
-		catch (Exception e) {
-			throw new JspException(e);
+		catch (Exception exception) {
+			throw new JspException(exception);
 		}
 	}
 

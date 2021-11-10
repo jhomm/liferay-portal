@@ -15,18 +15,20 @@
 package com.liferay.portal.service.base;
 
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.bean.IdentifiableBean;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBFactoryUtil;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
 import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.model.OrgLabor;
-import com.liferay.portal.service.BaseServiceImpl;
-import com.liferay.portal.service.OrgLaborService;
-import com.liferay.portal.service.persistence.ListTypePersistence;
-import com.liferay.portal.service.persistence.OrgLaborPersistence;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.model.OrgLabor;
+import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
+import com.liferay.portal.kernel.service.BaseServiceImpl;
+import com.liferay.portal.kernel.service.OrgLaborService;
+import com.liferay.portal.kernel.service.OrgLaborServiceUtil;
+import com.liferay.portal.kernel.service.persistence.OrgLaborPersistence;
+import com.liferay.portal.kernel.util.PortalUtil;
+
+import java.lang.reflect.Field;
 
 import javax.sql.DataSource;
 
@@ -39,15 +41,16 @@ import javax.sql.DataSource;
  *
  * @author Brian Wing Shun Chan
  * @see com.liferay.portal.service.impl.OrgLaborServiceImpl
- * @see com.liferay.portal.service.OrgLaborServiceUtil
  * @generated
  */
-public abstract class OrgLaborServiceBaseImpl extends BaseServiceImpl
-	implements OrgLaborService, IdentifiableBean {
+public abstract class OrgLaborServiceBaseImpl
+	extends BaseServiceImpl
+	implements IdentifiableOSGiService, OrgLaborService {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Always use {@link com.liferay.portal.service.OrgLaborServiceUtil} to access the org labor remote service.
+	 * Never modify or reference this class directly. Use <code>OrgLaborService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>OrgLaborServiceUtil</code>.
 	 */
 
 	/**
@@ -55,7 +58,9 @@ public abstract class OrgLaborServiceBaseImpl extends BaseServiceImpl
 	 *
 	 * @return the org labor local service
 	 */
-	public com.liferay.portal.service.OrgLaborLocalService getOrgLaborLocalService() {
+	public com.liferay.portal.kernel.service.OrgLaborLocalService
+		getOrgLaborLocalService() {
+
 		return orgLaborLocalService;
 	}
 
@@ -65,7 +70,9 @@ public abstract class OrgLaborServiceBaseImpl extends BaseServiceImpl
 	 * @param orgLaborLocalService the org labor local service
 	 */
 	public void setOrgLaborLocalService(
-		com.liferay.portal.service.OrgLaborLocalService orgLaborLocalService) {
+		com.liferay.portal.kernel.service.OrgLaborLocalService
+			orgLaborLocalService) {
+
 		this.orgLaborLocalService = orgLaborLocalService;
 	}
 
@@ -101,7 +108,9 @@ public abstract class OrgLaborServiceBaseImpl extends BaseServiceImpl
 	 *
 	 * @param orgLaborPersistence the org labor persistence
 	 */
-	public void setOrgLaborPersistence(OrgLaborPersistence orgLaborPersistence) {
+	public void setOrgLaborPersistence(
+		OrgLaborPersistence orgLaborPersistence) {
+
 		this.orgLaborPersistence = orgLaborPersistence;
 	}
 
@@ -110,7 +119,9 @@ public abstract class OrgLaborServiceBaseImpl extends BaseServiceImpl
 	 *
 	 * @return the counter local service
 	 */
-	public com.liferay.counter.service.CounterLocalService getCounterLocalService() {
+	public com.liferay.counter.kernel.service.CounterLocalService
+		getCounterLocalService() {
+
 		return counterLocalService;
 	}
 
@@ -120,90 +131,28 @@ public abstract class OrgLaborServiceBaseImpl extends BaseServiceImpl
 	 * @param counterLocalService the counter local service
 	 */
 	public void setCounterLocalService(
-		com.liferay.counter.service.CounterLocalService counterLocalService) {
+		com.liferay.counter.kernel.service.CounterLocalService
+			counterLocalService) {
+
 		this.counterLocalService = counterLocalService;
 	}
 
-	/**
-	 * Returns the list type local service.
-	 *
-	 * @return the list type local service
-	 */
-	public com.liferay.portal.service.ListTypeLocalService getListTypeLocalService() {
-		return listTypeLocalService;
-	}
-
-	/**
-	 * Sets the list type local service.
-	 *
-	 * @param listTypeLocalService the list type local service
-	 */
-	public void setListTypeLocalService(
-		com.liferay.portal.service.ListTypeLocalService listTypeLocalService) {
-		this.listTypeLocalService = listTypeLocalService;
-	}
-
-	/**
-	 * Returns the list type remote service.
-	 *
-	 * @return the list type remote service
-	 */
-	public com.liferay.portal.service.ListTypeService getListTypeService() {
-		return listTypeService;
-	}
-
-	/**
-	 * Sets the list type remote service.
-	 *
-	 * @param listTypeService the list type remote service
-	 */
-	public void setListTypeService(
-		com.liferay.portal.service.ListTypeService listTypeService) {
-		this.listTypeService = listTypeService;
-	}
-
-	/**
-	 * Returns the list type persistence.
-	 *
-	 * @return the list type persistence
-	 */
-	public ListTypePersistence getListTypePersistence() {
-		return listTypePersistence;
-	}
-
-	/**
-	 * Sets the list type persistence.
-	 *
-	 * @param listTypePersistence the list type persistence
-	 */
-	public void setListTypePersistence(ListTypePersistence listTypePersistence) {
-		this.listTypePersistence = listTypePersistence;
-	}
-
 	public void afterPropertiesSet() {
+		_setServiceUtilService(orgLaborService);
 	}
 
 	public void destroy() {
+		_setServiceUtilService(null);
 	}
 
 	/**
-	 * Returns the Spring bean ID for this bean.
+	 * Returns the OSGi service identifier.
 	 *
-	 * @return the Spring bean ID for this bean
+	 * @return the OSGi service identifier
 	 */
 	@Override
-	public String getBeanIdentifier() {
-		return _beanIdentifier;
-	}
-
-	/**
-	 * Sets the Spring bean ID for this bean.
-	 *
-	 * @param beanIdentifier the Spring bean ID for this bean
-	 */
-	@Override
-	public void setBeanIdentifier(String beanIdentifier) {
-		_beanIdentifier = beanIdentifier;
+	public String getOSGiServiceIdentifier() {
+		return OrgLaborService.class.getName();
 	}
 
 	protected Class<?> getModelClass() {
@@ -223,34 +172,51 @@ public abstract class OrgLaborServiceBaseImpl extends BaseServiceImpl
 		try {
 			DataSource dataSource = orgLaborPersistence.getDataSource();
 
-			DB db = DBFactoryUtil.getDB();
+			DB db = DBManagerUtil.getDB();
 
 			sql = db.buildSQL(sql);
 			sql = PortalUtil.transformSQL(sql);
 
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(dataSource,
-					sql, new int[0]);
+			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
+				dataSource, sql);
 
 			sqlUpdate.update();
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 	}
 
-	@BeanReference(type = com.liferay.portal.service.OrgLaborLocalService.class)
-	protected com.liferay.portal.service.OrgLaborLocalService orgLaborLocalService;
-	@BeanReference(type = com.liferay.portal.service.OrgLaborService.class)
+	private void _setServiceUtilService(OrgLaborService orgLaborService) {
+		try {
+			Field field = OrgLaborServiceUtil.class.getDeclaredField(
+				"_service");
+
+			field.setAccessible(true);
+
+			field.set(null, orgLaborService);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new RuntimeException(reflectiveOperationException);
+		}
+	}
+
+	@BeanReference(
+		type = com.liferay.portal.kernel.service.OrgLaborLocalService.class
+	)
+	protected com.liferay.portal.kernel.service.OrgLaborLocalService
+		orgLaborLocalService;
+
+	@BeanReference(type = OrgLaborService.class)
 	protected OrgLaborService orgLaborService;
+
 	@BeanReference(type = OrgLaborPersistence.class)
 	protected OrgLaborPersistence orgLaborPersistence;
-	@BeanReference(type = com.liferay.counter.service.CounterLocalService.class)
-	protected com.liferay.counter.service.CounterLocalService counterLocalService;
-	@BeanReference(type = com.liferay.portal.service.ListTypeLocalService.class)
-	protected com.liferay.portal.service.ListTypeLocalService listTypeLocalService;
-	@BeanReference(type = com.liferay.portal.service.ListTypeService.class)
-	protected com.liferay.portal.service.ListTypeService listTypeService;
-	@BeanReference(type = ListTypePersistence.class)
-	protected ListTypePersistence listTypePersistence;
-	private String _beanIdentifier;
+
+	@BeanReference(
+		type = com.liferay.counter.kernel.service.CounterLocalService.class
+	)
+	protected com.liferay.counter.kernel.service.CounterLocalService
+		counterLocalService;
+
 }

@@ -1,0 +1,328 @@
+@component-name = "data-engine"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Data Engine";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONGroup.addGroup(groupName = "Test Site Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Rich Text",
+			fieldName = "Rich Text");
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
+		}
+	}
+
+	@description = "This test verifies that a user can set Searchable as Disabled and as Text."
+	@priority = "4"
+	test EditRichTextSearchable {
+		DataEngine.editFieldSearchable(
+			fieldFieldLabel = "Rich Text",
+			searchableType = "Disable");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		Click(
+			key_fieldFieldLabel = "Rich Text",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertChecked.assertCheckedNotVisible(
+			key_fieldFieldLabel = "Searchable",
+			key_optionValue = "Disable",
+			locator1 = "WCEditWebContent#SELECTION_OPTION");
+
+		DataEngine.editFieldSearchable(
+			fieldFieldLabel = "Rich Text",
+			searchableType = "Text");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		Click(
+			key_fieldFieldLabel = "Rich Text",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertChecked.assertCheckedNotVisible(
+			key_fieldFieldLabel = "Searchable",
+			key_optionValue = "Text",
+			locator1 = "WCEditWebContent#SELECTION_OPTION");
+	}
+
+	@description = "This test verifies if the user can repeat and exclude a Rich Text Field."
+	@priority = "5"
+	test ExcludeRepeatedRichTextOnWebContent {
+		DataEngine.toggleFieldRepeatable(fieldFieldLabel = "Rich Text");
+
+		WebContentStructures.saveCP();
+
+		Navigator.gotoNavTab(navTab = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(webContentTitle = "WC WebContent Title");
+
+		DataEngine.addRepeatableField(fieldLabel = "Rich Text");
+
+		PortletEntry.publish();
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+
+		DataEngine.assertFieldRepeated(
+			fieldName = "RichText",
+			index = "2");
+
+		Click(
+			key_fieldName = "RichText",
+			locator1 = "DDMField#REMOVE_REPEATED_FIELD");
+
+		PortletEntry.publish();
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+
+		DataEngine.assertFieldRepeatedNotPresent(
+			fieldName = "RichText",
+			index = "2");
+	}
+
+	@description = "This test verifies if the user can write a text on the Rich Text Field."
+	@priority = "5"
+	test InsertTextOnRichTextOnWebContent {
+		WebContentStructures.saveCP();
+
+		Navigator.gotoNavTab(navTab = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(webContentTitle = "WC WebContent Title");
+
+		CKEditor.addContentInWebContent(
+			content = "Hello",
+			fieldLabel = "Rich Text");
+
+		PortletEntry.publish();
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+
+		SelectFrame.selectFrameNoLoading(
+			key_fieldLabel = "Rich Text",
+			locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
+
+		AssertTextEquals(
+			locator1 = "CKEditor#BODY",
+			value1 = "Hello");
+	}
+
+	@description = "This test verifies that a user can localize the field data."
+	@priority = "4"
+	test LocalizationOfRichTextPersists {
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Rich Text",
+			fieldHelp = "Help Text");
+
+		Translations.addLanguageManageTranslations(key_language = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContentStructures.addName(structureName = "Nome da Estrutura WC");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Rich Text",
+			fieldFieldLabelEdit = "Texto Rico");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Texto Rico",
+			fieldHelp = "Texto Ajuda");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "Nome da Estrutura WC");
+
+		WebContent.assertFieldOnWebContent(
+			fieldFieldLabel = "Texto Rico",
+			fieldHelp = "Texto Ajuda",
+			fieldName = "Rich Text");
+	}
+
+	@description = "This test verifies that is not possible to publish a Web Content with an empty required Rich Text."
+	@priority = "4"
+	test PublishWebContentWithEmptyRequiredRichText {
+		property portal.acceptance = "false";
+
+		DataEngine.addField(
+			fieldFieldLabel = "Rich Text",
+			fieldName = "Rich Text");
+
+		DataEngine.editFieldRequired(fieldFieldLabel = "Rich Text");
+
+		WebContentStructures.saveCP();
+
+		Navigator.gotoNavTab(navTab = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			structureName = "WC Structure Name",
+			webContentTitle = "WebContent Title");
+
+		Click(locator1 = "Button#PUBLISH");
+
+		AssertTextEquals.assertPartialText(
+			locator1 = "TextInput#REQUIRED_ALERT",
+			value1 = "This field is required.");
+	}
+
+	@description = "This test ensure is possible to repeat a rich text on a Web Content."
+	@priority = "5"
+	test RepeatRichTextOnWebContent {
+		DataEngine.toggleFieldRepeatable(fieldFieldLabel = "Rich Text");
+
+		WebContentStructures.saveCP();
+
+		Navigator.gotoNavTab(navTab = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(webContentTitle = "WC WebContent Title");
+
+		DataEngine.addRepeatableField(fieldLabel = "Rich Text");
+
+		DataEngine.assertFieldRepeated(
+			fieldName = "RichText",
+			index = "2");
+	}
+
+	@description = "This test verifies the field reference with valid and invalid characters."
+	@priority = "3"
+	test SetFieldReferenceOfRichTextWithValidAndInvalidCharacters {
+		DataEngine.editFieldReference(
+			assertFieldReference = "TestValidReference",
+			fieldFieldLabel = "Rich Text",
+			fieldReference = "TestValidReference");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		DEBuilder.assertFieldReference(
+			fieldLabel = "Rich Text",
+			fieldReference = "TestValidReference");
+
+		DataEngine.editFieldReference(
+			assertFieldReference = "TestInvalidReference",
+			fieldFieldLabel = "Rich Text",
+			fieldReference = "Test!Invalid@#Reference");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		DEBuilder.assertFieldReference(
+			fieldLabel = "Rich Text",
+			fieldReference = "TestInvalidReference");
+	}
+
+	@description = "This test verifies that a user can define a Field Label and a Help Text."
+	@priority = "5"
+	test SetLabelOfRichTextAndHelpText {
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Rich Text",
+			fieldFieldLabelEdit = "Rich Text Edited");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Rich Text Edited",
+			fieldHelp = "Help Text");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Name");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Rich Text Edited",
+			fieldHelp = "Help Text",
+			fieldName = "Rich Text");
+	}
+
+	@description = "This test verifies that a user can see the Tip(Help Text) if it was defined."
+	@priority = "4"
+	test VerifyHelpTextofRichTextOnWebContent {
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Rich Text",
+			fieldHelp = "Help Text");
+
+		WebContentStructures.saveCP();
+
+		NavItem.click(navItem = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.assertFieldOnWebContent(
+			fieldFieldLabel = "Rich Text",
+			fieldHelpText = "Help Text",
+			fieldName = "RichText");
+	}
+
+	@description = "This test verifies that a user can set the field as Required or Not Required on Web Content."
+	@priority = "4"
+	test VerifyRichTextIsSetAsRequiredOnWebContent {
+		DataEngine.editFieldRequired(fieldFieldLabel = "Rich Text");
+
+		AssertClick.assertPartialTextClickAt(
+			key_fieldFieldLabel = "Rich Text",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER",
+			value1 = "Rich Text");
+
+		AssertElementPresent(
+			checkboxName = "Required Field",
+			locator1 = "Checkbox#ANY_CHECKBOX_CHECKED");
+
+		WebContentStructures.saveCP();
+
+		Navigator.gotoNavTab(navTab = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(webContentTitle = "WC WebContent Title");
+
+		Button.clickPublish();
+
+		AssertTextEquals(
+			key_fieldFieldLabel = "Rich Text",
+			locator1 = "WCEditWebContent#FIELD_REQUIRED_ALERT",
+			value1 = "This field is required.");
+	}
+
+}

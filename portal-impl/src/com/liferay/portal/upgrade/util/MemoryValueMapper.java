@@ -34,8 +34,9 @@ public class MemoryValueMapper implements ValueMapper {
 	}
 
 	public MemoryValueMapper(Set<Object> exceptions) {
-		_map = new LinkedHashMap<>();
 		_exceptions = exceptions;
+
+		_map = new LinkedHashMap<>();
 	}
 
 	@Override
@@ -65,7 +66,9 @@ public class MemoryValueMapper implements ValueMapper {
 
 	@Override
 	public Iterator<Object> iterator() throws Exception {
-		return _map.keySet().iterator();
+		Set<Object> keySet = _map.keySet();
+
+		return keySet.iterator();
 	}
 
 	@Override

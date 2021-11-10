@@ -14,9 +14,9 @@
 
 package com.liferay.portal.webdav.methods;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.webdav.Resource;
 import com.liferay.portal.kernel.webdav.WebDAVException;
 import com.liferay.portal.kernel.webdav.WebDAVRequest;
@@ -36,11 +36,11 @@ public class MoveMethodImpl implements Method {
 	@Override
 	public int process(WebDAVRequest webDAVRequest) throws WebDAVException {
 		WebDAVStorage storage = webDAVRequest.getWebDAVStorage();
-		HttpServletRequest request = webDAVRequest.getHttpServletRequest();
+		HttpServletRequest httpServletRequest =
+			webDAVRequest.getHttpServletRequest();
 
-		long companyId = webDAVRequest.getCompanyId();
 		String destination = WebDAVUtil.getDestination(
-			request, storage.getRootPath());
+			httpServletRequest, storage.getRootPath());
 
 		StringBundler sb = null;
 
@@ -52,7 +52,7 @@ public class MoveMethodImpl implements Method {
 		}
 
 		if (!destination.equals(webDAVRequest.getPath()) &&
-			(WebDAVUtil.getGroupId(companyId, destination) ==
+			(WebDAVUtil.getGroupId(webDAVRequest.getCompanyId(), destination) ==
 				webDAVRequest.getGroupId())) {
 
 			Resource resource = storage.getResource(webDAVRequest);
@@ -61,7 +61,7 @@ public class MoveMethodImpl implements Method {
 				return HttpServletResponse.SC_NOT_FOUND;
 			}
 
-			boolean overwrite = WebDAVUtil.isOverwrite(request);
+			boolean overwrite = WebDAVUtil.isOverwrite(httpServletRequest);
 
 			if (_log.isInfoEnabled()) {
 				sb.append(", overwrite is ");
@@ -74,10 +74,9 @@ public class MoveMethodImpl implements Method {
 				return storage.moveCollectionResource(
 					webDAVRequest, resource, destination, overwrite);
 			}
-			else {
-				return storage.moveSimpleResource(
-					webDAVRequest, resource, destination, overwrite);
-			}
+
+			return storage.moveSimpleResource(
+				webDAVRequest, resource, destination, overwrite);
 		}
 
 		return HttpServletResponse.SC_FORBIDDEN;

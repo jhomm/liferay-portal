@@ -1,17 +1,53 @@
-<definition>
-	<var name="formName" value="Created Form Name" />
+definition {
 
-	<command name="save">
-		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
+	var formName = "Created Form Name";
 
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="You have successfully updated the setup." />
-	</command>
+	macro changeLanguage {
+		Click(
+			key_language = "${currentLanguage}",
+			locator1 = "FormPortletConfiguration#SELECT_LANGUAGE");
+		Click(
+			key_language = "${newLanguage}",
+			locator1 = "FormPortletConfiguration#SELECT_LANGUAGE");
+	}
 
-	<command name="selectForm">
-		<var name="key_formName" value="${formName}" />
+	macro configureScopePG {
+		Portlet.gotoPortletOptions(
+			portletName = "${portletName}",
+			portletOption = "Configuration");
 
-		<execute function="AssertClick" locator1="FormPortletConfiguration#FORMS_TABLE_NAME" value1="${formName}" />
+		SelectFrame(locator1 = "IFrame#CONFIGURATION");
 
-		<execute function="AssertTextEquals" locator1="Message#INFO" value1="Displaying Form: ${formName} (Modified)" />
-	</command>
-</definition>
+		Navigator.gotoNavItem(navItem = "Scope");
+
+		Select(
+			locator1 = "Select#SCOPE",
+			value1 = "${scopeSelection}");
+
+		PortletEntry.save();
+	}
+
+	macro selectForm {
+		if (isSet(formTitle)) {
+			formName = "${formTitle}";
+		}
+
+		Navigator.gotoNavItem(navItem = "Setup");
+
+		AssertClick(
+			key_formName = "${formName}",
+			locator1 = "FormPortletConfiguration#FORMS_TABLE_NAME",
+			value1 = "${formName}");
+
+		AssertTextEquals(
+			locator1 = "Message#INFO",
+			value1 = "Displaying Form: ${formName} (Modified)");
+	}
+
+	macro viewTranslationLanguage {
+		AssertElementPresent(
+			key_language = "${language}",
+			locator1 = "FormPortletConfiguration#SELECT_LANGUAGE");
+	}
+
+}

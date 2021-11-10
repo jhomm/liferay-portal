@@ -1,13 +1,42 @@
-<definition default="uploadCommonFile">
-	<command name="uploadCommonFile">
-		<execute selenium="waitForVisible" />
+@default = "uploadCommonFile"
+definition {
 
-		<execute selenium="mouseOver" />
+	function uploadCommonFile {
+		WaitForSPARefresh();
 
-		<execute selenium="uploadCommonFile" />
+		selenium.waitForVisible();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.mouseOver();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.uploadCommonFile();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+	function uploadCommonFileHidden {
+		WaitForSPARefresh();
+
+		selenium.mouseOver();
+
+		selenium.uploadCommonFile();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+	function uploadCommonFileHiddenNoMouseOver {
+		WaitForSPARefresh();
+
+		selenium.waitForElementPresent();
+
+		selenium.uploadCommonFile();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

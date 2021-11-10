@@ -1,0 +1,101 @@
+@component-name = "portal-commerce"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Product Info Management";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		Navigator.openURL();
+
+		if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
+			User.logoutPG();
+		}
+
+		User.firstLoginPG();
+
+		CommerceConfiguration.commerceAdminTearDown();
+
+		CommerceConfiguration.commerceInitializersTearDown();
+	}
+
+	test CreateNewSpecificationOptions {
+		property environment.acceptance = "true";
+		property portal.acceptance = "true";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Specifications");
+
+		CommerceEntry.createNewSpecificationLabels(
+			specificationDescription = "Specification-1 Description",
+			specificationTitle = "specification-1");
+
+		CommerceEntry.viewSpecificationLabels(
+			specificationDescription = "Specification-1 Description",
+			specificationTitle = "specification-1");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Specifications");
+
+		CommerceNavigator.gotoCommercePortletNavItem(navItem = "Specification Groups");
+
+		CommerceEntry.createNewSpecificationGroups(
+			specificationDescription = "Specification-1 Description",
+			specificationTitle = "specification-1");
+
+		CommerceEntry.viewSpecificationGroups(
+			specificationDescription = "Specification-1 Description",
+			specificationTitle = "specification-1");
+	}
+
+	test PublishSimpleProduct {
+		property environment.acceptance = "true";
+		property portal.acceptance = "true";
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CommerceNavigator.gotoEntry(entryName = "Simple T-Shirt");
+
+		CommerceEntry.viewProductsEntry(
+			productFullDescription = "Simple T-Shirt Full Description",
+			productName = "Simple T-Shirt",
+			productShortDescription = "Simple T-Shirt Short Description");
+
+		Click(locator1 = "Icon#BACK");
+
+		CommerceNavigator.searchEntry(entryName = "Simple T-Shirt");
+
+		Click(
+			key_entryName = "Simple T-Shirt",
+			locator1 = "CommerceEntry#ENTRY_MENU_DROPDOWN_BUTTON");
+
+		Click(
+			filterOption = "Delete",
+			locator1 = "ContentDashboard#FILTER_BY_OPTION");
+
+		AssertElementPresent(locator1 = "Message#SUCCESS");
+
+		AssertElementNotPresent(
+			key_entryName = "Simple T-Shirt",
+			locator1 = "CommerceEntry#VALUE_PRODUCT_RELATIONS");
+	}
+
+}

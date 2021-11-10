@@ -1,0 +1,125 @@
+definition {
+
+	macro _deleteRemoteAppAPI {
+		var currentURL = Navigator.getCurrentURL();
+
+		var findWhereIdBegins = StringUtil.extractLast("${currentURL}", "remoteAppEntryId=");
+
+		var remoteAppEntryIdValue = StringUtil.extractFirst("${findWhereIdBegins}", "&_com_liferay_remote_app_admin_web_portlet_RemoteAppAdminPortlet_redirect");
+
+		JSONRemoteApp.deleteIFrameRemoteAppEntry(remoteAppEntryId = "${remoteAppEntryIdValue}");
+	}
+
+	macro addApp {
+		LexiconEntry.gotoAdd();
+
+		RemoteAppsEntry.addEntry(
+			entryName = "${entryName}",
+			entryURL = "${entryURL}");
+
+		PortletEntry.save();
+	}
+
+	macro addCustomElement {
+		LexiconEntry.gotoAdd();
+
+		Select(
+			locator1 = "Select#TYPE",
+			value1 = "Custom Element");
+
+		RemoteAppsEntry.addCustomElement(
+			entryHTMLName = "${entryHTMLName}",
+			entryName = "${entryName}",
+			entryURL = "${entryURL}");
+
+		PortletEntry.save();
+	}
+
+	macro deleteRemoteApp {
+		Click(locator1 = "RemoteApps#REMOTE_TABLE_ELLIPSIS");
+
+		Click(locator1 = "RemoteApps#REMOTE_TABLE_DELETE");
+	}
+
+	macro deleteRemoteAppAPI {
+		Click(locator1 = "xPath=(//div[@class='table-list-title']//a)");
+
+		var remoteAppNameToBeRemoved = RemoteApps.getRemoteAppEntryName();
+
+		RemoteApps._deleteRemoteAppAPI();
+
+		RemoteApps.goToRemoteAppsPortlet();
+
+		RemoteApps.viewTableEntryNameNotPresent(entryName = "${remoteAppNameToBeRemoved}");
+	}
+
+	macro getRemoteAppEntryName {
+		var remoteAppEntryValue = selenium.getAttribute("//input[contains(@id , '_com_liferay_remote_app_admin_web_portlet_RemoteAppAdminPortlet_name')]@value");
+
+		return "${remoteAppEntryValue}";
+	}
+
+	macro goToRemoteAppsPortlet {
+		if (IsElementNotPresent(locator1="RemoteApps#REMOTE_APPS_HEADER")) {
+			ApplicationsMenu.gotoPortlet(
+				category = "Custom Apps",
+				panel = "Applications",
+				portlet = "Remote Apps");
+		}
+	}
+
+	macro tearDown {
+		RemoteApps.goToRemoteAppsPortlet();
+
+		while (IsElementNotPresent(locator1="RemoteApps#EMPTY_REMOTE_TABLE_MESSAGE")) {
+			RemoteApps.deleteRemoteAppAPI();
+		}
+
+		RemoteApps.viewEmptyRemoteTable();
+	}
+
+	macro viewEmptyRemoteTable {
+		AssertElementPresent(locator1 = "RemoteApps#EMPTY_REMOTE_TABLE_MESSAGE");
+	}
+
+	macro viewTableEntries {
+		AssertTextEquals(
+			key_tableEntryName = "${entryName}",
+			locator1 = "RemoteApps#TABLE_ENTRY_NAME_REMOTE_TABLE",
+			value1 = "${entryName}");
+
+		AssertTextEquals(
+			key_tableEntryType = "${entryType}",
+			locator1 = "RemoteApps#TABLE_ENTRY_TYPE_REMOTE_TABLE",
+			value1 = "${entryType}");
+	}
+
+	macro viewTableEntryName {
+		AssertTextEquals(
+			key_tableEntryName = "${entryName}",
+			locator1 = "RemoteApps#TABLE_ENTRY_NAME_REMOTE_TABLE",
+			value1 = "${entryName}");
+	}
+
+	macro viewTableEntryNameNotPresent {
+		AssertElementNotPresent(
+			key_tableEntryName = "${entryName}",
+			locator1 = "RemoteApps#TABLE_ENTRY_NAME_REMOTE_TABLE",
+			value1 = "${entryName}");
+	}
+
+	macro viewTableEntryType {
+		AssertTextEquals(
+			key_tableEntryType = "${entryType}",
+			locator1 = "RemoteApps#TABLE_ENTRY_TYPE_REMOTE_TABLE",
+			value1 = "${entryType}");
+	}
+
+	macro viewTableEntryURL {
+		AssertTextEquals(
+			key_tableEntryURL = "${entryURL}",
+			locator1 = "RemoteApps#TABLE_ENTRY_URL_REMOTE_TABLE",
+			value1 = "${entryURL}");
+	}
+
+}

@@ -2,25 +2,57 @@
 <head>
 <title>TextInput</title>
 </head>
+
 <body>
-<table cellpadding="1" cellspacing="1" border="1">
+<table border="1" cellpadding="1" cellspacing="1">
 <thead>
 <tr><td rowspan="1" colspan="3">TextInput</td></tr>
 </thead>
+
 <tbody>
 <tr>
-	<td>AIM</td>
-	<td>//div[label[contains(.,'AIM')]]//input[@type='text']</td>
+	<td>ADDRESS</td>
+	<td>//div[label[contains(.,'Address')]]/input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ALERT</td>
+	<td>//div[contains(@class,'has-error')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ANSWER</td>
-	<td>//div[label[contains(.,'Answer')]]/input[@type='text']</td>
+	<td>//div[label[contains(.,'Answer')]]/input[@type='password']</td>
 	<td></td>
 </tr>
 <tr>
-	<td>BODY</td>
-	<td>//body</td>
+	<td>ANSWER_LOCALIZED</td>
+	<td>//div[label[contains(.,'${key_localizedAnswer}')]]/input[@type='password']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ANY</td>
+	<td>//div[label[contains(.,'${key_text}')]]//input[not(contains(@type,'checkbox'))]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ANY_DISABLED</td>
+	<td>//div[contains(@class,'input-text-wrapper')][2]/label[contains(.,'${key_selectFieldLabel}')]//following-sibling::input[contains(@class,'disabled')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSET_PRIORITY</td>
+	<td>//input[contains(@id,'assetPriority')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>BLOGS_ENTRY_URL</td>
+	<td>//input[contains(@id,'_urlTitle')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>BORDER_BOTTOM_INPUT_FIELD</td>
+	<td>//div[contains(@class,'label')][normalize-space()='${key_borderBottom}']/following-sibling::div[1]//div[label[normalize-space(text())='${key_fieldLabel}']]/input</td>
 	<td></td>
 </tr>
 <tr>
@@ -29,28 +61,83 @@
 	<td></td>
 </tr>
 <tr>
-	<td>CURRENT_PARENT</td>
-	<td>//input[contains(@id,'currentParent')]</td>
-	<td></td>
-</tr>
-<tr>
 	<td>CURRENT_PASSWORD</td>
 	<td>//div[label[contains(.,'Current Password')]]/input</td>
 	<td></td>
 </tr>
 <tr>
-	<td>CURRENT_TITLE</td>
-	<td>//input[contains(@id,'currentTitle')]</td>
+	<td>CUSTOM_CANONICAL_URL</td>
+	<td>//input[@type='text' and contains(@id,'canonicalURL')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CUSTOM_CANONICAL_URL_ENABLED</td>
+	<td>//input[contains(@placeholder,'${key_text}') and not(contains(@class,'disabled'))]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>CUSTOM_FIELD</td>
-	<td>//input[contains(@name,'ExpandoAttribute')] | //textarea[contains(@name,'ExpandoAttribute')]</td>
+	<td>//input[@type='text' and contains(@name,'ExpandoAttribute')] | //textarea[contains(@name,'ExpandoAttribute')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CUSTOM_META_TAGS_CONTENT</td>
+	<td>//div[label[contains(.,'Content')]]/input[@type='text']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CUSTOM_META_TAGS_CONTENT_EDITOR</td>
+	<td>//div[label[contains(.,'Content')]]/input[@type='text' and @value='${key_customContent}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CUSTOM_META_TAGS_LAST_CONTENT</td>
+	<td>xpath=(//div[label[contains(.,'Content')]]/input[@type='text'])[last()]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CUSTOM_META_TAGS_LAST_PROPERTY</td>
+	<td>xpath=(//div[label[contains(.,'Property')]]/input[@type='text'])[last()]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CUSTOM_META_TAGS_PROPERTY</td>
+	<td>//div[label[contains(.,'Property')]]/input[@type='text']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CUSTOM_META_TAGS_PROPERTY_DISABLED</td>
+	<td>//div[label[contains(.,'Property')]]/input[@type='text' and @disabled]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CUSTOM_META_TAGS_PROPERTY_EDITOR</td>
+	<td>//div[label[contains(.,'Property')]]/input[@type='text' and @value='${key_customProperty}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CUSTOM_TITLE</td>
+	<td>//input[contains(@id,'customTitle')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>DATA_DEFINITION</td>
-	<td>//div[label[contains(.,'Data Definition')]]//input[@type='text']</td>
+	<td>//div[label[contains(.,'Data Definition')]]/input[@type='text']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DATE_TIME_PRICE_LISTS</td>
+	<td>//input[contains(@id,'displayDateTime')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEPOT_ID</td>
+	<td>//input[contains(@id,'assetLibraryId')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEPOT_UNNAMED_DEFAULT_TITLE</td>
+	<td>//input[contains(@value,'${key_unnamedTitle}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -59,28 +146,53 @@
 	<td></td>
 </tr>
 <tr>
+	<td>INPUT_CONTAINS_TITLE</td>
+	<td>//input[contains(@title,'${key_titleName}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>DISPLAY_DATE</td>
 	<td>//input[contains(@id,'displayDate')]</td>
 	<td></td>
 </tr>
 <tr>
+	<td>DISPLAY_DATE_DAY</td>
+	<td>//input[contains(@id,'displayDateDay')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>DISPLAY_DATE_HOUR</td>
-	<td>//input[@id='_33_displayDateHour']</td>
+	<td>//input[contains(@id,'displayDateHour')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>DISPLAY_DATE_MINUTE</td>
-	<td>//input[@id='_33_displayDateMinute']</td>
+	<td>//input[contains(@id,'displayDateMinute')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>DISPLAY_DATE_MERIDIAN</td>
-	<td>//input[@id='_33_displayDateAmPm']</td>
+	<td>//input[contains(@id,'displayDateAmPm')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DISPLAY_DATE_MONTH</td>
+	<td>//input[contains(@id,'displayDateMonth')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>DISPLAY_DATE_TIME</td>
 	<td>//input[contains(@id,'displayDateTime')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DISPLAY_DATE_YEAR</td>
+	<td>//input[contains(@id,'displayDateYear')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DDM</td>
+	<td>//div[@data-fieldname='${key_fieldName}']//input</td>
 	<td></td>
 </tr>
 <tr>
@@ -90,17 +202,32 @@
 </tr>
 <tr>
 	<td>EMAIL_ADDRESS</td>
-	<td>//div[label[contains(.,'Email Address')]]/input[@type='text']</td>
+	<td>//div[label[contains(.,'Email Address')]]/input[@type='text'] | //div[label[contains(.,'Dirección de correo')]]/input[@type='text'] | //div[label[contains(.,'メールアドレス')]]/input[@type='text'] | //div[label[contains(.,'邮箱地址')]]/input[@type='text'] | //div[contains(.,'E-Mail-Adresse')]/input[@type='text'] |	//div[label[contains(.,'Indirizzo Email')]]/input[@type='text']</td>
 	<td></td>
 </tr>
 <tr>
-	<td>EMAIL_ADDRESS_PNG</td>
-	<td>portal/fields/email_address_field.png</td>
+	<td>EMAIL_FROM_ADDRESS</td>
+	<td>//input[contains(@id,'emailFromAddress')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>EXTENSION</td>
-	<td>//div[label[contains(.,'Extension')]]//input[@type='text']</td>
+	<td>EMAIL_FROM_NAME</td>
+	<td>//input[contains(@id,'emailFromName')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EMAIL_NOTIFICATIONS</td>
+	<td>//input[contains(@id,'AdminPortlet_emailNotifications')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EMAIL_RECIPIENT</td>
+	<td>//input[contains(@id,'AdminPortlet_emailDelivery')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EMAIL_VERIFICATION_CODE</td>
+	<td>//div[label[contains(.,'Email Verification Code')]]/input</td>
 	<td></td>
 </tr>
 <tr>
@@ -114,18 +241,28 @@
 	<td></td>
 </tr>
 <tr>
+	<td>EXPIRATION_DATE_DISABLED</td>
+	<td>//input[contains(@class,'disabled') and contains(@id,'expirationDate')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>EXPIRATION_DATE_TIME</td>
 	<td>//input[contains(@id,'expirationDateTime')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>FACEBOOK</td>
-	<td>//div[label[contains(.,'Facebook')]]//input[@type='text']</td>
+	<td>EXPIRATION_DATE_TIME_DISABLED</td>
+	<td>//input[contains(@class,'disabled') and contains(@id,'expirationDateTime')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EXTENSION</td>
+	<td>//div[label[contains(.,'Extension')]]/input</td>
 	<td></td>
 </tr>
 <tr>
 	<td>FIELD_FILTER_INPUT</td>
-	<td>//div[@data-fieldname='${key_fieldName}']/input</td>
+	<td>//div[@data-fieldname='${key_fieldName}']//input</td>
 	<td></td>
 </tr>
 <tr>
@@ -135,22 +272,62 @@
 </tr>
 <tr>
 	<td>FILE</td>
-	<td>//input[contains(@id,'file') and @type='file']</td>
+	<td>//input[contains(@id,'file') or contains(@id,'File')][@type='file'] | //input[@type='file']</td>
 	<td></td>
 </tr>
 <tr>
-	<td>FROM</td>
-	<td>//div[label[contains(.,'From')]]//input[@type='number']</td>
+	<td>FILE_PRESENT</td>
+	<td>//small[contains(@class, 'inline-item-after')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FRIENDLY_URL</td>
+	<td>//input[contains(@id,'friendlyURL')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FRIENDLY_URL_SITE_SETTINGS</td>
+	<td>//input[contains(@id,'FriendlyURL')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DISCOUNT</td>
+	<td>//input[contains(@title,'Coupon Code')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>GENERIC_NUMBER_INPUT</td>
+	<td>//div[label[contains(.,'${key_fieldLabel}')]]//input[@type='number']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>GENERIC_TEXT_INPUT</td>
+	<td>//div[label[contains(.,'${key_fieldLabel}')]]//input[@type='text'] | //div[contains(@class,'ddm-field') and contains(.,'${key_fieldLabel}')]//input[@type='text']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>GOOGLE_ANALYTICS_ID</td>
-	<td>//input[contains(@id,'_165_googleAnalyticsId')]</td>
+	<td>//input[contains(@id,'googleAnalyticsId')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>ICQ</td>
-	<td>//div[label[contains(.,'ICQ')]]//input[@type='text']</td>
+	<td>GROUPED_TEXT_INPUT</td>
+	<td>//div[contains(@class,'panel-group')][contains(.,'${key_groupLabel}')]//div[contains(@class,'form-group')][label[normalize-space(text())='${key_fieldLabel}']]//input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>HIDDEN</td>
+	<td>//input[@type='hidden']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>IMAGE_DESCRIPTION</td>
+	<td>//label[contains(.,'Image Description')]/following-sibling::input | //input[@type='text' and contains(@placeholder,'Add image description')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>IMAGE_ID</td>
+	<td>//input[contains(@id,'newUuid')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -159,18 +336,8 @@
 	<td></td>
 </tr>
 <tr>
-	<td>INTEREST_PAID</td>
-	<td>//div[label[contains(.,'Interest Paid')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>INTEREST_RATE</td>
-	<td>//div[label[contains(.,'Interest Rate')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>JABBER</td>
-	<td>//div[label[contains(.,'Jabber')]]//input[@type='text']</td>
+	<td>INPUT_ID</td>
+	<td>//input[contains(@id,'${inputFieldId}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -184,23 +351,13 @@
 	<td></td>
 </tr>
 <tr>
+	<td>GOOGLE_APPS_API_KEY</td>
+	<td>//div[label[contains(.,'Google Apps API Key')]]/input[@type='text']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>GOOGLE_CLIENT_ID</td>
-	<td>//input[contains(@id,'google-client-id')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>GOOGLE_CLIENT_SECRET</td>
-	<td>//input[contains(@id,'google-client-secret')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>KEYWORDS</td>
-	<td>//input[@title='keywords']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>LOAN_AMOUNT</td>
-	<td>//div[label[contains(.,'Loan Amount')]]//input[@type='text']</td>
+	<td>//input[contains(@id,'googleClientId')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -209,8 +366,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>MAX_HEIGHT</td>
+	<td>//input[contains(@id,'maxHeight')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>MAX_USERS</td>
 	<td>//input[contains(@id,'maxUsers') and contains(@class,'input-text')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MAX_WIDTH</td>
+	<td>//input[contains(@id,'maxWidth')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -219,53 +386,8 @@
 	<td></td>
 </tr>
 <tr>
-	<td>MINIMUM_ALPHA_NUMERIC</td>
-	<td>//div[label[contains(.,'Minimum Alpha Numeric')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>MINIMUM_LENGTH</td>
-	<td>//div[label[contains(.,'Minimum Length')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>MINIMUM_LOWER_CASE</td>
-	<td>//div[label[contains(.,'Minimum Lower Case')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>MINIMUM_NUMBERS</td>
-	<td>//div[label[contains(.,'Minimum Numbers')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>MINIMUM_SYMBOLS</td>
-	<td>//div[label[contains(.,'Minimum Symbols')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>MINIMUM_UPPER_CASE</td>
-	<td>//div[label[contains(.,'Minimum Upper Case')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>MONTHLY_PAYMENT</td>
-	<td>//div[label[contains(.,'Monthly Payment')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>MYSPACE</td>
-	<td>//div[label[contains(.,'MySpace')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
 	<td>NAME</td>
-	<td>//div[label[contains(.,'Name')]]//input[@type='text'] | //input[contains(@id,'name')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>NEW_PARENT</td>
-	<td>//input[contains(@id,'newParent')]</td>
+	<td>//div[label[contains(.,'Name')]]//input[@type='text'] | //div[contains(@class,'form-group')]//input[contains(@id,'name')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -284,33 +406,88 @@
 	<td></td>
 </tr>
 <tr>
-	<td>NUMBER</td>
-	<td>//div[label[contains(.,'Number')]]//input[@type='text']</td>
+	<td>NO_PROPERTIES_AVAILABLE_TEXT</td>
+	<td>//span[contains(@class,'text-truncate') and text()='No Properties Available']</td>
 	<td></td>
 </tr>
 <tr>
-	<td>PAGE_NAME_FIELD</td>
-	<td>//span[contains(@class,'input-localized-input')]/input[contains(@id,'addLayoutName')]</td>
-	<td>New Page Name Field</td>
+	<td>NUMBER</td>
+	<td>//div[label[contains(.,'Number')]]/input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>NUMERIC</td>
+	<td>//label[contains(.,'${key_fieldLabel}')]/following-sibling::input[1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>NUMERIC_2</td>
+	<td>//div[@class="ddm-field"][2]//label[contains(.,'Numeric')]/following-sibling::input[1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OPEN_GRAPH_CUSTOM_TITLE</td>
+	<td>//div[input[contains(@id,'openGraphTitle')]]//input[@type='text']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OPEN_GRAPH_CUSTOM_IMAGE_INPUT</td>
+	<td>//div[label[contains(.,'Image')]]//input[contains(@value,'${key_dmDocumentURL}') and @readonly]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OPEN_GRAPH_CUSTOM_IMAGE_DEFAULT_VALUE</td>
+	<td>//div[label[contains(.,'Image')]]//input[@value='']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OPEN_GRAPH_IMAGE_ALT_DESCRIPTION</td>
+	<td>//div[input[contains(@id,'openGraphImageAlt')]]//input[@type='text']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OPEN_GRAPH_IMAGE_ALT_DESCRIPTION_DISABLED</td>
+	<td>//input[contains(@id,'${key_text}') and contains(@class,'disabled')]</td>
+	<td></td>
 </tr>
 <tr>
 	<td>PASSWORD</td>
-	<td>//div[label[contains(.,'Password')]]/input</td>
+	<td>//div[label[contains(.,'Password')]]/input | //div[label[contains(.,"parola d'ordine")]]/input | //div[label[contains(.,'Contraseña')]]/input | //div[label[contains(.,'パスワード')]]/input | //div[label[contains(.,'密码')]]/input | //div[contains(.,'Kennwort')]//input[@type='password']</td>
 	<td></td>
 </tr>
 <tr>
-	<td>PASSWORD_PNG</td>
-	<td>portal/fields/password_field.png</td>
+	<td>PASSWORD_1</td>
+	<td>//input[contains(@id,'password1')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PASSWORD_2</td>
+	<td>//input[contains(@id,'password2')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PASSWORD_CONFIRM</td>
+	<td>//div[label[contains(.,'Your Password')]]/input[not(contains(@type,'hidden')) and not(contains(@class,'hide'))]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PASSWORD_TYPE</td>
+	<td>//input[@type='password']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PIWIK</td>
+	<td>//textarea[contains(@id,'piwik')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>POLL_CHOICE_A</td>
-	<td>//input[contains(.,'choiceDescriptiona')]</td>
+	<td>//input[contains(@id,'choiceDescriptiona')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>POLL_CHOICE_B</td>
-	<td>//input[contains(.,'choiceDescriptionb')]</td>
+	<td>//input[contains(@id,'choiceDescriptionb')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -319,23 +496,83 @@
 	<td></td>
 </tr>
 <tr>
+	<td>PORTLET_TITLE</td>
+	<td>//div[contains(@class,'portlet-title-editable')]//input</td>
+	<td></td>
+</tr>
+<tr>
 	<td>POSTAL_CODE</td>
 	<td>//div[label[contains(.,'Postal Code')]]//input[@type='text']</td>
 	<td></td>
 </tr>
 <tr>
-	<td>REGULAR_EXPRESSION</td>
-	<td>//div[label[contains(.,'Regular Expression')]]//input[@type='text']</td>
+	<td>REDIRECT_DESTINATION_URL</td>
+	<td>//input[contains(@id,'destinationURL')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>REDIRECT_SOURCE_URL</td>
+	<td>//input[contains(@id,'sourceURL')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>REDIRECT_SOURCE_URL_PREFIX</td>
+	<td>//div[contains(@class,'form-text')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>REMINDER_QUERY</td>
+	<td>//input[contains(@id,'reminderQueryAnswer')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>REVIEW_DATE</td>
-	<td>//input[contains(@id,'reviewDate')]</td>
+	<td>//span[contains(@id,'displayDate')]//input[contains(@id,'reviewDate')][1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>REVIEW_DATE_DISABLED</td>
+	<td>//span[contains(@id,'displayDate')]//input[contains(@class,'disabled') and contains(@id,'reviewDate')][1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>REVIEW_DATE_TIME</td>
+	<td>//input[contains(@id,'reviewDateTime')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>REVIEW_DATE_TIME_DISABLED</td>
+	<td>//input[contains(@class,'disabled') and contains(@id,'reviewDateTime')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SAML_METADATA_URL_FIELD</td>
+	<td>//input[contains(@id,'SamlAdminPortlet_metadataUrl')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SAML_NAME_FIELD</td>
+	<td>//input[contains(@id,'SamlAdminPortlet_name')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SELECTOR_INPUT</td>
+	<td>//label[not(contains(@class,'sr-only'))][normalize-space(text())='${key_fieldFieldLabel}']/following-sibling::div//div[contains(@class,'input-group')]//input[not(contains(@type,'hidden'))]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>STRUCTURE_KEY_FIELD</td>
+	<td>//input[contains(@id,'structureKey')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>REQUIRED_ALERT</td>
 	<td>//div[contains(@class,'has-error')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SPECIFIC_LABEL_TEXT_INPUT</td>
+	<td>//label[contains(text(),'${key_labelName}')]//following::input[contains(@type,'text')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -345,7 +582,7 @@
 </tr>
 <tr>
 	<td>SEARCH</td>
-	<td>//input[@title='Search']</td>
+	<td>//input[contains(@title,'S') or contains(@title,'s')][contains(@title,'earch')] | //input[contains(@aria-label,'S') or contains(@title,'s')][contains(@aria-label,'earch')] | //input[contains(@name,'keywords')] | //input[(ancestor::header[@id='banner'])][contains(@data-qa-id,'searchInput')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -354,8 +591,8 @@
 	<td></td>
 </tr>
 <tr>
-	<td>SELECT_FILES</td>
-	<td>//div[contains(@id,'uploaderContent') and contains(.,'Select Files')]/input</td>
+	<td>SEO_MAPPED_FIELD</td>
+	<td>//div[contains(@class,'form-group')]//*[contains(@id,'${key_mappedField}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -369,8 +606,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>SITE_SEARCH_KEYWORDS</td>
+	<td>//input[contains(@name,'keywords')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FRAGMENTS_SEARCH</td>
+	<td>//div[contains(@class,'modal-content')]//input[contains(@placeholder,'Search')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>SKYPE</td>
-	<td>//div[label[contains(.,'Skype')]]//input[@type='text']</td>
+	<td>//div[label[contains(.,'Skype')]]/input</td>
 	<td></td>
 </tr>
 <tr>
@@ -384,13 +631,28 @@
 	<td></td>
 </tr>
 <tr>
-	<td>SUBJECT</td>
-	<td>//input[contains(@id,'subject')]</td>
+	<td>STREET_N</td>
+	<td>//div[label[contains(.,'Street ${key_streetNumber}')]]//input[@type='text']</td>
 	<td></td>
 </tr>
 <tr>
-	<td>TEXT_VERIFICATION</td>
-	<td>//div[label[contains(.,'Text Verification')]]//input[@type='text']</td>
+	<td>SUBJECT</td>
+	<td>//input[contains(@id,'subject')] | //input[contains(@id,'Subject')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TARGET_PAGE_FRIENDLY_URL</td>
+	<td>//input[contains(@id,'targetLayoutFriendlyUrl')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TEXT</td>
+	<td>//input[@type='text']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TEXT_SPECIFIC</td>
+	<td>//label[contains(.,'Text')]/following-sibling::input[1]</td>
 	<td></td>
 </tr>
 <tr>
@@ -399,23 +661,23 @@
 	<td></td>
 </tr>
 <tr>
-	<td>TITLE_LOCALIZED</td>
-	<td>//input[contains(@id,'title')]/../div[contains(.,'${key_languageName} Translation')]</td>
+	<td>TRACKBACKS</td>
+	<td>//input[contains(@id,'trackbacks')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>TO</td>
-	<td>//div[label[contains(.,'To')]]//input[@type='input']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>TOTAL_PAID</td>
-	<td>//div[label[contains(.,'Total Paid')]]//input[@type='input']</td>
+	<td>TRANSLATIONS_TARGET_FIELD</td>
+	<td>//div[contains(@class,'form-group')]//label[text()='${key_fieldName}']/following::input[not(@readonly)]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>TWITTER</td>
 	<td>//div[label[contains(.,'Twitter')]]//input[@type='text']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TYPE</td>
+	<td>//div[label[contains(.,'Type')]]//input[@value='${key_typeName}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -425,12 +687,17 @@
 </tr>
 <tr>
 	<td>URL</td>
-	<td>//input[contains(@id,'url')]</td>
+	<td>//input[contains(@id,'url') or contains(@id,'Url')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>URL_REQUIRED</td>
-	<td>//div[contains(@class,'error')]</td>
+	<td>//div[contains(@id,'urlHelper')]/div[contains(@role,'alert')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>VIDEO_URL</td>
+	<td>//input[contains(@id,'VideoExternalShortcutURL')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -441,26 +708,6 @@
 <tr>
 	<td>WEB_ID</td>
 	<td>//input[contains(@id,'webId') and contains(@class,'input-text')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>WINDOWS_LIVE_MESSENGER</td>
-	<td>//div[label[contains(.,'Windows Live Messenger')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>YEARS</td>
-	<td>//div[label[contains(.,'Years')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>YIM</td>
-	<td>//div[label[contains(.,'YIM')]]//input[@type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>YM</td>
-	<td>//div[label[contains(.,'YIM')]]//input[@type='text']</td>
 	<td></td>
 </tr>
 </tbody>

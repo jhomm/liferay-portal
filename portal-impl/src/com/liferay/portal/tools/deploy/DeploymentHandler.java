@@ -16,7 +16,7 @@ package com.liferay.portal.tools.deploy;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.ClassLoaderUtil;
+import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 
 import java.io.File;
 
@@ -39,7 +39,7 @@ public class DeploymentHandler {
 		DeploymentManager deploymentManager = null;
 
 		try {
-			ClassLoader classLoader = ClassLoaderUtil.getPortalClassLoader();
+			ClassLoader classLoader = PortalClassLoaderUtil.getClassLoader();
 
 			DeploymentFactoryManager deploymentFactoryManager =
 				DeploymentFactoryManager.getInstance();
@@ -55,8 +55,8 @@ public class DeploymentHandler {
 			deploymentManager = deploymentFactoryManager.getDeploymentManager(
 				dmId, dmUser, dmPassword);
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 
 		_deploymentManager = deploymentManager;
@@ -72,7 +72,9 @@ public class DeploymentHandler {
 				ModuleType.WAR, _deploymentManager.getTargets());
 
 		for (TargetModuleID targetModuleID : targetModuleIDs) {
-			if (!targetModuleID.getModuleID().equals(warContext)) {
+			String moduleID = targetModuleID.getModuleID();
+
+			if (!moduleID.equals(warContext)) {
 				continue;
 			}
 
@@ -120,10 +122,6 @@ public class DeploymentHandler {
 
 		while (!_error && !_started) {
 			wait();
-		}
-
-		if (_error) {
-			return;
 		}
 	}
 

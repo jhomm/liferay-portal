@@ -88,8 +88,8 @@ public class NodeList<E, F> extends TranslatedList<E, F> {
 			ProcessingInstructionImpl processingInstructionImpl =
 				(ProcessingInstructionImpl)o;
 
-			return
-				(F)processingInstructionImpl.getWrappedProcessingInstruction();
+			return (F)
+				processingInstructionImpl.getWrappedProcessingInstruction();
 		}
 		else if (o instanceof QName) {
 			QNameImpl qNameImpl = (QNameImpl)o;
@@ -117,7 +117,9 @@ public class NodeList<E, F> extends TranslatedList<E, F> {
 			return (F)nodeImpl.getWrappedNode();
 		}
 
-		throw new IllegalArgumentException(o.getClass().getName());
+		Class<?> clazz = o.getClass();
+
+		throw new IllegalArgumentException(clazz.getName());
 	}
 
 }

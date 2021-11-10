@@ -15,8 +15,8 @@
 package com.liferay.portal.model.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 
 /**
  * @author Brian Wing Shun Chan
@@ -56,9 +56,8 @@ public class UserGroupImpl extends UserGroupBaseImpl {
 		if (getPrivateLayoutsPageCount() > 0) {
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	@Override
@@ -66,9 +65,8 @@ public class UserGroupImpl extends UserGroupBaseImpl {
 		if (getPublicLayoutsPageCount() > 0) {
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 }

@@ -37,7 +37,7 @@ import org.junit.Assert;
 public class WelderTestUtil {
 
 	public static void assertConnectted(
-			final ScatteringByteChannel scatteringByteChannel,
+			ScatteringByteChannel scatteringByteChannel,
 			final GatheringByteChannel gatheringByteChannel)
 		throws Exception {
 
@@ -60,6 +60,7 @@ public class WelderTestUtil {
 
 					return null;
 				}
+
 			});
 
 		Thread writeThread = new Thread(writeFutureTask);
@@ -79,6 +80,7 @@ public class WelderTestUtil {
 
 					return byteBuffer.array();
 				}
+
 			});
 
 		Thread readThread = new Thread(readFutureTask);

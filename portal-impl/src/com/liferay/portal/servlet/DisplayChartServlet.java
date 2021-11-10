@@ -14,7 +14,7 @@
 
 package com.liferay.portal.servlet;
 
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.IOException;
 
@@ -31,15 +31,17 @@ public class DisplayChartServlet extends DisplayChart {
 
 	@Override
 	public void service(
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws IOException, ServletException {
 
 		try {
-			super.service(request, response);
+			super.service(httpServletRequest, httpServletResponse);
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 			PortalUtil.sendError(
-				HttpServletResponse.SC_NOT_FOUND, e, request, response);
+				HttpServletResponse.SC_NOT_FOUND, exception, httpServletRequest,
+				httpServletResponse);
 		}
 	}
 

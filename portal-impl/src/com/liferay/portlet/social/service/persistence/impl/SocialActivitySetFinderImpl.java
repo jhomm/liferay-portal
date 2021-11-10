@@ -20,10 +20,9 @@ import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.Type;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.service.persistence.impl.BasePersistenceImpl;
-import com.liferay.portlet.social.model.SocialActivitySet;
 import com.liferay.portlet.social.model.impl.SocialActivitySetImpl;
-import com.liferay.portlet.social.service.persistence.SocialActivitySetFinder;
+import com.liferay.social.kernel.model.SocialActivitySet;
+import com.liferay.social.kernel.service.persistence.SocialActivitySetFinder;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
 import java.util.Iterator;
@@ -33,8 +32,10 @@ import java.util.List;
  * @author Jonathan Lee
  */
 public class SocialActivitySetFinderImpl
-	extends BasePersistenceImpl<SocialActivitySet>
-	implements SocialActivitySetFinder {
+	extends SocialActivitySetFinderBaseImpl implements SocialActivitySetFinder {
+
+	public static final String COUNT_BY_ORGANIZATION_ID =
+		SocialActivitySetFinder.class.getName() + ".countByOrganizationId";
 
 	public static final String COUNT_BY_RELATION =
 		SocialActivitySetFinder.class.getName() + ".countByRelation";
@@ -47,6 +48,9 @@ public class SocialActivitySetFinderImpl
 
 	public static final String COUNT_BY_USER_GROUPS =
 		SocialActivitySetFinder.class.getName() + ".countByUserGroups";
+
+	public static final String FIND_BY_ORGANIZATION_ID =
+		SocialActivitySetFinder.class.getName() + ".findByOrganizationId";
 
 	public static final String FIND_BY_RELATION =
 		SocialActivitySetFinder.class.getName() + ".findByRelation";
@@ -61,26 +65,24 @@ public class SocialActivitySetFinderImpl
 		SocialActivitySetFinder.class.getName() + ".findByUserGroups";
 
 	@Override
-	public int countByRelation(long userId) {
+	public int countByOrganizationId(long organizationId) {
 		Session session = null;
 
 		try {
 			session = openSession();
 
-			String sql = CustomSQLUtil.get(COUNT_BY_RELATION);
+			String sql = CustomSQLUtil.get(COUNT_BY_ORGANIZATION_ID);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addScalar(COUNT_COLUMN_NAME, Type.LONG);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			queryPos.add(organizationId);
 
-			qPos.add(userId);
+			Iterator<Long> iterator = sqlQuery.iterate();
 
-			Iterator<Long> itr = q.iterate();
-
-			if (itr.hasNext()) {
-				Long count = itr.next();
+			if (iterator.hasNext()) {
+				Long count = iterator.next();
 
 				if (count != null) {
 					return count.intValue();
@@ -89,8 +91,45 @@ public class SocialActivitySetFinderImpl
 
 			return 0;
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	@Override
+	public int countByRelation(long userId) {
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			String sql = CustomSQLUtil.get(COUNT_BY_RELATION);
+
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
+
+			sqlQuery.addScalar(COUNT_COLUMN_NAME, Type.LONG);
+
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
+
+			queryPos.add(userId);
+
+			Iterator<Long> iterator = sqlQuery.iterate();
+
+			if (iterator.hasNext()) {
+				Long count = iterator.next();
+
+				if (count != null) {
+					return count.intValue();
+				}
+			}
+
+			return 0;
+		}
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -106,19 +145,19 @@ public class SocialActivitySetFinderImpl
 
 			String sql = CustomSQLUtil.get(COUNT_BY_RELATION_TYPE);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addScalar(COUNT_COLUMN_NAME, Type.LONG);
+			sqlQuery.addScalar(COUNT_COLUMN_NAME, Type.LONG);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(userId);
-			qPos.add(type);
+			queryPos.add(userId);
+			queryPos.add(type);
 
-			Iterator<Long> itr = q.iterate();
+			Iterator<Long> iterator = sqlQuery.iterate();
 
-			if (itr.hasNext()) {
-				Long count = itr.next();
+			if (iterator.hasNext()) {
+				Long count = iterator.next();
 
 				if (count != null) {
 					return count.intValue();
@@ -127,8 +166,8 @@ public class SocialActivitySetFinderImpl
 
 			return 0;
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -144,22 +183,22 @@ public class SocialActivitySetFinderImpl
 
 			String sql = CustomSQLUtil.get(COUNT_BY_USER);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addScalar(COUNT_COLUMN_NAME, Type.LONG);
+			sqlQuery.addScalar(COUNT_COLUMN_NAME, Type.LONG);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(userId);
-			qPos.add(userId);
-			qPos.add(userId);
-			qPos.add(userId);
-			qPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
 
-			Iterator<Long> itr = q.iterate();
+			Iterator<Long> iterator = sqlQuery.iterate();
 
-			if (itr.hasNext()) {
-				Long count = itr.next();
+			if (iterator.hasNext()) {
+				Long count = iterator.next();
 
 				if (count != null) {
 					return count.intValue();
@@ -168,8 +207,8 @@ public class SocialActivitySetFinderImpl
 
 			return 0;
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -185,20 +224,20 @@ public class SocialActivitySetFinderImpl
 
 			String sql = CustomSQLUtil.get(COUNT_BY_USER_GROUPS);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addScalar(COUNT_COLUMN_NAME, Type.LONG);
+			sqlQuery.addScalar(COUNT_COLUMN_NAME, Type.LONG);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(userId);
-			qPos.add(userId);
-			qPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
 
-			Iterator<Long> itr = q.iterate();
+			Iterator<Long> iterator = sqlQuery.iterate();
 
-			if (itr.hasNext()) {
-				Long count = itr.next();
+			if (iterator.hasNext()) {
+				Long count = iterator.next();
 
 				if (count != null) {
 					return count.intValue();
@@ -207,8 +246,39 @@ public class SocialActivitySetFinderImpl
 
 			return 0;
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	@Override
+	public List<SocialActivitySet> findByOrganizationId(
+		long organizationId, int start, int end) {
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			String sql = CustomSQLUtil.get(FIND_BY_ORGANIZATION_ID);
+
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
+
+			sqlQuery.addEntity(
+				"SocialActivitySet", SocialActivitySetImpl.class);
+
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
+
+			queryPos.add(organizationId);
+
+			return (List<SocialActivitySet>)QueryUtil.list(
+				sqlQuery, getDialect(), start, end);
+		}
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -226,19 +296,20 @@ public class SocialActivitySetFinderImpl
 
 			String sql = CustomSQLUtil.get(FIND_BY_RELATION);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addEntity("SocialActivitySet", SocialActivitySetImpl.class);
+			sqlQuery.addEntity(
+				"SocialActivitySet", SocialActivitySetImpl.class);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(userId);
+			queryPos.add(userId);
 
 			return (List<SocialActivitySet>)QueryUtil.list(
-				q, getDialect(), start, end);
+				sqlQuery, getDialect(), start, end);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -256,20 +327,21 @@ public class SocialActivitySetFinderImpl
 
 			String sql = CustomSQLUtil.get(FIND_BY_RELATION_TYPE);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addEntity("SocialActivitySet", SocialActivitySetImpl.class);
+			sqlQuery.addEntity(
+				"SocialActivitySet", SocialActivitySetImpl.class);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(userId);
-			qPos.add(type);
+			queryPos.add(userId);
+			queryPos.add(type);
 
 			return (List<SocialActivitySet>)QueryUtil.list(
-				q, getDialect(), start, end);
+				sqlQuery, getDialect(), start, end);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -285,23 +357,24 @@ public class SocialActivitySetFinderImpl
 
 			String sql = CustomSQLUtil.get(FIND_BY_USER);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addEntity("SocialActivitySet", SocialActivitySetImpl.class);
+			sqlQuery.addEntity(
+				"SocialActivitySet", SocialActivitySetImpl.class);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(userId);
-			qPos.add(userId);
-			qPos.add(userId);
-			qPos.add(userId);
-			qPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
 
 			return (List<SocialActivitySet>)QueryUtil.list(
-				q, getDialect(), start, end);
+				sqlQuery, getDialect(), start, end);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);
@@ -319,21 +392,22 @@ public class SocialActivitySetFinderImpl
 
 			String sql = CustomSQLUtil.get(FIND_BY_USER_GROUPS);
 
-			SQLQuery q = session.createSynchronizedSQLQuery(sql);
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
 
-			q.addEntity("SocialActivitySet", SocialActivitySetImpl.class);
+			sqlQuery.addEntity(
+				"SocialActivitySet", SocialActivitySetImpl.class);
 
-			QueryPos qPos = QueryPos.getInstance(q);
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			qPos.add(userId);
-			qPos.add(userId);
-			qPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
+			queryPos.add(userId);
 
 			return (List<SocialActivitySet>)QueryUtil.list(
-				q, getDialect(), start, end);
+				sqlQuery, getDialect(), start, end);
 		}
-		catch (Exception e) {
-			throw new SystemException(e);
+		catch (Exception exception) {
+			throw new SystemException(exception);
 		}
 		finally {
 			closeSession(session);

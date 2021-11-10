@@ -14,6 +14,7 @@
 
 package com.liferay.portal.dao.orm.hibernate;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.dao.orm.ProjectionList;
 
@@ -51,6 +52,11 @@ public class ProjectionListImpl
 
 	public org.hibernate.criterion.ProjectionList getWrappedProjectionList() {
 		return _projectionList;
+	}
+
+	@Override
+	public String toString() {
+		return StringBundler.concat("{_projectionList=", _projectionList, "}");
 	}
 
 	private final org.hibernate.criterion.ProjectionList _projectionList;

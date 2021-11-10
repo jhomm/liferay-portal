@@ -1,0 +1,33 @@
+{
+	"availableLanguageIds": [
+		"en_US"
+	],
+	"defaultLanguageId": "en_US",
+	"definitionSchemaVersion": "2.0",
+	"fields": [
+		{
+			"dataType": "string",
+			"fieldNamespace": "ddm",
+			"fieldReference": "content",
+			"indexType": "text",
+			"label": {
+				"en_US": "content"
+			},
+			"localizable": true,
+			"name": "content",
+			"predefinedValue": {
+			},
+			"showLabel": true,
+			"tip": {
+			},
+			"type": "rich_text"
+		}
+	],
+	"successPage": {
+		"body": {
+		},
+		"enabled": false,
+		"title": {
+		}
+	}
+}

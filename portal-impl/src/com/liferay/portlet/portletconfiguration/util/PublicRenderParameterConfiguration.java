@@ -14,8 +14,8 @@
 
 package com.liferay.portlet.portletconfiguration.util;
 
-import com.liferay.portal.model.PublicRenderParameter;
-import com.liferay.portlet.PortletQNameUtil;
+import com.liferay.portal.kernel.model.PublicRenderParameter;
+import com.liferay.portal.kernel.portlet.PortletQNameUtil;
 
 /**
  * @author Alberto Montero
@@ -26,23 +26,11 @@ public class PublicRenderParameterConfiguration {
 
 	public static final String MAPPING_PREFIX = "lfr-prp-mapping-";
 
-	public static String getIgnoreKey(
-		PublicRenderParameter publicRenderParameter) {
-
-		String publicRenderParameterName =
-			PortletQNameUtil.getPublicRenderParameterName(
-				publicRenderParameter.getQName());
-
+	public static String getIgnoreKey(String publicRenderParameterName) {
 		return IGNORE_PREFIX.concat(publicRenderParameterName);
 	}
 
-	public static String getMappingKey(
-		PublicRenderParameter publicRenderParameter) {
-
-		String publicRenderParameterName =
-			PortletQNameUtil.getPublicRenderParameterName(
-				publicRenderParameter.getQName());
-
+	public static String getMappingKey(String publicRenderParameterName) {
 		return MAPPING_PREFIX.concat(publicRenderParameterName);
 	}
 
@@ -51,11 +39,12 @@ public class PublicRenderParameterConfiguration {
 		boolean ignoreValue) {
 
 		_publicRenderParameter = publicRenderParameter;
+		_mappingValue = mappingValue;
+		_ignoreValue = ignoreValue;
+
 		_publicRenderParameterName =
 			PortletQNameUtil.getPublicRenderParameterName(
 				publicRenderParameter.getQName());
-		_mappingValue = mappingValue;
-		_ignoreValue = ignoreValue;
 	}
 
 	public String getIgnoreKey() {

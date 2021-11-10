@@ -1,40 +1,13 @@
 <?xml version="1.0"?>
-<!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.0.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_0_0.dtd">
+<!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.4.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_4_0.dtd">
 
-<service-builder package-path="com.liferay.portal" auto-import-default-references="false" mvcc-enabled="true">
+<service-builder api-package-path="com.liferay.portal.kernel" auto-import-default-references="false" mvcc-enabled="true" package-path="com.liferay.portal">
 	<namespace>Portal</namespace>
-	<entity name="Account" local-service="true" remote-service="true">
+	<entity external-reference-code="true" local-service="true" name="Address" persistence-class="com.liferay.portal.service.persistence.impl.AddressPersistenceImpl2" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="accountId" type="long" primary="true" />
-
-		<!-- Audit fields -->
-
-		<column name="companyId" type="long" />
-		<column name="userId" type="long" />
-		<column name="userName" type="String" />
-		<column name="createDate" type="Date" />
-		<column name="modifiedDate" type="Date" />
-
-		<!-- Other fields -->
-
-		<column name="parentAccountId" type="long" />
-		<column name="name" type="String" />
-		<column name="legalName" type="String" />
-		<column name="legalId" type="String" />
-		<column name="legalType" type="String" />
-		<column name="sicCode" type="String" />
-		<column name="tickerSymbol" type="String" />
-		<column name="industry" type="String" />
-		<column name="type" type="String" />
-		<column name="size" type="String" />
-	</entity>
-	<entity name="Address" uuid="true" local-service="true" remote-service="true" persistence-class="com.liferay.portal.service.persistence.impl.AddressPersistenceImpl2">
-
-		<!-- PK fields -->
-
-		<column name="addressId" type="long" primary="true" />
+		<column name="addressId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -48,17 +21,22 @@
 
 		<column name="classNameId" type="long" />
 		<column name="classPK" type="long" />
+		<column name="countryId" type="long" />
+		<column name="regionId" type="long" />
+		<column name="typeId" type="long" />
+		<column name="city" type="String" />
+		<column name="description" type="String" />
+		<column name="latitude" type="double" />
+		<column name="longitude" type="double" />
+		<column name="mailing" type="boolean" />
+		<column name="name" type="String" />
+		<column name="primary" type="boolean" />
 		<column name="street1" type="String" />
 		<column name="street2" type="String" />
 		<column name="street3" type="String" />
-		<column name="city" type="String" />
+		<column name="validationDate" type="Date" />
+		<column name="validationStatus" type="int" />
 		<column name="zip" type="String" />
-		<column name="regionId" type="long" />
-		<column name="countryId" type="long" />
-		<column name="typeId" type="long" />
-		<column name="mailing" type="boolean" />
-		<column name="primary" type="boolean" />
-		<column name="lastPublishDate" type="Date" />
 
 		<!-- Order -->
 
@@ -74,6 +52,12 @@
 		<finder name="UserId" return-type="Collection">
 			<finder-column name="userId" />
 		</finder>
+		<finder name="CountryId" return-type="Collection">
+			<finder-column name="countryId" />
+		</finder>
+		<finder name="RegionId" return-type="Collection">
+			<finder-column name="regionId" />
+		</finder>
 		<finder name="C_C" return-type="Collection">
 			<finder-column name="companyId" />
 			<finder-column name="classNameId" />
@@ -82,6 +66,12 @@
 			<finder-column name="companyId" />
 			<finder-column name="classNameId" />
 			<finder-column name="classPK" />
+		</finder>
+		<finder name="C_C_C_T" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
+			<finder-column name="classPK" />
+			<finder-column arrayable-operator="true" name="typeId" />
 		</finder>
 		<finder name="C_C_C_M" return-type="Collection">
 			<finder-column name="companyId" />
@@ -95,22 +85,16 @@
 			<finder-column name="classPK" />
 			<finder-column name="primary" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="Country" />
-		<reference package-path="com.liferay.portal" entity="ListType" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="BrowserTracker" local-service="true" remote-service="false">
+	<entity local-service="true" name="BrowserTracker" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="browserTrackerId" type="long" primary="true" />
+		<column name="browserTrackerId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
+		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
 
 		<!-- Other fields -->
@@ -123,11 +107,11 @@
 			<finder-column name="userId" />
 		</finder>
 	</entity>
-	<entity name="ClassName" local-service="true" remote-service="true">
+	<entity local-service="true" name="ClassName" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="classNameId" type="long" primary="true" />
+		<column name="classNameId" primary="true" type="long" />
 
 		<!-- Other fields -->
 
@@ -139,35 +123,37 @@
 			<finder-column name="value" />
 		</finder>
 	</entity>
-	<entity name="ClusterGroup" local-service="true" remote-service="false">
+	<entity local-service="true" name="Company" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="clusterGroupId" type="long" primary="true" />
+		<column name="companyId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
 
 		<!-- Other fields -->
 
-		<column name="name" type="String" />
-		<column name="clusterNodeIds" type="String" />
-		<column name="wholeCluster" type="boolean" />
-	</entity>
-	<entity name="Company" local-service="true" remote-service="true">
-
-		<!-- PK fields -->
-
-		<column name="companyId" type="long" primary="true" />
-
-		<!-- Other fields -->
-
-		<column name="accountId" type="long" />
 		<column name="webId" type="String" />
-		<column name="key" type="String" />
 		<column name="mx" type="String" />
 		<column name="homeURL" type="String" />
 		<column name="logoId" type="long" />
 		<column name="system" type="boolean" />
 		<column name="maxUsers" type="int" />
 		<column name="active" type="boolean" />
+		<column name="name" type="String" />
+		<column name="legalName" type="String" />
+		<column name="legalId" type="String" />
+		<column name="legalType" type="String" />
+		<column name="sicCode" type="String" />
+		<column name="tickerSymbol" type="String" />
+		<column name="industry" type="String" />
+		<column name="type" type="String" />
+		<column name="size" type="String" />
 
 		<!-- Finder methods -->
 
@@ -183,31 +169,32 @@
 		<finder name="System" return-type="Collection">
 			<finder-column name="system" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Account" />
-		<reference package-path="com.liferay.portal" entity="Contact" />
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="Image" />
-		<reference package-path="com.liferay.portal" entity="LayoutPrototype" />
-		<reference package-path="com.liferay.portal" entity="LayoutSet" />
-		<reference package-path="com.liferay.portal" entity="LayoutSetPrototype" />
-		<reference package-path="com.liferay.portal" entity="Organization" />
-		<reference package-path="com.liferay.portal" entity="PasswordPolicy" />
-		<reference package-path="com.liferay.portal" entity="PortalPreferences" />
-		<reference package-path="com.liferay.portal" entity="Portlet" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="ResourcePermission" />
-		<reference package-path="com.liferay.portal" entity="Role" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portal" entity="VirtualHost" />
 	</entity>
-	<entity name="Contact" local-service="true" remote-service="true">
+	<entity local-service="true" name="CompanyInfo" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="contactId" type="long" primary="true" />
+		<column name="companyInfoId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="key" type="String" />
+
+		<!-- Finder methods -->
+
+		<finder name="CompanyId" return-type="CompanyInfo" unique="true">
+			<finder-column name="companyId" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="Contact" remote-service="true">
+
+		<!-- PK fields -->
+
+		<column name="contactId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -221,7 +208,6 @@
 
 		<column name="classNameId" type="long" />
 		<column name="classPK" type="long" />
-		<column name="accountId" type="long" />
 		<column name="parentContactId" type="long" />
 		<column name="emailAddress" type="String" />
 		<column name="firstName" type="String" />
@@ -232,58 +218,67 @@
 		<column name="male" type="boolean" />
 		<column name="birthday" type="Date" />
 		<column name="smsSn" type="String" />
-		<column name="aimSn" type="String" />
 		<column name="facebookSn" type="String" />
-		<column name="icqSn" type="String" />
 		<column name="jabberSn" type="String" />
-		<column name="msnSn" type="String" />
-		<column name="mySpaceSn" type="String" />
 		<column name="skypeSn" type="String" />
 		<column name="twitterSn" type="String" />
-		<column name="ymSn" type="String" />
 		<column name="employeeStatusId" type="String" />
 		<column name="employeeNumber" type="String" />
 		<column name="jobTitle" type="String" />
 		<column name="jobClass" type="String" />
 		<column name="hoursOfOperation" type="String" />
 
+		<!-- Order -->
+
+		<order by="asc">
+			<order-column name="contactId" />
+		</order>
+
 		<!-- Finder methods -->
 
 		<finder name="CompanyId" return-type="Collection">
 			<finder-column name="companyId" />
 		</finder>
-		<finder name="AccountId" return-type="Collection">
-			<finder-column name="accountId" />
-		</finder>
 		<finder name="C_C" return-type="Collection">
 			<finder-column name="classNameId" />
 			<finder-column name="classPK" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Address" />
-		<reference package-path="com.liferay.portal" entity="EmailAddress" />
-		<reference package-path="com.liferay.portal" entity="Organization" />
-		<reference package-path="com.liferay.portal" entity="Phone" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portal" entity="Website" />
 	</entity>
-	<entity name="Country" local-service="false" remote-service="true">
+	<entity local-service="true" name="Country" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="countryId" type="long" primary="true" />
+		<column name="countryId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
 
 		<!-- Other fields -->
 
-		<column name="name" type="String" />
 		<column name="a2" type="String" />
 		<column name="a3" type="String" />
-		<column name="number" type="String" />
-		<column name="idd" type="String" />
-		<column name="zipRequired" type="boolean" />
 		<column name="active" type="boolean" />
+		<column name="billingAllowed" type="boolean" />
+		<column name="groupFilterEnabled" type="boolean" />
+		<column name="idd" type="String" />
+		<column name="name" type="String" />
+		<column name="number" type="String" />
+		<column name="position" type="double" />
+		<column name="shippingAllowed" type="boolean" />
+		<column name="subjectToVAT" type="boolean" />
+		<column name="zipRequired" type="boolean" />
+		<column name="lastPublishDate" type="Date" />
+
+		<!-- Localized entity -->
+
+		<localized-entity>
+			<localized-column name="title" />
+		</localized-entity>
 
 		<!-- Order -->
 
@@ -293,24 +288,48 @@
 
 		<!-- Finder methods -->
 
-		<finder name="Name" return-type="Country" unique="true">
-			<finder-column name="name" />
-		</finder>
-		<finder name="A2" return-type="Country" unique="true">
-			<finder-column name="a2" />
-		</finder>
-		<finder name="A3" return-type="Country" unique="true">
-			<finder-column name="a3" />
+		<finder name="CompanyId" return-type="Collection">
+			<finder-column name="companyId" />
 		</finder>
 		<finder name="Active" return-type="Collection">
 			<finder-column name="active" />
 		</finder>
+		<finder name="C_A2" return-type="Country" unique="true">
+			<finder-column name="companyId" />
+			<finder-column name="a2" />
+		</finder>
+		<finder name="C_A3" return-type="Country" unique="true">
+			<finder-column name="companyId" />
+			<finder-column name="a3" />
+		</finder>
+		<finder name="C_Active" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="active" />
+		</finder>
+		<finder name="C_Name" return-type="Country" unique="true">
+			<finder-column name="companyId" />
+			<finder-column name="name" />
+		</finder>
+		<finder name="C_Number" return-type="Country" unique="true">
+			<finder-column name="companyId" />
+			<finder-column name="number" />
+		</finder>
+		<finder name="C_A_B" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="active" />
+			<finder-column name="billingAllowed" />
+		</finder>
+		<finder name="C_A_S" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="active" />
+			<finder-column name="shippingAllowed" />
+		</finder>
 	</entity>
-	<entity name="EmailAddress" uuid="true" local-service="true" remote-service="true">
+	<entity local-service="true" name="EmailAddress" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="emailAddressId" type="long" primary="true" />
+		<column name="emailAddressId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -327,7 +346,6 @@
 		<column name="address" type="String" />
 		<column name="typeId" type="long" />
 		<column name="primary" type="boolean" />
-		<column name="lastPublishDate" type="Date" />
 
 		<!-- Order -->
 
@@ -358,18 +376,12 @@
 			<finder-column name="classPK" />
 			<finder-column name="primary" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="ListType" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="Group" uuid="true" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" local-service="true" name="Group" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="groupId" type="long" primary="true" />
+		<column accessor="true" name="groupId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -384,8 +396,8 @@
 		<column name="liveGroupId" type="long" />
 		<column name="treePath" type="String" />
 		<column name="groupKey" type="String" />
-		<column name="name" type="String" localized="true" />
-		<column name="description" type="String" localized="true" />
+		<column localized="true" name="name" type="String" />
+		<column localized="true" name="description" type="String" />
 		<column name="type" type="int" />
 		<column name="typeSettings" type="String" />
 		<column name="manualMembership" type="boolean" />
@@ -398,15 +410,15 @@
 
 		<!-- Relationships -->
 
-		<column name="orgs" type="Collection" entity="Organization" mapping-table="Groups_Orgs" />
-		<column name="roles" type="Collection" entity="Role" mapping-table="Groups_Roles" />
-		<column name="userGroups" type="Collection" entity="UserGroup" mapping-table="Groups_UserGroups" />
-		<column name="users" type="Collection" entity="User" mapping-table="Users_Groups" />
+		<column entity="Organization" mapping-table="Groups_Orgs" name="orgs" type="Collection" />
+		<column entity="Role" mapping-table="Groups_Roles" name="roles" type="Collection" />
+		<column entity="UserGroup" mapping-table="Groups_UserGroups" name="userGroups" type="Collection" />
+		<column entity="User" mapping-table="Users_Groups" name="users" type="Collection" />
 
 		<!-- Order -->
 
 		<order by="asc">
-			<order-column name="name" case-sensitive="false" />
+			<order-column case-sensitive="false" name="name" />
 		</order>
 
 		<!-- Finder methods -->
@@ -437,12 +449,20 @@
 			<finder-column name="companyId" />
 			<finder-column name="site" />
 		</finder>
+		<finder name="C_A" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="active" />
+		</finder>
+		<finder name="C_CPK" return-type="Collection">
+			<finder-column name="classNameId" />
+			<finder-column name="classPK" />
+		</finder>
 		<finder name="T_A" return-type="Collection">
 			<finder-column name="type" />
 			<finder-column name="active" />
 		</finder>
-		<finder name="G_C_P" return-type="Collection" db-index="false">
-			<finder-column name="groupId" comparator="&gt;" />
+		<finder db-index="false" name="GtG_C_P" return-type="Collection">
+			<finder-column comparator="&gt;" name="groupId" />
 			<finder-column name="companyId" />
 			<finder-column name="parentGroupId" />
 		</finder>
@@ -456,6 +476,11 @@
 			<finder-column name="classNameId" />
 			<finder-column name="parentGroupId" />
 		</finder>
+		<finder name="C_C_S" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
+			<finder-column name="site" />
+		</finder>
 		<finder name="C_P_S" return-type="Collection">
 			<finder-column name="companyId" />
 			<finder-column name="parentGroupId" />
@@ -466,11 +491,44 @@
 			<finder-column name="liveGroupId" />
 			<finder-column name="groupKey" />
 		</finder>
+		<finder db-index="false" name="C_LikeT_S" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column comparator="LIKE" name="treePath" />
+			<finder-column name="site" />
+		</finder>
+		<finder db-index="false" name="C_LikeN_S" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column case-sensitive="false" comparator="LIKE" name="name" />
+			<finder-column name="site" />
+		</finder>
+		<finder name="C_S_A" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="site" />
+			<finder-column name="active" />
+		</finder>
+		<finder db-index="false" name="GtG_C_C_P" return-type="Collection">
+			<finder-column comparator="&gt;" name="groupId" />
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
+			<finder-column name="parentGroupId" />
+		</finder>
+		<finder db-index="false" name="GtG_C_P_S" return-type="Collection">
+			<finder-column comparator="&gt;" name="groupId" />
+			<finder-column name="companyId" />
+			<finder-column name="parentGroupId" />
+			<finder-column name="site" />
+		</finder>
 		<finder name="C_C_L_GK" return-type="Group" unique="true">
 			<finder-column name="companyId" />
 			<finder-column name="classNameId" />
 			<finder-column name="liveGroupId" />
 			<finder-column name="groupKey" />
+		</finder>
+		<finder db-index="false" name="C_P_LikeN_S" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="parentGroupId" />
+			<finder-column case-sensitive="false" comparator="LIKE" name="name" />
+			<finder-column name="site" />
 		</finder>
 		<finder name="C_P_S_I" return-type="Collection">
 			<finder-column name="companyId" />
@@ -478,58 +536,16 @@
 			<finder-column name="site" />
 			<finder-column name="inheritContent" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Account" />
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="Company" />
-		<reference package-path="com.liferay.portal" entity="Layout" />
-		<reference package-path="com.liferay.portal" entity="LayoutPrototype" />
-		<reference package-path="com.liferay.portal" entity="LayoutSet" />
-		<reference package-path="com.liferay.portal" entity="LayoutSetBranch" />
-		<reference package-path="com.liferay.portal" entity="LayoutSetPrototype" />
-		<reference package-path="com.liferay.portal" entity="MembershipRequest" />
-		<reference package-path="com.liferay.portal" entity="Organization" />
-		<reference package-path="com.liferay.portal" entity="Portlet" />
-		<reference package-path="com.liferay.portal" entity="PortletPreferences" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="ResourceAction" />
-		<reference package-path="com.liferay.portal" entity="ResourceBlock" />
-		<reference package-path="com.liferay.portal" entity="ResourcePermission" />
-		<reference package-path="com.liferay.portal" entity="ResourceTypePermission" />
-		<reference package-path="com.liferay.portal" entity="Role" />
-		<reference package-path="com.liferay.portal" entity="Subscription" />
-		<reference package-path="com.liferay.portal" entity="Team" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portal" entity="UserGroup" />
-		<reference package-path="com.liferay.portal" entity="UserGroupGroupRole" />
-		<reference package-path="com.liferay.portal" entity="UserGroupRole" />
-		<reference package-path="com.liferay.portal" entity="WorkflowDefinitionLink" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetCategory" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetEntry" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetTag" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetVocabulary" />
-		<reference package-path="com.liferay.portlet.documentlibrary" entity="DLApp" />
-		<reference package-path="com.liferay.portlet.expando" entity="ExpandoRow" />
-		<reference package-path="com.liferay.portlet.exportimport" entity="ExportImport" />
-		<reference package-path="com.liferay.portlet.exportimport" entity="ExportImportConfiguration" />
-		<reference package-path="com.liferay.portlet.exportimport" entity="Staging" />
-		<reference package-path="com.liferay.portlet.social" entity="SocialActivity" />
-		<reference package-path="com.liferay.portlet.social" entity="SocialActivitySetting" />
-		<reference package-path="com.liferay.portlet.social" entity="SocialRequest" />
-		<reference package-path="com.liferay.portlet.softwarecatalog" entity="SCFrameworkVersion" />
-		<reference package-path="com.liferay.portlet.softwarecatalog" entity="SCProductEntry" />
-		<reference package-path="com.liferay.portlet.trash" entity="TrashEntry" />
 	</entity>
-	<entity name="Image" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" local-service="true" name="Image" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="imageId" type="long" primary="true" />
+		<column name="imageId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
+		<column name="companyId" type="long" />
 		<column name="modifiedDate" type="Date" />
 
 		<!-- Other fields -->
@@ -548,18 +564,14 @@
 		<!-- Finder methods -->
 
 		<finder name="LtSize" return-type="Collection">
-			<finder-column name="size" comparator="&lt;" />
+			<finder-column comparator="&lt;" name="size" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portlet.documentlibrary" entity="DLFileEntry" />
 	</entity>
-	<entity name="Layout" uuid="true" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" local-service="true" name="Layout" remote-service="true" uad-application-name="Layout" uad-dir-path="../modules/apps/layout/layout-uad/src/main/java" uad-package-path="com.liferay.layout" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="plid" type="long" primary="true" />
+		<column name="plid" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -569,35 +581,44 @@
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
 		<!-- Other fields -->
 
+		<column name="parentPlid" type="long" />
 		<column name="privateLayout" type="boolean" />
-		<column name="layoutId" type="long" accessor="true" />
+		<column accessor="true" name="layoutId" type="long" />
 		<column name="parentLayoutId" type="long" />
-		<column name="name" type="String" localized="true" />
-		<column name="title" type="String" localized="true" />
-		<column name="description" type="String" localized="true" />
-		<column name="keywords" type="String" localized="true" />
-		<column name="robots" type="String" localized="true" />
+		<column name="classNameId" type="long" />
+		<column name="classPK" type="long" />
+		<column change-tracking-resolution-type="merge" localized="true" name="name" type="String" />
+		<column change-tracking-resolution-type="merge" localized="true" name="title" type="String" />
+		<column change-tracking-resolution-type="merge" localized="true" name="description" type="String" />
+		<column localized="true" name="keywords" type="String" />
+		<column localized="true" name="robots" type="String" />
 		<column name="type" type="String" />
 		<column name="typeSettings" type="String" />
 		<column name="hidden" type="boolean" />
+		<column name="system" type="boolean" />
 		<column name="friendlyURL" type="String" />
 		<column name="iconImageId" type="long" />
 		<column name="themeId" type="String" />
 		<column name="colorSchemeId" type="String" />
-		<column name="wapThemeId" type="String" />
-		<column name="wapColorSchemeId" type="String" />
+		<column name="styleBookEntryId" type="long" />
 		<column name="css" type="String" />
 		<column name="priority" type="int" />
+		<column name="masterLayoutPlid" type="long" />
 		<column name="layoutPrototypeUuid" type="String" />
 		<column name="layoutPrototypeLinkEnabled" type="boolean" />
 		<column name="sourcePrototypeLayoutUuid" type="String" />
+		<column change-tracking-resolution-type="merge" name="publishDate" type="Date" />
 		<column name="lastPublishDate" type="Date" />
+		<column name="status" type="int" />
+		<column name="statusByUserId" type="long" />
+		<column name="statusByUserName" type="String" />
+		<column name="statusDate" type="Date" />
 
 		<!-- Order -->
 
@@ -608,36 +629,59 @@
 
 		<!-- Finder methods -->
 
-		<finder name="GroupId" return-type="Collection">
+		<finder name="GroupId" return-type="Collection" where="system = [$FALSE$]">
 			<finder-column name="groupId" />
 		</finder>
-		<finder name="CompanyId" return-type="Collection">
+		<finder name="CompanyId" return-type="Collection" where="system = [$FALSE$]">
 			<finder-column name="companyId" />
+		</finder>
+		<finder name="ParentPlid" return-type="Collection" where="system = [$FALSE$]">
+			<finder-column name="parentPlid" />
 		</finder>
 		<finder name="IconImageId" return-type="Layout">
 			<finder-column name="iconImageId" />
 		</finder>
-		<finder name="LayoutPrototypeUuid" return-type="Collection">
+		<finder name="LayoutPrototypeUuid" return-type="Collection" where="system = [$FALSE$]">
 			<finder-column name="layoutPrototypeUuid" />
 		</finder>
-		<finder name="SourcePrototypeLayoutUuid" return-type="Collection">
+		<finder name="SourcePrototypeLayoutUuid" return-type="Collection" where="system = [$FALSE$]">
 			<finder-column name="sourcePrototypeLayoutUuid" />
 		</finder>
-		<finder name="G_P" return-type="Collection">
+		<finder name="G_P" return-type="Collection" where="system = [$FALSE$]">
 			<finder-column name="groupId" />
 			<finder-column name="privateLayout" />
+		</finder>
+		<finder name="G_T" return-type="Collection" where="system = [$FALSE$]">
+			<finder-column name="groupId" />
+			<finder-column name="type" />
+		</finder>
+		<finder name="G_MLP" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="masterLayoutPlid" />
+		</finder>
+		<finder name="C_L" return-type="Collection" where="system = [$FALSE$]">
+			<finder-column name="companyId" />
+			<finder-column name="layoutPrototypeUuid" />
+		</finder>
+		<finder name="P_I" return-type="Layout">
+			<finder-column name="privateLayout" />
+			<finder-column name="iconImageId" />
+		</finder>
+		<finder name="C_C" return-type="Layout">
+			<finder-column name="classNameId" />
+			<finder-column name="classPK" />
 		</finder>
 		<finder name="G_P_L" return-type="Layout" unique="true">
 			<finder-column name="groupId" />
 			<finder-column name="privateLayout" />
 			<finder-column name="layoutId" />
 		</finder>
-		<finder name="G_P_P" return-type="Collection">
+		<finder name="G_P_P" return-type="Collection" where="system = [$FALSE$]">
 			<finder-column name="groupId" />
 			<finder-column name="privateLayout" />
-			<finder-column name="parentLayoutId" />
+			<finder-column arrayable-operator="OR" arrayable-pagination="true" name="parentLayoutId" />
 		</finder>
-		<finder name="G_P_T" return-type="Collection">
+		<finder name="G_P_T" return-type="Collection" where="system = [$FALSE$]">
 			<finder-column name="groupId" />
 			<finder-column name="privateLayout" />
 			<finder-column name="type" />
@@ -652,34 +696,35 @@
 			<finder-column name="privateLayout" />
 			<finder-column name="sourcePrototypeLayoutUuid" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="Image" />
-		<reference package-path="com.liferay.portal" entity="LayoutFriendlyURL" />
-		<reference package-path="com.liferay.portal" entity="LayoutPrototype" />
-		<reference package-path="com.liferay.portal" entity="LayoutSet" />
-		<reference package-path="com.liferay.portal" entity="LayoutSetPrototype" />
-		<reference package-path="com.liferay.portal" entity="PluginSetting" />
-		<reference package-path="com.liferay.portal" entity="PortletPreferences" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="ResourcePermission" />
-		<reference package-path="com.liferay.portal" entity="Subscription" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetCategory" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetEntry" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetTag" />
-		<reference package-path="com.liferay.portlet.expando" entity="ExpandoRow" />
-		<reference package-path="com.liferay.portlet.exportimport" entity="ExportImportConfiguration" />
-		<reference package-path="com.liferay.portlet.ratings" entity="RatingsStats" />
+		<finder name="G_P_ST" return-type="Collection" where="system = [$FALSE$]">
+			<finder-column name="groupId" />
+			<finder-column name="privateLayout" />
+			<finder-column arrayable-operator="OR" name="status" />
+		</finder>
+		<finder name="G_P_P_H" return-type="Collection" where="system = [$FALSE$]">
+			<finder-column name="groupId" />
+			<finder-column name="privateLayout" />
+			<finder-column arrayable-operator="OR" arrayable-pagination="true" name="parentLayoutId" />
+			<finder-column name="hidden" />
+		</finder>
+		<finder name="G_P_P_S" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="privateLayout" />
+			<finder-column arrayable-operator="OR" arrayable-pagination="true" name="parentLayoutId" />
+			<finder-column name="system" />
+		</finder>
+		<finder name="G_P_P_LteP" return-type="Collection" where="system = [$FALSE$]">
+			<finder-column name="groupId" />
+			<finder-column name="privateLayout" />
+			<finder-column name="parentLayoutId" />
+			<finder-column comparator="&lt;=" name="priority" />
+		</finder>
 	</entity>
-	<entity name="LayoutBranch" local-service="true" remote-service="true">
+	<entity local-service="true" name="LayoutBranch" plural-name="LayoutBranchs" remote-service="true" uad-application-name="Layout" uad-dir-path="../modules/apps/layout/layout-uad/src/main/java" uad-package-path="com.liferay.layout">
 
 		<!-- PK fields -->
 
-		<column name="layoutBranchId" type="long" primary="true" />
+		<column name="layoutBranchId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -689,7 +734,7 @@
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 
 		<!-- Other fields -->
 
@@ -718,18 +763,12 @@
 			<finder-column name="plid" />
 			<finder-column name="master" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="LayoutRevision" />
-		<reference package-path="com.liferay.portal" entity="LayoutSetBranch" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="LayoutFriendlyURL" uuid="true" local-service="true" remote-service="false">
+	<entity change-tracking-enabled="true" local-service="true" name="LayoutFriendlyURL" remote-service="false" uad-application-name="Layout" uad-dir-path="../modules/apps/layout/layout-uad/src/main/java" uad-package-path="com.liferay.layout" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="layoutFriendlyURLId" type="long" primary="true" />
+		<column name="layoutFriendlyURLId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -739,7 +778,7 @@
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
@@ -766,8 +805,8 @@
 			<finder-column name="plid" />
 			<finder-column name="friendlyURL" />
 		</finder>
-		<finder name="P_L" return-type="LayoutFriendlyURL" unique="true">
-			<finder-column name="plid" />
+		<finder name="P_L" return-type="Collection" unique="true">
+			<finder-column arrayable-operator="OR" arrayable-pagination="true" name="plid" />
 			<finder-column name="languageId" />
 		</finder>
 		<finder name="G_P_F" return-type="Collection">
@@ -781,32 +820,27 @@
 			<finder-column name="friendlyURL" />
 			<finder-column name="languageId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="LayoutPrototype" uuid="true" local-service="true" remote-service="true">
+	<entity local-service="true" name="LayoutPrototype" remote-service="true" uad-application-name="Layout" uad-dir-path="../modules/apps/layout/layout-uad/src/main/java" uad-package-path="com.liferay.layout" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="layoutPrototypeId" type="long" primary="true" />
+		<column name="layoutPrototypeId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
 		<!-- Other fields -->
 
-		<column name="name" type="String" localized="true" />
-		<column name="description" type="String" localized="true" />
+		<column localized="true" name="name" type="String" />
+		<column localized="true" name="description" type="String" />
 		<column name="settings" type="String" />
 		<column name="active" type="boolean" />
-		<column name="lastPublishDate" type="Date" />
 
 		<!-- Finder methods -->
 
@@ -817,20 +851,12 @@
 			<finder-column name="companyId" />
 			<finder-column name="active" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="Layout" />
-		<reference package-path="com.liferay.portal" entity="PortletPreferences" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="LayoutRevision" local-service="true" remote-service="true">
+	<entity local-service="true" name="LayoutRevision" remote-service="true" uad-application-name="Layout" uad-dir-path="../modules/apps/layout/layout-uad/src/main/java" uad-package-path="com.liferay.layout">
 
 		<!-- PK fields -->
 
-		<column name="layoutRevisionId" type="long" primary="true" />
+		<column name="layoutRevisionId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -840,7 +866,7 @@
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
@@ -853,21 +879,19 @@
 		<column name="major" type="boolean" />
 		<column name="plid" type="long" />
 		<column name="privateLayout" type="boolean" />
-		<column name="name" type="String" localized="true" />
-		<column name="title" type="String" localized="true" />
-		<column name="description" type="String" localized="true" />
-		<column name="keywords" type="String" localized="true" />
-		<column name="robots" type="String" localized="true" />
+		<column localized="true" name="name" type="String" />
+		<column localized="true" name="title" type="String" />
+		<column localized="true" name="description" type="String" />
+		<column localized="true" name="keywords" type="String" />
+		<column localized="true" name="robots" type="String" />
 		<column name="typeSettings" type="String" />
 		<column name="iconImageId" type="long" />
 		<column name="themeId" type="String" />
 		<column name="colorSchemeId" type="String" />
-		<column name="wapThemeId" type="String" />
-		<column name="wapColorSchemeId" type="String" />
 		<column name="css" type="String" />
 		<column name="status" type="int" />
 		<column name="statusByUserId" type="long" />
-		<column name="statusByUserName" type="String" />
+		<column name="statusByUserName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="statusDate" type="Date" />
 
 		<!-- Order -->
@@ -883,6 +907,9 @@
 		</finder>
 		<finder name="Plid" return-type="Collection">
 			<finder-column name="plid" />
+		</finder>
+		<finder name="Status" return-type="Collection">
+			<finder-column name="status" />
 		</finder>
 		<finder name="L_H" return-type="Collection">
 			<finder-column name="layoutSetBranchId" />
@@ -902,7 +929,7 @@
 		</finder>
 		<finder name="P_NotS" return-type="Collection">
 			<finder-column name="plid" />
-			<finder-column name="status" comparator="!=" />
+			<finder-column comparator="!=" name="status" />
 		</finder>
 		<finder name="L_L_P" return-type="Collection" where="status != 5">
 			<finder-column name="layoutSetBranchId" />
@@ -919,29 +946,33 @@
 			<finder-column name="head" />
 			<finder-column name="plid" />
 		</finder>
+		<finder name="L_H_P_Collection" return-type="Collection">
+			<finder-column name="layoutSetBranchId" />
+			<finder-column name="head" />
+			<finder-column name="plid" />
+		</finder>
+		<finder name="L_H_S" return-type="Collection">
+			<finder-column name="layoutSetBranchId" />
+			<finder-column name="head" />
+			<finder-column name="status" />
+		</finder>
 		<finder name="L_P_S" return-type="Collection">
 			<finder-column name="layoutSetBranchId" />
 			<finder-column name="plid" />
 			<finder-column name="status" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Image" />
-		<reference package-path="com.liferay.portal" entity="Layout" />
-		<reference package-path="com.liferay.portal" entity="LayoutBranch" />
-		<reference package-path="com.liferay.portal" entity="LayoutSet" />
-		<reference package-path="com.liferay.portal" entity="LayoutSetBranch" />
-		<reference package-path="com.liferay.portal" entity="PortletPreferences" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink" />
+		<finder name="L_L_H_P" return-type="LayoutRevision">
+			<finder-column name="layoutSetBranchId" />
+			<finder-column name="layoutBranchId" />
+			<finder-column name="head" />
+			<finder-column name="plid" />
+		</finder>
 	</entity>
-	<entity name="LayoutSet" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" local-service="true" name="LayoutSet" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="layoutSetId" type="long" primary="true" />
+		<column name="layoutSetId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -959,10 +990,7 @@
 		<column name="logoId" type="long" />
 		<column name="themeId" type="String" />
 		<column name="colorSchemeId" type="String" />
-		<column name="wapThemeId" type="String" />
-		<column name="wapColorSchemeId" type="String" />
 		<column name="css" type="String" />
-		<column name="pageCount" type="int" />
 		<column name="settings" type="String" />
 		<column name="layoutSetPrototypeUuid" type="String" />
 		<column name="layoutSetPrototypeLinkEnabled" type="boolean" />
@@ -979,21 +1007,20 @@
 			<finder-column name="groupId" />
 			<finder-column name="privateLayout" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="Image" />
-		<reference package-path="com.liferay.portal" entity="Layout" />
-		<reference package-path="com.liferay.portal" entity="LayoutSetBranch" />
-		<reference package-path="com.liferay.portal" entity="PluginSetting" />
-		<reference package-path="com.liferay.portal" entity="VirtualHost" />
+		<finder name="C_L" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="layoutSetPrototypeUuid" />
+		</finder>
+		<finder name="P_L" return-type="Layout">
+			<finder-column name="privateLayout" />
+			<finder-column name="logoId" />
+		</finder>
 	</entity>
-	<entity name="LayoutSetBranch" local-service="true" remote-service="true">
+	<entity local-service="true" name="LayoutSetBranch" plural-name="LayoutSetBranchs" remote-service="true" uad-application-name="Layout" uad-dir-path="../modules/apps/layout/layout-uad/src/main/java" uad-package-path="com.liferay.layout">
 
 		<!-- PK fields -->
 
-		<column name="layoutSetBranchId" type="long" primary="true" />
+		<column name="layoutSetBranchId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -1003,7 +1030,7 @@
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
@@ -1016,8 +1043,6 @@
 		<column name="logoId" type="long" />
 		<column name="themeId" type="String" />
 		<column name="colorSchemeId" type="String" />
-		<column name="wapThemeId" type="String" />
-		<column name="wapColorSchemeId" type="String" />
 		<column name="css" type="String" />
 		<column name="settings" type="String" />
 		<column name="layoutSetPrototypeUuid" type="String" />
@@ -1048,38 +1073,27 @@
 			<finder-column name="privateLayout" />
 			<finder-column name="master" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Image" />
-		<reference package-path="com.liferay.portal" entity="Layout" />
-		<reference package-path="com.liferay.portal" entity="LayoutBranch" />
-		<reference package-path="com.liferay.portal" entity="LayoutRevision" />
-		<reference package-path="com.liferay.portal" entity="LayoutSet" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="LayoutSetPrototype" uuid="true" local-service="true" remote-service="true">
+	<entity local-service="true" name="LayoutSetPrototype" remote-service="true" uad-application-name="Layout" uad-dir-path="../modules/apps/layout/layout-uad/src/main/java" uad-package-path="com.liferay.layout" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="layoutSetPrototypeId" type="long" primary="true" />
+		<column name="layoutSetPrototypeId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
 		<!-- Other fields -->
 
-		<column name="name" type="String" localized="true" />
-		<column name="description" type="String" localized="true" />
+		<column localized="true" name="name" type="String" />
+		<column localized="true" name="description" type="String" />
 		<column name="settings" type="String" />
 		<column name="active" type="boolean" />
-		<column name="lastPublishDate" type="Date" />
 
 		<!-- Finder methods -->
 
@@ -1090,26 +1104,14 @@
 			<finder-column name="companyId" />
 			<finder-column name="active" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="Layout" />
-		<reference package-path="com.liferay.portal" entity="LayoutSet" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="LayoutTemplate" local-service="true" remote-service="false" tx-manager="none">
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="PluginSetting" />
+	<entity local-service="true" name="LayoutTemplate" remote-service="false" tx-manager="none">
 	</entity>
-	<entity name="ListType" local-service="true" remote-service="true">
+	<entity local-service="true" name="ListType" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="listTypeId" type="long" primary="true" />
+		<column name="listTypeId" primary="true" type="long" />
 
 		<!-- Other fields -->
 
@@ -1119,7 +1121,7 @@
 		<!-- Order -->
 
 		<order by="asc">
-			<order-column name="name" case-sensitive="false" />
+			<order-column case-sensitive="false" name="name" />
 		</order>
 
 		<!-- Finder methods -->
@@ -1127,20 +1129,16 @@
 		<finder name="Type" return-type="Collection">
 			<finder-column name="type" />
 		</finder>
-		<finder name="N_T" return-type="ListType">
+		<finder name="N_T" return-type="ListType" unique="true">
 			<finder-column name="name" />
 			<finder-column name="type" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
 	</entity>
-	<entity name="MembershipRequest" local-service="true" remote-service="true">
+	<entity local-service="true" name="MembershipRequest" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="membershipRequestId" type="long" primary="true" />
+		<column name="membershipRequestId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -1183,22 +1181,12 @@
 			<finder-column name="userId" />
 			<finder-column name="statusId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.mail" entity="Mail" />
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="Role" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portal" entity="UserGroup" />
-		<reference package-path="com.liferay.portal" entity="UserGroupRole" />
 	</entity>
-	<entity name="Organization" uuid="true" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" external-reference-code="true" local-service="true" name="Organization" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="organizationId" type="long" primary="true" />
+		<column name="organizationId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -1212,7 +1200,7 @@
 
 		<column name="parentOrganizationId" type="long" />
 		<column name="treePath" type="String" />
-		<column name="name" type="String" accessor="true" />
+		<column accessor="true" name="name" type="String" />
 		<column name="type" type="String" />
 		<column name="recursable" type="boolean" />
 		<column name="regionId" type="long" />
@@ -1220,12 +1208,11 @@
 		<column name="statusId" type="long" />
 		<column name="comments" type="String" />
 		<column name="logoId" type="long" />
-		<column name="lastPublishDate" type="Date" />
 
 		<!-- Relationships -->
 
-		<column name="groups" type="Collection" entity="Group" mapping-table="Groups_Orgs" />
-		<column name="users" type="Collection" entity="User" mapping-table="Users_Orgs" />
+		<column entity="Group" mapping-table="Groups_Orgs" name="groups" type="Collection" />
+		<column entity="User" mapping-table="Users_Orgs" name="users" type="Collection" />
 
 		<!-- Order -->
 
@@ -1238,56 +1225,47 @@
 		<finder name="CompanyId" return-type="Collection">
 			<finder-column name="companyId" />
 		</finder>
-		<finder name="Locations" return-type="Collection" where="parentOrganizationId != 0" db-index="false">
+		<finder db-index="false" name="CompanyIdLocations" return-type="Collection" where="parentOrganizationId != 0">
 			<finder-column name="companyId" />
 		</finder>
 		<finder name="C_P" return-type="Collection">
 			<finder-column name="companyId" />
 			<finder-column name="parentOrganizationId" />
 		</finder>
-		<finder name="C_T" return-type="Collection" db-index="false">
+		<finder db-index="false" name="C_LikeT" return-type="Collection">
 			<finder-column name="companyId" />
-			<finder-column name="treePath" comparator="LIKE" />
+			<finder-column comparator="LIKE" name="treePath" />
 		</finder>
 		<finder name="C_N" return-type="Organization" unique="true">
 			<finder-column name="companyId" />
 			<finder-column name="name" />
 		</finder>
-		<finder name="O_C_P" return-type="Collection" db-index="false">
-			<finder-column name="organizationId" comparator="&gt;" />
+		<finder name="C_LikeN" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column case-sensitive="false" comparator="LIKE" name="name" />
+		</finder>
+		<finder db-index="false" name="GtO_C_P" return-type="Collection">
+			<finder-column comparator="&gt;" name="organizationId" />
 			<finder-column name="companyId" />
 			<finder-column name="parentOrganizationId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Address" />
-		<reference package-path="com.liferay.portal" entity="Company" />
-		<reference package-path="com.liferay.portal" entity="Country" />
-		<reference package-path="com.liferay.portal" entity="EmailAddress" />
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="ListType" />
-		<reference package-path="com.liferay.portal" entity="PasswordPolicy" />
-		<reference package-path="com.liferay.portal" entity="PasswordPolicyRel" />
-		<reference package-path="com.liferay.portal" entity="Phone" />
-		<reference package-path="com.liferay.portal" entity="Region" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="Role" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portal" entity="UserGroupRole" />
-		<reference package-path="com.liferay.portal" entity="Website" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetCategory" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetEntry" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetTag" />
-		<reference package-path="com.liferay.portlet.expando" entity="ExpandoRow" />
+		<finder name="C_P_LikeN" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="parentOrganizationId" />
+			<finder-column case-sensitive="false" comparator="LIKE" name="name" />
+		</finder>
 	</entity>
-	<entity name="OrgGroupRole" local-service="false" remote-service="false">
+	<entity deprecated="true" local-service="false" name="OrgGroupRole" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="organizationId" type="long" primary="true" />
-		<column name="groupId" type="long" primary="true" />
-		<column name="roleId" type="long" primary="true" />
+		<column name="organizationId" primary="true" type="long" />
+		<column name="groupId" primary="true" type="long" />
+		<column name="roleId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
 
 		<!-- Finder methods -->
 
@@ -1298,11 +1276,15 @@
 			<finder-column name="roleId" />
 		</finder>
 	</entity>
-	<entity name="OrgLabor" local-service="true" remote-service="true">
+	<entity local-service="true" name="OrgLabor" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="orgLaborId" type="long" primary="true" />
+		<column name="orgLaborId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
 
 		<!-- Other fields -->
 
@@ -1335,22 +1317,18 @@
 		<finder name="OrganizationId" return-type="Collection">
 			<finder-column name="organizationId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ListType" />
 	</entity>
-	<entity name="PasswordPolicy" uuid="true" local-service="true" remote-service="true">
+	<entity local-service="true" name="PasswordPolicy" remote-service="true" uad-application-name="Password Policies Admin" uad-dir-path="../modules/apps/password-policies-admin/password-policies-admin-uad/src/main/java" uad-package-path="com.liferay.password.policies.admin" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="passwordPolicyId" type="long" primary="true" />
+		<column name="passwordPolicyId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
@@ -1383,7 +1361,6 @@
 		<column name="requireUnlock" type="boolean" />
 		<column name="resetFailureCount" type="long" />
 		<column name="resetTicketMaxAge" type="long" />
-		<column name="lastPublishDate" type="Date" />
 
 		<!-- Finder methods -->
 
@@ -1398,19 +1375,16 @@
 			<finder-column name="companyId" />
 			<finder-column name="name" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="PasswordPolicyRel" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="PasswordPolicyRel" local-service="true" remote-service="false">
+	<entity local-service="true" name="PasswordPolicyRel" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="passwordPolicyRelId" type="long" primary="true" />
+		<column name="passwordPolicyRelId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
 
 		<!-- Other fields -->
 
@@ -1427,19 +1401,16 @@
 			<finder-column name="classNameId" />
 			<finder-column name="classPK" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
 	</entity>
-	<entity name="PasswordTracker" local-service="true" remote-service="false">
+	<entity local-service="true" name="PasswordTracker" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="passwordTrackerId" type="long" primary="true" />
+		<column name="passwordTrackerId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
+		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
 		<column name="createDate" type="Date" />
 
@@ -1459,27 +1430,14 @@
 		<finder name="UserId" return-type="Collection">
 			<finder-column name="userId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="PasswordPolicy" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="Permission" local-service="false" remote-service="true">
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ResourceBlock" />
-		<reference package-path="com.liferay.portal" entity="ResourcePermission" />
-		<reference package-path="com.liferay.portal" entity="Role" />
-		<reference package-path="com.liferay.portal" entity="Team" />
-		<reference package-path="com.liferay.portal" entity="User" />
+	<entity change-tracking-enabled="true" local-service="false" name="Permission" remote-service="true">
 	</entity>
-	<entity name="Phone" uuid="true" local-service="true" remote-service="true">
+	<entity local-service="true" name="Phone" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="phoneId" type="long" primary="true" />
+		<column name="phoneId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -1497,7 +1455,6 @@
 		<column name="extension" type="String" />
 		<column name="typeId" type="long" />
 		<column name="primary" type="boolean" />
-		<column name="lastPublishDate" type="Date" />
 
 		<!-- Order -->
 
@@ -1528,18 +1485,12 @@
 			<finder-column name="classPK" />
 			<finder-column name="primary" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="ListType" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="PluginSetting" local-service="true" remote-service="true">
+	<entity local-service="true" name="PluginSetting" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="pluginSettingId" type="long" primary="true" />
+		<column name="pluginSettingId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -1557,36 +1508,28 @@
 		<finder name="CompanyId" return-type="Collection">
 			<finder-column name="companyId" />
 		</finder>
-		<finder name="C_I_T" return-type="PluginSetting" unique="true">
+		<finder name="C_P_P" return-type="PluginSetting" unique="true">
 			<finder-column name="companyId" />
 			<finder-column name="pluginId" />
 			<finder-column name="pluginType" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="LayoutTemplate" />
-		<reference package-path="com.liferay.portal" entity="Role" />
-		<reference package-path="com.liferay.portal" entity="Theme" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="Portal" local-service="true" remote-service="true">
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
+	<entity local-service="true" name="Portal" remote-service="true">
 	</entity>
-	<entity name="PortalPreferences" local-service="true" remote-service="false">
+	<entity local-service="true" name="PortalPreferences" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="portalPreferencesId" type="long" primary="true" />
+		<column name="portalPreferencesId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
 
 		<!-- Other fields -->
 
 		<column name="ownerId" type="long" />
 		<column name="ownerType" type="int" />
-		<column name="preferences" type="String" />
 
 		<!-- Finder methods -->
 
@@ -1595,11 +1538,11 @@
 			<finder-column name="ownerType" />
 		</finder>
 	</entity>
-	<entity name="Portlet" local-service="true" remote-service="true">
+	<entity local-service="true" name="PortalPreferenceValue" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="id" type="long" primary="true" />
+		<column name="portalPreferenceValueId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -1607,7 +1550,59 @@
 
 		<!-- Other fields -->
 
-		<column name="portletId" type="String" accessor="true" />
+		<column name="portalPreferencesId" type="long" />
+		<column name="index" type="int" />
+		<column name="key" type="String" />
+		<column name="largeValue" type="String" />
+		<column name="namespace" type="String" />
+		<column name="smallValue" type="String" />
+
+		<!-- Order -->
+
+		<order by="asc">
+			<order-column name="index" />
+		</order>
+
+		<!-- Finder methods -->
+
+		<finder name="PortalPreferencesId" return-type="Collection">
+			<finder-column name="portalPreferencesId" />
+		</finder>
+		<finder name="P_N" return-type="Collection">
+			<finder-column name="portalPreferencesId" />
+			<finder-column name="namespace" />
+		</finder>
+		<finder name="P_K_N" return-type="Collection">
+			<finder-column name="portalPreferencesId" />
+			<finder-column name="key" />
+			<finder-column name="namespace" />
+		</finder>
+		<finder name="P_I_K_N" return-type="PortalPreferenceValue" unique="true">
+			<finder-column name="portalPreferencesId" />
+			<finder-column name="index" />
+			<finder-column name="key" />
+			<finder-column name="namespace" />
+		</finder>
+		<finder name="P_K_N_SV" return-type="Collection">
+			<finder-column name="portalPreferencesId" />
+			<finder-column name="key" />
+			<finder-column name="namespace" />
+			<finder-column name="smallValue" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="Portlet" remote-service="true">
+
+		<!-- PK fields -->
+
+		<column name="id" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column accessor="true" name="portletId" type="String" />
 		<column name="roles" type="String" />
 		<column name="active" type="boolean" />
 
@@ -1620,21 +1615,12 @@
 			<finder-column name="companyId" />
 			<finder-column name="portletId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="PortletPreferences" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="ResourceAction" />
-		<reference package-path="com.liferay.portal" entity="ResourceBlock" />
-		<reference package-path="com.liferay.portal" entity="ResourcePermission" />
-		<reference package-path="com.liferay.portal" entity="Role" />
 	</entity>
-	<entity name="PortletItem" local-service="true" remote-service="false">
+	<entity local-service="true" name="PortletItem" remote-service="false" uad-dir-path="../modules/apps/portal/portal-uad/src/main/java" uad-package-path="com.liferay.portal">
 
 		<!-- PK fields -->
 
-		<column name="portletItemId" type="long" primary="true" />
+		<column name="portletItemId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -1644,7 +1630,7 @@
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
@@ -1667,21 +1653,20 @@
 		</finder>
 		<finder name="G_N_P_C" return-type="PortletItem">
 			<finder-column name="groupId" />
-			<finder-column name="name" case-sensitive="false" />
+			<finder-column case-sensitive="false" name="name" />
 			<finder-column name="portletId" />
 			<finder-column name="classNameId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="PortletPreferences" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" local-service="true" name="PortletPreferences" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="portletPreferencesId" type="long" primary="true" />
+		<column name="portletPreferencesId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
 
 		<!-- Other fields -->
 
@@ -1689,10 +1674,12 @@
 		<column name="ownerType" type="int" />
 		<column name="plid" type="long" />
 		<column name="portletId" type="String" />
-		<column name="preferences" type="String" />
 
 		<!-- Finder methods -->
 
+		<finder name="OwnerId" return-type="Collection">
+			<finder-column name="ownerId" />
+		</finder>
 		<finder name="Plid" return-type="Collection">
 			<finder-column name="plid" />
 		</finder>
@@ -1722,35 +1709,210 @@
 			<finder-column name="plid" />
 			<finder-column name="portletId" />
 		</finder>
+		<finder name="C_O_O_LikeP" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="ownerId" />
+			<finder-column name="ownerType" />
+			<finder-column comparator="LIKE" name="portletId" />
+		</finder>
 		<finder name="O_O_P_P" return-type="PortletPreferences" unique="true">
 			<finder-column name="ownerId" />
 			<finder-column name="ownerType" />
 			<finder-column name="plid" />
 			<finder-column name="portletId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Portlet" />
-		<reference package-path="com.liferay.portal" entity="PortletItem" />
 	</entity>
-	<entity name="Region" local-service="false" remote-service="true">
+	<entity change-tracking-enabled="true" local-service="true" name="PortletPreferenceValue" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="regionId" type="long" primary="true" />
+		<column name="portletPreferenceValueId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="portletPreferencesId" type="long" />
+		<column name="index" type="int" />
+		<column name="largeValue" type="String" />
+		<column name="name" type="String" />
+		<column name="readOnly" type="boolean" />
+		<column name="smallValue" type="String" />
+
+		<!-- Order -->
+
+		<order by="asc">
+			<order-column name="index" />
+		</order>
+
+		<!-- Finder methods -->
+
+		<finder name="PortletPreferencesId" return-type="Collection">
+			<finder-column name="portletPreferencesId" />
+		</finder>
+		<finder name="P_N" return-type="Collection">
+			<finder-column name="portletPreferencesId" />
+			<finder-column name="name" />
+		</finder>
+		<finder name="P_I_N" return-type="PortletPreferenceValue" unique="true">
+			<finder-column name="portletPreferencesId" />
+			<finder-column name="index" />
+			<finder-column name="name" />
+		</finder>
+		<finder name="P_N_SV" return-type="Collection">
+			<finder-column name="portletPreferencesId" />
+			<finder-column name="name" />
+			<finder-column name="smallValue" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="RecentLayoutBranch" plural-name="RecentLayoutBranchs" remote-service="false" uuid="false">
+
+		<!-- PK fields -->
+
+		<column name="recentLayoutBranchId" primary="true" type="long" />
+
+		<!-- Group instance -->
+
+		<column name="groupId" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="layoutBranchId" type="long" />
+		<column name="layoutSetBranchId" type="long" />
+		<column name="plid" type="long" />
+
+		<!-- Finder methods -->
+
+		<finder name="GroupId" return-type="Collection">
+			<finder-column name="groupId" />
+		</finder>
+		<finder name="UserId" return-type="Collection">
+			<finder-column name="userId" />
+		</finder>
+		<finder name="LayoutBranchId" return-type="Collection">
+			<finder-column name="layoutBranchId" />
+		</finder>
+		<finder name="U_L_P" return-type="RecentLayout" unique="true">
+			<finder-column name="userId" />
+			<finder-column name="layoutSetBranchId" />
+			<finder-column name="plid" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="RecentLayoutRevision" remote-service="false" uuid="false">
+
+		<!-- PK fields -->
+
+		<column name="recentLayoutRevisionId" primary="true" type="long" />
+
+		<!-- Group instance -->
+
+		<column name="groupId" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="layoutRevisionId" type="long" />
+		<column name="layoutSetBranchId" type="long" />
+		<column name="plid" type="long" />
+
+		<!-- Finder methods -->
+
+		<finder name="GroupId" return-type="Collection">
+			<finder-column name="groupId" />
+		</finder>
+		<finder name="UserId" return-type="Collection">
+			<finder-column name="userId" />
+		</finder>
+		<finder name="LayoutRevisionId" return-type="Collection">
+			<finder-column name="layoutRevisionId" />
+		</finder>
+		<finder name="U_L_P" return-type="RecentLayout" unique="true">
+			<finder-column name="userId" />
+			<finder-column name="layoutSetBranchId" />
+			<finder-column name="plid" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="RecentLayoutSetBranch" plural-name="RecentLayoutSetBranchs" remote-service="false" uuid="false">
+
+		<!-- PK fields -->
+
+		<column name="recentLayoutSetBranchId" primary="true" type="long" />
+
+		<!-- Group instance -->
+
+		<column name="groupId" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="layoutSetBranchId" type="long" />
+		<column name="layoutSetId" type="long" />
+
+		<!-- Finder methods -->
+
+		<finder name="GroupId" return-type="Collection">
+			<finder-column name="groupId" />
+		</finder>
+		<finder name="UserId" return-type="Collection">
+			<finder-column name="userId" />
+		</finder>
+		<finder name="LayoutSetBranchId" return-type="Collection">
+			<finder-column name="layoutSetBranchId" />
+		</finder>
+		<finder name="U_L" return-type="RecentLayoutSet" unique="true">
+			<finder-column name="userId" />
+			<finder-column name="layoutSetId" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="Region" remote-service="true" uuid="true">
+
+		<!-- PK fields -->
+
+		<column name="regionId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
 
 		<!-- Other fields -->
 
 		<column name="countryId" type="long" />
-		<column name="regionCode" type="String" />
-		<column name="name" type="String" />
 		<column name="active" type="boolean" />
+		<column name="name" type="String" />
+		<column name="position" type="double" />
+		<column name="regionCode" type="String" />
+		<column name="lastPublishDate" type="Date" />
+
+		<!-- Localized entity -->
+
+		<localized-entity>
+			<localized-column name="title" />
+		</localized-entity>
 
 		<!-- Order -->
 
 		<order by="asc">
 			<order-column name="name" />
+			<order-column name="position" />
 		</order>
 
 		<!-- Finder methods -->
@@ -1761,24 +1923,20 @@
 		<finder name="Active" return-type="Collection">
 			<finder-column name="active" />
 		</finder>
-		<finder name="C_R" return-type="Region" unique="true">
-			<finder-column name="countryId" />
-			<finder-column name="regionCode" />
-		</finder>
 		<finder name="C_A" return-type="Collection">
 			<finder-column name="countryId" />
 			<finder-column name="active" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Country" />
+		<finder name="C_R" return-type="Region" unique="true">
+			<finder-column name="countryId" />
+			<finder-column name="regionCode" />
+		</finder>
 	</entity>
-	<entity name="Release" local-service="true" remote-service="false">
+	<entity local-service="true" name="Release" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="releaseId" type="long" primary="true" />
+		<column name="releaseId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -1788,7 +1946,7 @@
 		<!-- Other fields -->
 
 		<column name="servletContextName" type="String" />
-		<column name="version" type="String" />
+		<column name="schemaVersion" type="String" />
 		<column name="buildNumber" type="int" />
 		<column name="buildDate" type="Date" />
 		<column name="verified" type="boolean" />
@@ -1798,14 +1956,14 @@
 		<!-- Finder methods -->
 
 		<finder name="ServletContextName" return-type="Release" unique="true">
-			<finder-column name="servletContextName" case-sensitive="false" />
+			<finder-column case-sensitive="false" name="servletContextName" />
 		</finder>
 	</entity>
-	<entity name="Repository" uuid="true" local-service="true" remote-service="true">
+	<entity local-service="true" name="Repository" remote-service="true" uad-dir-path="../modules/apps/portal/portal-uad/src/main/java" uad-package-path="com.liferay.portal" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="repositoryId" type="long" primary="true" />
+		<column name="repositoryId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -1815,7 +1973,7 @@
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
@@ -1839,30 +1997,12 @@
 			<finder-column name="name" />
 			<finder-column name="portletId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="Company" />
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="RepositoryEntry" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="SystemEvent" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetEntry" />
-		<reference package-path="com.liferay.portlet.documentlibrary" entity="DLAppHelper" />
-		<reference package-path="com.liferay.portlet.documentlibrary" entity="DLFileEntry" />
-		<reference package-path="com.liferay.portlet.documentlibrary" entity="DLFileEntryType" />
-		<reference package-path="com.liferay.portlet.documentlibrary" entity="DLFileShortcut" />
-		<reference package-path="com.liferay.portlet.documentlibrary" entity="DLFileVersion" />
-		<reference package-path="com.liferay.portlet.documentlibrary" entity="DLFolder" />
-		<reference package-path="com.liferay.portlet.expando" entity="ExpandoValue" />
 	</entity>
-	<entity name="RepositoryEntry" uuid="true" local-service="true" remote-service="false">
+	<entity local-service="true" name="RepositoryEntry" remote-service="false" uad-dir-path="../modules/apps/portal/portal-uad/src/main/java" uad-package-path="com.liferay.portal" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="repositoryEntryId" type="long" primary="true" />
+		<column name="repositoryEntryId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -1872,7 +2012,7 @@
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
@@ -1892,24 +2032,14 @@
 			<finder-column name="repositoryId" />
 			<finder-column name="mappedId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="Resource" local-service="true" remote-service="false">
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ResourceBlock" />
-		<reference package-path="com.liferay.portal" entity="ResourcePermission" />
-		<reference package-path="com.liferay.portal" entity="Role" />
+	<entity local-service="true" name="Resource" remote-service="false">
 	</entity>
-	<entity name="ResourceAction" local-service="true" remote-service="false">
+	<entity local-service="true" name="ResourceAction" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="resourceActionId" type="long" primary="true" />
+		<column name="resourceActionId" primary="true" type="long" />
 
 		<!-- Other fields -->
 
@@ -1930,89 +2060,15 @@
 			<finder-column name="name" />
 		</finder>
 		<finder name="N_A" return-type="ResourceAction" unique="true">
-			<finder-column name="name" case-sensitive="true" />
+			<finder-column case-sensitive="true" name="name" />
 			<finder-column name="actionId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ResourcePermission" />
 	</entity>
-	<entity name="ResourceBlock" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" local-service="true" name="ResourcePermission" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="resourceBlockId" type="long" primary="true" />
-
-		<!-- Audit fields -->
-
-		<column name="companyId" type="long" />
-
-		<!-- Other fields -->
-
-		<column name="groupId" type="long" />
-		<column name="name" type="String" />
-		<column name="permissionsHash" type="String" />
-		<column name="referenceCount" type="long" />
-
-		<!-- Finder methods -->
-
-		<finder name="C_N" return-type="Collection">
-			<finder-column name="companyId" />
-			<finder-column name="name" />
-		</finder>
-		<finder name="C_G_N" return-type="Collection">
-			<finder-column name="companyId" />
-			<finder-column name="groupId" />
-			<finder-column name="name" />
-		</finder>
-		<finder name="C_G_N_P" return-type="ResourceBlock" unique="true">
-			<finder-column name="companyId" />
-			<finder-column name="groupId" />
-			<finder-column name="name" />
-			<finder-column name="permissionsHash" />
-		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Permission" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="ResourceAction" />
-		<reference package-path="com.liferay.portal" entity="ResourceBlockPermission" />
-		<reference package-path="com.liferay.portal" entity="ResourceTypePermission" />
-		<reference package-path="com.liferay.portal" entity="Role" />
-	</entity>
-	<entity name="ResourceBlockPermission" local-service="true" remote-service="false">
-
-		<!-- PK fields -->
-
-		<column name="resourceBlockPermissionId" type="long" primary="true" />
-
-		<!-- Other fields -->
-
-		<column name="resourceBlockId" type="long" />
-		<column name="roleId" type="long" />
-		<column name="actionIds" type="long" />
-
-		<!-- Finder methods -->
-
-		<finder name="RoleId" return-type="Collection">
-			<finder-column name="roleId" />
-		</finder>
-		<finder name="R_R" return-type="ResourceBlockPermission" unique="true">
-			<finder-column name="resourceBlockId" />
-			<finder-column name="roleId" />
-		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ResourceBlock" />
-	</entity>
-	<entity name="ResourcePermission" local-service="true" remote-service="true">
-
-		<!-- PK fields -->
-
-		<column name="resourcePermissionId" type="long" primary="true" />
+		<column name="resourcePermissionId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -2031,20 +2087,23 @@
 
 		<!-- Finder methods -->
 
+		<finder name="Name" return-type="Collection">
+			<finder-column name="name" />
+		</finder>
 		<finder name="Scope" return-type="Collection">
-			<finder-column name="scope" arrayable-operator="OR" />
+			<finder-column arrayable-operator="OR" name="scope" />
 		</finder>
 		<finder name="RoleId" return-type="Collection">
 			<finder-column name="roleId" />
 		</finder>
 		<finder name="C_LikeP" return-type="Collection">
 			<finder-column name="companyId" />
-			<finder-column name="primKey" comparator="LIKE" />
+			<finder-column comparator="LIKE" name="primKey" />
 		</finder>
-		<finder name="C_N_S" return-type="Collection">
+		<finder name="C_S_P" return-type="Collection">
 			<finder-column name="companyId" />
-			<finder-column name="name" />
 			<finder-column name="scope" />
+			<finder-column name="primKey" />
 		</finder>
 		<finder name="C_N_S_P" return-type="Collection">
 			<finder-column name="companyId" />
@@ -2052,77 +2111,39 @@
 			<finder-column name="scope" />
 			<finder-column name="primKey" />
 		</finder>
+		<finder name="C_N_S_R" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="name" />
+			<finder-column name="scope" />
+			<finder-column name="roleId" />
+		</finder>
 		<finder name="C_N_S_P_R" return-type="Collection" unique="true">
 			<finder-column name="companyId" />
 			<finder-column name="name" />
 			<finder-column name="scope" />
 			<finder-column name="primKey" />
-			<finder-column name="roleId" arrayable-operator="OR" />
+			<finder-column arrayable-operator="OR" arrayable-pagination="true" name="roleId" />
 		</finder>
 		<finder name="C_N_S_P_R_V" return-type="Collection">
 			<finder-column name="companyId" />
 			<finder-column name="name" />
 			<finder-column name="scope" />
 			<finder-column name="primKeyId" />
-			<finder-column name="roleId" arrayable-operator="OR" />
+			<finder-column arrayable-operator="OR" arrayable-pagination="true" name="roleId" />
 			<finder-column name="viewActionId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Permission" />
-		<reference package-path="com.liferay.portal" entity="ResourceAction" />
-		<reference package-path="com.liferay.portal" entity="Role" />
 	</entity>
-	<entity name="ResourceTypePermission" local-service="true" remote-service="false">
+	<entity change-tracking-enabled="true" local-service="true" name="Role" remote-service="true" uad-application-name="Roles" uad-dir-path="../modules/apps/roles/roles-uad/src/main/java" uad-package-path="com.liferay.roles" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="resourceTypePermissionId" type="long" primary="true" />
-
-		<!-- Audit fields -->
-
-		<column name="companyId" type="long" />
-
-		<!-- Other fields -->
-
-		<column name="groupId" type="long" />
-		<column name="name" type="String" />
-		<column name="roleId" type="long" />
-		<column name="actionIds" type="long" />
-
-		<!-- Finder methods -->
-
-		<finder name="RoleId" return-type="Collection">
-			<finder-column name="roleId" />
-		</finder>
-		<finder name="C_N_R" return-type="Collection">
-			<finder-column name="companyId" />
-			<finder-column name="name" />
-			<finder-column name="roleId" />
-		</finder>
-		<finder name="C_G_N_R" return-type="ResourceTypePermission" unique="true">
-			<finder-column name="companyId" />
-			<finder-column name="groupId" />
-			<finder-column name="name" />
-			<finder-column name="roleId" />
-		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ResourceAction" />
-	</entity>
-	<entity name="Role" uuid="true" local-service="true" remote-service="true">
-
-		<!-- PK fields -->
-
-		<column name="roleId" type="long" primary="true" accessor="true" />
+		<column accessor="true" name="roleId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
@@ -2130,17 +2151,16 @@
 
 		<column name="classNameId" type="long" />
 		<column name="classPK" type="long" />
-		<column name="name" type="String" accessor="true" />
-		<column name="title" type="String" accessor="true" localized="true" />
-		<column name="description" type="String" localized="true" />
+		<column accessor="true" name="name" type="String" />
+		<column accessor="true" localized="true" name="title" type="String" />
+		<column localized="true" name="description" type="String" />
 		<column name="type" type="int" />
 		<column name="subtype" type="String" />
-		<column name="lastPublishDate" type="Date" />
 
 		<!-- Relationships -->
 
-		<column name="groups" type="Collection" entity="Group" mapping-table="Groups_Roles" />
-		<column name="users" type="Collection" entity="User" mapping-table="Users_Roles" />
+		<column entity="Group" mapping-table="Groups_Roles" name="groups" type="Collection" />
+		<column entity="User" mapping-table="Users_Roles" name="users" type="Collection" />
 
 		<!-- Order -->
 
@@ -2164,45 +2184,33 @@
 		</finder>
 		<finder name="C_N" return-type="Role" unique="true">
 			<finder-column name="companyId" />
-			<finder-column name="name" case-sensitive="false" />
+			<finder-column case-sensitive="false" name="name" />
 		</finder>
 		<finder name="C_T" return-type="Collection">
 			<finder-column name="companyId" />
-			<finder-column name="type" arrayable-operator="OR" />
+			<finder-column arrayable-operator="OR" name="type" />
 		</finder>
 		<finder name="T_S" return-type="Collection">
 			<finder-column name="type" />
 			<finder-column name="subtype" />
 		</finder>
-		<finder name="C_C_C" return-type="Role" unique="true">
+		<finder name="C_C_C" return-type="Collection" unique="true">
 			<finder-column name="companyId" />
 			<finder-column name="classNameId" />
-			<finder-column name="classPK" />
+			<finder-column arrayable-operator="OR" name="classPK" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="Company" />
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="Layout" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="ResourceAction" />
-		<reference package-path="com.liferay.portal" entity="ResourceBlock" />
-		<reference package-path="com.liferay.portal" entity="ResourceBlockPermission" />
-		<reference package-path="com.liferay.portal" entity="ResourcePermission" />
-		<reference package-path="com.liferay.portal" entity="ResourceTypePermission" />
-		<reference package-path="com.liferay.portal" entity="Team" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portal" entity="UserGroupGroupRole" />
-		<reference package-path="com.liferay.portal" entity="UserGroupRole" />
-		<reference package-path="com.liferay.portlet.expando" entity="ExpandoRow" />
+		<finder name="C_C_C_T" return-type="Collection" unique="true">
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
+			<finder-column arrayable-operator="OR" name="classPK" />
+			<finder-column name="type" />
+		</finder>
 	</entity>
-	<entity name="ServiceComponent" local-service="true" remote-service="false">
+	<entity local-service="true" name="ServiceComponent" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="serviceComponentId" type="long" primary="true" />
+		<column name="serviceComponentId" primary="true" type="long" />
 
 		<!-- Other fields -->
 
@@ -2228,11 +2236,11 @@
 			<finder-column name="buildNumber" />
 		</finder>
 	</entity>
-	<entity name="Subscription" local-service="true" remote-service="false">
+	<entity deprecated="true" local-service="true" name="Subscription" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="subscriptionId" type="long" primary="true" />
+		<column name="subscriptionId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -2274,21 +2282,14 @@
 			<finder-column name="companyId" />
 			<finder-column name="userId" />
 			<finder-column name="classNameId" />
-			<finder-column name="classPK" arrayable-operator="OR" />
+			<finder-column arrayable-operator="OR" name="classPK" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetEntry" />
-		<reference package-path="com.liferay.portlet.messageboards" entity="MBThread" />
 	</entity>
-	<entity name="SystemEvent" local-service="true" remote-service="false">
+	<entity change-tracking-enabled="true" local-service="true" name="SystemEvent" remote-service="false" uad-dir-path="../modules/apps/portal/portal-uad/src/main/java" uad-package-path="com.liferay.portal">
 
 		<!-- PK fields -->
 
-		<column name="systemEventId" type="long" primary="true" accessor="true" />
+		<column accessor="true" name="systemEventId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -2298,7 +2299,7 @@
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 
 		<!-- Other fields -->
@@ -2338,38 +2339,32 @@
 			<finder-column name="classPK" />
 			<finder-column name="type" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Company" />
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="Team" uuid="true" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" local-service="true" name="Team" remote-service="true" uad-application-name="Site Teams" uad-dir-path="../modules/apps/site/site-teams-uad/src/main/java" uad-package-path="com.liferay.site.teams" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="teamId" type="long" primary="true" accessor="true" />
+		<column accessor="true" name="teamId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
 		<!-- Other fields -->
 
 		<column name="groupId" type="long" />
-		<column name="name" type="String" accessor="true" />
+		<column accessor="true" name="name" type="String" />
 		<column name="description" type="String" />
 		<column name="lastPublishDate" type="Date" />
 
 		<!-- Relationships -->
 
-		<column name="users" type="Collection" entity="User" mapping-table="Users_Teams" />
-		<column name="userGroups" type="Collection" entity="UserGroup" mapping-table="UserGroups_Teams" />
+		<column entity="User" mapping-table="Users_Teams" name="users" type="Collection" />
+		<column entity="UserGroup" mapping-table="UserGroups_Teams" name="userGroups" type="Collection" />
 
 		<!-- Order -->
 
@@ -2379,6 +2374,9 @@
 
 		<!-- Finder methods -->
 
+		<finder name="CompanyId" return-type="Collection">
+			<finder-column name="companyId" />
+		</finder>
 		<finder name="GroupId" return-type="Collection">
 			<finder-column name="groupId" />
 		</finder>
@@ -2386,26 +2384,14 @@
 			<finder-column name="groupId" />
 			<finder-column name="name" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="Role" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portal" entity="UserGroup" />
 	</entity>
-	<entity name="Theme" local-service="true" remote-service="true" tx-manager="none">
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="LayoutTemplate" />
-		<reference package-path="com.liferay.portal" entity="PluginSetting" />
+	<entity local-service="true" name="Theme" remote-service="true" tx-manager="none">
 	</entity>
-	<entity name="Ticket" local-service="true" remote-service="false">
+	<entity local-service="true" name="Ticket" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="ticketId" type="long" primary="true" />
+		<column name="ticketId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -2432,21 +2418,28 @@
 		<finder name="Key" return-type="Ticket">
 			<finder-column name="key" />
 		</finder>
+		<finder name="C_C_C" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
+			<finder-column name="classPK" />
+		</finder>
 		<finder name="C_C_T" return-type="Collection">
 			<finder-column name="classNameId" />
 			<finder-column name="classPK" />
 			<finder-column name="type" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
+		<finder name="C_C_C_T" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
+			<finder-column name="classPK" />
+			<finder-column name="type" />
+		</finder>
 	</entity>
-	<entity name="User" uuid="true" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" external-reference-code="true" local-service="true" name="User" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="userId" type="long" primary="true" />
+		<column name="userId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -2458,17 +2451,18 @@
 
 		<column name="defaultUser" type="boolean" />
 		<column name="contactId" type="long" />
-		<column name="password" type="String" json-enabled="false" />
-		<column name="passwordEncrypted" type="boolean" json-enabled="false" />
-		<column name="passwordReset" type="boolean" json-enabled="false" />
-		<column name="passwordModifiedDate" type="Date" json-enabled="false" />
-		<column name="digest" type="String" json-enabled="false" />
+		<column json-enabled="false" name="password" type="String" />
+		<column json-enabled="false" name="passwordEncrypted" type="boolean" />
+		<column json-enabled="false" name="passwordReset" type="boolean" />
+		<column json-enabled="false" name="passwordModifiedDate" type="Date" />
+		<column json-enabled="false" name="digest" type="String" />
 		<column name="reminderQueryQuestion" type="String" />
 		<column name="reminderQueryAnswer" type="String" />
 		<column name="graceLoginCount" type="int" />
 		<column name="screenName" type="String" />
 		<column name="emailAddress" type="String" />
 		<column name="facebookId" type="long" />
+		<column name="googleUserId" type="String" />
 		<column name="ldapServerId" type="long" />
 		<column name="openId" type="String" />
 		<column name="portraitId" type="long" />
@@ -2490,20 +2484,19 @@
 		<column name="lockoutDate" type="Date" />
 		<column name="agreedToTermsOfUse" type="boolean" />
 		<column name="emailAddressVerified" type="boolean" />
-		<column name="lastPublishDate" type="Date" />
 		<column name="status" type="int" />
 
 		<!-- Relationships -->
 
-		<column name="groups" type="Collection" entity="Group" mapping-table="Users_Groups" />
-		<column name="orgs" type="Collection" entity="Organization" mapping-table="Users_Orgs" />
-		<column name="roles" type="Collection" entity="Role" mapping-table="Users_Roles" />
-		<column name="teams" type="Collection" entity="Team" mapping-table="Users_Teams" />
-		<column name="userGroups" type="Collection" entity="UserGroup" mapping-table="Users_UserGroups" />
+		<column entity="Group" mapping-table="Users_Groups" name="groups" type="Collection" />
+		<column entity="Organization" mapping-table="Users_Orgs" name="orgs" type="Collection" />
+		<column entity="Role" mapping-table="Users_Roles" name="roles" type="Collection" />
+		<column entity="Team" mapping-table="Users_Teams" name="teams" type="Collection" />
+		<column entity="UserGroup" mapping-table="Users_UserGroups" name="userGroups" type="Collection" />
 
 		<!-- Finder methods -->
 
-		<finder name="CompanyId" return-type="Collection">
+		<finder name="CompanyId" return-type="Collection" where="defaultUser = [$FALSE$]">
 			<finder-column name="companyId" />
 		</finder>
 		<finder name="ContactId" return-type="User" unique="true">
@@ -2515,15 +2508,19 @@
 		<finder name="PortraitId" return-type="User">
 			<finder-column name="portraitId" />
 		</finder>
+		<finder db-index="false" name="GtU_C" return-type="Collection" where="defaultUser = [$FALSE$]">
+			<finder-column comparator="&gt;" name="userId" />
+			<finder-column name="companyId" />
+		</finder>
 		<finder name="C_U" return-type="User" unique="true">
 			<finder-column name="companyId" />
 			<finder-column name="userId" />
 		</finder>
-		<finder name="C_CD" return-type="Collection">
+		<finder name="C_CD" return-type="Collection" where="defaultUser = [$FALSE$]">
 			<finder-column name="companyId" />
 			<finder-column name="createDate" />
 		</finder>
-		<finder name="C_MD" return-type="Collection">
+		<finder name="C_MD" return-type="Collection" where="defaultUser = [$FALSE$]">
 			<finder-column name="companyId" />
 			<finder-column name="modifiedDate" />
 		</finder>
@@ -2543,15 +2540,19 @@
 			<finder-column name="companyId" />
 			<finder-column name="facebookId" />
 		</finder>
+		<finder name="C_GUID" return-type="User">
+			<finder-column name="companyId" />
+			<finder-column name="googleUserId" />
+		</finder>
 		<finder name="C_O" return-type="User">
 			<finder-column name="companyId" />
 			<finder-column name="openId" />
 		</finder>
-		<finder name="C_S" return-type="Collection">
+		<finder name="C_S" return-type="Collection" where="defaultUser = [$FALSE$]">
 			<finder-column name="companyId" />
 			<finder-column name="status" />
 		</finder>
-		<finder name="C_CD_MD" return-type="Collection">
+		<finder name="C_CD_MD" return-type="Collection" where="defaultUser = [$FALSE$]">
 			<finder-column name="companyId" />
 			<finder-column name="createDate" />
 			<finder-column name="modifiedDate" />
@@ -2561,72 +2562,33 @@
 			<finder-column name="defaultUser" />
 			<finder-column name="status" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.mail" entity="Mail" />
-		<reference package-path="com.liferay.portal" entity="BrowserTracker" />
-		<reference package-path="com.liferay.portal" entity="Company" />
-		<reference package-path="com.liferay.portal" entity="Contact" />
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="Image" />
-		<reference package-path="com.liferay.portal" entity="Layout" />
-		<reference package-path="com.liferay.portal" entity="MembershipRequest" />
-		<reference package-path="com.liferay.portal" entity="Organization" />
-		<reference package-path="com.liferay.portal" entity="PasswordPolicy" />
-		<reference package-path="com.liferay.portal" entity="PasswordPolicyRel" />
-		<reference package-path="com.liferay.portal" entity="PasswordTracker" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="Role" />
-		<reference package-path="com.liferay.portal" entity="Subscription" />
-		<reference package-path="com.liferay.portal" entity="Team" />
-		<reference package-path="com.liferay.portal" entity="Ticket" />
-		<reference package-path="com.liferay.portal" entity="UserGroup" />
-		<reference package-path="com.liferay.portal" entity="UserGroupRole" />
-		<reference package-path="com.liferay.portal" entity="UserIdMapper" />
-		<reference package-path="com.liferay.portal" entity="WorkflowInstanceLink" />
-		<reference package-path="com.liferay.portlet.announcements" entity="AnnouncementsDelivery" />
-		<reference package-path="com.liferay.portlet.asset" entity="AssetEntry" />
-		<reference package-path="com.liferay.portlet.blogs" entity="BlogsStatsUser" />
-		<reference package-path="com.liferay.portlet.documentlibrary" entity="DLFileEntry" />
-		<reference package-path="com.liferay.portlet.documentlibrary" entity="DLFileRank" />
-		<reference package-path="com.liferay.portlet.expando" entity="ExpandoRow" />
-		<reference package-path="com.liferay.portlet.messageboards" entity="MBBan" />
-		<reference package-path="com.liferay.portlet.messageboards" entity="MBMessage" />
-		<reference package-path="com.liferay.portlet.messageboards" entity="MBStatsUser" />
-		<reference package-path="com.liferay.portlet.messageboards" entity="MBThreadFlag" />
-		<reference package-path="com.liferay.portlet.ratings" entity="RatingsStats" />
-		<reference package-path="com.liferay.portlet.social" entity="SocialActivity" />
-		<reference package-path="com.liferay.portlet.social" entity="SocialRelation" />
-		<reference package-path="com.liferay.portlet.social" entity="SocialRequest" />
 	</entity>
-	<entity name="UserGroup" uuid="true" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" external-reference-code="true" local-service="true" name="UserGroup" remote-service="true" uad-application-name="User Groups Admin" uad-dir-path="../modules/apps/user-groups-admin/user-groups-admin-uad/src/main/java" uad-package-path="com.liferay.user.groups.admin" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="userGroupId" type="long" primary="true" />
+		<column name="userGroupId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
 		<!-- Other fields -->
 
 		<column name="parentUserGroupId" type="long" />
-		<column name="name" type="String" accessor="true" />
+		<column accessor="true" name="name" type="String" />
 		<column name="description" type="String" />
 		<column name="addedByLDAPImport" type="boolean" />
-		<column name="lastPublishDate" type="Date" />
 
 		<!-- Relationships -->
 
-		<column name="groups" type="Collection" entity="Group" mapping-table="Groups_UserGroups" />
-		<column name="teams" type="Collection" entity="Team" mapping-table="UserGroups_Teams" />
-		<column name="users" type="Collection" entity="User" mapping-table="Users_UserGroups" />
+		<column entity="Group" mapping-table="Groups_UserGroups" name="groups" type="Collection" />
+		<column entity="Team" mapping-table="UserGroups_Teams" name="teams" type="Collection" />
+		<column entity="User" mapping-table="Users_UserGroups" name="users" type="Collection" />
 
 		<!-- Order -->
 
@@ -2645,28 +2607,33 @@
 		</finder>
 		<finder name="C_N" return-type="UserGroup" unique="true">
 			<finder-column name="companyId" />
-			<finder-column name="name" />
+			<finder-column case-sensitive="false" name="name" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="Layout" />
-		<reference package-path="com.liferay.portal" entity="Resource" />
-		<reference package-path="com.liferay.portal" entity="Team" />
-		<reference package-path="com.liferay.portal" entity="User" />
-		<reference package-path="com.liferay.portal" entity="UserGroupGroupRole" />
-		<reference package-path="com.liferay.portlet.expando" entity="ExpandoRow" />
-		<reference package-path="com.liferay.portlet.exportimport" entity="ExportImport" />
-		<reference package-path="com.liferay.portlet.exportimport" entity="ExportImportConfiguration" />
+		<finder name="C_LikeN" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column case-sensitive="false" comparator="LIKE" name="name" />
+		</finder>
+		<finder db-index="false" name="GtU_C_P" return-type="Collection">
+			<finder-column comparator="&gt;" name="userGroupId" />
+			<finder-column name="companyId" />
+			<finder-column name="parentUserGroupId" />
+		</finder>
 	</entity>
-	<entity name="UserGroupGroupRole" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" local-service="true" name="UserGroupGroupRole" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="userGroupId" type="long" primary="true" />
-		<column name="groupId" type="long" primary="true" />
-		<column name="roleId" type="long" primary="true" />
+		<column name="userGroupGroupRoleId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="userGroupId" type="long" />
+		<column name="groupId" type="long" />
+		<column name="roleId" type="long" />
 
 		<!-- Finder methods -->
 
@@ -2687,19 +2654,27 @@
 			<finder-column name="groupId" />
 			<finder-column name="roleId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Role" />
-		<reference package-path="com.liferay.portal" entity="UserGroup" />
+		<finder name="U_G_R" return-type="UserGroupGroupRole" unique="true">
+			<finder-column name="userGroupId" />
+			<finder-column name="groupId" />
+			<finder-column name="roleId" />
+		</finder>
 	</entity>
-	<entity name="UserGroupRole" local-service="true" remote-service="true">
+	<entity change-tracking-enabled="true" local-service="true" name="UserGroupRole" remote-service="true">
 
 		<!-- PK fields -->
 
-		<column name="userId" type="long" primary="true" />
-		<column name="groupId" type="long" primary="true" accessor="true" />
-		<column name="roleId" type="long" primary="true" accessor="true" />
+		<column name="userGroupRoleId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column accessor="true" name="userId" type="long" />
+		<column accessor="true" name="groupId" type="long" />
+		<column accessor="true" name="roleId" type="long" />
 
 		<!-- Finder methods -->
 
@@ -2720,21 +2695,21 @@
 			<finder-column name="groupId" />
 			<finder-column name="roleId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="Role" />
-		<reference package-path="com.liferay.portal" entity="User" />
+		<finder name="U_G_R" return-type="UserGroupRole" unique="true">
+			<finder-column name="userId" />
+			<finder-column name="groupId" />
+			<finder-column name="roleId" />
+		</finder>
 	</entity>
-	<entity name="UserIdMapper" local-service="true" remote-service="false">
+	<entity local-service="true" name="UserIdMapper" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="userIdMapperId" type="long" primary="true" />
+		<column name="userIdMapperId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
+		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
 
 		<!-- Other fields -->
@@ -2757,16 +2732,16 @@
 			<finder-column name="externalUserId" />
 		</finder>
 	</entity>
-	<entity name="UserNotificationDelivery" local-service="true" remote-service="false">
+	<entity local-service="true" name="UserNotificationDelivery" remote-service="false" uad-application-name="Notifications" uad-auto-delete="true" uad-dir-path="../modules/apps/notifications/notifications-uad/src/main/java" uad-package-path="com.liferay.notifications">
 
 		<!-- PK fields -->
 
-		<column name="userNotificationDeliveryId" type="long" primary="true" />
+		<column name="userNotificationDeliveryId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
 		<column name="companyId" type="long" />
-		<column name="userId" type="long" />
+		<column name="userId" type="long" uad-anonymize-field-name="userId" />
 
 		<!-- Other fields -->
 
@@ -2788,21 +2763,17 @@
 			<finder-column name="notificationType" />
 			<finder-column name="deliveryType" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="UserNotificationEvent" uuid="true" local-service="true" remote-service="false">
+	<entity local-service="true" name="UserNotificationEvent" remote-service="false" uad-application-name="Notifications" uad-auto-delete="true" uad-dir-path="../modules/apps/notifications/notifications-uad/src/main/java" uad-package-path="com.liferay.notifications" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="userNotificationEventId" type="long" primary="true" />
+		<column name="userNotificationEventId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
 		<column name="companyId" type="long" />
-		<column name="userId" type="long" />
+		<column name="userId" type="long" uad-anonymize-field-name="userId" />
 
 		<!-- Other fields -->
 
@@ -2826,6 +2797,9 @@
 		<finder name="UserId" return-type="Collection">
 			<finder-column name="userId" />
 		</finder>
+		<finder name="Type" return-type="Collection">
+			<finder-column name="type" />
+		</finder>
 		<finder name="U_DT" return-type="Collection">
 			<finder-column name="userId" />
 			<finder-column name="deliveryType" />
@@ -2848,43 +2822,76 @@
 			<finder-column name="deliveryType" />
 			<finder-column name="archived" />
 		</finder>
-		<finder name="U_D_A" return-type="Collection">
+		<finder name="U_D_AR" return-type="Collection">
 			<finder-column name="userId" />
 			<finder-column name="delivered" />
 			<finder-column name="actionRequired" />
 		</finder>
-		<finder name="U_A_A" return-type="Collection">
+		<finder name="U_D_A" return-type="Collection">
+			<finder-column name="userId" />
+			<finder-column name="delivered" />
+			<finder-column name="archived" />
+		</finder>
+		<finder name="U_AR_A" return-type="Collection">
 			<finder-column name="userId" />
 			<finder-column name="actionRequired" />
 			<finder-column name="archived" />
+		</finder>
+		<finder name="U_T_DT_D" return-type="Collection">
+			<finder-column name="userId" />
+			<finder-column name="type" />
+			<finder-column name="deliveryType" />
+			<finder-column name="delivered" />
+		</finder>
+		<finder name="U_DT_D_AR" return-type="Collection">
+			<finder-column name="userId" />
+			<finder-column name="deliveryType" />
+			<finder-column name="delivered" />
+			<finder-column name="actionRequired" />
 		</finder>
 		<finder name="U_DT_D_A" return-type="Collection">
 			<finder-column name="userId" />
 			<finder-column name="deliveryType" />
 			<finder-column name="delivered" />
-			<finder-column name="actionRequired" />
+			<finder-column name="archived" />
 		</finder>
-		<finder name="U_DT_A_A" return-type="Collection">
+		<finder name="U_DT_AR_A" return-type="Collection">
 			<finder-column name="userId" />
 			<finder-column name="deliveryType" />
 			<finder-column name="actionRequired" />
 			<finder-column name="archived" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="User" />
+		<finder name="U_D_AR_A" return-type="Collection">
+			<finder-column name="userId" />
+			<finder-column name="delivered" />
+			<finder-column name="actionRequired" />
+			<finder-column name="archived" />
+		</finder>
+		<finder name="U_T_DT_D_A" return-type="Collection">
+			<finder-column name="userId" />
+			<finder-column name="type" />
+			<finder-column name="deliveryType" />
+			<finder-column name="delivered" />
+			<finder-column name="archived" />
+		</finder>
+		<finder name="U_DT_D_AR_A" return-type="Collection">
+			<finder-column name="userId" />
+			<finder-column name="deliveryType" />
+			<finder-column name="delivered" />
+			<finder-column name="actionRequired" />
+			<finder-column name="archived" />
+		</finder>
 	</entity>
-	<entity name="UserTracker" local-service="true" remote-service="false">
+	<entity local-service="true" name="UserTracker" remote-service="false" uad-application-name="Users Admin" uad-auto-delete="true" uad-dir-path="../modules/apps/users-admin/users-admin-uad/src/main/java" uad-package-path="com.liferay.users.admin">
 
 		<!-- PK fields -->
 
-		<column name="userTrackerId" type="long" primary="true" />
+		<column name="userTrackerId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
 		<column name="companyId" type="long" />
-		<column name="userId" type="long" />
+		<column name="userId" type="long" uad-anonymize-field-name="userId" />
 		<column name="modifiedDate" type="Date" />
 
 		<!-- Other fields -->
@@ -2905,16 +2912,16 @@
 		<finder name="SessionId" return-type="Collection">
 			<finder-column name="sessionId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="UserTrackerPath" />
 	</entity>
-	<entity name="UserTrackerPath" local-service="true" remote-service="false">
+	<entity local-service="true" name="UserTrackerPath" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="userTrackerPathId" type="long" primary="true" />
+		<column name="userTrackerPathId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
 
 		<!-- Other fields -->
 
@@ -2928,11 +2935,11 @@
 			<finder-column name="userTrackerId" />
 		</finder>
 	</entity>
-	<entity name="VirtualHost" local-service="true" remote-service="false">
+	<entity change-tracking-enabled="true" local-service="true" name="VirtualHost" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="virtualHostId" type="long" primary="true" />
+		<column name="virtualHostId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -2942,28 +2949,35 @@
 
 		<column name="layoutSetId" type="long" />
 		<column name="hostname" type="String" />
+		<column name="defaultVirtualHost" type="boolean" />
+		<column name="languageId" type="String" />
+
+		<!-- Order -->
+
+		<order by="desc">
+			<order-column name="virtualHostId" />
+		</order>
 
 		<!-- Finder methods -->
 
 		<finder name="Hostname" return-type="VirtualHost" unique="true">
 			<finder-column name="hostname" />
 		</finder>
-		<finder name="C_L" return-type="VirtualHost" unique="true">
+		<finder name="C_L" return-type="Collection">
 			<finder-column name="companyId" />
 			<finder-column name="layoutSetId" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="Company" />
-		<reference package-path="com.liferay.portal" entity="Group" />
-		<reference package-path="com.liferay.portal" entity="LayoutSet" />
+		<finder name="C_L_D" return-type="VirtualHost">
+			<finder-column name="companyId" />
+			<finder-column name="layoutSetId" />
+			<finder-column name="defaultVirtualHost" />
+		</finder>
 	</entity>
-	<entity name="WebDAVProps" local-service="true" remote-service="false">
+	<entity local-service="true" name="WebDAVProps" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="webDavPropsId" type="long" primary="true" />
+		<column name="webDavPropsId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -2983,16 +2997,12 @@
 			<finder-column name="classNameId" />
 			<finder-column name="classPK" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
 	</entity>
-	<entity name="Website" uuid="true" local-service="true" remote-service="true">
+	<entity local-service="true" name="Website" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
-		<column name="websiteId" type="long" primary="true" />
+		<column name="websiteId" primary="true" type="long" />
 
 		<!-- Audit fields -->
 
@@ -3040,18 +3050,12 @@
 			<finder-column name="classPK" />
 			<finder-column name="primary" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="ListType" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="WorkflowDefinitionLink" local-service="true" remote-service="false">
+	<entity change-tracking-enabled="true" local-service="true" name="WorkflowDefinitionLink" remote-service="false" uad-application-name="Portal Workflow" uad-dir-path="../modules/apps/portal-workflow/portal-workflow-uad/src/main/java" uad-package-path="com.liferay.portal.workflow">
 
 		<!-- PK fields -->
 
-		<column name="workflowDefinitionLinkId" type="long" primary="true" />
+		<column name="workflowDefinitionLinkId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -3061,7 +3065,7 @@
 
 		<column name="companyId" type="long" />
 		<column name="userId" type="long" />
-		<column name="userName" type="String" />
+		<column name="userName" type="String" uad-anonymize-field-name="fullName" />
 		<column name="createDate" type="Date" />
 		<column name="modifiedDate" type="Date" />
 
@@ -3089,10 +3093,21 @@
 			<finder-column name="companyId" />
 			<finder-column name="classNameId" />
 		</finder>
+		<finder name="G_C_CPK" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="companyId" />
+			<finder-column name="classPK" />
+		</finder>
 		<finder name="C_W_W" return-type="Collection">
 			<finder-column name="companyId" />
 			<finder-column name="workflowDefinitionName" />
 			<finder-column name="workflowDefinitionVersion" />
+		</finder>
+		<finder name="G_C_C_C" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
+			<finder-column name="classPK" />
 		</finder>
 		<finder name="G_C_C_C_T" return-type="WorkflowDefinitionLink">
 			<finder-column name="groupId" />
@@ -3101,18 +3116,12 @@
 			<finder-column name="classPK" />
 			<finder-column name="typePK" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="Subscription" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
-	<entity name="WorkflowInstanceLink" local-service="true" remote-service="false">
+	<entity change-tracking-enabled="true" local-service="true" name="WorkflowInstanceLink" remote-service="false">
 
 		<!-- PK fields -->
 
-		<column name="workflowInstanceLinkId" type="long" primary="true" />
+		<column name="workflowInstanceLinkId" primary="true" type="long" />
 
 		<!-- Group instance -->
 
@@ -3140,26 +3149,26 @@
 
 		<!-- Finder methods -->
 
+		<finder name="G_C_C" return-type="Collection">
+			<finder-column name="groupId" />
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
+		</finder>
 		<finder name="G_C_C_C" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="companyId" />
 			<finder-column name="classNameId" />
 			<finder-column name="classPK" />
 		</finder>
-
-		<!-- References -->
-
-		<reference package-path="com.liferay.portal" entity="ClassName" />
-		<reference package-path="com.liferay.portal" entity="Subscription" />
-		<reference package-path="com.liferay.portal" entity="User" />
 	</entity>
 	<exceptions>
-		<exception>AccountName</exception>
 		<exception>AddressCity</exception>
 		<exception>AddressStreet</exception>
 		<exception>AddressZip</exception>
+		<exception>AvailableLocale</exception>
 		<exception>CompanyMaxUsers</exception>
 		<exception>CompanyMx</exception>
+		<exception>CompanyName</exception>
 		<exception>CompanyVirtualHost</exception>
 		<exception>CompanyWebId</exception>
 		<exception>ContactBirthday</exception>
@@ -3170,6 +3179,8 @@
 		<exception>CountryIdd</exception>
 		<exception>CountryName</exception>
 		<exception>CountryNumber</exception>
+		<exception>DuplicateCountry</exception>
+		<exception>DuplicateGoogleUserId</exception>
 		<exception>DuplicateGroup</exception>
 		<exception>DuplicateOpenId</exception>
 		<exception>DuplicateOrganization</exception>
@@ -3181,13 +3192,14 @@
 		<exception>GroupFriendlyURL</exception>
 		<exception>GroupInheritContent</exception>
 		<exception>GroupKey</exception>
+		<exception>GroupName</exception>
 		<exception>GroupParent</exception>
+		<exception>ImageResolution</exception>
 		<exception>ImageType</exception>
 		<exception>InvalidRepository</exception>
 		<exception>LayoutBranchName</exception>
 		<exception>LayoutFriendlyURL</exception>
 		<exception>LayoutFriendlyURLs</exception>
-		<exception>LayoutHidden</exception>
 		<exception>LayoutName</exception>
 		<exception>LayoutParentLayoutId</exception>
 		<exception>LayoutPermission</exception>
@@ -3206,6 +3218,7 @@
 		<exception>PasswordPolicyName</exception>
 		<exception>PendingBackgroundTask</exception>
 		<exception>PhoneNumber</exception>
+		<exception>PhoneNumberExtension</exception>
 		<exception>PortletActive</exception>
 		<exception>PortletDefaultPreferences</exception>
 		<exception>PortletId</exception>

@@ -14,8 +14,8 @@
 
 package com.liferay.portlet;
 
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 
 import java.io.Serializable;
 
@@ -69,7 +69,7 @@ public class Preference implements Cloneable, Serializable {
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(6 + (_values.length * 2 - 1));
+		StringBundler sb = new StringBundler(6 + ((_values.length * 2) - 1));
 
 		sb.append("{name=");
 		sb.append(getName());

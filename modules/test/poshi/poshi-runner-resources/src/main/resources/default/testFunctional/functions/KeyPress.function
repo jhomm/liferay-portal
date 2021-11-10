@@ -1,0 +1,28 @@
+@default = "keyPress"
+definition {
+
+	function keyDown {
+		selenium.mouseOver();
+
+		selenium.keyDown();
+	}
+
+	function keyPress {
+		selenium.mouseOver();
+
+		selenium.keyPress();
+	}
+
+	function keyPressNoError {
+		selenium.mouseOver();
+
+		selenium.keyPress();
+	}
+
+	function keyUp {
+		selenium.mouseOver();
+
+		selenium.keyUp();
+	}
+
+}

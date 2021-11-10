@@ -1,0 +1,955 @@
+@component-name = "data-engine"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Data Engine";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONGroup.addGroup(groupName = "Test Site Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
+		}
+	}
+
+	@description = "This test validates adding, editing and deleting fields on the builder"
+	@priority = "5"
+	test AddEditAndDeleteFieldsOnStructure {
+		property portal.acceptance = "true";
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addFields(fieldNameList = "Text,Date,Numeric");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		for (var fieldList : list "Text,Date,Numeric") {
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "${fieldList}",
+				fieldFieldLabelEdit = "${fieldList} edited");
+
+			DataEngine.editFieldTip(
+				fieldFieldLabel = "${fieldList} edited",
+				fieldHelp = "Help text");
+		}
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		for (var fieldList : list "Text,Date,Numeric") {
+			DataEngine.viewField(
+				fieldFieldLabel = "${fieldList} edited",
+				fieldHelp = "Help text",
+				fieldName = "${fieldList}");
+		}
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		for (var fieldList : list "Text,Date,Numeric") {
+			DataEngine.delete(fieldFieldLabel = "${fieldList} edited");
+		}
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		for (var fieldList : list "Text,Date,Numeric") {
+			AssertElementNotPresent(
+				key_fieldFieldLabel = "${fieldList} edited",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+		}
+	}
+
+	@description = "This test ensures that the title displayed on the structures list is the title defined on the default language."
+	@priority = "4"
+	test CheckDefaultStructureTitleDisplayedOnStructureList {
+		var defaultStructureName = "WC Structure Title EN";
+		var defaultStructureName_pt = "WC Structure Title PT";
+		var key_urlAppend = "pt/group/test-site-name/~/control_panel/manage?p_p_id=com_liferay_journal_web_portlet_JournalPortlet&p_p_lifecycle=0&p_p_state=maximized&p_p_mode=view&_com_liferay_journal_web_portlet_JournalPortlet_mvcPath=%2Fview_ddm_structures.jsp";
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "${defaultStructureName}");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.addTranslations(localeList = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContentStructures.addName(structureName = "${defaultStructureName_pt}");
+
+		WebContentStructures.saveCP();
+
+		WebContentStructures.viewCP(structureName = "${defaultStructureName}");
+
+		Navigator.openWithAppendToBaseURL(urlAppend = "${key_urlAppend}");
+
+		AssertTextEquals(
+			key_columnName = "name",
+			key_tableEntry = "${defaultStructureName_pt}",
+			locator1 = "LexiconTable#TABLE_ENTRY_INFO",
+			value1 = "${defaultStructureName_pt}");
+	}
+
+	@description = "This test ensures that the user can click on the Locale Selector."
+	@priority = "4"
+	test CheckLanguageSelector {
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Title");
+
+		Click.clickNoMouseOver(locator1 = "Button#LOCALIZATION_GENERIC");
+
+		AssertElementPresent(locator1 = "WCD#WEB_CONTENT_TRANSLATION_SPAN_LANGUAGE_ENGLISH");
+	}
+
+	@description = "This test ensures that localization persists."
+	@priority = "4"
+	test CheckLocalizationOfFieldsUponLanguageChange {
+		var defaultStructureName = "WC Structure Title";
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "${defaultStructureName}");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text Test",
+			fieldName = "Text");
+
+		WebContentStructures.addTranslations(localeList = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Text Test",
+			fieldHelp = "Texto teste ajuda");
+
+		WebContentStructures.addName(structureName = "Nome da Estrutura WC");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Text Test",
+			label = "Texto Teste");
+
+		WebContentStructures.saveCP();
+
+		WebContentStructures.viewCP(
+			structureDescription = "WC Structure Description",
+			structureName = "${defaultStructureName}");
+
+		LexiconEntry.gotoEntry(rowEntry = "${defaultStructureName}");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Texto Teste",
+			fieldHelp = "Texto teste ajuda",
+			fieldName = "Text");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "Nome da Estrutura WC");
+	}
+
+	@description = "This test validates the creation and edition of localized fields as well as deletion of structure"
+	@priority = "5"
+	test CreateEditAndDeleteLocalizedStructure {
+		property portal.acceptance = "true";
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addFields(fieldNameList = "Text,Date,Numeric");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		WebContentStructures.addTranslations(localeList = "pt-BR,ca-ES,zh-CN,fr-FR");
+
+		for (var language : list "pt-BR,ca-ES,zh-CN,fr-FR") {
+			PortletEntry.changeLocale(locale = "${language}");
+
+			WebContentStructures.addName(structureName = "WC Structure Title - ${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Text",
+				fieldFieldLabelEdit = "Text - ${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Date",
+				fieldFieldLabelEdit = "Date - ${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Numeric",
+				fieldFieldLabelEdit = "Numeric - ${language}");
+		}
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Date",
+			fieldName = "Date");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric");
+
+		for (var language : list "pt-BR,ca-ES,zh-CN,fr-FR") {
+			PortletEntry.changeLocale(locale = "${language}");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Text - ${language}",
+				fieldName = "Text");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Date - ${language}",
+				fieldName = "Date");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Numeric - ${language}",
+				fieldName = "Numeric");
+		}
+
+		PortletEntry.changeLocale(locale = "en-US");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Edited Text");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Date",
+			fieldFieldLabelEdit = "Edited Date");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Edited Numeric");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Text",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Date",
+			fieldName = "Date");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Numeric",
+			fieldName = "Numeric");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Text - pt-BR",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Date - pt-BR",
+			fieldName = "Date");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Numeric - pt-BR",
+			fieldName = "Numeric");
+
+		for (var language : list "pt-BR,ca-ES,zh-CN,fr-FR") {
+			PortletEntry.changeLocale(locale = "${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Text - ${language}",
+				fieldFieldLabelEdit = "Edited Text - ${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Date - ${language}",
+				fieldFieldLabelEdit = "Edited Date - ${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Numeric - ${language}",
+				fieldFieldLabelEdit = "Edited Numeric - ${language}");
+		}
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Text",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Date",
+			fieldName = "Date");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Numeric",
+			fieldName = "Numeric");
+
+		for (var language : list "pt-BR,ca-ES,zh-CN,fr-FR") {
+			PortletEntry.changeLocale(locale = "${language}");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Edited Text - ${language}",
+				fieldName = "Text");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Edited Date - ${language}",
+				fieldName = "Date");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Edited Numeric - ${language}",
+				fieldName = "Numeric");
+		}
+
+		WebContentStructures.saveCP();
+
+		WebContentStructures.deleteCP(structureName = "WC Structure Title");
+
+		AssertElementNotPresent(
+			key_ddlDataDefinitionName = "WC Structure Title",
+			locator1 = "DDMSelectStructure#DDM_STRUCTURE_TABLE_NAME_LINK");
+	}
+
+	@description = "This test ensures the default title is carried to a locale, until it gets translated."
+	@priority = "4"
+	test DefaultTitleIsDisplayedUponLocaleChange {
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Title");
+
+		WebContentStructures.addTranslations(localeList = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "WC Structure Title");
+	}
+
+	@description = "This test ensures that translating the title for another locale does not changes the default title."
+	@priority = "4"
+	test DefaultTitlePersistsAfterTranslatingForAnotherLocale {
+		var defaultStructureName = "WC Structure Title";
+
+		WebContentStructures.addCP(structureName = "${defaultStructureName}");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Text",
+			fieldHelp = "Text Help Text");
+
+		WebContentStructures.addTranslations(localeList = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContentStructures.addName(structureName = "Nome da Estrutura WC");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Texto");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Texto",
+			fieldHelp = "Texto de ajuda");
+
+		WebContentStructures.saveCP();
+
+		WebContentStructures.viewCP(structureName = "${defaultStructureName}");
+
+		WebContentNavigator.gotoEditStructure(structureName = "${defaultStructureName}");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "${defaultStructureName}");
+	}
+
+	@description = "This test ensures that the translation of the title is not carried to the default language."
+	@priority = "4"
+	test DefaultTitlePersistsUponFirstlyTranslatingForAnotherLocale {
+		property portal.acceptance = "false";
+
+		var defaultStructureName = "WC Structure Title";
+
+		LexiconEntry.gotoAdd();
+
+		AssertVisible(locator1 = "Sidebar#FORM_BUILDER");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Lbltest",
+			fieldName = "Text");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Lbltest",
+			fieldHelp = "Help Text test");
+
+		WebContentStructures.addTranslations(localeList = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Lbltest",
+			fieldHelp = "Texto de ajuda");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Lbltest",
+			label = "Lbltest pt");
+
+		WebContentStructures.addName(structureName = "Título da Estrutura WC");
+
+		PortletEntry.changeLocale(locale = "en-US");
+
+		WebContentStructures.addName(structureName = "${defaultStructureName}");
+
+		WebContentStructures.saveCP();
+
+		WebContentStructures.viewCP(structureName = "${defaultStructureName}");
+
+		LexiconEntry.gotoEntry(rowEntry = "${defaultStructureName}");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "Título da Estrutura WC");
+	}
+
+	@description = "This test ensures that the translation of a field labels are carried when duplicating the field."
+	@priority = "4"
+	test DuplicateTranslatedField {
+		var defaultStructureName = "WC Structure Title";
+
+		WebContentStructures.addCP(structureName = "${defaultStructureName}");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.addTranslations(localeList = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContentStructures.addName(structureName = "Nome da Estrutura WC");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Texto");
+
+		DataEngine.duplicate(fieldFieldLabel = "Texto");
+
+		WebContentStructures.saveCP();
+
+		WebContentStructures.viewCP(structureName = "${defaultStructureName}");
+
+		WebContentNavigator.gotoEditStructure(structureName = "${defaultStructureName}");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Texto",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Copy of Texto",
+			fieldName = "Text");
+	}
+
+	@description = "This test validates the creation and edition of localized fields as well as deletion of structure in different instance language"
+	@priority = "5"
+	test EditAndDeleteWithDifferentInstanceLanguage {
+		property portal.acceptance = "true";
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Control Panel",
+			portlet = "Instance Settings");
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Localization",
+			configurationName = "Language",
+			configurationScope = "Virtual Instance Scope");
+
+		PortalSettings.configureCurrentLanguagesCP(defaultPortalLanguage = "Portuguese (Brazil)");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		ProductMenu.gotoPortlet(
+			category = "Content & Data",
+			portlet = "Web Content");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		AssertElementPresent(
+			key_locale = "pt-BR",
+			locator1 = "Translation#CURRENT_LOCALE");
+
+		DataEngine.addFields(fieldNameList = "Text,Date,Numeric");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		WebContentStructures.addTranslations(localeList = "en-US,ca-ES,zh-CN,fr-FR");
+
+		for (var language : list "en-US,ca-ES,zh-CN,fr-FR") {
+			PortletEntry.changeLocale(locale = "${language}");
+
+			WebContentStructures.addName(structureName = "WC Structure Title - ${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Text",
+				fieldFieldLabelEdit = "Text - ${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Date",
+				fieldFieldLabelEdit = "Date - ${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Numeric",
+				fieldFieldLabelEdit = "Numeric - ${language}");
+		}
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title - en-US");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Date",
+			fieldName = "Date");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric");
+
+		for (var language : list "en-US,ca-ES,zh-CN,fr-FR") {
+			PortletEntry.changeLocale(locale = "${language}");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Text - ${language}",
+				fieldName = "Text");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Date - ${language}",
+				fieldName = "Date");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Numeric - ${language}",
+				fieldName = "Numeric");
+		}
+
+		WebContentStructures.addTranslations(localeList = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Edited Text");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Date",
+			fieldFieldLabelEdit = "Edited Date");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Edited Numeric");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title - en-US");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Text",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Date",
+			fieldName = "Date");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Numeric",
+			fieldName = "Numeric");
+
+		PortletEntry.changeLocale(locale = "en-US");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Text - en-US",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Date - en-US",
+			fieldName = "Date");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Numeric - en-US",
+			fieldName = "Numeric");
+
+		for (var language : list "en-US,ca-ES,zh-CN,fr-FR") {
+			PortletEntry.changeLocale(locale = "${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Text - ${language}",
+				fieldFieldLabelEdit = "Edited Text - ${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Date - ${language}",
+				fieldFieldLabelEdit = "Edited Date - ${language}");
+
+			DataEngine.editFieldLabel(
+				fieldFieldLabel = "Numeric - ${language}",
+				fieldFieldLabelEdit = "Edited Numeric - ${language}");
+		}
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title - en-US");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Text",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Date",
+			fieldName = "Date");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Edited Numeric",
+			fieldName = "Numeric");
+
+		for (var language : list "en-US,ca-ES,zh-CN,fr-FR") {
+			PortletEntry.changeLocale(locale = "${language}");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Edited Text - ${language}",
+				fieldName = "Text");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Edited Date - ${language}",
+				fieldName = "Date");
+
+			DataEngine.viewField(
+				fieldFieldLabel = "Edited Numeric - ${language}",
+				fieldName = "Numeric");
+		}
+
+		WebContentStructures.saveCP();
+
+		WebContentStructures.deleteCP(structureName = "WC Structure Title - en-US");
+
+		AssertElementNotPresent(
+			key_ddlDataDefinitionName = "WC Structure Title - en-US",
+			locator1 = "DDMSelectStructure#DDM_STRUCTURE_TABLE_NAME_LINK");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Control Panel",
+			portlet = "Instance Settings");
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Localization",
+			configurationName = "Language",
+			configurationScope = "Virtual Instance Scope");
+
+		PortalSettings.configureCurrentLanguagesCP(defaultPortalLanguage = "English (United States)");
+	}
+
+	@description = "This test ensures that the translations for all fields in a structure persists for each field."
+	@priority = "5"
+	test TranslateStructureWithAllFields {
+		property portal.acceptance = "true";
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addFields(fieldNameList = "Web Content,Date,Rich Text,Single Selection,Grid,Select from List,Numeric,Link to Page,Image,Upload,Color,Text,Multiple Selection,Geolocation,Separator");
+
+		var index = "1";
+
+		for (var optionValue : list "Value 1,Value 2") {
+			DataEngine.addFieldOption(
+				fieldFieldLabel = "Multiple Selection",
+				index = "${index}",
+				optionValue = "${optionValue}");
+			var index = ${index} + 1;
+		}
+
+		WebContentStructures.addTranslations(localeList = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContentStructures.addName(structureName = "WC Título da Estrutura");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Text",
+			label = "Texto");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Link to Page",
+			label = "Link para Página");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Numeric",
+			label = "Numérico");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Web Content",
+			label = "Conteúdo Web");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Separator",
+			label = "Separador");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Select from List",
+			label = "Selecionar da Lista");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Image",
+			label = "Imagem");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Rich Text",
+			label = "Texto Completo");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Geolocation",
+			label = "Localização Terrestre");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Single Selection",
+			label = "Seleção Única");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Grid",
+			label = "Grade");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Multiple Selection",
+			label = "Seleção Múltipla");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Date",
+			label = "Data");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Upload",
+			label = "Enviar");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Color",
+			label = "Cor");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		for (var key_fieldFieldLabel : list "Conteúdo Web,Numérico,Data,Enviar,Imagem,Texto Completo,Cor,Seleção Única,Seleção Múltipla,Texto,Grade,Localização Terrestre,Selecionar da Lista,Separador,Link para Página") {
+			AssertTextEquals(
+				key_fieldFieldLabel = "${key_fieldFieldLabel}",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL",
+				value1 = "${key_fieldFieldLabel}");
+		}
+	}
+
+	@description = "This test ensures that user cannot save a structure without default title."
+	@priority = "4"
+	test TranslateStructureWithoutDefaultTitle {
+		LexiconEntry.gotoAdd();
+
+		AssertVisible(locator1 = "Sidebar#FORM_BUILDER");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.addTranslations(localeList = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Texto");
+
+		WebContentStructures.addName(structureName = "Nome da Estrutura WC");
+
+		PortletEntry.changeLocale(locale = "en-US");
+
+		Button.clickSave();
+
+		AssertElementPresent(locator1 = "TextInput#REQUIRED_ALERT");
+
+		Alert.viewErrorMessage(errorMessage = "Please enter a valid title for the default language: en-US");
+	}
+
+	@description = "This test ensures that translations persists and do not interfere with each other."
+	@priority = "5"
+	test TranslationDoesNotInterfereWithAnother {
+		var defaultStructureName = "WC Structure Title";
+		var fieldLabelDefault = "Text Test";
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "${defaultStructureName}");
+
+		DataEngine.addField(
+			fieldFieldLabel = "${fieldLabelDefault}",
+			fieldName = "Text");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "${fieldLabelDefault}",
+			fieldHelp = "Help Text test");
+
+		WebContentStructures.addTranslations(localeList = "pt-BR,de-DE");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "${fieldLabelDefault}",
+			fieldHelp = "Texto teste ajuda");
+
+		WebContentStructures.addName(structureName = "Nome da Estrutura WC");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "${fieldLabelDefault}",
+			label = "Texto Teste");
+
+		PortletEntry.changeLocale(locale = "de-DE");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "${fieldLabelDefault}",
+			fieldHelp = "Text test help German");
+
+		WebContentStructures.addName(structureName = "${defaultStructureName} German");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "${fieldLabelDefault}",
+			label = "Text test German");
+
+		WebContentStructures.saveCP();
+
+		WebContentStructures.viewCP(
+			structureDescription = "WC Structure Description",
+			structureName = "${defaultStructureName}");
+
+		LexiconEntry.gotoEntry(rowEntry = "${defaultStructureName}");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Texto Teste",
+			fieldHelp = "Texto teste ajuda",
+			fieldName = "Text");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Texto Teste",
+			fieldHelp = "Texto teste ajuda editado");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Texto Teste",
+			label = "Texto Teste editado");
+
+		WebContentStructures.saveCP();
+
+		WebContentStructures.viewCP(
+			structureDescription = "WC Structure Description",
+			structureName = "${defaultStructureName}");
+
+		LexiconEntry.gotoEntry(rowEntry = "${defaultStructureName}");
+
+		PortletEntry.changeLocale(locale = "de-DE");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Text test German",
+			fieldHelp = "Text test help German",
+			fieldName = "Text");
+	}
+
+	@description = "This test ensures that the default language is the first one shown to the user."
+	@priority = "4"
+	test VerifyDefaultLanguageIsFirstShown {
+		var defaultStructureName = "WC Structure Title";
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "${defaultStructureName}");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text Test",
+			fieldName = "Text");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Text Test",
+			fieldHelp = "Help Text test");
+
+		WebContentStructures.addTranslations(localeList = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Text Test",
+			fieldHelp = "Texto teste ajuda");
+
+		WebContentStructures.addName(structureName = "Nome da Estrutura WC");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Text Test",
+			label = "Texto Teste");
+
+		WebContentStructures.saveCP();
+
+		WebContentStructures.viewCP(
+			structureDescription = "WC Structure Description",
+			structureName = "${defaultStructureName}");
+
+		LexiconEntry.gotoEntry(rowEntry = "${defaultStructureName}");
+
+		PortletEntry.viewLocale(locale = "en-US");
+	}
+
+}

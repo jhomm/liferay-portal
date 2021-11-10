@@ -17,10 +17,19 @@
 <%@ include file="/html/taglib/ui/user_display/init.jsp" %>
 
 <div class="display-style-<%= displayStyle %> taglib-user-display">
+
+	<%
+	if (Validator.isNull(url) && (userDisplay != null)) {
+		url = userDisplay.getDisplayURL(themeDisplay);
+	}
+	%>
+
 	<aui:a href="<%= url %>">
-		<span class="user-profile-image">
-			<span class="avatar <%= imageCssClass %>" style="background-image: url('<%= HtmlUtil.escape(taglibSrc) %>')"></span>
-		</span>
+		<liferay-ui:user-portrait
+			imageCssClass="<%= imageCssClass %>"
+			user="<%= userDisplay %>"
+			userName="<%= (userDisplay != null) ? userDisplay.getFullName() : userName %>"
+		/>
 
 		<c:if test="<%= showUserName %>">
 			<span class="user-name">

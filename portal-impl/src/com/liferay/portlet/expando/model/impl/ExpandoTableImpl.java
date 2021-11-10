@@ -14,7 +14,7 @@
 
 package com.liferay.portlet.expando.model.impl;
 
-import com.liferay.portlet.expando.model.ExpandoTableConstants;
+import com.liferay.expando.kernel.model.ExpandoTableConstants;
 
 /**
  * @author Brian Wing Shun Chan
@@ -26,9 +26,8 @@ public class ExpandoTableImpl extends ExpandoTableBaseImpl {
 		if (getName().equals(ExpandoTableConstants.DEFAULT_TABLE_NAME)) {
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 }

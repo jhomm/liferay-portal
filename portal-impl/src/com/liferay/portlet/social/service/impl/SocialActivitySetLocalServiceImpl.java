@@ -14,11 +14,13 @@
 
 package com.liferay.portlet.social.service.impl;
 
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portlet.social.model.SocialActivity;
-import com.liferay.portlet.social.model.SocialActivitySet;
 import com.liferay.portlet.social.service.base.SocialActivitySetLocalServiceBaseImpl;
-import com.liferay.portlet.social.util.comparator.SocialActivitySetModifiedDateComparator;
+import com.liferay.social.kernel.model.SocialActivity;
+import com.liferay.social.kernel.model.SocialActivitySet;
+import com.liferay.social.kernel.service.persistence.SocialActivityPersistence;
+import com.liferay.social.kernel.util.comparator.SocialActivitySetModifiedDateComparator;
 
 import java.util.List;
 
@@ -34,7 +36,7 @@ public class SocialActivitySetLocalServiceImpl
 
 		// Activity set
 
-		SocialActivity activity = socialActivityPersistence.findByPrimaryKey(
+		SocialActivity activity = _socialActivityPersistence.findByPrimaryKey(
 			activityId);
 
 		long activitySetId = counterLocalService.increment();
@@ -52,13 +54,13 @@ public class SocialActivitySetLocalServiceImpl
 		activitySet.setType(activity.getType());
 		activitySet.setActivityCount(1);
 
-		socialActivitySetPersistence.update(activitySet);
+		activitySet = socialActivitySetPersistence.update(activitySet);
 
 		// Activity
 
 		activity.setActivitySetId(activitySetId);
 
-		socialActivityPersistence.update(activity);
+		_socialActivityPersistence.update(activity);
 
 		return activitySet;
 	}
@@ -72,7 +74,11 @@ public class SocialActivitySetLocalServiceImpl
 		}
 
 		SocialActivitySet activitySet =
-			socialActivitySetPersistence.findByPrimaryKey(activitySetId);
+			socialActivitySetPersistence.fetchByPrimaryKey(activitySetId);
+
+		if (activitySet == null) {
+			return;
+		}
 
 		if (activitySet.getActivityCount() == 1) {
 			socialActivitySetPersistence.remove(activitySetId);
@@ -89,7 +95,7 @@ public class SocialActivitySetLocalServiceImpl
 	public void decrementActivityCount(long classNameId, long classPK)
 		throws PortalException {
 
-		List<SocialActivity> activities = socialActivityPersistence.findByC_C(
+		List<SocialActivity> activities = _socialActivityPersistence.findByC_C(
 			classNameId, classPK);
 
 		for (SocialActivity activity : activities) {
@@ -126,6 +132,19 @@ public class SocialActivitySetLocalServiceImpl
 	@Override
 	public int getGroupActivitySetsCount(long groupId) {
 		return socialActivitySetPersistence.countByGroupId(groupId);
+	}
+
+	@Override
+	public List<SocialActivitySet> getOrganizationActivitySets(
+		long organizationId, int start, int end) {
+
+		return socialActivitySetFinder.findByOrganizationId(
+			organizationId, start, end);
+	}
+
+	@Override
+	public int getOrganizationActivitySetsCount(long organizationId) {
+		return socialActivitySetFinder.countByOrganizationId(organizationId);
 	}
 
 	@Override
@@ -216,11 +235,11 @@ public class SocialActivitySetLocalServiceImpl
 		SocialActivitySet activitySet =
 			socialActivitySetPersistence.findByPrimaryKey(activitySetId);
 
-		SocialActivity activity = socialActivityPersistence.findByPrimaryKey(
+		SocialActivity activity = _socialActivityPersistence.findByPrimaryKey(
 			activityId);
 
-		activitySet.setModifiedDate(activity.getCreateDate());
 		activitySet.setUserId(activity.getUserId());
+		activitySet.setModifiedDate(activity.getCreateDate());
 
 		activitySet.setActivityCount(activitySet.getActivityCount() + 1);
 
@@ -230,7 +249,10 @@ public class SocialActivitySetLocalServiceImpl
 
 		activity.setActivitySetId(activitySetId);
 
-		socialActivityPersistence.update(activity);
+		_socialActivityPersistence.update(activity);
 	}
+
+	@BeanReference(type = SocialActivityPersistence.class)
+	private SocialActivityPersistence _socialActivityPersistence;
 
 }

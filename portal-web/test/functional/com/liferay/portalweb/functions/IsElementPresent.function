@@ -1,39 +1,34 @@
-<definition default="isElementPresent">
-	<command name="isElementPresent">
-		<execute selenium="isElementPresent" />
-	</command>
+@default = "isElementPresent"
+definition {
 
-	<command name="isElementPresentAfterWait">
-		<execute selenium="isElementPresentAfterWait" />
-	</command>
+	function isElementPresent {
+		WaitForSPARefresh();
 
-	<command name="isElementPresentClickNavigation">
-		<execute argument1="//nav[@id='navigation']" selenium="clickAt" />
+		selenium.isElementPresent();
+	}
 
-		<execute argument1="xPath=(//li[contains(@class,'lfr-nav-deletable')])[1]/a/span" selenium="waitForVisible" />
+	function isElementPresentAfterWait {
+		WaitForSPARefresh();
 
-		<execute selenium="isElementPresent" />
-	</command>
+		selenium.isElementPresentAfterWait();
+	}
 
-	<command name="isElementPresentCPNavigation">
-		<execute argument1="//script[contains(@src,'/liferay/message.js')]" selenium="waitForElementPresent" />
+	function isElementPresentNoSPARefresh {
+		selenium.isElementPresent();
+	}
 
-		<execute function="IsElementPresent#isElementPresent" />
-	</command>
+	function isVisible {
+		WaitForSPARefresh();
 
-	<command name="isVisible">
-		<execute selenium="isVisible" />
-	</command>
+		selenium.isVisible();
+	}
 
-	<command name="pauseIsElementPresent">
-		<execute argument1="1000" selenium="pause" />
+	function pauseIsElementPresent {
+		WaitForSPARefresh();
 
-		<execute selenium="isElementPresent" />
-	</command>
+		selenium.pause("1000");
 
-	<command name="waitForVisible">
-		<execute selenium="waitForVisible" />
+		selenium.isElementPresent();
+	}
 
-		<execute function="IsElementPresent#isVisible" />
-	</command>
-</definition>
+}

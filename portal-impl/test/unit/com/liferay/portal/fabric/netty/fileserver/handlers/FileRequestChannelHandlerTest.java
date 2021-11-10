@@ -14,14 +14,16 @@
 
 package com.liferay.portal.fabric.netty.fileserver.handlers;
 
+import com.liferay.petra.io.BigEndianCodec;
+import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.io.unsync.UnsyncByteArrayInputStream;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.fabric.netty.fileserver.CompressionLevel;
 import com.liferay.portal.fabric.netty.fileserver.FileRequest;
 import com.liferay.portal.fabric.netty.fileserver.FileResponse;
-import com.liferay.portal.kernel.io.BigEndianCodec;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
-import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
-import com.liferay.portal.kernel.util.StreamUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.channel.DefaultFileRegion;
 import io.netty.channel.FileRegion;
@@ -49,6 +51,7 @@ import java.util.zip.ZipInputStream;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -57,8 +60,10 @@ import org.junit.Test;
 public class FileRequestChannelHandlerTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@After
 	public void tearDown() {
@@ -203,6 +208,7 @@ public class FileRequestChannelHandlerTest {
 				Assert.assertEquals(
 					"Last modified time mismatch", fileTime.toMillis(),
 					BigEndianCodec.getLong(zipEntry.getExtra(), 0));
+
 				Assert.assertEquals(
 					"File size mismatch", Files.size(expectedFile),
 					BigEndianCodec.getLong(zipEntry.getExtra(), 8));
@@ -220,7 +226,7 @@ public class FileRequestChannelHandlerTest {
 
 				@Override
 				public FileVisitResult visitFile(
-					Path file, BasicFileAttributes attrs) {
+					Path file, BasicFileAttributes basicFileAttributes) {
 
 					Assert.assertTrue(
 						"Miss file " + file + " from zip stream",

@@ -59,6 +59,7 @@ if (url != null) {
 	String[] urlArray = PortalUtil.stripURLAnchor(url, "&#");
 
 	anchor = urlArray[1];
+
 	url = urlArray[0];
 
 	if (!url.contains(StringPool.QUESTION)) {
@@ -69,11 +70,16 @@ if (url != null) {
 // Back url
 
 String backLabel = (String)request.getAttribute("liferay-ui:tabs:backLabel");
+
 String backURL = (String)request.getAttribute("liferay-ui:tabs:backURL");
 
 if (Validator.isNotNull(backURL) && !backURL.equals("javascript:history.go(-1);")) {
 	backURL = HtmlUtil.escapeHREF(PortalUtil.escapeRedirect(backURL));
 }
+
+// CSS class
+
+String cssClass = GetterUtil.getString((String)request.getAttribute("liferay-ui:tabs:cssClass"));
 
 // Refresh
 
@@ -85,7 +91,7 @@ String onClick = GetterUtil.getString((String)request.getAttribute("liferay-ui:t
 
 // Type
 
-String type = GetterUtil.getString((String)request.getAttribute("liferay-ui:tabs:type"), "tabs");
+String type = GetterUtil.getString((String)request.getAttribute("liferay-ui:tabs:type"), "underline");
 %>
 
 <c:if test="<%= names.length > 0 %>">
@@ -98,14 +104,37 @@ String type = GetterUtil.getString((String)request.getAttribute("liferay-ui:tabs
 	}
 	%>
 
+	<input name="<%= namespace %><%= param %>TabsScroll" type="hidden" />
+
 	<c:choose>
-		<c:when test="<%= themeDisplay.isFacebook() %>">
-			<fb:tabs>
+		<c:when test='<%= type.equals("dropdown") %>'>
+
+			<%
+			String name = value;
+
+			int pos = Arrays.binarySearch(values, value);
+
+			if (pos != -1) {
+				name = names[pos];
+			}
+			%>
+
+			<nav class="navbar <%= cssClass %>">
+				<div class="container-fluid">
+					<ul class="nav navbar-nav">
+						<c:if test="<%= names.length > 1 %>">
+							<li class="active dropdown nav-item">
+								<a class="dropdown-toggle nav-link" data-toggle="liferay-dropdown" href="javascript:;">
+									<span class="navbar-text-truncate" id="<%= namespace + param + "dropdownTitle" %>"><%= LanguageUtil.get(resourceBundle, HtmlUtil.escape(name)) %></span>
+
+									<aui:icon image="caret-bottom" markupView="lexicon" />
+								</a>
+
+								<ul class="dropdown-menu">
+						</c:if>
 		</c:when>
 		<c:otherwise>
-			<input name="<%= namespace %><%= param %>TabsScroll" type="hidden" />
-
-			<ul class="lfr-nav nav nav-<%= type %>">
+			<ul class="lfr-nav mb-3 mb-lg-4 nav nav-<%= type %> <%= cssClass %>" data-tabs-namespace="<%= namespace + param %>">
 		</c:otherwise>
 	</c:choose>
 
@@ -165,56 +194,38 @@ String type = GetterUtil.getString((String)request.getAttribute("liferay-ui:tabs
 
 		boolean selected = (values.length == 1) || value.equals(values[i]);
 
-		String cssClassName = "tab";
+		String linkCssClass = "nav-link";
 
 		if (selected) {
-			cssClassName += " active";
+			linkCssClass += " active";
 		}
 	%>
 
-		<c:choose>
-			<c:when test="<%= themeDisplay.isFacebook() %>">
-				<fb:tab_item
-					align="left"
-					href="<%= curURL %>"
-					selected="<%= selected %>"
-					title="<%= LanguageUtil.get(request, names[i]) %>"
-				/>
-			</c:when>
-			<c:otherwise>
-				<li class="<%= cssClassName %>" id="<%= namespace %><%= param %><%= StringUtil.toCharCode(values[i]) %>TabsId">
-					<a href="<%= Validator.isNotNull(curURL) ? HtmlUtil.escapeAttribute(curURL) : "javascript:;" %>" onClick="<%= Validator.isNotNull(curOnClick) ? curOnClick : StringPool.BLANK %>">
-						<%= LanguageUtil.get(request, names[i]) %>
-					</a>
-				</li>
-			</c:otherwise>
-		</c:choose>
+		<li class="nav-item" data-tab-name="<%= names[i] %>" id="<%= namespace %><%= param %><%= StringUtil.toCharCode(values[i]) %>TabsId">
+			<a class="<%= linkCssClass %>" href="<%= Validator.isNotNull(curURL) ? HtmlUtil.escapeAttribute(curURL) : "javascript:;" %>" onClick="<%= Validator.isNotNull(curOnClick) ? curOnClick : StringPool.BLANK %>">
+				<%= LanguageUtil.get(resourceBundle, HtmlUtil.escape(names[i])) %>
+			</a>
+		</li>
 
 	<%
 	}
 	%>
 
 	<c:if test="<%= Validator.isNotNull(backURL) %>">
-		<c:choose>
-			<c:when test="<%= themeDisplay.isFacebook() %>">
-				<fb:tab_item
-					align="left"
-					href="<%= backURL %>"
-					selected="<%= false %>"
-					title='<%= Validator.isNotNull(backLabel) ? HtmlUtil.escapeAttribute(backLabel) : "&laquo;" + LanguageUtil.get(request, "back") %>'
-				/>
-			</c:when>
-			<c:otherwise>
-				<li>
-					<a class="tab" href="<%= backURL %>" id="<%= namespace %><%= param %>TabsBack"><%= Validator.isNotNull(backLabel) ? HtmlUtil.escape(backLabel) : "&laquo;" + LanguageUtil.get(request, "back") %></a>
-				</li>
-			</c:otherwise>
-		</c:choose>
+		<li>
+			<a class="tab" href="<%= backURL %>" id="<%= namespace %><%= param %>TabsBack"><%= Validator.isNotNull(backLabel) ? HtmlUtil.escape(backLabel) : "&laquo;" + LanguageUtil.get(resourceBundle, "back") %></a>
+		</li>
 	</c:if>
 
 	<c:choose>
-		<c:when test="<%= themeDisplay.isFacebook() %>">
-			</fb:tabs>
+		<c:when test='<%= type.equals("dropdown") %>'>
+						<c:if test="<%= names.length == 1 %>">
+								</ul>
+							</li>
+						</c:if>
+					</ul>
+				</div>
+			</nav>
 		</c:when>
 		<c:otherwise>
 			</ul>

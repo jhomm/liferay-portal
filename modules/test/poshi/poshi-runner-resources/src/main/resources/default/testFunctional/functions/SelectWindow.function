@@ -1,0 +1,16 @@
+@default = "selectWindow"
+definition {
+
+	function selectPopUp {
+		selenium.selectPopUp();
+	}
+
+	function selectWindow {
+		selenium.selectWindow();
+	}
+
+	function selectWindowTop {
+		selenium.selectWindow("null");
+	}
+
+}

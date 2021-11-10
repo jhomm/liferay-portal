@@ -1,89 +1,130 @@
-<definition>
-	<command name="addCP">
-		<execute function="AssertClick" locator1="KnowledgeBase#MENUBAR_ADD" value1="Add" />
-		<execute function="AssertClick" locator1="MenuItem#ADD_FOLDER" value1="Folder" />
+definition {
 
-		<execute function="Type" locator1="TextInput#TITLE" value1="${kbFolderName}" />
-		<execute function="Type" locator1="TextArea#DESCRIPTION" value1="${kbFolderDescription}" />
-		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
+	macro addCP {
+		LexiconEntry.gotoAddMenuItem(menuItem = "Folder");
 
-		<if>
-			<isset var="kbAddDuplicate" />
-			<then>
-				<execute function="AssertTextEquals" locator1="Message#ERROR_1" value1="Your request failed to complete." />
-				<execute function="AssertTextEquals" locator1="Message#ERROR_2" value1="Please enter a unique folder name." />
-			</then>
-			<else>
-				<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
-			</else>
-		</if>
-	</command>
+		PortletEntry.inputName(name = "${kbFolderName}");
 
-	<command name="deleteCP">
-		<execute function="AssertClick" locator1="KnowledgeBase#FOLDER_TABLE_FOLDER_ACTIONS" value1="Actions" />
-		<execute function="AssertClickNoError" locator1="MenuItem#DELETE" value1="Delete" />
-		<execute function="Confirm" value1="Are you sure you want to delete this? It will be deleted immediately." />
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
-	</command>
+		PortletEntry.inputDescription(description = "${kbFolderDescription}");
 
-	<command name="editCP">
-		<execute function="AssertClick" locator1="KnowledgeBase#FOLDER_TABLE_FOLDER_ACTIONS" value1="Actions" />
-		<execute function="AssertClick" locator1="MenuItem#EDIT" value1="Edit" />
+		if (isSet(customField)) {
+			Panel.expandPanel(panel = "Custom Fields");
 
-		<execute function="Type" locator1="TextInput#TITLE" value1="${kbFolderEditedName}" />
-		<execute function="Type" locator1="TextArea#DESCRIPTION" value1="${kbFolderDescription}" />
-		<execute function="AssertClick" locator1="Button#SAVE" value1="Save" />
+			Type(
+				locator1 = "TextInput#CUSTOM_FIELD",
+				value1 = "${customField}");
+		}
 
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
-	</command>
+		Button.clickSave();
 
-	<command name="gotoCP">
-		<var name="key_kbFolderName" value="${kbFolderName}" />
+		if (isSet(kbAddDuplicate)) {
+			Alert.viewRequestFailedToComplete();
 
-		<execute function="AssertClick" locator1="KnowledgeBase#FOLDER_TABLE_FOLDER_NAME" value1="${kbFolderName}" />
-		<execute function="AssertTextEquals" locator1="KnowledgeBase#FOLDER_BREADCRUMBS" value1="${kbFolderName}" />
-	</command>
+			AssertTextEquals.assertPartialText(
+				locator1 = "Message#ERROR_ENTER_A_UNIQUE_FOLDER",
+				value1 = "Please enter a unique folder name.");
+		}
+		else {
+			Alert.viewSuccessMessage();
+		}
+	}
 
-	<command name="gotoViaKBDisplayPG">
-		<var name="key_kbFolderName" value="${kbFolderName}" />
+	macro deleteCP {
+		LexiconEntry.gotoEntryMenuItemNoError(
+			menuItem = "Delete",
+			rowEntry = "${kbFolderName}");
 
-		<execute function="Select" locator1="KnowledgeBase#FOLDER_SELECT_DROPDOWN"  value1="${kbFolderName}" />
-		<execute function="AssertClick" locator1="KnowledgeBase#FOLDER_SELECT_OPTION" value1="${kbFolderName}" />
-	</command>
+		AssertConfirm(value1 = "Are you sure you want to delete this? It will be deleted immediately.");
 
-	<command name="selectParentCP">
-		<var name="key_kbArticleTitle" value="${kbFolderName}" />
+		Alert.viewSuccessMessage();
+	}
 
-		<execute function="SelectFrame" locator1="KnowledgeBaseSelectParent#IFRAME" />
-		<execute function="Click" locator1="KnowledgeBaseSelectParent#CHOOSE_BUTTON" value1="Choose" />
-		<execute function="SelectFrame" value1="relative=top" />
+	macro editCP {
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "${kbFolderName}");
 
-		<execute function="AssertTextEquals" locator1="KnowledgeBase#MOVE_NEW_PARENT_TITLE_FIELD" value1="${kbFolderName}" />
-		<execute function="Click" locator1="Button#MOVE" />
+		PortletEntry.inputName(name = "${kbFolderEditedName}");
 
-		<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
-	</command>
+		PortletEntry.inputDescription(description = "${kbFolderDescription}");
 
-	<command name="tearDownCP">
-		<execute macro="Page#gotoContentCP">
-			<var name="portletName" value="Knowledge Base" />
-		</execute>
+		PortletEntry.save();
+	}
 
-		<while>
-			<condition function="IsElementPresent" locator1="KnowledgeBase#FOLDER_TABLE_HEADER" />
+	macro gotoCP {
+		var key_kbFolderName = "${kbFolderName}";
 
-			<then>
-				<execute function="Click" locator1="KnowledgeBase#FOLDER_TABLE_ACTIONS_BUTTON_GENERIC" />
-				<execute function="AssertClickNoError" locator1="MenuItem#DELETE" value1="Delete" />
-				<execute function="Confirm" value1="Are you sure you want to delete this? It will be deleted immediately." />
-				<execute function="AssertTextEquals" locator1="Message#SUCCESS" value1="Your request completed successfully." />
-			</then>
-		</while>
-	</command>
+		AssertClick(
+			locator1 = "KnowledgeBase#FOLDER_DESCRIPTIVE_FOLDER_NAME",
+			value1 = "${kbFolderName}");
 
-	<command name="viewFolderTableCP">
-		<var name="key_kbFolderName" value="${kbFolderName}" />
+		AssertTextEquals(
+			key_breadcrumbName = "${kbFolderName}",
+			locator1 = "Breadcrumb#BREADCRUMB_ENTRY",
+			value1 = "${kbFolderName}");
+	}
 
-		<execute function="AssertTextEquals" locator1="KnowledgeBase#FOLDER_TABLE_FOLDER_NAME" value1="${kbFolderName}" />
-	</command>
-</definition>
+	macro gotoViaKBDisplayPG {
+		var key_kbFolderName = "${kbFolderName}";
+
+		Select(
+			locator1 = "KnowledgeBase#FOLDER_SELECT_DROPDOWN",
+			value1 = "${kbFolderName}");
+	}
+
+	macro selectParentCP {
+		var key_kbArticleTitle = "${kbFolderName}";
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		if ("${kbFolderName}" == "Home") {
+			Click(locator1 = "KnowledgeBaseSelectParent#BREADCRUMB_HOME");
+
+			AssertClick(
+				locator1 = "Button#CHOOSE_THIS_FOLDER",
+				value1 = "Choose This Folder");
+		}
+		else {
+			Click(
+				locator1 = "KnowledgeBaseSelectParent#SELECT_BUTTON",
+				value1 = "Select");
+		}
+
+		SelectFrame(value1 = "relative=top");
+
+		AssertTextEquals(
+			locator1 = "KnowledgeBase#MOVE_NEW_PARENT_TITLE_FIELD",
+			value1 = "${kbFolderName}");
+
+		Click(locator1 = "Button#MOVE");
+
+		Alert.viewSuccessMessage();
+	}
+
+	macro tearDownCP {
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			portlet = "Knowledge Base");
+
+		while (IsElementPresent(locator1 = "KnowledgeBase#FOLDER_TABLE_HEADER")) {
+			Check.checkAll(locator1 = "KnowledgeBase#ARTICLE_TABLE_SELECT_ALL_CHECKBOX");
+
+			Click(locator1 = "Icon#DELETE");
+
+			AssertConfirm(value1 = "Are you sure you want to delete the selected entries? They will be deleted immediately.");
+
+			Alert.viewSuccessMessage();
+		}
+	}
+
+	macro viewFolderNameCP {
+		var key_kbFolderName = "${kbFolderName}";
+
+		AssertTextEquals(
+			locator1 = "KnowledgeBase#FOLDER_DESCRIPTIVE_FOLDER_NAME",
+			value1 = "${kbFolderName}");
+	}
+
+}

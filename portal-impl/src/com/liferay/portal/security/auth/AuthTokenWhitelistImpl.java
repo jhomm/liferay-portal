@@ -14,100 +14,31 @@
 
 package com.liferay.portal.security.auth;
 
-import com.liferay.portal.kernel.concurrent.ConcurrentHashSet;
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
-import com.liferay.portal.kernel.util.CharPool;
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.portlet.LiferayPortletURL;
+import com.liferay.portal.kernel.portlet.PortletIdCodec;
+import com.liferay.portal.kernel.security.auth.BaseAuthTokenWhitelist;
+import com.liferay.portal.kernel.util.DigesterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.model.Portlet;
-import com.liferay.portal.model.PortletConstants;
-import com.liferay.portal.service.PortletLocalServiceUtil;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.registry.Registry;
-import com.liferay.registry.RegistryUtil;
-import com.liferay.registry.ServiceReference;
-import com.liferay.registry.ServiceRegistration;
-import com.liferay.registry.ServiceTracker;
-import com.liferay.registry.ServiceTrackerCustomizer;
-import com.liferay.registry.collections.StringServiceRegistrationMap;
-import com.liferay.registry.collections.StringServiceRegistrationMapImpl;
-import com.liferay.registry.util.StringPlus;
-import com.liferay.util.Encryptor;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Raymond Augé
  * @author Tomas Polesovsky
  */
-@DoPrivileged
-public class AuthTokenWhitelistImpl implements AuthTokenWhitelist {
-
-	public AuthTokenWhitelistImpl() {
-		resetOriginCSRFWhitelist();
-		resetPortletCSRFWhitelist();
-		resetPortletInvocationWhitelist();
-		resetPortletInvocationWhitelistActions();
-
-		Registry registry = RegistryUtil.getRegistry();
-
-		_serviceTracker = registry.trackServices(
-			registry.getFilter(
-				"(&(" + PropsKeys.AUTH_TOKEN_IGNORE_ACTIONS+"=*)" +
-					"(objectClass=java.lang.Object))"),
-			new AuthTokenIgnoreActionsServiceTrackerCustomizer());
-
-		_serviceTracker.open();
-
-		registerPortalProperty();
-	}
-
-	public void destroy() {
-		for (ServiceRegistration<Object> serviceRegistration :
-				_serviceRegistrations.values()) {
-
-			serviceRegistration.unregister();
-		}
-
-		_serviceTracker.close();
-	}
-
-	@Override
-	public Set<String> getOriginCSRFWhitelist() {
-		return _originCSRFWhitelist;
-	}
-
-	@Override
-	public Set<String> getPortletCSRFWhitelist() {
-		return _portletCSRFWhitelist;
-	}
-
-	@Override
-	public Set<String> getPortletCSRFWhitelistActions() {
-		return _portletCSRFWhitelistActions;
-	}
-
-	@Override
-	public Set<String> getPortletInvocationWhitelist() {
-		return _portletInvocationWhitelist;
-	}
-
-	@Override
-	public Set<String> getPortletInvocationWhitelistActions() {
-		return _portletInvocationWhitelistActions;
-	}
+public class AuthTokenWhitelistImpl extends BaseAuthTokenWhitelist {
 
 	@Override
 	public boolean isOriginCSRFWhitelisted(long companyId, String origin) {
-		Set<String> whitelist = getOriginCSRFWhitelist();
-
-		for (String whitelistedOrigins : whitelist) {
-			if (origin.startsWith(whitelistedOrigins)) {
+		for (String whitelistedOrigin : _getOriginCSRFWhitelist()) {
+			if (origin.startsWith(whitelistedOrigin)) {
 				return true;
 			}
 		}
@@ -117,204 +48,143 @@ public class AuthTokenWhitelistImpl implements AuthTokenWhitelist {
 
 	@Override
 	public boolean isPortletCSRFWhitelisted(
-		long companyId, String portletId, String strutsAction) {
+		HttpServletRequest httpServletRequest, Portlet portlet) {
 
-		String rootPortletId = PortletConstants.getRootPortletId(portletId);
+		Set<String> portletCSRFWhitelist = _getPortletCSRFWhitelist();
 
-		Set<String> whitelist = getPortletCSRFWhitelist();
-
-		if (whitelist.contains(rootPortletId)) {
-			return true;
-		}
-
-		if (Validator.isNotNull(strutsAction)) {
-			Set<String> whitelistActions = getPortletCSRFWhitelistActions();
-
-			if (whitelistActions.contains(strutsAction) &&
-				isValidStrutsAction(companyId, rootPortletId, strutsAction)) {
-
-				return true;
-			}
-		}
-
-		return false;
+		return portletCSRFWhitelist.contains(portlet.getRootPortletId());
 	}
 
 	@Override
 	public boolean isPortletInvocationWhitelisted(
-		long companyId, String portletId, String strutsAction) {
+		HttpServletRequest httpServletRequest, Portlet portlet) {
 
-		Set<String> whitelist = getPortletInvocationWhitelist();
+		Set<String> portletInvocationWhitelist =
+			_getPortletInvocationWhitelist();
 
-		if (whitelist.contains(portletId)) {
-			return true;
-		}
+		return portletInvocationWhitelist.contains(portlet.getPortletId());
+	}
 
-		if (Validator.isNotNull(strutsAction)) {
-			Set<String> whitelistActions =
-				getPortletInvocationWhitelistActions();
+	@Override
+	public boolean isPortletURLCSRFWhitelisted(
+		LiferayPortletURL liferayPortletURL) {
 
-			if (whitelistActions.contains(strutsAction) &&
-				isValidStrutsAction(companyId, portletId, strutsAction)) {
+		String rootPortletId = PortletIdCodec.decodePortletName(
+			liferayPortletURL.getPortletId());
 
-				return true;
-			}
-		}
+		Set<String> portletCSRFWhitelist = _getPortletCSRFWhitelist();
 
-		return false;
+		return portletCSRFWhitelist.contains(rootPortletId);
+	}
+
+	@Override
+	public boolean isPortletURLPortletInvocationWhitelisted(
+		LiferayPortletURL liferayPortletURL) {
+
+		Set<String> portletInvocationWhitelist =
+			_getPortletInvocationWhitelist();
+
+		return portletInvocationWhitelist.contains(
+			liferayPortletURL.getPortletId());
 	}
 
 	@Override
 	public boolean isValidSharedSecret(String sharedSecret) {
-		if (Validator.isNull(sharedSecret)) {
-			return false;
-		}
+		if (Validator.isNull(sharedSecret) ||
+			Validator.isNull(PropsValues.AUTH_TOKEN_SHARED_SECRET)) {
 
-		if (Validator.isNull(PropsValues.AUTH_TOKEN_SHARED_SECRET)) {
 			return false;
 		}
 
 		return sharedSecret.equals(
-			Encryptor.digest(PropsValues.AUTH_TOKEN_SHARED_SECRET));
+			DigesterUtil.digest(PropsValues.AUTH_TOKEN_SHARED_SECRET));
 	}
 
-	@Override
-	public Set<String> resetOriginCSRFWhitelist() {
-		_originCSRFWhitelist = SetUtil.fromArray(
-			PropsValues.AUTH_TOKEN_IGNORE_ORIGINS);
-		_originCSRFWhitelist = Collections.unmodifiableSet(
-			_originCSRFWhitelist);
+	private Set<String> _getOriginCSRFWhitelist() {
+		Set<String> originCSRFWhitelist = _originCSRFWhitelist;
 
-		return _originCSRFWhitelist;
-	}
+		if (originCSRFWhitelist != null) {
+			return originCSRFWhitelist;
+		}
 
-	@Override
-	public Set<String> resetPortletCSRFWhitelist() {
-		_portletCSRFWhitelist = SetUtil.fromArray(
-			PropsValues.AUTH_TOKEN_IGNORE_PORTLETS);
-		_portletCSRFWhitelist = Collections.unmodifiableSet(
-			_portletCSRFWhitelist);
+		synchronized (this) {
+			if (_originCSRFWhitelist == null) {
+				originCSRFWhitelist = Collections.newSetFromMap(
+					new ConcurrentHashMap<>());
 
-		return _portletCSRFWhitelist;
-	}
+				registerPortalProperty(PropsKeys.AUTH_TOKEN_IGNORE_ORIGINS);
 
-	@Override
-	public Set<String> resetPortletInvocationWhitelist() {
-		_portletInvocationWhitelist = SetUtil.fromArray(
-			PropsValues.PORTLET_ADD_DEFAULT_RESOURCE_CHECK_WHITELIST);
-		_portletInvocationWhitelist = Collections.unmodifiableSet(
-			_portletInvocationWhitelist);
+				trackWhitelistServices(
+					PropsKeys.AUTH_TOKEN_IGNORE_ORIGINS, originCSRFWhitelist);
 
-		return _portletInvocationWhitelist;
-	}
-
-	@Override
-	public Set<String> resetPortletInvocationWhitelistActions() {
-		_portletInvocationWhitelistActions = SetUtil.fromArray(
-			PropsValues.PORTLET_ADD_DEFAULT_RESOURCE_CHECK_WHITELIST_ACTIONS);
-		_portletInvocationWhitelistActions = Collections.unmodifiableSet(
-			_portletInvocationWhitelistActions);
-
-		return _portletInvocationWhitelistActions;
-	}
-
-	protected boolean isValidStrutsAction(
-		long companyId, String portletId, String strutsAction) {
-
-		try {
-			Portlet portlet = PortletLocalServiceUtil.getPortletById(
-				companyId, portletId);
-
-			if (portlet == null) {
-				return false;
+				_originCSRFWhitelist = originCSRFWhitelist;
 			}
-
-			String strutsPath = strutsAction.substring(
-				1, strutsAction.lastIndexOf(CharPool.SLASH));
-
-			if (strutsPath.equals(portlet.getStrutsPath()) ||
-				strutsPath.equals(portlet.getParentStrutsPath())) {
-
-				return true;
+			else {
+				originCSRFWhitelist = _originCSRFWhitelist;
 			}
 		}
-		catch (Exception e) {
-		}
 
-		return false;
+		return originCSRFWhitelist;
 	}
 
-	protected void registerPortalProperty() {
-		Registry registry = RegistryUtil.getRegistry();
+	private Set<String> _getPortletCSRFWhitelist() {
+		Set<String> portletCSRFWhitelist = _portletCSRFWhitelist;
 
-		for (String authTokenIgnoreAction :
-				PropsValues.AUTH_TOKEN_IGNORE_ACTIONS) {
-
-			Map<String, Object> properties = new HashMap<>();
-
-			properties.put(
-				PropsKeys.AUTH_TOKEN_IGNORE_ACTIONS, authTokenIgnoreAction);
-			properties.put("objectClass", Object.class.getName());
-
-			ServiceRegistration<Object> serviceRegistration =
-				registry.registerService(
-					Object.class, new Object(), properties);
-
-			_serviceRegistrations.put(
-				authTokenIgnoreAction, serviceRegistration);
+		if (portletCSRFWhitelist != null) {
+			return portletCSRFWhitelist;
 		}
+
+		synchronized (this) {
+			if (_portletCSRFWhitelist == null) {
+				portletCSRFWhitelist = Collections.newSetFromMap(
+					new ConcurrentHashMap<>());
+
+				registerPortalProperty(PropsKeys.AUTH_TOKEN_IGNORE_PORTLETS);
+
+				trackWhitelistServices(
+					PropsKeys.AUTH_TOKEN_IGNORE_PORTLETS, portletCSRFWhitelist);
+
+				_portletCSRFWhitelist = portletCSRFWhitelist;
+			}
+			else {
+				portletCSRFWhitelist = _portletCSRFWhitelist;
+			}
+		}
+
+		return portletCSRFWhitelist;
 	}
 
-	private Set<String> _originCSRFWhitelist;
-	private Set<String> _portletCSRFWhitelist;
-	private final Set<String> _portletCSRFWhitelistActions =
-		new ConcurrentHashSet<>();
-	private Set<String> _portletInvocationWhitelist;
-	private Set<String> _portletInvocationWhitelistActions;
-	private final StringServiceRegistrationMap<Object> _serviceRegistrations =
-		new StringServiceRegistrationMapImpl<>();
-	private final ServiceTracker<Object, Object> _serviceTracker;
+	private Set<String> _getPortletInvocationWhitelist() {
+		Set<String> portletInvocationWhitelist = _portletInvocationWhitelist;
 
-	private class AuthTokenIgnoreActionsServiceTrackerCustomizer
-		implements ServiceTrackerCustomizer<Object, Object> {
-
-		@Override
-		public Object addingService(ServiceReference<Object> serviceReference) {
-			List<String> authTokenIgnoreActions = StringPlus.asList(
-				serviceReference.getProperty(
-					PropsKeys.AUTH_TOKEN_IGNORE_ACTIONS));
-
-			_portletCSRFWhitelistActions.addAll(authTokenIgnoreActions);
-
-			Registry registry = RegistryUtil.getRegistry();
-
-			return registry.getService(serviceReference);
+		if (portletInvocationWhitelist != null) {
+			return portletInvocationWhitelist;
 		}
 
-		@Override
-		public void modifiedService(
-			ServiceReference<Object> serviceReference, Object object) {
+		synchronized (this) {
+			if (_portletInvocationWhitelist == null) {
+				portletInvocationWhitelist = Collections.newSetFromMap(
+					new ConcurrentHashMap<>());
 
-			removedService(serviceReference, object);
+				registerPortalProperty(
+					PropsKeys.PORTLET_ADD_DEFAULT_RESOURCE_CHECK_WHITELIST);
 
-			addingService(serviceReference);
+				trackWhitelistServices(
+					PropsKeys.PORTLET_ADD_DEFAULT_RESOURCE_CHECK_WHITELIST,
+					portletInvocationWhitelist);
+
+				_portletInvocationWhitelist = portletInvocationWhitelist;
+			}
+			else {
+				portletInvocationWhitelist = _portletInvocationWhitelist;
+			}
 		}
 
-		@Override
-		public void removedService(
-			ServiceReference<Object> serviceReference, Object object) {
-
-			List<String> authTokenIgnoreActions = StringPlus.asList(
-				serviceReference.getProperty(
-					PropsKeys.AUTH_TOKEN_IGNORE_ACTIONS));
-
-			_portletCSRFWhitelistActions.removeAll(authTokenIgnoreActions);
-
-			Registry registry = RegistryUtil.getRegistry();
-
-			registry.ungetService(serviceReference);
-		}
-
+		return portletInvocationWhitelist;
 	}
+
+	private volatile Set<String> _originCSRFWhitelist;
+	private volatile Set<String> _portletCSRFWhitelist;
+	private volatile Set<String> _portletInvocationWhitelist;
 
 }

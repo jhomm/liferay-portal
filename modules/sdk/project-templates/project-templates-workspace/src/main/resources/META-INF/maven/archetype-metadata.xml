@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+
+<archetype-descriptor name="liferay-workspace">
+	<fileSets>
+		<fileSet filtered="true">
+			<directory></directory>
+			<includes>
+				<include>.gitignore</include>
+				<include>Dockerfile.ext</include>
+				<include>GETTING_STARTED.markdown</include>
+				<include>build.gradle</include>
+				<include>configs/**</include>
+				<include>gradle-local.properties</include>
+				<include>gradle.properties</include>
+				<include>modules/pom.xml</include>
+				<include>platform.bndrun</include>
+				<include>settings.gradle</include>
+				<include>themes/pom.xml</include>
+			</includes>
+		</fileSet>
+	</fileSets>
+	<requiredProperties>
+		<requiredProperty key="liferayVersion">
+			<validationRegex>^[0-7]\.\d+\.\d+.*</validationRegex>
+		</requiredProperty>
+		<requiredProperty key="product">
+			<defaultValue>portal</defaultValue>
+			<validationRegex>(dxp)|(portal)</validationRegex>
+		</requiredProperty>
+	</requiredProperties>
+</archetype-descriptor>

@@ -1,0 +1,847 @@
+@component-name = "data-engine"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Data Engine";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONGroup.addGroup(groupName = "Test Site Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
+		}
+	}
+
+	@description = "This test verifies if a pop-up with the flag, label, and translation status is shown up when the user clicks on the language flag."
+	@priority = "4"
+	test CheckLanguageSelector {
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		Click.clickNoMouseOver(locator1 = "Button#LOCALIZATION_GENERIC");
+
+		AssertElementPresent(
+			key_locale = "en_US",
+			locator1 = "Translation#LOCALIZATION_NAME");
+	}
+
+	@description = "This test ensures that when the user changes the language, the title remains the default until the user changes it."
+	@priority = "4"
+	test DefaultTitleIsDisplayedUponLocaleChange {
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		Translations.addLanguageManageTranslations(key_language = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "WC Structure Title");
+
+		WebContentStructures.addName(structureName = "Nome da Estrutura WC");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "WC Structure Title");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "Nome da Estrutura WC");
+	}
+
+	@description = "This test ensures that the default title persists after tranlating to another locale."
+	@priority = "4"
+	test DefaultTitlePersistsAfterTranslatingForAnotherLocale {
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Image",
+			fieldName = "Image",
+			targetFieldLabel = "Text");
+
+		WebContentStructures.addLocalization(
+			locale = "pt-BR",
+			localization1Name = "Nome da Estrutura WC");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "WC Structure Title");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Fields Group",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Text,Image") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Fields Group",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "Nome da Estrutura WC");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Fields Group",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Text,Image") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Fields Group",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+
+		PortletEntry.changeLocale(locale = "en-US");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "WC Structure Title");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Fields Group",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Text,Image") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Fields Group",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+	}
+
+	@description = "This test ensures that the translation is carried over for all fields after duplicating a field group."
+	@priority = "4"
+	test DuplicateTranslatedField {
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Text",
+			fieldHelp = "Text Field Help Text");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Numeric",
+			fieldHelp = "Numeric Field Help Text");
+
+		WebContentStructures.addLocalization(
+			locale = "pt-BR",
+			localization1Name = "Nome da Estrutura WC");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "Grupo de Campos");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Texto");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Numérica");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Texto",
+			fieldHelp = "Texto de ajuda do campo de texto");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Numérica",
+			fieldHelp = "Texto de ajuda do campo numérico");
+
+		DataEngine.duplicate(fieldsGroupLabel = "Grupo de Campos");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "WC Structure Title");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Fields Group",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Text,Numeric") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Fields Group",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+
+		AssertVisible(
+			key_fieldFieldLabel = "Copy of Fields Group",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Copy of Text,Copy of Numeric") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Copy of Fields Group",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+
+		for (var fieldFieldLabel : list "Text,Numeric") {
+			AssertTextEquals(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				locator1 = "DDMEditStructure#SETTINGS_TEXT",
+				value1 = "${fieldFieldLabel} Field Help Text");
+		}
+
+		for (var fieldFieldLabel : list "Text,Numeric") {
+			AssertTextEquals(
+				key_fieldFieldLabel = "Copy of ${fieldFieldLabel}",
+				locator1 = "DDMEditStructure#SETTINGS_TEXT",
+				value1 = "${fieldFieldLabel} Field Help Text");
+		}
+
+		PortletEntry.changeLocale(locale = "pt_BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "Nome da Estrutura WC");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Grupo de Campos",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Texto,Numérica") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Grupo de Campos",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+
+		AssertVisible(
+			key_fieldFieldLabel = "Copy of Grupo de Campos",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Copy of Texto,Copy of Numérica") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Copy of Grupo de Campos",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+
+		for (var fieldFieldLabel : list "Texto,Copy of Texto") {
+			AssertTextEquals(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				locator1 = "DDMEditStructure#SETTINGS_TEXT",
+				value1 = "Texto de ajuda do campo de texto");
+		}
+
+		for (var fieldFieldLabel : list "Numérica,Copy of Numérica") {
+			AssertTextEquals(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				locator1 = "DDMEditStructure#SETTINGS_TEXT",
+				value1 = "Texto de ajuda do campo numérico");
+		}
+	}
+
+	@description = "This test ensures that the translation for all fields persists even if it's inside Field Groups."
+	@priority = "5"
+	test TranslateStructureWithAllFieldsNested {
+		property portal.acceptance = "false";
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addFields(fieldNameList = "Web Content,Date,Rich Text,Single Selection,Grid,Select from List");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Web Content");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Link to Page",
+			fieldName = "Link to Page",
+			targetFieldLabel = "Web Content");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Image",
+			fieldName = "Image",
+			targetFieldLabel = "Date");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Upload",
+			fieldName = "Upload",
+			targetFieldLabel = "Date");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Color",
+			fieldName = "Color",
+			targetFieldLabel = "Rich Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Text",
+			fieldName = "Text",
+			targetFieldLabel = "Single Selection");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Multiple Selection",
+			fieldName = "Multiple Selection",
+			targetFieldLabel = "Single Selection");
+
+		var index = "1";
+
+		for (var optionValue : list "Value 1,Value 2") {
+			DataEngine.addFieldOption(
+				fieldFieldLabel = "Multiple Selection",
+				index = "${index}",
+				optionValue = "${optionValue}");
+			var index = ${index} + 1;
+		}
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Geolocation",
+			fieldName = "Geolocation",
+			targetFieldLabel = "Grid");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Separator",
+			fieldName = "Separator",
+			targetFieldLabel = "Select from List");
+
+		Translations.addLanguageManageTranslations(key_language = "pt-BR");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		WebContentStructures.addName(structureName = "WC Titulo Estrutura");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Text",
+			label = "Texto");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Link to Page",
+			label = "Link para Página");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Numeric",
+			label = "Numérico");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Web Content",
+			label = "Conteúdo Web");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Separator",
+			label = "Separador");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Select from List",
+			label = "Selecionar da Lista");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Image",
+			label = "Imagem");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Rich Text",
+			label = "Texto Completo");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Geolocation",
+			label = "Localização Terrestre");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Single Selection",
+			label = "Seleção Única");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Grid",
+			label = "Grade");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Multiple Selection",
+			label = "Seleção Múltipla");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Date",
+			label = "Data");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Upload",
+			label = "Enviar");
+
+		FormViewBuilder.editFieldLabel(
+			fieldLabel = "Color",
+			label = "Cor");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		for (var key_fieldFieldLabel : list "Conteúdo Web,Numérico,Data,Enviar,Imagem,Texto Completo,Cor,Seleção Única,Seleção Múltipla,Texto,Grade,Localização Terrestre,Selecionar da Lista,Separador,Link para Página") {
+			AssertTextEquals(
+				key_fieldFieldLabel = "${key_fieldFieldLabel}",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL",
+				value1 = "${key_fieldFieldLabel}");
+		}
+	}
+
+	@description = "This test ensures that is possible to translate the structure without adding a title to the default language."
+	@priority = "4"
+	test TranslateStructureWithoutDefaultTitle {
+		WebContentStructures.addCP();
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Text",
+			fieldHelp = "Text Field Help Text");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Numeric",
+			fieldHelp = "Numeric Field Help Text");
+
+		WebContentStructures.addLocalization(
+			locale = "pt-BR",
+			localization1Name = "Nome da Estrutura WC");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "Grupo de Campos");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Texto");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Numérica");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Texto",
+			fieldHelp = "Texto de ajuda do campo de texto");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Numérica",
+			fieldHelp = "Texto de ajuda do campo numérico");
+
+		PortletEntry.changeLocale(locale = "en-US");
+
+		Button.clickSave();
+
+		Alert.viewErrorMessage(errorMessage = "Please enter a valid title for the default language: en-US");
+
+		WebContentStructures.addName(structureName = "WC Structure Title");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "WC Structure Title");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Fields Group",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Text,Numeric") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Fields Group",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+
+		for (var fieldFieldLabel : list "Text,Numeric") {
+			AssertTextEquals(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				locator1 = "DDMEditStructure#SETTINGS_TEXT",
+				value1 = "${fieldFieldLabel} Field Help Text");
+		}
+
+		PortletEntry.changeLocale(locale = "pt_BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "Nome da Estrutura WC");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Grupo de Campos",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Texto",
+			fieldHelp = "Texto de ajuda do campo de texto",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Numérica",
+			fieldHelp = "Texto de ajuda do campo numérico",
+			fieldName = "Numeric");
+	}
+
+	@description = "This test ensures that a translation doesn't change another one."
+	@priority = "5"
+	test TranslationDoesNotChangeAnother {
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		WebContentStructures.addLocalization(
+			locale = "pt-BR",
+			localization1Name = "Nome da Estrutura WC");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "Grupo de Campos");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Texto");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Numérica");
+
+		WebContentStructures.addLocalization(
+			locale = "de-DE",
+			localization1Name = "Name der WC-Struktur");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "Feldgruppe");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "der Text");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Numerisch");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "WC Structure Title");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Fields Group",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Text,Numeric") {
+			AssertElementPresent(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Fields Group",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+
+		PortletEntry.changeLocale(locale = "pt_BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "Nome da Estrutura WC");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Grupo de Campos",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Texto,Numérica") {
+			AssertElementPresent(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Grupo de Campos",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+
+		PortletEntry.changeLocale(locale = "de-DE");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "Name der WC-Struktur");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Feldgruppe",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "der Text,Numerisch") {
+			AssertElementPresent(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Feldgruppe",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+	}
+
+	@description = "This test ensures that the translation persist after creating a 2-level nested fields."
+	@priority = "5"
+	test TranslationPersistsForTwoLevelNestedFields {
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Text");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Date",
+			fieldName = "Date",
+			targetFieldLabel = "Numeric");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Text",
+			fieldHelp = "Text Field Help Text");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Numeric",
+			fieldHelp = "Numeric Field Help Text");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Date",
+			fieldHelp = "Date Field Help Text");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "First Level Fields Group");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "Second Level Fields Group");
+
+		WebContentStructures.addLocalization(
+			locale = "pt-BR",
+			localization1Name = "Nome da Estrutura WC");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "First Level Fields Group",
+			fieldsGroupLabelEdit = "Grupo de campos de primeiro nível");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Second Level Fields Group",
+			fieldsGroupLabelEdit = "Grupo de Campos de Segundo Nível");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Text",
+			fieldFieldLabelEdit = "Texto");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Numérica");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Date",
+			fieldFieldLabelEdit = "Encontro");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Texto",
+			fieldHelp = "Texto de ajuda do campo texto");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Numérica",
+			fieldHelp = "Texto de ajuda do campo numérico");
+
+		DataEngine.editFieldTip(
+			fieldFieldLabel = "Encontro",
+			fieldHelp = "Texto de ajuda do campo encontro");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "WC Structure Title");
+
+		for (var fieldsGroupLabel : list "First Level Fields Group,Second Level Fields Group") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldsGroupLabel}",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+		}
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Text",
+			fieldHelp = "Text Field Help Text",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Numeric",
+			fieldHelp = "Numeric Field Help Text",
+			fieldName = "Numeric");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Date",
+			fieldHelp = "Date Field Help Text",
+			fieldName = "Date");
+
+		PortletEntry.changeLocale(locale = "pt-BR");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "Nome da Estrutura WC");
+
+		for (var fieldsGroupLabel : list "Grupo de campos de primeiro nível,Grupo de Campos de Segundo Nível") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldsGroupLabel}",
+				locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+		}
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Texto",
+			fieldHelp = "Texto de ajuda do campo texto",
+			fieldName = "Text");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Numérica",
+			fieldHelp = "Texto de ajuda do campo numérico",
+			fieldName = "Numeric");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Encontro",
+			fieldHelp = "Texto de ajuda do campo encontro",
+			fieldName = "Date");
+	}
+
+	@description = "This test ensures that the default language is the first shown to the user."
+	@priority = "4"
+	test VerifyDefaultLanguageIsFirstShown {
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Link to Page",
+			fieldName = "Link to Page");
+
+		DataEngine.addFieldNested(
+			fieldFieldLabel = "Numeric",
+			fieldName = "Numeric",
+			targetFieldLabel = "Link to Page");
+
+		WebContentStructures.addLocalization(
+			locale = "pt-BR",
+			localization1Name = "Nome da Estrutura WC");
+
+		DataEngine.editFieldsGroupLabel(
+			fieldsGroupLabel = "Fields Group",
+			fieldsGroupLabelEdit = "Grupo de Campos");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Link to Page",
+			fieldFieldLabelEdit = "Link para a página");
+
+		DataEngine.editFieldLabel(
+			fieldFieldLabel = "Numeric",
+			fieldFieldLabelEdit = "Numérica");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		PortletEntry.viewLocale(locale = "en-US");
+
+		AssertTextEquals(
+			locator1 = "TextInput#NAME",
+			value1 = "WC Structure Title");
+
+		AssertVisible(
+			key_fieldFieldLabel = "Fields Group",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+
+		for (var fieldFieldLabel : list "Link to Page,Numeric") {
+			AssertVisible(
+				key_fieldFieldLabel = "${fieldFieldLabel}",
+				key_fieldsGroupLabel = "Fields Group",
+				locator1 = "DataEngineBuilder#FORM_FIELD_NESTED");
+		}
+	}
+
+}

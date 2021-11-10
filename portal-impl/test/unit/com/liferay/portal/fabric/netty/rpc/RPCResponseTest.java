@@ -14,15 +14,19 @@
 
 package com.liferay.portal.fabric.netty.rpc;
 
+import com.liferay.petra.concurrent.AsyncBroker;
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.fabric.netty.NettyTestUtil;
 import com.liferay.portal.fabric.netty.handlers.NettyChannelAttributes;
-import com.liferay.portal.kernel.concurrent.AsyncBroker;
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.test.CaptureHandler;
-import com.liferay.portal.kernel.test.JDKLoggerTestUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LogEntry;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 
@@ -31,10 +35,10 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
-import java.util.logging.LogRecord;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -43,8 +47,10 @@ import org.junit.Test;
 public class RPCResponseTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Test
 	public void testExecuteWithCancellation() throws Exception {
@@ -67,8 +73,9 @@ public class RPCResponseTest {
 			_ID, true, _RESULT, _throwable);
 
 		Assert.assertEquals(
-			"{cancelled=true, id=" + _ID + ", result=" + _RESULT +
-				", throwable=" + _throwable + "}",
+			StringBundler.concat(
+				"{cancelled=true, id=", _ID, ", result=", _RESULT,
+				", throwable=", _throwable, "}"),
 			rpcResponse.toString());
 	}
 
@@ -81,44 +88,43 @@ public class RPCResponseTest {
 		RPCResponse<String> rpcResponse = new RPCResponse<>(
 			_ID, cancelled, result, throwable);
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					RPCResponse.class.getName(), Level.SEVERE)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				RPCResponse.class.getName(), Level.SEVERE)) {
 
 			rpcResponse.execute(_embeddedChannel);
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			LogRecord logRecord = logRecords.get(0);
+			LogEntry logEntry = logEntries.get(0);
 
 			if (cancelled) {
 				Assert.assertEquals(
 					"Unable to place cancellation because no future exists " +
 						"with ID " + _ID,
-					logRecord.getMessage());
+					logEntry.getMessage());
 			}
 			else if (throwable != null) {
 				Assert.assertEquals(
 					"Unable to place exception because no future exists with " +
 						"ID " + _ID,
-					logRecord.getMessage());
-				Assert.assertSame(throwable, logRecord.getThrown());
+					logEntry.getMessage());
+				Assert.assertSame(throwable, logEntry.getThrowable());
 			}
 			else {
 				Assert.assertEquals(
-					"Unable to place result " + result +
-						" because no future exists with ID " + _ID,
-					logRecord.getMessage());
+					StringBundler.concat(
+						"Unable to place result ", result,
+						" because no future exists with ID ", _ID),
+					logEntry.getMessage());
 			}
 		}
 
 		// Have futures, with log
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					RPCResponse.class.getName(), Level.FINEST)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				RPCResponse.class.getName(), Level.FINEST)) {
 
 			AsyncBroker<Long, Serializable> asyncBroker =
 				NettyChannelAttributes.getAsyncBroker(_embeddedChannel);
@@ -128,21 +134,21 @@ public class RPCResponseTest {
 
 			rpcResponse.execute(_embeddedChannel);
 
-			List<LogRecord> logRecords = captureHandler.getLogRecords();
+			List<LogEntry> logEntries = logCapture.getLogEntries();
 
 			if (!cancelled) {
-				Assert.assertTrue(logRecords.isEmpty());
+				Assert.assertTrue(logEntries.toString(), logEntries.isEmpty());
 
 				return;
 			}
 
 			Assert.assertTrue(noticeableFuture.isCancelled());
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			LogRecord logRecord = logRecords.remove(0);
+			LogEntry logEntry = logEntries.remove(0);
 
 			Assert.assertEquals(
-				"Cancelled future with ID " + _ID, logRecord.getMessage());
+				"Cancelled future with ID " + _ID, logEntry.getMessage());
 
 			DefaultNoticeableFuture<Serializable> defaultNoticeableFuture =
 				new DefaultNoticeableFuture<>();
@@ -157,21 +163,20 @@ public class RPCResponseTest {
 
 			rpcResponse.execute(_embeddedChannel);
 
-			Assert.assertEquals(1, logRecords.size());
+			Assert.assertEquals(logEntries.toString(), 1, logEntries.size());
 
-			logRecord = logRecords.remove(0);
+			logEntry = logEntries.remove(0);
 
 			Assert.assertEquals(
 				"Unable to cancel future with ID " + _ID +
 					" because it is already completed",
-				logRecord.getMessage());
+				logEntry.getMessage());
 		}
 
 		// Have futures, without log
 
-		try (CaptureHandler captureHandler =
-				JDKLoggerTestUtil.configureJDKLogger(
-					RPCResponse.class.getName(), Level.OFF)) {
+		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
+				RPCResponse.class.getName(), Level.OFF)) {
 
 			AsyncBroker<Long, Serializable> asyncBroker =
 				NettyChannelAttributes.getAsyncBroker(_embeddedChannel);

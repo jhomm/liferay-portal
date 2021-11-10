@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<!DOCTYPE PUBLIC "-//MuleSource //DTD mule-configuration XML V1.0//EN">
+
+<definition>
+	<element name="test">
+		<attribute name="hello world" />
+	</element>
+</definition>

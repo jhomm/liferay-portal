@@ -14,108 +14,164 @@
 
 package com.liferay.portal.upgrade.v7_0_0;
 
-import com.liferay.portal.kernel.dao.jdbc.DataAccess;
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.model.DLFileEntryType;
+import com.liferay.document.library.kernel.model.DLFolder;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.PortletPreferences;
+import com.liferay.portal.kernel.model.WorkflowInstanceLink;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
-import com.liferay.portal.kernel.util.StringBundler;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LoggingTimer;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.workflow.WorkflowInstance;
-import com.liferay.portal.model.Layout;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.blogs.model.BlogsEntry;
-import com.liferay.portlet.documentlibrary.model.DLFileEntry;
-import com.liferay.portlet.documentlibrary.model.DLFileEntryType;
-import com.liferay.portlet.documentlibrary.model.DLFolder;
-import com.liferay.portlet.messageboards.model.MBCategory;
-import com.liferay.portlet.messageboards.model.MBThread;
-import com.liferay.portlet.softwarecatalog.model.SCProductEntry;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author Eduardo Garcia
+ * @author Eduardo García
  * @author Roberto Díaz
  * @author Iván Zaera
  */
 public class UpgradeSubscription extends UpgradeProcess {
 
+	protected void addClassName(long classNameId, String className)
+		throws Exception {
+
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"insert into ClassName_ (mvccVersion, classNameId, value) " +
+					"values (?, ?, ?)")) {
+
+			preparedStatement.setLong(1, 0);
+			preparedStatement.setLong(2, classNameId);
+			preparedStatement.setString(3, className);
+
+			preparedStatement.executeUpdate();
+		}
+	}
+
+	protected void deleteOrphanedSubscriptions() throws Exception {
+		try (LoggingTimer loggingTimer = new LoggingTimer()) {
+			long classNameId = PortalUtil.getClassNameId(
+				PortletPreferences.class.getName());
+
+			runSQL(
+				StringBundler.concat(
+					"delete from Subscription where classNameId = ",
+					classNameId,
+					" and classPK not in (select portletPreferencesId from ",
+					"PortletPreferences)"));
+		}
+	}
+
 	@Override
 	protected void doUpgrade() throws Exception {
+		deleteOrphanedSubscriptions();
+
 		updateSubscriptionClassNames(
 			Folder.class.getName(), DLFolder.class.getName());
-		updateSubscriptionClassNames(
-			"com.liferay.portlet.journal.model.JournalArticle",
-			"com.liferay.portlet.journal.model.JournalFolder");
 
 		updateSubscriptionGroupIds();
 	}
 
-	protected long getGroupId(long classNameId, long classPK) throws Exception {
-		Connection con = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
+	protected long getClassNameId(String className) throws Exception {
+		long classNameId = PortalUtil.getClassNameId(className);
 
-		try {
-			con = DataAccess.getUpgradeOptimizedConnection();
-
-			String className = PortalUtil.getClassName(classNameId);
-
-			String[] groupIdSQLParts = StringUtil.split(
-				_getGroupIdSQLPartsMap.get(className));
-
-			String sql =
-				"select " + groupIdSQLParts[1] + " from " + groupIdSQLParts[0] +
-					" where " + groupIdSQLParts[2] + " = ?";
-
-			ps = con.prepareStatement(sql);
-
-			ps.setLong(1, classPK);
-
-			rs = ps.executeQuery();
-
-			if (rs.next()) {
-				return rs.getLong("groupId");
-			}
+		if (classNameId != 0) {
+			return classNameId;
 		}
-		finally {
-			DataAccess.cleanUp(con, ps, rs);
+
+		classNameId = increment();
+
+		addClassName(classNameId, className);
+
+		return classNameId;
+	}
+
+	protected long getGroupId(long classNameId, long classPK) throws Exception {
+		String className = PortalUtil.getClassName(classNameId);
+
+		String[] groupIdSQLParts = StringUtil.split(
+			_getGroupIdSQLPartsMap.get(className));
+
+		if (ArrayUtil.isEmpty(groupIdSQLParts)) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to determine the group ID for the class name " +
+						className);
+			}
+
+			return 0;
+		}
+
+		String tableName = groupIdSQLParts[0];
+
+		String sql = StringBundler.concat(
+			"select ", groupIdSQLParts[1], " from ", tableName, " where ",
+			groupIdSQLParts[2], " = ?");
+
+		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
+				sql)) {
+
+			preparedStatement1.setLong(1, classPK);
+
+			try (ResultSet resultSet1 = preparedStatement1.executeQuery()) {
+				if (resultSet1.next()) {
+					if (tableName.equals("PortletPreferences")) {
+						long plid = resultSet1.getLong("plid");
+
+						try (PreparedStatement preparedStatement2 =
+								connection.prepareStatement(
+									"select groupId from Layout where plid = " +
+										"?")) {
+
+							preparedStatement2.setLong(1, plid);
+
+							try (ResultSet resultSet2 =
+									preparedStatement2.executeQuery()) {
+
+								if (resultSet2.next()) {
+									return resultSet2.getLong("groupId");
+								}
+							}
+						}
+					}
+					else {
+						return resultSet1.getLong("groupId");
+					}
+				}
+			}
 		}
 
 		return 0;
 	}
 
 	protected boolean hasGroup(long groupId) throws Exception {
-		Connection con = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"select count(*) from Group_ where groupId = ?")) {
 
-		try {
-			con = DataAccess.getUpgradeOptimizedConnection();
+			preparedStatement.setLong(1, groupId);
 
-			ps = con.prepareStatement(
-				"select count(*) from Group_ where groupId = ?");
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					int count = resultSet.getInt(1);
 
-			ps.setLong(1, groupId);
-
-			rs = ps.executeQuery();
-
-			if (rs.next()) {
-				int count = rs.getInt(1);
-
-				if (count > 0) {
-					return true;
+					if (count > 0) {
+						return true;
+					}
 				}
 			}
 
 			return false;
-		}
-		finally {
-			DataAccess.cleanUp(con, ps, rs);
 		}
 	}
 
@@ -123,103 +179,106 @@ public class UpgradeSubscription extends UpgradeProcess {
 			String oldClassName, String newClassName)
 		throws Exception {
 
-		StringBundler sb = new StringBundler(4);
-
-		sb.append("update Subscription set classNameId = ");
-		sb.append(PortalUtil.getClassNameId(newClassName));
-		sb.append(" where classNameId = ");
-		sb.append(PortalUtil.getClassNameId(oldClassName));
-
-		runSQL(sb.toString());
-	}
-
-	protected void updateSubscriptionGroupId(
-			long subscriptionId, long classNameId, long classPK)
-		throws Exception {
-
-		long groupId = getGroupId(classNameId, classPK);
-
-		if ((groupId == 0) && hasGroup(classPK)) {
-			groupId = classPK;
-		}
-
-		if (groupId != 0) {
+		try (LoggingTimer loggingTimer = new LoggingTimer(oldClassName)) {
 			runSQL(
-				"update Subscription set groupId = " + groupId + " where " +
-					"subscriptionId = " + subscriptionId);
+				StringBundler.concat(
+					"update Subscription set classNameId = ",
+					getClassNameId(newClassName), " where classNameId = ",
+					PortalUtil.getClassNameId(oldClassName)));
 		}
 	}
 
 	protected void updateSubscriptionGroupIds() throws Exception {
-		Connection con = null;
-		PreparedStatement ps = null;
-		ResultSet rs = null;
-
-		try {
-			con = DataAccess.getUpgradeOptimizedConnection();
-
-			ps = con.prepareStatement(
+		try (LoggingTimer loggingTimer = new LoggingTimer();
+			PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select subscriptionId, classNameId, classPK from " +
 					"Subscription");
+			PreparedStatement preparedStatement2 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					"update Subscription set groupId = ? where " +
+						"subscriptionId = ?");
+			ResultSet resultSet = preparedStatement1.executeQuery()) {
 
-			rs = ps.executeQuery();
+			while (resultSet.next()) {
+				long classNameId = resultSet.getLong("classNameId");
+				long classPK = resultSet.getLong("classPK");
 
-			while (rs.next()) {
-				long subscriptionId = rs.getLong("subscriptionId");
-				long classNameId = rs.getLong("classNameId");
-				long classPK = rs.getLong("classPK");
+				long groupId = getGroupId(classNameId, classPK);
 
-				updateSubscriptionGroupId(subscriptionId, classNameId, classPK);
+				if ((groupId == 0) && hasGroup(classPK)) {
+					groupId = classPK;
+				}
+
+				if (groupId != 0) {
+					preparedStatement2.setLong(1, groupId);
+
+					long subscriptionId = resultSet.getLong("subscriptionId");
+
+					preparedStatement2.setLong(2, subscriptionId);
+
+					preparedStatement2.addBatch();
+				}
 			}
-		}
-		finally {
-			DataAccess.cleanUp(con, ps, rs);
+
+			preparedStatement2.executeBatch();
 		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		UpgradeSubscription.class);
 
 	private static final Map<String, String> _getGroupIdSQLPartsMap =
-		new HashMap<>();
-
-	static {
-		_getGroupIdSQLPartsMap.put(
-			BlogsEntry.class.getName(), "BlogsEntry,groupId,entryId");
-		_getGroupIdSQLPartsMap.put(
-			DLFileEntry.class.getName(), "DLFileEntry,groupId,fileEntryId");
-		_getGroupIdSQLPartsMap.put(
+		HashMapBuilder.put(
+			DLFileEntry.class.getName(), "DLFileEntry,groupId,fileEntryId"
+		).put(
 			DLFileEntryType.class.getName(),
-			"DLFileEntryType,groupId,fileEntryTypeId");
-		_getGroupIdSQLPartsMap.put(
-			DLFolder.class.getName(), "DLFolder,groupId,folderId");
-		_getGroupIdSQLPartsMap.put(
-			Layout.class.getName(), "Layout,groupId,plid");
-		_getGroupIdSQLPartsMap.put(
-			MBCategory.class.getName(), "MBCategory,groupId,categoryId");
-		_getGroupIdSQLPartsMap.put(
-			MBThread.class.getName(), "MBThread,groupId,threadId");
-		_getGroupIdSQLPartsMap.put(
-			SCProductEntry.class.getName(),
-			"SCProductEntry,groupId,productEntryId");
-		_getGroupIdSQLPartsMap.put(
-			WorkflowInstance.class.getName(),
-			"WorkflowInstance,groupId,workflowInstanceId");
-		_getGroupIdSQLPartsMap.put(
-			"com.liferay.bookmarks.model.BookmarksEntry",
-			"BookmarksEntry,groupId,entryId");
-		_getGroupIdSQLPartsMap.put(
-			"com.liferay.bookmarks.model.BookmarksFolder",
-			"BookmarksFolder,groupId,folderId");
-		_getGroupIdSQLPartsMap.put(
-			"com.liferay.portlet.dynamicdatamapping.DDMStructure",
-			"DDMStructure,groupId,structureId");
-		_getGroupIdSQLPartsMap.put(
-			"com.liferay.portlet.journal.model.JournalFolder",
-			"JournalFolder,groupId,folderId");
-		_getGroupIdSQLPartsMap.put(
-			"com.liferay.portlet.wiki.model.WikiNode",
-			"WikiNode,groupId,nodeId");
-		_getGroupIdSQLPartsMap.put(
+			"DLFileEntryType,groupId,fileEntryTypeId"
+		).put(
+			DLFolder.class.getName(), "DLFolder,groupId,folderId"
+		).put(
+			Layout.class.getName(), "Layout,groupId,plid"
+		).put(
+			"com.liferay.calendar.model.CalendarBooking",
+			"CalendarBooking,groupId,calendarBookingId"
+		).put(
+			"com.liferay.knowledgebase.model.KBArticle",
+			"KBArticle,groupId,kbArticleId"
+		).put(
+			"com.liferay.message.boards.kernel.model.MBCategory",
+			"MBCategory,groupId,categoryId"
+		).put(
+			"com.liferay.message.boards.kernel.model.MBThread",
+			"MBThread,groupId,threadId"
+		).put(
+			WorkflowInstanceLink.class.getName(),
+			"WorkflowInstanceLink,groupId,workflowInstanceId"
+		).put(
+			"com.liferay.blogs.kernel.model.BlogsEntry",
+			"BlogsEntry,groupId,entryId"
+		).put(
+			"com.liferay.journal.model.JournalArticle",
+			"JournalArticle,groupId,resourcePrimKey"
+		).put(
+			"com.liferay.journal.model.JournalFolder",
+			"JournalFolder,groupId,folderId"
+		).put(
+			"com.liferay.portal.kernel.model.PortletPreferences",
+			"PortletPreferences,plid,portletPreferencesId"
+		).put(
+			"com.liferay.portlet.bookmarks.model.BookmarksEntry",
+			"BookmarksEntry,groupId,entryId"
+		).put(
+			"com.liferay.portlet.bookmarks.model.BookmarksFolder",
+			"BookmarksFolder,groupId,folderId"
+		).put(
+			"com.liferay.portlet.dynamic.data.mapping.kernel.DDMStructure",
+			"DDMStructure,groupId,structureId"
+		).put(
+			"com.liferay.portlet.wiki.model.WikiNode", "WikiNode,groupId,nodeId"
+		).put(
 			"com.liferay.portlet.wiki.model.WikiPage",
-			"WikiPage,groupId,resourcePrimKey");
-	}
+			"WikiPage,groupId,resourcePrimKey"
+		).build();
 
 }

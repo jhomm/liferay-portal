@@ -14,14 +14,11 @@
 
 package com.liferay.portal.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portal.kernel.util.HashUtil;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
-import com.liferay.portal.model.CacheModel;
-import com.liferay.portal.model.MVCCModel;
-import com.liferay.portal.model.Portlet;
+import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
+import com.liferay.portal.kernel.model.Portlet;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -32,26 +29,26 @@ import java.io.ObjectOutput;
  * The cache model class for representing Portlet in entity cache.
  *
  * @author Brian Wing Shun Chan
- * @see Portlet
  * @generated
  */
-@ProviderType
-public class PortletCacheModel implements CacheModel<Portlet>, Externalizable,
-	MVCCModel {
+public class PortletCacheModel
+	implements CacheModel<Portlet>, Externalizable, MVCCModel {
+
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
+	public boolean equals(Object object) {
+		if (this == object) {
 			return true;
 		}
 
-		if (!(obj instanceof PortletCacheModel)) {
+		if (!(object instanceof PortletCacheModel)) {
 			return false;
 		}
 
-		PortletCacheModel portletCacheModel = (PortletCacheModel)obj;
+		PortletCacheModel portletCacheModel = (PortletCacheModel)object;
 
 		if ((id == portletCacheModel.id) &&
-				(mvccVersion == portletCacheModel.mvccVersion)) {
+			(mvccVersion == portletCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -105,14 +102,14 @@ public class PortletCacheModel implements CacheModel<Portlet>, Externalizable,
 		portletImpl.setCompanyId(companyId);
 
 		if (portletId == null) {
-			portletImpl.setPortletId(StringPool.BLANK);
+			portletImpl.setPortletId("");
 		}
 		else {
 			portletImpl.setPortletId(portletId);
 		}
 
 		if (roles == null) {
-			portletImpl.setRoles(StringPool.BLANK);
+			portletImpl.setRoles("");
 		}
 		else {
 			portletImpl.setRoles(roles);
@@ -128,29 +125,33 @@ public class PortletCacheModel implements CacheModel<Portlet>, Externalizable,
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
 		id = objectInput.readLong();
+
 		companyId = objectInput.readLong();
 		portletId = objectInput.readUTF();
 		roles = objectInput.readUTF();
+
 		active = objectInput.readBoolean();
 	}
 
 	@Override
-	public void writeExternal(ObjectOutput objectOutput)
-		throws IOException {
+	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
 		objectOutput.writeLong(id);
+
 		objectOutput.writeLong(companyId);
 
 		if (portletId == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(portletId);
 		}
 
 		if (roles == null) {
-			objectOutput.writeUTF(StringPool.BLANK);
+			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(roles);
@@ -165,4 +166,5 @@ public class PortletCacheModel implements CacheModel<Portlet>, Externalizable,
 	public String portletId;
 	public String roles;
 	public boolean active;
+
 }

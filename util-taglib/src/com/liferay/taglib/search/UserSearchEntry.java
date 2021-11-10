@@ -16,7 +16,7 @@ package com.liferay.taglib.search;
 
 import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.servlet.DirectRequestDispatcherFactoryUtil;
-import com.liferay.taglib.servlet.PipingServletResponse;
+import com.liferay.portal.kernel.servlet.PipingServletResponse;
 
 import java.io.Writer;
 
@@ -46,11 +46,11 @@ public class UserSearchEntry extends TextSearchEntry {
 	}
 
 	public HttpServletRequest getRequest() {
-		return _request;
+		return _httpServletRequest;
 	}
 
 	public HttpServletResponse getResponse() {
-		return _response;
+		return _httpServletResponse;
 	}
 
 	public ServletContext getServletContext() {
@@ -61,15 +61,24 @@ public class UserSearchEntry extends TextSearchEntry {
 		return _userId;
 	}
 
+	public boolean isShowDetails() {
+		return _showDetails;
+	}
+
 	@Override
 	public void print(
-			Writer writer, HttpServletRequest request,
-			HttpServletResponse response)
+			Writer writer, HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws Exception {
 
-		request.setAttribute(
+		httpServletRequest.setAttribute(
+			"liferay-ui:search-container-column-user:cssClass", getCssClass());
+		httpServletRequest.setAttribute(
 			"liferay-ui:search-container-column-user:date", _date);
-		request.setAttribute(
+		httpServletRequest.setAttribute(
+			"liferay-ui:search-container-column-user:showDetails",
+			_showDetails);
+		httpServletRequest.setAttribute(
 			"liferay-ui:search-container-column-user:userId", _userId);
 
 		if (_servletContext != null) {
@@ -78,13 +87,14 @@ public class UserSearchEntry extends TextSearchEntry {
 					_servletContext, _PAGE);
 
 			requestDispatcher.include(
-				request, new PipingServletResponse(response, writer));
+				httpServletRequest,
+				new PipingServletResponse(httpServletResponse, writer));
 		}
 		else {
-			RequestDispatcher requestDispatcher = request.getRequestDispatcher(
-				_PAGE);
+			RequestDispatcher requestDispatcher =
+				httpServletRequest.getRequestDispatcher(_PAGE);
 
-			requestDispatcher.include(request, response);
+			requestDispatcher.include(httpServletRequest, httpServletResponse);
 		}
 	}
 
@@ -92,16 +102,20 @@ public class UserSearchEntry extends TextSearchEntry {
 		_date = date;
 	}
 
-	public void setRequest(HttpServletRequest request) {
-		_request = request;
+	public void setRequest(HttpServletRequest httpServletRequest) {
+		_httpServletRequest = httpServletRequest;
 	}
 
-	public void setResponse(HttpServletResponse response) {
-		_response = response;
+	public void setResponse(HttpServletResponse httpServletResponse) {
+		_httpServletResponse = httpServletResponse;
 	}
 
 	public void setServletContext(ServletContext servletContext) {
 		_servletContext = servletContext;
+	}
+
+	public void setShowDetails(boolean showDetails) {
+		_showDetails = showDetails;
 	}
 
 	public void setUserId(long userId) {
@@ -112,9 +126,10 @@ public class UserSearchEntry extends TextSearchEntry {
 		"/html/taglib/ui/search_container/user.jsp";
 
 	private Date _date;
-	private HttpServletRequest _request;
-	private HttpServletResponse _response;
+	private HttpServletRequest _httpServletRequest;
+	private HttpServletResponse _httpServletResponse;
 	private ServletContext _servletContext;
+	private boolean _showDetails = true;
 	private long _userId;
 
 }

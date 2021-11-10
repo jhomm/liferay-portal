@@ -14,10 +14,8 @@
 
 package com.liferay.portlet.expando.model.impl;
 
-import aQute.bnd.annotation.ProviderType;
-
-import com.liferay.portlet.expando.model.ExpandoColumn;
-import com.liferay.portlet.expando.service.ExpandoColumnLocalServiceUtil;
+import com.liferay.expando.kernel.model.ExpandoColumn;
+import com.liferay.expando.kernel.service.ExpandoColumnLocalServiceUtil;
 
 /**
  * The extended model base implementation for the ExpandoColumn service. Represents a row in the &quot;ExpandoColumn&quot; database table, with each column mapped to a property of this class.
@@ -31,13 +29,13 @@ import com.liferay.portlet.expando.service.ExpandoColumnLocalServiceUtil;
  * @see ExpandoColumn
  * @generated
  */
-@ProviderType
-public abstract class ExpandoColumnBaseImpl extends ExpandoColumnModelImpl
-	implements ExpandoColumn {
+public abstract class ExpandoColumnBaseImpl
+	extends ExpandoColumnModelImpl implements ExpandoColumn {
+
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. All methods that expect a expando column model instance should use the {@link ExpandoColumn} interface instead.
+	 * Never modify or reference this class directly. All methods that expect a expando column model instance should use the <code>ExpandoColumn</code> interface instead.
 	 */
 	@Override
 	public void persist() {
@@ -48,4 +46,5 @@ public abstract class ExpandoColumnBaseImpl extends ExpandoColumnModelImpl
 			ExpandoColumnLocalServiceUtil.updateExpandoColumn(this);
 		}
 	}
+
 }

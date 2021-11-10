@@ -1,0 +1,173 @@
+@import 'cadmin-variables';
+
+html#{$cadmin-selector} {
+	.cadmin {
+		.applications-menu-modal {
+			.modal-dialog {
+				margin: 0;
+				max-width: none;
+				width: 100%;
+			}
+
+			.modal-content {
+				border-radius: 0;
+				box-shadow: none;
+			}
+
+			.modal-body {
+				padding: 0;
+			}
+
+			.btn-monospaced {
+				color: $cadmin-secondary;
+			}
+		}
+
+		.applications-menu-header .nav-link {
+			color: $cadmin-secondary;
+			padding-bottom: 16px;
+			padding-top: 16px;
+
+			&.active {
+				color: $cadmin-dark;
+			}
+		}
+
+		.applications-menu-wrapper {
+			display: flex;
+			flex-direction: column;
+			height: -moz-available;
+			height: -webkit-fill-available;
+			height: stretch;
+			max-height: 100vh;
+		}
+
+		.applications-menu-bg {
+			@include media-breakpoint-up(md, $cadmin-grid-breakpoints) {
+				background: linear-gradient(
+					to right,
+					$cadmin-white 0%,
+					$cadmin-white 50%,
+					$cadmin-light-l1 51%,
+					$cadmin-light-l1 100%
+				);
+
+				.container-fluid {
+					background-color: $cadmin-white;
+				}
+			}
+		}
+
+		.applications-menu-border-top {
+			border-top: 1px solid $cadmin-light;
+		}
+
+		.applications-menu-nav-columns {
+			column-count: 1;
+			margin-left: -$cadmin-grid-gutter-width / 2;
+			margin-right: -$cadmin-grid-gutter-width / 2;
+			orphans: 1;
+			widows: 1;
+
+			@include media-breakpoint-up(sm, $cadmin-grid-breakpoints) {
+				column-count: 2;
+			}
+
+			@include media-breakpoint-up(md, $cadmin-grid-breakpoints) {
+				column-count: 3;
+			}
+
+			@include media-breakpoint-up(lg, $cadmin-grid-breakpoints) {
+				column-count: 4;
+			}
+
+			.col-md {
+				display: inline-block;
+			}
+		}
+
+		.applications-menu-nav-header {
+			color: $cadmin-secondary;
+			font-size: 14px;
+			font-weight: 700;
+			text-transform: uppercase;
+		}
+
+		.applications-menu-nav-link {
+			color: $cadmin-dark;
+
+			&:hover {
+				color: $cadmin-dark;
+				text-decoration: none;
+			}
+
+			&.active {
+				font-weight: 600;
+			}
+
+			.sticker-sm {
+				height: 20px;
+				width: 20px;
+			}
+		}
+
+		.applications-menu-sites-label {
+			background-color: $cadmin-light-l1;
+			color: $cadmin-secondary;
+			font-size: 14px;
+			font-weight: 600;
+			margin-bottom: 0;
+
+			@include media-breakpoint-up(md, $cadmin-grid-breakpoints) {
+				bottom: 100%;
+				left: 8px;
+				padding: 22px 24px;
+				position: absolute;
+			}
+		}
+
+		.applications-menu-sites {
+			background-color: $cadmin-light-l1;
+			height: 100%;
+		}
+
+		.applications-menu-virtual-instance {
+			font-weight: 600;
+		}
+
+		.applications-menu-shrink {
+			flex-shrink: 1;
+			min-width: 0;
+		}
+
+		.applications-menu-btn {
+			font-size: 14px;
+			font-weight: 600;
+			text-decoration: none;
+		}
+
+		.applications-menu-nav-divider {
+			border-top: 1px solid $cadmin-secondary;
+			width: 20px;
+		}
+
+		.applications-menu-company {
+			font-size: 16px;
+			font-weight: 600;
+		}
+
+		.applications-menu-powered {
+			color: $cadmin-secondary;
+			font-size: 10px;
+			text-align: right;
+			text-transform: uppercase;
+		}
+
+		.applications-menu-copyright {
+			color: $cadmin-secondary;
+			font-size: 14px;
+			font-weight: 600;
+			text-align: right;
+		}
+	}
+}

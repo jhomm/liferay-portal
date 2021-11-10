@@ -1,0 +1,282 @@
+@component-name = "portal-document-management"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Depot";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONDepot.deleteDepot(depotName = "Test Depot Name");
+
+			Site.tearDownCP();
+
+			DMDocument.tearDownCP();
+
+			DMFolder.tearDownCP();
+
+			User.logoutPG();
+		}
+	}
+
+	@description = "This ensures that a shortcut can be added to a depot."
+	@priority = "3"
+	@refactordone
+	test CanAccessShortcut {
+		JSONGroup.addGroup(groupName = "Site Name");
+
+		JSONDocument.addFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Document Title",
+			groupName = "Site Name");
+
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMDocument.addDMShortcutCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Document Title",
+			siteName = "Site Name");
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
+
+		DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
+	}
+
+	@description = "This ensures that a document with document type and metadata set can be added in a depot."
+	@priority = "5"
+	@refactordone
+	test CanAddDocumentTypeAndMetadata {
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMNavigator.gotoMetadataSets();
+
+		DMMetadataSet.addTitle(metadataSetName = "DM Metadata Set Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		DDLDataDefinition.save();
+
+		DMNavigator.gotoDocumentType();
+
+		DMDocumentType.add(
+			dmDocumentTypeDescription = "DM Document Type Description",
+			dmDocumentTypeFieldNames = "Numeric",
+			dmDocumentTypeName = "DM Document Type Name",
+			metadataSetName = "DM Metadata Set Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document with DM Document Type Description",
+			dmDocumentFile = "Document_1.doc",
+			dmDocumentTitle = "DM Document Title",
+			dmDocumentTypeName = "DM Document Type Name",
+			numericField = "1234",
+			textField = "Text");
+
+		DepotNavigator.openToDMEntryInDepot(
+			depotName = "Test Depot Name",
+			dmDocumentTitle = "DM Document Title");
+
+		DMDocument.viewDocumentTypePG(
+			numericValue = "1234",
+			textContent = "Text");
+	}
+
+	@description = "This ensures that a folder can be deleted in a depot."
+	@priority = "5"
+	@refactordone
+	test CanDeleteFolder {
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		JSONFolder.addFolder(
+			dmFolderDescription = "DM Folder Description",
+			dmFolderName = "DM Folder Name",
+			groupName = "Test Depot Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMFolder.deleteCP(dmFolderName = "DM Folder Name");
+
+		DMDocument.viewDefault();
+	}
+
+	@description = "This test makes sure that all files are deleted when user selects all in a depot."
+	@priority = "4"
+	@refactordone
+	test CanDeleteMultipleImages {
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMDocument.addMultipleCP(dmDocumentFileList = "Document_1.doc,Document_2.jpg,Document_3.xls");
+
+		PortletEntry.selectAll();
+
+		Click(locator1 = "Button#MOVE_TO_RECYCLE_BIN");
+
+		Alert.viewSuccessMessage();
+
+		DMDocument.viewDefault();
+	}
+
+	@description = "This test edits the title and description of a document in a depot."
+	@priority = "5"
+	@refactordone
+	@uitest
+	test CanEditDocument {
+		property portal.acceptance = "true";
+
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMDocument.addCP(
+			displayPageTemplateDisabled = "true",
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentFile = "Document_1.doc",
+			dmDocumentTitle = "DM Document Title");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMDocument.editCP(
+			displayPageTemplateDisabled = "true",
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentDescriptionEdit = "DM Document Description Edit",
+			dmDocumentFileEdit = "Document_3.jpg",
+			dmDocumentFileNameEdit = "Document_3.jpg",
+			dmDocumentTitle = "DM Document Title",
+			dmDocumentTitleEdit = "DM Document Title Edit");
+
+		DMDocument.viewEditCP(
+			dmDocumentFileName = "Document_3.jpg",
+			dmDocumentTitleEdit = "DM Document Title Edit",
+			dmDocumentVersionNumber = "2.0");
+	}
+
+	@description = "This ensures that a folder can be edited in a depot."
+	@priority = "5"
+	@refactordone
+	@uitest
+	test CanEditFolder {
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMFolder.addCP(
+			dmFolderDescription = "DM Folder Description",
+			dmFolderName = "DM Folder Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMFolder.editCP(
+			dmFolderDescription = "DM Folder Description",
+			dmFolderDescriptionEdit = "DM Folder Description Edit",
+			dmFolderName = "DM Folder Name",
+			dmFolderNameEdit = "DM Folder Name Edit");
+
+		DMFolder.viewCP(dmFolderName = "DM Folder Name Edit");
+	}
+
+	@description = "This ensures that a document can be moved to a folder in a depot."
+	@priority = "5"
+	@refactordone
+	test CanMoveDocumentToFolder {
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		JSONDocument.addFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Document Title",
+			groupName = "Test Depot Name");
+
+		JSONFolder.addFolder(
+			dmFolderDescription = "DM Folder Description",
+			dmFolderName = "DM Folder Name",
+			groupName = "Test Depot Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMDocument.moveToFolderCP(
+			dmDocumentTitle = "DM Document Title",
+			dmFolderName = "DM Folder Name");
+
+		DMDocument.viewMovedToFolderCP(
+			dmDocumentTitle = "DM Document Title",
+			dmFolderName = "DM Folder Name");
+
+		DepotNavigator.openToDMEntryInDepot(
+			depotName = "Test Depot Name",
+			dmDocumentTitle = "DM Document Title",
+			folderName = "DM Folder Name");
+
+		DMDocument.viewCP(
+			dmDocumentTitle = "DM Document Title",
+			dmFolderName = "DM Folder Name",
+			locationFieldName = "true");
+	}
+
+	@description = "This ensures that document can be restored to a depot."
+	@priority = "5"
+	@refactordone
+	test CanRestoreDocument {
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		JSONDocument.addFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Document Title",
+			groupName = "Test Depot Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMDocument.deleteCP(dmDocumentTitle = "DM Document Title");
+
+		DMDocument.viewDefault();
+
+		DepotNavigator.openDepotRecycleBinAdmin(depotName = "Test Depot Name");
+
+		RecycleBin.restoreCP(
+			assetName = "DM Document Title",
+			assetRestoreLocation = "Home",
+			assetType = "Document");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
+
+		DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
+	}
+
+}

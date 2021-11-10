@@ -1,0 +1,9 @@
+Bundle-Name: Liferay SAML Web
+Bundle-SymbolicName: com.liferay.saml.web
+Bundle-Version: 5.0.24
+Import-Package:\
+	javax.net.ssl;resolution:=optional,\
+	\
+	*
+Web-ContextPath: /saml-web
+-dsannotations-options: inherit

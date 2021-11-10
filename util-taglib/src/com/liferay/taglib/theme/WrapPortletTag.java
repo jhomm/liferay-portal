@@ -14,14 +14,14 @@
 
 package com.liferay.taglib.theme;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
 import com.liferay.portal.kernel.servlet.DirectRequestDispatcherFactoryUtil;
-import com.liferay.portal.kernel.util.ThemeHelper;
+import com.liferay.portal.kernel.servlet.PipingServletResponse;
+import com.liferay.portal.kernel.theme.PortletDisplay;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.model.Theme;
-import com.liferay.portal.theme.PortletDisplay;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.taglib.servlet.PipingServletResponse;
+import com.liferay.taglib.servlet.PipingServletResponseFactory;
 import com.liferay.taglib.util.ParamAndPropertyAncestorTagImpl;
 import com.liferay.taglib.util.ThemeUtil;
 
@@ -40,13 +40,14 @@ public class WrapPortletTag
 
 	public static String doTag(
 			String wrapPage, String portletPage, ServletContext servletContext,
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws Exception {
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
-		Theme theme = themeDisplay.getTheme();
 		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
 
 		// Portlet content
@@ -58,38 +59,31 @@ public class WrapPortletTag
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
 		PipingServletResponse pipingServletResponse = new PipingServletResponse(
-			response, unsyncStringWriter);
+			httpServletResponse, unsyncStringWriter);
 
-		requestDispatcher.include(request, pipingServletResponse);
+		requestDispatcher.include(httpServletRequest, pipingServletResponse);
 
 		portletDisplay.setContent(unsyncStringWriter.getStringBundler());
 
 		// Page
 
-		String content = null;
+		String content = ThemeUtil.include(
+			servletContext, httpServletRequest, httpServletResponse, wrapPage,
+			themeDisplay.getTheme(), false);
 
-		String extension = theme.getTemplateExtension();
-
-		if (extension.equals(ThemeHelper.TEMPLATE_EXTENSION_FTL)) {
-			content = ThemeUtil.includeFTL(
-				servletContext, request, response, wrapPage, theme, false);
-		}
-		else if (extension.equals(ThemeHelper.TEMPLATE_EXTENSION_VM)) {
-			content = ThemeUtil.includeVM(
-				servletContext, request, response, wrapPage, theme, false);
-		}
-
-		return _CONTENT_WRAPPER_PRE.concat(content).concat(
-			_CONTENT_WRAPPER_POST);
+		return StringBundler.concat(
+			_CONTENT_WRAPPER_PRE, content, _CONTENT_WRAPPER_POST);
 	}
 
 	@Override
 	public int doEndTag() throws JspException {
 		try {
-			ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-				WebKeys.THEME_DISPLAY);
+			HttpServletRequest httpServletRequest = getRequest();
 
-			Theme theme = themeDisplay.getTheme();
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
 			PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
 
 			// Portlet content
@@ -99,13 +93,15 @@ public class WrapPortletTag
 			// Page
 
 			ThemeUtil.include(
-				servletContext, request, new PipingServletResponse(pageContext),
-				getPage(), theme);
+				getServletContext(), httpServletRequest,
+				PipingServletResponseFactory.createPipingServletResponse(
+					pageContext),
+				getPage(), themeDisplay.getTheme());
 
 			return EVAL_PAGE;
 		}
-		catch (Exception e) {
-			throw new JspException(e);
+		catch (Exception exception) {
+			throw new JspException(exception);
 		}
 		finally {
 			clearParams();

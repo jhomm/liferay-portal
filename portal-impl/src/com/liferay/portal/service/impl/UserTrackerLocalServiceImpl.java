@@ -14,9 +14,11 @@
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.model.UserTracker;
-import com.liferay.portal.model.UserTrackerPath;
+import com.liferay.portal.kernel.model.UserTracker;
+import com.liferay.portal.kernel.model.UserTrackerPath;
+import com.liferay.portal.kernel.service.persistence.UserTrackerPathPersistence;
 import com.liferay.portal.service.base.UserTrackerLocalServiceBaseImpl;
 import com.liferay.portal.util.PropsValues;
 
@@ -50,23 +52,23 @@ public class UserTrackerLocalServiceImpl
 			userTracker.setRemoteHost(remoteHost);
 			userTracker.setUserAgent(userAgent);
 
-			userTrackerPersistence.update(userTracker);
+			userTracker = userTrackerPersistence.update(userTracker);
 
 			for (UserTrackerPath userTrackerPath : userTrackerPaths) {
 				long pathId = counterLocalService.increment(
 					UserTrackerPath.class.getName());
 
 				userTrackerPath.setUserTrackerPathId(pathId);
+
 				userTrackerPath.setUserTrackerId(userTrackerId);
 
-				userTrackerPathPersistence.update(userTrackerPath);
+				_userTrackerPathPersistence.update(userTrackerPath);
 			}
 
 			return userTracker;
 		}
-		else {
-			return null;
-		}
+
+		return null;
 	}
 
 	@Override
@@ -84,7 +86,7 @@ public class UserTrackerLocalServiceImpl
 
 		// Paths
 
-		userTrackerPathPersistence.removeByUserTrackerId(
+		_userTrackerPathPersistence.removeByUserTrackerId(
 			userTracker.getUserTrackerId());
 
 		// User tracker
@@ -98,5 +100,8 @@ public class UserTrackerLocalServiceImpl
 
 		return userTrackerPersistence.findByCompanyId(companyId, start, end);
 	}
+
+	@BeanReference(type = UserTrackerPathPersistence.class)
+	private UserTrackerPathPersistence _userTrackerPathPersistence;
 
 }

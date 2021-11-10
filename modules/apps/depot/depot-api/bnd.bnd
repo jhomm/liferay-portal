@@ -1,0 +1,13 @@
+Bundle-Name: Liferay Depot API
+Bundle-SymbolicName: com.liferay.depot.api
+Bundle-Version: 3.2.4
+Export-Package:\
+	com.liferay.depot.application,\
+	com.liferay.depot.configuration,\
+	com.liferay.depot.constants,\
+	com.liferay.depot.exception,\
+	com.liferay.depot.group.provider,\
+	com.liferay.depot.model,\
+	com.liferay.depot.service,\
+	com.liferay.depot.service.persistence,\
+	com.liferay.depot.util

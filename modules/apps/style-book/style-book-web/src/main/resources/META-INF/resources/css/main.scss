@@ -1,0 +1,219 @@
+@import 'cadmin-variables';
+
+$controlMenuDesktopHeight: 56px;
+$previewInfoBarHeight: 36px;
+$toolbarDesktopHeight: 56px;
+$previewSelectorWidth: 168px;
+
+html#{$cadmin-selector} {
+	.cadmin {
+		&.style-book-editor {
+			--style-book-color-picker-color: none;
+
+			height: calc(100vh - #{$controlMenuDesktopHeight});
+			left: 0;
+			overflow: hidden;
+			position: absolute;
+			top: 0;
+			width: 100%;
+		}
+
+		.style-book-editor {
+			&__color-frontend-token {
+				.clay-color-picker
+					.clay-color
+					.input-group-item
+					.input-group-text {
+					border-radius: 4px 0 0 4px;
+				}
+
+				.clay-color-btn {
+					background-color: var(
+						--style-book-color-picker-color
+					) !important;
+				}
+			}
+
+			&__old-toolbar {
+				align-items: center;
+				border-bottom: 1px solid $cadmin-gray-300;
+				display: flex;
+				flex-direction: row;
+				height: $toolbarDesktopHeight;
+				justify-content: space-between;
+			}
+
+			&__page-preview {
+				flex-grow: 1;
+				position: relative;
+
+				&-empty-site-message {
+					.c-empty-state-title {
+						display: none;
+					}
+
+					.c-empty-state-text {
+						margin-top: 32px;
+					}
+				}
+
+				&-frame {
+					border: none;
+					height: calc(100% - #{$previewInfoBarHeight});
+					width: 100%;
+				}
+
+				&-info-bar {
+					align-items: center;
+					background: $cadmin-primary-l1;
+					color: $cadmin-white;
+					display: flex;
+					font-size: 14px;
+					height: $previewInfoBarHeight;
+					justify-content: space-between;
+					padding-bottom: 1px;
+					padding-left: 24px;
+					padding-right: 24px;
+
+					.dropdown-toggle.btn {
+						&:active {
+							background-color: rgba($cadmin-white, 0.25);
+						}
+						&:hover {
+							background-color: rgba($cadmin-white, 0.15);
+						}
+					}
+				}
+
+				&-text {
+					font-weight: 700;
+				}
+			}
+
+			&__page-type-selector {
+				border-bottom: 1px solid $cadmin-gray-300;
+				padding: 16px;
+			}
+
+			&__page-selector {
+				min-width: 320px;
+				padding: 0;
+
+				.dropdown-item:hover {
+					background-color: $cadmin-white;
+				}
+			}
+
+			&__page-tree {
+				padding: 16px 0;
+
+				.tree-root-container {
+					margin-left: 15px;
+				}
+
+				.tree-view ul {
+					list-style: none;
+					padding-left: 0;
+				}
+
+				.tree-container:not(.tree-root-container) {
+					margin-left: 22px;
+				}
+
+				.lexicon-icon:not(.lexicon-icon-hr):not(.lexicon-icon-plus) {
+					margin-right: 4px;
+				}
+
+				.tree-node {
+					margin-bottom: 8px;
+					margin-top: 8px;
+
+					.tree-hitarea {
+						cursor: pointer;
+						font-size: 8px;
+						margin-right: 0;
+						outline-width: thin;
+						padding-right: 4px;
+						text-align: center;
+					}
+				}
+
+				.tree-label {
+					display: inline-block;
+					margin-left: 3px;
+					max-width: calc(100% - 33px);
+					vertical-align: middle;
+				}
+			}
+
+			&__preview-selector {
+				overflow: hidden;
+				text-overflow: ellipsis;
+				width: $previewSelectorWidth;
+			}
+
+			&__sidebar {
+				background-color: $cadmin-white;
+				border-left: 1px solid $cadmin-gray-300;
+				width: 320px;
+			}
+
+			&__sidebar-collapse {
+				cursor: pointer;
+
+				.collapse-icon {
+					background: none;
+					border: none;
+					color: $cadmin-gray-600;
+					font-size: 11.2px;
+					height: 32px;
+					margin-bottom: 4px;
+					padding-left: 0;
+					text-align: left;
+					width: 100%;
+				}
+
+				.sheet-subtitle {
+					line-height: inherit;
+				}
+			}
+
+			&__sidebar-content {
+				height: calc(
+					100vh - #{$controlMenuDesktopHeight + $toolbarDesktopHeight}
+				);
+				overflow-y: auto;
+				padding: 16px;
+
+				.form-group-sm label {
+					font-size: 12px;
+				}
+			}
+
+			&__status-text {
+				font-size: 12px;
+				font-weight: 600;
+			}
+
+			&__status-icon {
+				color: $cadmin-success;
+				font-size: 12px;
+			}
+
+			&__toolbar {
+				background-color: $cadmin-white;
+				border-bottom: 1px solid fade_out($cadmin-secondary-l2, 0.5);
+			}
+		}
+	}
+
+	&.rtl {
+		.cadmin {
+			.style-book-editor__sidebar-collapse {
+				.collapse-icon-closed {
+					transform: rotate(-180deg);
+				}
+			}
+		}
+	}
+}

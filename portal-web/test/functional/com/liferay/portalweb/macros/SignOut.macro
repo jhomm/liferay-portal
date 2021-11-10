@@ -1,35 +1,16 @@
-<definition>
-	<command name="_signOut">
-		<if>
-			<condition function="IsElementPresent" locator1="ControlMenu#USER_AVATAR_IMAGE" />
-			<then>
-				<execute function="Click" locator1="ControlMenu#USER_NAME" />
+definition {
 
-				<execute function="Click" locator1="ControlMenu#USER_SIGN_OUT" />
-			</then>
-		</if>
-	</command>
+	@summary = "Sign out of Liferay Portal"
+	macro signOut {
+		Navigator.openURL();
 
-	<command name="signOut">
-		<execute macro="Navigator#openURL" />
+		UserBar.signOut();
+	}
 
-		<execute macro="SignOut#_signOut" />
-	</command>
+	macro signOutOfSpecificURL {
+		Navigator.openSpecificURL(url = "${url}");
 
-	<command name="signOutOfSite">
-		<execute macro="Navigator#openSiteURL">
-			<var name="siteName" value="${siteName}" />
-			<var name="siteNameURL" value="${siteNameURL}" />
-		</execute>
+		UserBar.signOut();
+	}
 
-		<execute macro="SignOut#_signOut" />
-	</command>
-
-	<command name="signOutOfSpecificURL">
-		<execute macro="Navigator#openSpecificURL">
-			<var name="url" value="${url}" />
-		</execute>
-
-		<execute macro="SignOut#_signOut" />
-	</command>
-</definition>
+}

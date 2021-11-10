@@ -14,16 +14,16 @@
 
 package com.liferay.portal.events;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.events.Action;
 import com.liferay.portal.kernel.events.ActionException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PrefsPropsUtil;
-import com.liferay.portal.util.WebKeys;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -34,25 +34,27 @@ import javax.servlet.http.HttpServletResponse;
 public class DefaultLogoutPageAction extends Action {
 
 	@Override
-	public void run(HttpServletRequest request, HttpServletResponse response)
+	public void run(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws ActionException {
 
 		try {
-			doRun(request, response);
+			doRun(httpServletRequest, httpServletResponse);
 		}
-		catch (Exception e) {
-			throw new ActionException(e);
+		catch (Exception exception) {
+			throw new ActionException(exception);
 		}
 	}
 
 	protected void doRun(
-			HttpServletRequest request, HttpServletResponse response)
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws Exception {
 
-		long companyId = PortalUtil.getCompanyId(request);
-
 		String path = PrefsPropsUtil.getString(
-			companyId, PropsKeys.DEFAULT_LOGOUT_PAGE_PATH);
+			PortalUtil.getCompanyId(httpServletRequest),
+			PropsKeys.DEFAULT_LOGOUT_PAGE_PATH);
 
 		if (_log.isInfoEnabled()) {
 			_log.info(
@@ -60,7 +62,7 @@ public class DefaultLogoutPageAction extends Action {
 		}
 
 		if (Validator.isNotNull(path)) {
-			request.setAttribute(WebKeys.REFERER, path);
+			httpServletRequest.setAttribute(WebKeys.REFERER, path);
 		}
 
 		// The commented code shows how you can programmaticaly set the user's

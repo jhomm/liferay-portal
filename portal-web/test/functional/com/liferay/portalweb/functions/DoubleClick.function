@@ -1,25 +1,46 @@
-<definition default="doubleClick">
-	<command name="doubleClick">
-		<execute selenium="waitForVisible" />
+@default = "doubleClick"
+definition {
 
-		<execute selenium="mouseOver" />
+	function doubleClick {
+		WaitForSPARefresh();
 
-		<execute selenium="doubleClick" />
+		selenium.waitForVisible();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.mouseOver();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
+		selenium.doubleClick();
 
-	<command name="doubleClickAt">
-		<execute selenium="waitForVisible" />
+		selenium.assertJavaScriptErrors();
 
-		<execute selenium="mouseOver" />
+		selenium.assertLiferayErrors();
+	}
 
-		<execute selenium="doubleClickAt" />
+	function doubleClickAt {
+		WaitForSPARefresh();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.waitForVisible();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.mouseOver();
+
+		selenium.doubleClickAt();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+	function javaScriptDoubleClick {
+		WaitForSPARefresh();
+
+		selenium.waitForVisible();
+
+		selenium.mouseOver();
+
+		selenium.javaScriptDoubleClick();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

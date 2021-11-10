@@ -1,0 +1,947 @@
+@component-name = "portal-commerce"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Shopping Experience";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		PortalSettings.gotoConfiguration(
+			configurationCategory = "User Authentication",
+			configurationName = "General",
+			configurationScope = "Virtual Instance Scope");
+
+		Uncheck(locator1 = "PortalSettingsAuthentication#AUTHENTICATION_GENERAL_REQUIRE_STRANGERS_TO_VERIFY_THEIR_EMAIL_ADDRESS_CHECKBOX");
+
+		PortletEntry.save();
+	}
+
+	tearDown {
+		Navigator.openURL();
+
+		if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
+			User.logoutPG();
+		}
+
+		User.firstLoginPG();
+
+		CommerceConfiguration.commerceAdminTearDown(userScreenName = "buyer");
+
+		CommerceConfiguration.commerceInitializersTearDown();
+
+		User.logoutPG();
+	}
+
+	@description = "COMMERCE-5725. New functional test for COMMERCE-5485"
+	@priority = "3"
+	test AssertCheckoutMinicart {
+		property portal.acceptance = "false";
+
+		// TODO Review
+
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+
+		ApplicationsMenu.gotoSite(site = "Minium");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
+
+		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Test Account");
+
+		CommerceAcceleratorsInitializer.inviteNewMemberWithRoleToAccount(
+			accountName = "Test Account",
+			emailAddress = "buyer@liferay.com",
+			role = "Buyer",
+			userFirstName = "Buyer",
+			userLastName = "User",
+			userScreenName = "buyeruser");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		CommerceLogin.editPasswordCP(
+			newPassword = "ttest",
+			requirePasswordReset = "true",
+			userScreenName = "buyeruser");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Store Management",
+			panel = "Commerce",
+			portlet = "Channels");
+
+		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+		CommerceChannels.activatePaymentMethod(paymentMethod = "PayPal");
+
+		Refresh();
+
+		CommerceChannels.configurationPaypal(mode = "Sandbox");
+
+		Refresh();
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Product Management",
+			panel = "Commerce",
+			portlet = "Products");
+
+		CPCommerceCatalog.newProductsEntry(
+			productCatalog = "Minium",
+			productName = "Simple T-Shirt",
+			productType = "Simple");
+
+		CommerceEntry.gotoMenuTab(menuTab = "SKUs");
+
+		AssertTextEquals(
+			key_columnNumber = "4",
+			key_entryName = "default",
+			locator1 = "CommerceEntry#TABLE_CELL_BY_COLUMN_ORDER",
+			value1 = "0");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Subscription");
+
+		Click(locator1 = "CommerceEntry#PAYMENT_SUBSCRIPTION_TOGGLE");
+
+		Button.clickPublish();
+
+		CommerceEntry.gotoMenuTab(menuTab = "Configuration");
+
+		AssertChecked.assertCheckedNotVisible(
+			key_checkSetupName = "Allow Back Orders",
+			locator1 = "ToggleSwitch#SHOW_SPECIFIC_TOGGLE_SWITCH");
+
+		User.logoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "ttest",
+			resetPassword = "test",
+			urlAppend = "web/minium",
+			userEmailAddress = "buyer@liferay.com");
+
+		FrontStore.addInitializerProductToCart(
+			productName = "Simple T-Shirt",
+			productQuantity = "1");
+
+		CommerceNavigator.gotoMiniCart();
+
+		Button.click(button = "View Details");
+
+		Button.click(button = "Checkout");
+
+		CommerceCheckout.initializersCheckout(
+			newAddressAddress = "Test Address",
+			newAddressCity = "Test City",
+			newAddressCountry = "United States",
+			newAddressName = "Address Name",
+			newAddressZipCode = "Test Zip Code",
+			productName = "Simple T-Shirt",
+			productQuantity = "1",
+			productUnitPrice = "0");
+
+		AssertTextEquals(
+			locator1 = "CommerceAccelerators#CHECKOUT_SUCCESS_MESSAGE",
+			value1 = "Success! Your order has been processed.");
+	}
+
+	@description = "This is a test for COMMERCE-5530. AssertPromoProductPriceTotalIsDifferent"
+	@priority = "3"
+	test AssertPromoProductPriceTotalIsDifferent {
+		property portal.acceptance = "true";
+
+		// TODO Review
+
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+
+		Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
+
+		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Commerce Account");
+
+		Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
+
+		Pagination.changePagination(itemsPerPage = "60");
+
+		FrontStore.addInitializerProductToCart(
+			productName = "Brake Pads",
+			productQuantity = "1");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Pending Orders");
+
+		Click(locator1 = "//a[contains(text(),'View')]");
+
+		AssertTextEquals(
+			locator1 = "CommerceAccelerators#ORDER_DETAILS_PRICE",
+			value1 = "$ 18.90");
+	}
+
+	@description = "This is a test for COMMERCE-4958."
+	test CheckoutWithOneShippingOption {
+		property portal.acceptance = "true";
+
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Store Management",
+			portlet = "Channels");
+
+		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
+
+		CommerceEntry.clickTableEntryEditButton(
+			entryName = "Flat Rate",
+			table = "Shipping Methods");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		CommerceEntry.gotoMenuTab(menuTab = "Shipping Options");
+
+		ClickNoError(
+			key_value = "Expedited Delivery",
+			locator1 = "CommerceEntry#BODY_VERTICAL_ELLIPSIS");
+
+		CommerceEntry.clickNoError(menuItem = "Delete");
+
+		Alert.viewSuccessMessage();
+
+		Navigator.openWithAppendToBaseURL(urlAppend = "web/speedwell");
+
+		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
+
+		FrontStore.addInitializerProductToCart(
+			productName = "U-Joint",
+			productQuantity = "1");
+
+		CommerceNavigator.gotoMiniCart();
+
+		Button.click(button = "Submit");
+
+		Pause(locator1 = "3000");
+
+		CommerceCheckout.initializersCheckout(
+			newAddressAddress = "Test Address",
+			newAddressCity = "Test City",
+			newAddressCountry = "United States",
+			newAddressName = "Address Name",
+			newAddressZipCode = "Test Zip Code",
+			productName = "U-Joint",
+			productQuantity = "1",
+			productUnitPrice = "24",
+			shippingMethod = "Standard");
+	}
+
+	test DeactivateCommerceAccount {
+		property portal.acceptance = "quarantine";
+		property portal.release = "quarantine";
+		property portal.upstream = "quarantine";
+
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+
+		Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
+
+		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Commerce Account");
+
+		CommerceAcceleratorsInitializer.inviteNewMemberWithRoleToAccount(
+			accountName = "Commerce Account",
+			emailAddress = "buyer@liferay.com",
+			role = "Buyer",
+			userFirstName = "Buyer",
+			userLastName = "User",
+			userScreenName = "buyeruser");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
+
+		MenuItem.click(menuItem = "Account Users");
+
+		CommerceLogin.editPasswordCP(
+			newPassword = "ttest",
+			requirePasswordReset = "true",
+			userScreenName = "buyeruser");
+
+		User.logoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "ttest",
+			resetPassword = "test",
+			urlAppend = "web/minium",
+			userEmailAddress = "buyer@liferay.com");
+
+		CommerceAcceleratorsInitializer.viewMiniumSelectedAccount(selectedAccount = "Commerce Account");
+
+		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
+
+		CommerceAcceleratorsInitializer.viewEnabledAddToCartButton(productName = "ABS Sensor");
+
+		CommerceLogin.miniumLogoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "test",
+			urlAppend = "web/minium",
+			userEmailAddress = "test@liferay.com");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
+
+		CommerceAcceleratorsInitializer.deactivateCommerceAccountViaFront(accountName = "Commerce Account");
+
+		CommerceLogin.miniumLogoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "test",
+			urlAppend = "web/minium",
+			userEmailAddress = "buyer@liferay.com");
+
+		Click(locator1 = "CommerceAccelerators#ACCOUNT_SELECTOR_DROPDOWN");
+
+		AssertElementPresent(locator1 = "CommerceAccelerators#ACCOUNT_SELECTOR_NO_ACCOUNTS_WERE_FOUND");
+
+		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
+
+		CommerceAcceleratorsInitializer.viewDisabledAddToCartButton(productName = "ABS Sensor");
+
+		CommerceAcceleratorsInitializer.viewAllAccountsFromAccountSelector();
+
+		AssertTextEquals(
+			locator1 = "Message#EMPTY_INFO",
+			value1 = "No accounts were found.");
+	}
+
+	@description = "This is a workaround for an issue with Minium's sidebar on CI"
+	test DeactivateCommerceAccountAdminLogOut {
+		property portal.acceptance = "true";
+
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+
+		Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
+
+		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Commerce Account");
+
+		CommerceAcceleratorsInitializer.inviteNewMemberWithRoleToAccount(
+			accountName = "Commerce Account",
+			emailAddress = "buyer@liferay.com",
+			role = "Buyer",
+			userFirstName = "Buyer",
+			userLastName = "User",
+			userScreenName = "buyeruser");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
+
+		MenuItem.click(menuItem = "Account Users");
+
+		CommerceLogin.editPasswordCP(
+			newPassword = "ttest",
+			requirePasswordReset = "true",
+			userScreenName = "buyeruser");
+
+		User.logoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "ttest",
+			resetPassword = "test",
+			urlAppend = "web/minium",
+			userEmailAddress = "buyer@liferay.com");
+
+		CommerceAcceleratorsInitializer.viewMiniumSelectedAccount(selectedAccount = "Commerce Account");
+
+		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
+
+		CommerceAcceleratorsInitializer.viewEnabledAddToCartButton(productName = "ABS Sensor");
+
+		User.logoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "test",
+			urlAppend = "web/minium",
+			userEmailAddress = "test@liferay.com");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
+
+		CommerceAcceleratorsInitializer.deactivateCommerceAccountViaFront(accountName = "Commerce Account");
+
+		User.logoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "test",
+			urlAppend = "web/minium",
+			userEmailAddress = "buyer@liferay.com");
+
+		Click(locator1 = "CommerceAccelerators#ACCOUNT_SELECTOR_DROPDOWN");
+
+		AssertElementPresent(locator1 = "CommerceAccelerators#ACCOUNT_SELECTOR_NO_ACCOUNTS_WERE_FOUND");
+
+		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
+
+		CommerceAcceleratorsInitializer.viewDisabledAddToCartButton(productName = "ABS Sensor");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
+
+		AssertTextEquals(
+			locator1 = "Message#EMPTY_INFO",
+			value1 = "No accounts were found.");
+	}
+
+	test InitializeNewMiniumSite {
+		property environment.acceptance = "true";
+		property portal.acceptance = "true";
+
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Store Management",
+			portlet = "Channels");
+
+		CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+		CommerceEntry.viewChannelsEntry(
+			channelCurrency = "US Dollar",
+			channelName = "Minium Portal",
+			channelSiteName = "Minium",
+			channelType = "Site",
+			commerceSiteType = "B2B");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Catalogs");
+
+		CommerceNavigator.gotoEntry(entryName = "Minium");
+
+		CommerceEntry.viewCatalogsEntry(
+			catalogCurrency = "US Dollar",
+			catalogLanguage = "English (United States)",
+			catalogName = "Minium");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CommerceEntry.viewPaginationResults(results = "Showing 1 to 10 of 50");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Options");
+
+		CommerceNavigator.gotoEntry(entryName = "Package Quantity");
+
+		CommerceEntry.viewOptionsEntry(optionName = "Package Quantity");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Specifications");
+
+		CommerceEntry.viewSpecificationLabelsEntries(specificationLabelsEntries = "Quantity,Dimensions,Fit,Warranty,Length,Weight,Height,Material,Width");
+
+		CommerceNavigator.gotoCommercePortletNavItem(navItem = "Specification Groups");
+
+		CommerceEntry.viewSpecificationGroupsEntries(specificationGroupsEntries = "Warranty,Fit,Dimensions,Quantity,Material");
+	}
+
+	test InitializeNewSpeedwellSite {
+		property environment.acceptance = "true";
+		property portal.acceptance = "true";
+
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Store Management",
+			portlet = "Channels");
+
+		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
+
+		CommerceEntry.viewChannelsEntry(
+			channelCurrency = "US Dollar",
+			channelName = "Speedwell Portal",
+			channelSiteName = "Speedwell",
+			channelType = "Site",
+			commerceSiteType = "B2C");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Catalogs");
+
+		CommerceNavigator.gotoEntry(entryName = "Speedwell");
+
+		CommerceEntry.viewCatalogsEntry(
+			catalogCurrency = "US Dollar",
+			catalogLanguage = "English (United States)",
+			catalogName = "Speedwell");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Products");
+
+		CommerceEntry.viewPaginationResults(results = "Showing 1 to 10 of 50");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Options");
+
+		CommerceNavigator.gotoEntry(entryName = "Package Quantity");
+
+		CommerceEntry.viewOptionsEntry(optionName = "Package Quantity");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Product Management",
+			portlet = "Specifications");
+
+		CommerceEntry.viewSpecificationLabelsEntries(specificationLabelsEntries = "Quantity,Material,Fit,Dimensions,Weight,Width,Warranty,Length,Height");
+
+		CommerceNavigator.gotoCommercePortletNavItem(navItem = "Specification Groups");
+
+		CommerceEntry.viewSpecificationGroupsEntries(specificationGroupsEntries = "Quantity,Fit,Material,Dimensions,Warranty");
+	}
+
+	test MiniumSiteFullFlow {
+		property portal.acceptance = "quarantine";
+		property portal.release = "quarantine";
+		property portal.upstream = "quarantine";
+
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Store Management",
+			portlet = "Channels");
+
+		CommerceNavigator.gotoTableListEntry(entryName = "Minium Portal");
+
+		CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
+
+		Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
+
+		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Commerce Account");
+
+		CommerceAcceleratorsInitializer.inviteNewMemberWithRoleToAccount(
+			accountName = "Commerce Account",
+			emailAddress = "buyer@liferay.com",
+			role = "Buyer",
+			userFirstName = "Buyer",
+			userLastName = "User",
+			userScreenName = "buyeruser");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
+
+		MenuItem.click(menuItem = "Account Users");
+
+		CommerceLogin.editPasswordCP(
+			newPassword = "ttest",
+			requirePasswordReset = "true",
+			userScreenName = "buyeruser");
+
+		User.logoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "ttest",
+			resetPassword = "test",
+			urlAppend = "web/minium",
+			userEmailAddress = "buyer@liferay.com");
+
+		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
+
+		FrontStore.addInitializerProductToCart(
+			productName = "ABS Sensor",
+			productQuantity = "2");
+
+		Pause(locator1 = "5000");
+
+		CommerceNavigator.gotoMiniCart();
+
+		Button.click(button = "Submit");
+
+		Pause(locator1 = "3000");
+
+		CommerceCheckout.initializersCheckout(
+			newAddressAddress = "Test Address",
+			newAddressCity = "Test City",
+			newAddressCountry = "United States",
+			newAddressName = "Address Name",
+			newAddressZipCode = "Test Zip Code",
+			paymentMethod = "Money Order",
+			productName = "ABS Sensor",
+			productQuantity = "2",
+			productUnitPrice = "50",
+			shippingMethod = "Standard");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
+
+		CommerceAcceleratorsInitializer.createNewOrderFromAccountSelectorDropdown();
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
+
+		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
+
+		FrontStore.addInitializerProductToCart(
+			productName = "ABS Sensor",
+			productQuantity = "2");
+
+		CommerceLogin.miniumLogoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "test",
+			urlAppend = "web/minium",
+			userEmailAddress = "test@liferay.com");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Placed Orders");
+
+		CommerceAcceleratorsInitializer.reviewOrder(
+			orderAuthor = "Buyer User",
+			productName = "ABS Sensor",
+			productPrice = "100.00",
+			productQuantity = "2",
+			productSKU = "MIN93015",
+			productUnitPrice = "50.00");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Pending Orders");
+
+		CommerceAcceleratorsInitializer.reviewOrder(
+			orderAuthor = "Buyer User",
+			productName = "ABS Sensor",
+			productPrice = "100.00",
+			productQuantity = "2",
+			productSKU = "MIN93015",
+			productUnitPrice = "50.00");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Order Management",
+			portlet = "Orders");
+
+		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Open");
+
+		CommerceOrders.viewOrdersEntry(
+			productListPrice = "50.00",
+			productName = "ABS Sensor",
+			productQuantity = "2",
+			productSKU = "MIN93015",
+			productTotalPrice = "100.00");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Order Management",
+			portlet = "Orders");
+
+		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
+
+		CommerceOrders.viewOrdersEntry(
+			addressAddress = "Test Address",
+			addressCity = "Test City",
+			addressZipCode = "Test Zip Code",
+			paymentMethod = "Money Order",
+			productListPrice = "50.00",
+			productName = "ABS Sensor",
+			productQuantity = "2",
+			productSKU = "MIN93015",
+			productTotalPrice = "100.00");
+	}
+
+	@description = "This is a workaround for an issue with Minium's sidebar on CI"
+	test MiniumSiteFullFlowCheckingOutViaOrderDetails {
+		property portal.acceptance = "true";
+
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Store Management",
+			portlet = "Channels");
+
+		CommerceNavigator.gotoTableListEntry(entryName = "Minium Portal");
+
+		CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
+
+		Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
+
+		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Commerce Account");
+
+		CommerceAcceleratorsInitializer.inviteNewMemberWithRoleToAccount(
+			accountName = "Commerce Account",
+			emailAddress = "buyer@liferay.com",
+			role = "Buyer",
+			userFirstName = "Buyer",
+			userLastName = "User",
+			userScreenName = "buyeruser");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		Click(locator1 = "Dropdown#FILTER_AND_ORDER");
+
+		MenuItem.click(menuItem = "Account Users");
+
+		CommerceLogin.editPasswordCP(
+			newPassword = "ttest",
+			requirePasswordReset = "true",
+			userScreenName = "buyeruser");
+
+		User.logoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "ttest",
+			resetPassword = "test",
+			urlAppend = "web/minium",
+			userEmailAddress = "buyer@liferay.com");
+
+		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
+
+		FrontStore.addInitializerProductToCart(
+			productName = "ABS Sensor",
+			productQuantity = "2");
+
+		Refresh();
+
+		CommerceNavigator.gotoMiniCart();
+
+		Button.click(button = "View Details");
+
+		Button.click(button = "Checkout");
+
+		CommerceCheckout.initializersCheckout(
+			newAddressAddress = "Test Address",
+			newAddressCity = "Test City",
+			newAddressCountry = "United States",
+			newAddressName = "Address Name",
+			newAddressZipCode = "Test Zip Code",
+			paymentMethod = "Money Order",
+			productName = "ABS Sensor",
+			productQuantity = "2",
+			productUnitPrice = "50",
+			shippingMethod = "Standard");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
+
+		CommerceAcceleratorsInitializer.createNewOrderFromAccountSelectorDropdown();
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Catalog");
+
+		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
+
+		FrontStore.addInitializerProductToCart(
+			productName = "ABS Sensor",
+			productQuantity = "2");
+
+		User.logoutPG();
+
+		CommerceLogin.miniumLogin(
+			password = "test",
+			urlAppend = "web/minium",
+			userEmailAddress = "test@liferay.com");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Placed Orders");
+
+		CommerceAcceleratorsInitializer.reviewOrder(
+			orderAuthor = "Buyer User",
+			productName = "ABS Sensor",
+			productPrice = "100.00",
+			productQuantity = "2",
+			productSKU = "MIN93015",
+			productUnitPrice = "50.00");
+
+		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Pending Orders");
+
+		CommerceAcceleratorsInitializer.reviewOrder(
+			orderAuthor = "Buyer User",
+			productName = "ABS Sensor",
+			productPrice = "100.00",
+			productQuantity = "2",
+			productSKU = "MIN93015",
+			productUnitPrice = "50.00");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Order Management",
+			portlet = "Orders");
+
+		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Open");
+
+		CommerceOrders.viewOrdersEntry(
+			productListPrice = "50.00",
+			productName = "ABS Sensor",
+			productQuantity = "2",
+			productSKU = "MIN93015",
+			productTotalPrice = "100.00");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Order Management",
+			portlet = "Orders");
+
+		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
+
+		CommerceOrders.viewOrdersEntry(
+			addressAddress = "Test Address",
+			addressCity = "Test City",
+			addressZipCode = "Test Zip Code",
+			paymentMethod = "Money Order",
+			productListPrice = "50.00",
+			productName = "ABS Sensor",
+			productQuantity = "2",
+			productSKU = "MIN93015",
+			productTotalPrice = "100.00");
+	}
+
+	@description = "COMMERCE-6350. As a buyer, I want to be redirected to Order Details page after clicking 'Review Order' button on mini-cart, if Buyer Order Approval Workflow is active"
+	@ignore = "true"
+	@priority = "3"
+	test MiniumSiteFullFlowWithBuyerOrderApprovalWorkflow {
+		property portal.acceptance = "false";
+
+		// TODO COMMERCE-6350 MiniumSiteFullFlowWithBuyerOrderApprovalWorkflow pending implementation
+
+	}
+
+	test SpeedwellSiteFullFlow {
+		property portal.acceptance = "true";
+
+		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Speedwell");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Store Management",
+			portlet = "Channels");
+
+		CommerceNavigator.gotoEntry(entryName = "Speedwell Portal");
+
+		CommerceChannels.activatePaymentMethod(paymentMethod = "Money Order");
+
+		Refresh();
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Users",
+			panel = "Control Panel",
+			portlet = "Users and Organizations");
+
+		User.addCP(
+			userEmailAddress = "buyer@liferay.com",
+			userFirstName = "Buyer",
+			userLastName = "User",
+			userScreenName = "buyer");
+
+		Click(locator1 = "Icon#BACK");
+
+		CommerceLogin.editPasswordCP(
+			newPassword = "ttest",
+			requirePasswordReset = "true",
+			userScreenName = "buyer");
+
+		Click(locator1 = "Icon#BACK");
+
+		User.editUserSiteCP(
+			siteName = "Speedwell",
+			userScreenName = "buyer");
+
+		Navigator.openWithAppendToBaseURL(urlAppend = "web/speedwell");
+
+		CommerceNavigator.gotoSpeedwellAccountDropdownItem(dropdownItem = "My Account");
+
+		CommerceNavigator.gotoSpeedwellDashboardItem(dashboardItem = "Login & Security");
+
+		Accounts.viewAccountDetails(
+			accountName = "Test Test",
+			accountType = "Person");
+
+		CommerceLogin.speedwellLogout();
+
+		CommerceLogin.speedwellLogin(
+			password = "ttest",
+			resetPassword = "test",
+			urlAppend = "web/speedwell",
+			userEmailAddress = "buyer@liferay.com");
+
+		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
+
+		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
+
+		FrontStore.addInitializerProductToCart(
+			productName = "ABS Sensor",
+			productQuantity = "2");
+
+		Pause(locator1 = "5000");
+
+		Refresh();
+
+		CommerceNavigator.gotoMiniCart();
+
+		Button.click(button = "Submit");
+
+		Pause(locator1 = "3000");
+
+		CommerceCheckout.initializersCheckout(
+			newAddressAddress = "Test Address",
+			newAddressCity = "Test City",
+			newAddressCountry = "United States",
+			newAddressName = "Address Name",
+			newAddressZipCode = "Test Zip Code",
+			paymentMethod = "Money Order",
+			productName = "ABS Sensor",
+			productQuantity = "2",
+			productUnitPrice = "50",
+			shippingMethod = "Standard");
+
+		CommerceNavigator.gotoSpeedwellTopbarItem(menuItem = "Catalog");
+
+		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
+
+		FrontStore.addInitializerProductToCart(
+			productName = "ABS Sensor",
+			productQuantity = "2");
+
+		CommerceLogin.speedwellLogout();
+
+		CommerceLogin.speedwellLogin(
+			password = "test",
+			urlAppend = "web/speedwell",
+			userEmailAddress = "test@liferay.com");
+
+		Refresh();
+
+		CommerceNavigator.gotoPortlet(
+			category = "Order Management",
+			portlet = "Orders");
+
+		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Open");
+
+		CommerceOrders.viewOrdersEntry(
+			productListPrice = "50.00",
+			productName = "ABS Sensor",
+			productQuantity = "2",
+			productSKU = "SPEED93015",
+			productTotalPrice = "100.00");
+
+		CommerceNavigator.gotoPortlet(
+			category = "Order Management",
+			portlet = "Orders");
+
+		CommerceNavigator.gotoOrderEntryViaAdmin(status = "Pending");
+
+		CommerceOrders.viewOrdersEntry(
+			addressAddress = "Test Address",
+			addressCity = "Test City",
+			addressZipCode = "Test Zip Code",
+			paymentMethod = "Money Order",
+			productListPrice = "50.00",
+			productName = "ABS Sensor",
+			productQuantity = "2",
+			productSKU = "SPEED93015",
+			productTotalPrice = "100.00");
+	}
+
+}

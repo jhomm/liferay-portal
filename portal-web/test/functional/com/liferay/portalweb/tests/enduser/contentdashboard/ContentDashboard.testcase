@@ -1,0 +1,3155 @@
+@component-name = "portal-content-dashboard"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Content Dashboard";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONGroup.addGroup(groupName = "Test Site Name");
+
+		Navigator.openURL();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
+		}
+	}
+
+	@description = "LPS-116987 When the user makes a change on web content and creates a draft version, the Info panel shows the version for the last version approved and the version of the draft "
+	@priority = "5"
+	test ApprovedAndDraftStatus {
+		property portal.acceptance = "true";
+
+		task ("Create a Web Content and set a Display Page") {
+			JSONWebcontent.addWebContent(
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "WC Content");
+		}
+
+		task ("Navigate to the content Dashboard, click edit web content and save as draft") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			WebContent.saveAsDraft();
+		}
+
+		task ("go back to web content and check for approved and draft versions") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			AssertElementPresent(
+				key_status = "Approved",
+				locator1 = "WCEditWebContent#WORKFLOW_STATUS");
+
+			AssertElementPresent(
+				key_status = "Draft",
+				locator1 = "WCEditWebContent#WORKFLOW_STATUS");
+		}
+	}
+
+	@description = "LPS-122873 When all the web content is unassigned from a Vocab1's category, the relative ordering of the rest of the categories remain the same"
+	@priority = "3"
+	test AssigningSomeAudienceCategoriesAndCheckingTheOrder {
+		property portal.acceptance = "true";
+
+		task ("Create a list of Audience Categories") {
+			var audienceId1	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_1",
+				vocabularyName = "Audience");
+
+			var audienceId2	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_2",
+				vocabularyName = "Audience");
+
+			var audienceId3	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_3",
+				vocabularyName = "Audience");
+		}
+
+		task ("Create a list of Stage Categories") {
+			var stageId1 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_1",
+				vocabularyName = "Stage");
+
+			var stageId2 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_2",
+				vocabularyName = "Stage");
+
+			var stageId3 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_3",
+				vocabularyName = "Stage");
+		}
+
+		task ("Create a Web Content with the categories") {
+			JSONWebcontent.addWebContent(
+				assetCategoryIds = "${audienceId1},${audienceId2},${audienceId3},${stageId1},${stageId2},${stageId3}",
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "Webcontent Title");
+		}
+
+		task ("Navigate to content Dashboard and View the order of categories") {
+			ContentDashboard.goToContentDashboard();
+
+			task ("blue - first position") {
+				AssertElementPresent(
+					fillColor = "4B9FFF",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("orange - second position") {
+				AssertElementPresent(
+					fillColor = "FFB46E",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("red - third position") {
+				AssertElementPresent(
+					fillColor = "FF5F5F",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+		}
+	}
+
+	@description = "LPS-114911 When the user selects vocabularies from the selection panel, vocabularies selected show in the table as headers and categories assigned to contents will show "
+	@priority = "5"
+	test CategorieShowInTable {
+		property portal.acceptance = "true";
+
+		task ("Adding vocabulary and category") {
+			JSONCategory.addVocabulary(
+				groupName = "Test Site Name",
+				title = "Vocabulary Name");
+
+			var categoryId = JSONCategory.addCategory(
+				groupName = "Test Site Name",
+				title = "Test",
+				vocabularyName = "Vocabulary Name");
+		}
+
+		task ("Adding Web Content") {
+			JSONWebcontent.addWebContent(
+				assetCategoryIds = "${categoryId}",
+				content = "WC WebContent Content",
+				groupName = "Test Site Name",
+				title = "WC WebContent Title");
+		}
+
+		task ("Go to Content Dashboard and filtering category") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			ContentDashboard.filterByCategory(
+				categoryName = "Test",
+				filterOption = "Categories");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "Test");
+		}
+	}
+
+	@description = "LPS-122873 When there are some categories created for vocabulary1 (X axis), they will always have the same order during the user session"
+	@priority = "3"
+	test CategoriesWithSameOrderDuringASession {
+		property portal.acceptance = "true";
+
+		task ("Create a list of Audiences") {
+			var categoryId1	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "C_Subaudience_1",
+				vocabularyName = "Audience");
+
+			var categoryId2	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "B_Subaudience_2",
+				vocabularyName = "Audience");
+
+			var categoryId3	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "A_Subaudience_3",
+				vocabularyName = "Audience");
+		}
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				assetCategoryIds = "${categoryId1},${categoryId2},${categoryId3}",
+				content = "test content",
+				groupName = "Test Site Name",
+				title = "Web Content Title 1");
+
+			JSONWebcontent.addWebContent(
+				assetCategoryIds = "${categoryId1},${categoryId2},${categoryId3}",
+				content = "test content",
+				groupName = "Test Site Name",
+				title = "Web Content Title 2");
+		}
+
+		task ("Validade if the categories are shown in order of creation") {
+			ContentDashboard.goToContentDashboard();
+
+			AssertTextPresent(
+				categoryIndex = "1",
+				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
+				value1 = "C_Subaudience_1");
+
+			AssertTextPresent(
+				categoryIndex = "2",
+				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
+				value1 = "B_Subaudience_2");
+
+			AssertTextPresent(
+				categoryIndex = "3",
+				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
+				value1 = "A_Subaudience_3");
+		}
+
+		task ("Delete the global audience categories") {
+			for (var categories : list "C_Subaudience_1,B_Subaudience_2,A_Subaudience_3") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Audience");
+			}
+		}
+	}
+
+	@description = "LPS-131793: Given the categorization section in Documents and Media
+	Then the OOTB Internal (Topic) and Public (Audience & Stage) vocabularies are shown"
+
+	@ignore = "true"
+	@priority = "3"
+	test CategorizationInOotbTable {
+
+		// TODO LPS-131793 CategorizationInOotbTable pending implementation
+
+	}
+
+	@description = "LPS-132597 When a web content is associated to a Display Page and its status is Approved, a display page icon is displayed"
+	@priority = "5"
+	test CheckDisplayPageIconofApprovedWebContent {
+		task ("Create and Publish a Display Page Template with Fragment") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			Button.clickPublish();
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Create a Web Content and set a Display Page") {
+			JSONWebcontent.addWebContent(
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "Webcontent Title");
+		}
+
+		task ("Check in Content Dashboard if WC is assiciated with Display Page Template") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "Webcontent Title");
+
+			AssertElementPresent(locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED_DISPLAY_PAGE");
+		}
+	}
+
+	@description = "LPS-132597 When a web content is NOT associated to a Display Page and its status is Approved, a display page icon is NOT displayed"
+	@priority = "5"
+	test CheckDisplayPageIconofApprovedWebContentNotDisplayed {
+		task ("Create a Web Content and set a Display Page") {
+			JSONWebcontent.addWebContent(
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "Webcontent Title");
+		}
+
+		task ("Check in Content Dashboard if WC is assiciated with Display Page Template") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "Webcontent Title");
+
+			AssertElementNotPresent(locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED_DISPLAY_PAGE");
+		}
+	}
+
+	@description = "LPS-132597 When a web content is associated to a Display Page and its status is Pending, a display page icon is NOT displayed"
+	@priority = "5"
+	test CheckDisplayPageIconofPendingWebContent {
+		task ("Create and Publish a Display Page Template with Fragment") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			Button.clickPublish();
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Configure Web Content Article workflow to Single Approver") {
+			ProductMenu.gotoPortlet(
+				category = "Configuration",
+				portlet = "Workflow");
+
+			Workflow.configureWorkflow(
+				workflowDefinition = "Single Approver",
+				workflowResourceValue = "Web Content Article");
+		}
+
+		task ("Create a Web Content and set a Display Page") {
+			JSONWebcontent.addWebContent(
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "Webcontent Title");
+		}
+
+		task ("Check in Content Dashboard if WC is assiciated with Display Page Template") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "Webcontent Title");
+
+			AssertElementNotPresent(locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED_DISPLAY_PAGE");
+		}
+	}
+
+	@description = "LPS-117341 Create a label for one of the categories and add another one with the text "..." and tooltip or popover with all theF categories left"
+	@priority = "5"
+	test CheckForMoreCategories {
+		property portal.acceptance = "true";
+
+		task ("Create a list of Audiences") {
+			var categoryId1	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_1",
+				vocabularyName = "Audience");
+
+			var categoryId2	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_2",
+				vocabularyName = "Audience");
+
+			var categoryId3	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_3",
+				vocabularyName = "Audience");
+		}
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				assetCategoryIds = "${categoryId1},${categoryId2},${categoryId3}",
+				content = "test content",
+				groupName = "Test Site Name",
+				title = "WC");
+		}
+
+		task ("Nagigate to Content Dashboard and check if there's a label with '...' indicating 'more categories' ") {
+			ContentDashboard.goToContentDashboard();
+
+			AssertElementPresent(
+				locator1 = "ContentDashboard#AUDIENCE_LIST_DASHBOARD",
+				value = "...");
+		}
+
+		task ("Delete the global audience categories") {
+			for (var categories : list "Subaudience_1,Subaudience_2,Subaudience_3") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Audience");
+			}
+		}
+	}
+
+	@description = "LPS-122873 When any web content is unassigned to a Vocab1's category, the relative ordering of categories remain the same"
+	@priority = "3"
+	test CheckOrderEvenWithSomeUnassignedCategories {
+		property portal.acceptance = "true";
+
+		task ("Create a list of Audience Categories") {
+			var audienceId1	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_1",
+				vocabularyName = "Audience");
+
+			var audienceId2	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_2",
+				vocabularyName = "Audience");
+
+			var audienceId3	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_3",
+				vocabularyName = "Audience");
+		}
+
+		task ("Create a list of Stage Categories") {
+			var stageId1 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_1",
+				vocabularyName = "Stage");
+
+			var stageId2 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_2",
+				vocabularyName = "Stage");
+
+			var stageId3 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_3",
+				vocabularyName = "Stage");
+		}
+
+		task ("Create 1st Web Content with all categories but the 2nd category of Audience") {
+			JSONWebcontent.addWebContent(
+				assetCategoryIds = "${audienceId1},${audienceId3},${stageId1},${stageId2},${stageId3}",
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "Webcontent Title 1");
+		}
+
+		task ("Create 2nd and 3rd Web Contents with all categories from Audience and Stage") {
+			for (var count : list "2,3") {
+				JSONWebcontent.addWebContent(
+					assetCategoryIds = "${audienceId1},${audienceId2},${audienceId3},${stageId1},${stageId2},${stageId3}",
+					content = "Webcontent Content",
+					groupName = "Test Site Name",
+					title = "Webcontent Title ${count}");
+			}
+		}
+
+		task ("Navigate to content Dashboard and View the order of categories") {
+			ContentDashboard.goToContentDashboard();
+
+			task ("blue - first position") {
+				AssertElementPresent(
+					fillColor = "4B9FFF",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("orange - second position") {
+				AssertElementPresent(
+					fillColor = "FFB46E",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("red - third position") {
+				AssertElementPresent(
+					fillColor = "FF5F5F",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+		}
+
+		task ("Delete the global audience categories") {
+			for (var categories : list "Subaudience_1,Subaudience_2,Subaudience_3") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Audience");
+			}
+
+			for (var categories : list "Substage_1,Substage_2,Substage_3") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Stage");
+			}
+		}
+	}
+
+	@description = "LPS-133716 When in Content Dashboard, a column with the Site / assetLibraty header is shown."
+	@priority = "2"
+	test CheckSiteAssertLibraryColumn {
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
+		}
+
+		task ("Check in Content Dashboard if the column is being displayed") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			AssertElementPresent(
+				locator1 = "ContentDashboard#SITE_ASSET_LIBRARY_COLUMN",
+				siteAssetValue = "Site or Asset Library");
+		}
+	}
+
+	@description = "LPS-133716 When in Content Dashboard, the name of the Site/Asset Library where the contents are stored is shown, regardless where it was created"
+	@priority = "5"
+	test CheckSiteAssertLibraryOfContent {
+		task ("Create new Group") {
+			JSONGroup.addGroup(groupName = "Second Test Site Name");
+		}
+
+		task ("Create a Web Content for each group") {
+			JSONWebcontent.addWebContent(
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
+
+			JSONWebcontent.addWebContent(
+				content = "WC WebContent Content",
+				groupName = "Second Test Site Name",
+				title = "WC WebContent Title");
+		}
+
+		task ("Check in Content Dashboard if the right information is being displayed") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			AssertElementPresent(
+				locator1 = "ContentDashboard#SITE_ASSET_LIBRARY_COLUMN",
+				siteAssetValue = "Test Site Name");
+
+			AssertElementPresent(
+				locator1 = "ContentDashboard#SITE_ASSET_LIBRARY_COLUMN",
+				siteAssetValue = "Second Test Site Name");
+		}
+
+		task ("Drop second group") {
+			JSONGroup.deleteGroupByName(groupName = "Second Test Site Name");
+		}
+	}
+
+	@description = "LPS-122873 When a new category is created and assigned to a web content, the relative ordering of categories remain the same and the new category gets a new color, positionated in the last position"
+	@priority = "3"
+	test CheckTheOrderWithANewCategory {
+		property portal.acceptance = "true";
+
+		task ("Create a list of Audience Categories") {
+			var audienceId1	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_1",
+				vocabularyName = "Audience");
+
+			var audienceId2	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_2",
+				vocabularyName = "Audience");
+
+			var audienceId3	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_3",
+				vocabularyName = "Audience");
+		}
+
+		task ("Create a list of Stage Categories") {
+			var stageId1 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_1",
+				vocabularyName = "Stage");
+
+			var stageId2 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_2",
+				vocabularyName = "Stage");
+
+			var stageId3 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_3",
+				vocabularyName = "Stage");
+		}
+
+		task ("Create a Web Content with the categories") {
+			JSONWebcontent.addWebContent(
+				assetCategoryIds = "${audienceId1},${audienceId2},${audienceId3},${stageId1},${stageId2},${stageId3}",
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "Webcontent Title");
+		}
+
+		task ("Navigate to content Dashboard and View the order of categories") {
+			ContentDashboard.goToContentDashboard();
+
+			task ("blue - first position") {
+				AssertElementPresent(
+					fillColor = "4B9FFF",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("orange - second position") {
+				AssertElementPresent(
+					fillColor = "FFB46E",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("red - third position") {
+				AssertElementPresent(
+					fillColor = "FF5F5F",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("green - last position") {
+				AssertElementNotPresent(
+					fillColor = "50D2A0",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+		}
+
+		task ("Create a new category and assign one of the contents") {
+			JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_4",
+				vocabularyName = "Stage");
+
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			WebContentNavigator.gotoEditCP(webContentTitle = "Webcontent Title");
+
+			WebContent.selectCategory(
+				categoryName = "Substage_4",
+				vocabularyName = "Stage");
+
+			PortletEntry.publish();
+		}
+
+		task ("Navigate to the content panel and see if, in the new category order, the new category receives a new color, placed in the last position") {
+			ContentDashboard.goToContentDashboard();
+
+			task ("blue - first position") {
+				AssertElementPresent(
+					fillColor = "4B9FFF",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("orange - second position") {
+				AssertElementPresent(
+					fillColor = "FFB46E",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("red - third position") {
+				AssertElementPresent(
+					fillColor = "FF5F5F",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("green - last position") {
+				AssertElementPresent(
+					fillColor = "50D2A0",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+		}
+
+		task ("Delete the global audience categories") {
+			for (var categories : list "Subaudience_1,Subaudience_2,Subaudience_3") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Audience");
+			}
+
+			for (var categories : list "Substage_1,Substage_2,Substage_3,Substage_4") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Stage");
+			}
+		}
+	}
+
+	@description = "When click on the 'Other options' icon of Approved WC and has NOT a display page associated, View option NOT displayed"
+	@priority = "4"
+	test CheckViewOptionNotDisplayedApprovedWCNotAssiciatedDPT {
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
+		}
+
+		task ("Check in Content Dashboard if view option is NOT avalible for this WC") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			Click(locator1 = "ContentDashboard#ASSET_MENU_DROPDOWN_BUTTON");
+
+			AssertElementNotPresent(locator1 = "ContentDashboard#VIEW_OPTION");
+		}
+	}
+
+	@description = "When click on the 'Other options' icon of not Approved WC and has a display page associated, View option NOT displayed"
+	@priority = "4"
+	test CheckViewOptionNotDisplayedNotApprovedWCAssiciatedDPT {
+		task ("Create and Publish a Display Page Template with Fragment") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			Button.clickPublish();
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Configure Web Content Article workflow to Single Approver") {
+			ProductMenu.gotoPortlet(
+				category = "Configuration",
+				portlet = "Workflow");
+
+			Workflow.configureWorkflow(
+				workflowDefinition = "Single Approver",
+				workflowResourceValue = "Web Content Article");
+		}
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
+		}
+
+		task ("Check in Content Dashboard if view option is NOT avalible for this WC") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			Click(locator1 = "ContentDashboard#ASSET_MENU_DROPDOWN_BUTTON");
+
+			AssertElementNotPresent(locator1 = "ContentDashboard#VIEW_OPTION");
+		}
+	}
+
+	@description = "LPS-121658 When a user with no edit permissions clicks on the title of a content in status Approved with associated DPT, the user is led to the page view"
+	@priority = "4"
+	@uitest
+	test ClickTitleApprovedDPTWithNoPermissions {
+		property portal.acceptance = "true";
+		property test.name.skip.portal.instance = "ContentDashboard#ClickTitleApprovedDPTWithNoPermissions";
+
+		task ("Disable option to strangers to verify email") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Configuration",
+				panel = "Control Panel",
+				portlet = "Instance Settings");
+
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "User Authentication",
+				configurationName = "General",
+				configurationScope = "Virtual Instance Scope");
+
+			PortalSettings.uncheckStrangersVerifyEmailCheckbox();
+		}
+
+		task ("Create a DPT and set as Default") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			Button.clickPublish();
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		task ("Create an User") {
+			JSONUser.addUser(
+				userEmailAddress = "userea@liferay.com",
+				userFirstName = "userfn",
+				userLastName = "userln",
+				userScreenName = "usersn");
+
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				newPassword = "test",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
+		}
+
+		task ("Create a Role") {
+			JSONRole.addRegularRole(
+				roleKey = "WC Creator Edit Permissions",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "VIEW_SITE_ADMINISTRATION",
+				resourceName = "com.liferay.portal.kernel.model.Group",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "ACCESS_IN_CONTROL_PANEL",
+				resourceName = "com_liferay_content_dashboard_web_portlet_ContentDashboardAdminPortlet",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "VIEW_CONTROL_PANEL",
+				resourceName = "90",
+				roleTitle = "WC Creator Edit Permissions");
+
+			JSONRole.assignRoleToUser(
+				roleTitle = "WC Creator Edit Permissions",
+				userEmailAddress = "userea@liferay.com");
+		}
+
+		task ("Logout and login with created user") {
+			User.logoutAndLoginPG(
+				userLoginEmailAddress = "userea@liferay.com",
+				userLoginFullName = "userfn userln");
+		}
+
+		task ("Click at assets title at Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+
+			LexiconTable.clickTableEntryColumnLink(
+				columnName = "title",
+				tableEntry = "");
+
+			WaitForPageLoad();
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title");
+		}
+
+		task ("Delete Role and User created") {
+			JSONRole.deleteRole(roleTitle = "WC Creator Edit Permissions");
+
+			JSONUser.deleteUserByEmailAddress(userEmailAddress = "userea@liferay.com");
+		}
+	}
+
+	@description = "LPS-121658 When a user with edit permissions clicks on the title of a content in status Approved with associated DPT, the user is led to the page view"
+	@priority = "4"
+	@uitest
+	test ClickTitleApprovedDPTWithPermissions {
+		property portal.acceptance = "true";
+		property test.name.skip.portal.instance = "ContentDashboard#ClickTitleApprovedDPTWithPermissions";
+
+		task ("Disable option to strangers to verify email") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Configuration",
+				panel = "Control Panel",
+				portlet = "Instance Settings");
+
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "User Authentication",
+				configurationName = "General",
+				configurationScope = "Virtual Instance Scope");
+
+			PortalSettings.uncheckStrangersVerifyEmailCheckbox();
+		}
+
+		task ("Create a DPT and set as Default") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			Button.clickPublish();
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		task ("Create an User") {
+			JSONUser.addUser(
+				userEmailAddress = "userea@liferay.com",
+				userFirstName = "userfn",
+				userLastName = "userln",
+				userScreenName = "usersn");
+
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				newPassword = "test",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
+		}
+
+		task ("Crete a Role with proper permissons") {
+			JSONRole.addRegularRole(
+				roleKey = "WC Creator Edit Permissions",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "VIEW",
+				resourceName = "com.liferay.journal",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "ADD_ARTICLE",
+				resourceName = "com.liferay.journal",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "VIEW_SITE_ADMINISTRATION",
+				resourceName = "com.liferay.portal.kernel.model.Group",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "ACCESS_IN_CONTROL_PANEL",
+				resourceName = "com_liferay_journal_web_portlet_JournalPortlet",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "ACCESS_IN_CONTROL_PANEL",
+				resourceName = "com_liferay_content_dashboard_web_portlet_ContentDashboardAdminPortlet",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "VIEW_CONTROL_PANEL",
+				resourceName = "90",
+				roleTitle = "WC Creator Edit Permissions");
+
+			JSONRole.assignRoleToUser(
+				roleTitle = "WC Creator Edit Permissions",
+				userEmailAddress = "userea@liferay.com");
+		}
+
+		task ("Logout and login with created user") {
+			User.logoutAndLoginPG(
+				userLoginEmailAddress = "userea@liferay.com",
+				userLoginFullName = "userfn userln");
+		}
+
+		task ("Go to asset page by Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+
+			LexiconTable.clickTableEntryColumnLink(
+				columnName = "title",
+				tableEntry = "");
+
+			WaitForPageLoad();
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#DISPLAY_PAGE_TITLE",
+				value1 = "Display Page Name");
+		}
+
+		task ("Delete Role and User created") {
+			JSONRole.deleteRole(roleTitle = "WC Creator Edit Permissions");
+
+			JSONUser.deleteUserByEmailAddress(userEmailAddress = "userea@liferay.com");
+		}
+	}
+
+	@description = "LPS-121658 When a user with edit permissions (owner) clicks on the title of a content in status Approved with no associated DPT, the user is led to the web content editor"
+	@priority = "3"
+	@uitest
+	test ClickTitleApprovedNoDPT {
+		property portal.acceptance = "true";
+		property test.name.skip.portal.instance = "ContentDashboard#ClickTitleApprovedNoDPT";
+
+		task ("Add web content Approved") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		task ("Go to Content Dashboard and click on the title") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			LexiconTable.clickTableEntryColumnLink(
+				columnName = "title",
+				tableEntry = "");
+		}
+
+		task ("Assert the web content is opened in the web content editor") {
+			AssertElementPresent(
+				locator1 = "Button#PUBLISH",
+				value1 = "Publish");
+		}
+	}
+
+	@description = "LPS-119966 Given a user with NO permissions to edit documents
+	When the user clicks on the title link in the content dashboard
+	than the user cannot click on the title"
+	@priority = "4"
+	@uitest
+	test ClickTitleDocumentDPTWithNoPermissions {
+		property osgi.module.configuration.file.names = "com.liferay.content.dashboard.web.internal.configuration.FFContentDashboardDocumentConfiguration.config";
+		property osgi.module.configurations = "enabled=B&quot;true&quot;";
+		property portal.acceptance = "true";
+
+		task ("Disable option to strangers to verify email") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Configuration",
+				panel = "Control Panel",
+				portlet = "Instance Settings");
+
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "User Authentication",
+				configurationName = "General",
+				configurationScope = "Virtual Instance Scope");
+
+			PortalSettings.uncheckStrangersVerifyEmailCheckbox();
+		}
+
+		task ("Add Display Page and mark it as default") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Document",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Document");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			PageEditor.addWidget(portletName = "Documents and Media");
+
+			PageEditor.clickPublish();
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Add a document") {
+			JSONDocument.addFileWithUploadedFile(
+				dmDocumentTitle = "DM Document Title",
+				groupName = "Test Site Name",
+				mimeType = "text/plain",
+				sourceFileName = "Document_1.txt");
+		}
+
+		task ("Create an User") {
+			JSONUser.addUser(
+				userEmailAddress = "userea@liferay.com",
+				userFirstName = "userfn",
+				userLastName = "userln",
+				userScreenName = "usersn");
+
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				newPassword = "test",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
+		}
+
+		task ("Add a role with NO permissions") {
+			JSONRole.addRegularRole(
+				roleKey = "WC Creator Edit Permissions",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "VIEW_SITE_ADMINISTRATION",
+				resourceName = "com.liferay.portal.kernel.model.Group",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "ACCESS_IN_CONTROL_PANEL",
+				resourceName = "com_liferay_content_dashboard_web_portlet_ContentDashboardAdminPortlet",
+				roleTitle = "WC Creator Edit Permissions");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "VIEW_CONTROL_PANEL",
+				resourceName = "90",
+				roleTitle = "WC Creator Edit Permissions");
+
+			JSONRole.assignRoleToUser(
+				roleTitle = "WC Creator Edit Permissions",
+				userEmailAddress = "userea@liferay.com");
+
+			User.logoutAndLoginPG(
+				userLoginEmailAddress = "userea@liferay.com",
+				userLoginFullName = "userfn userln");
+		}
+
+		task ("Go to Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+		}
+
+		task ("Click on the title") {
+			LexiconTable.clickTableEntryColumnLink(
+				columnName = "title",
+				tableEntry = "");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "DM Document Title");
+		}
+
+		task ("Delete Role and User created") {
+			JSONRole.deleteRole(roleTitle = "WC Creator Edit Permissions");
+
+			JSONUser.deleteUserByEmailAddress(userEmailAddress = "userea@liferay.com");
+		}
+	}
+
+	@description = "Given a user with permissions to edit documents
+	When the user clicks on the title link in the content dashboard
+	then the user is led to the edit mode"
+	@priority = "4"
+	@uitest
+	test ClickTitleDocumentDPTWithPermissions {
+		property osgi.module.configuration.file.names = "com.liferay.content.dashboard.web.internal.configuration.FFContentDashboardDocumentConfiguration.config";
+		property osgi.module.configurations = "enabled=B&quot;true&quot;";
+		property portal.acceptance = "true";
+
+		task ("Add Display Page and mark it as default") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Document",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Document");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			PageEditor.addWidget(portletName = "Documents and Media");
+
+			PageEditor.clickPublish();
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Add a document") {
+			JSONDocument.addFileWithUploadedFile(
+				dmDocumentTitle = "DM Document Title",
+				groupName = "Test Site Name",
+				mimeType = "text/txt",
+				sourceFileName = "Document_1.txt");
+		}
+
+		task ("Go to Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+		}
+
+		task ("Click on the title") {
+			LexiconTable.clickTableEntryColumnLink(
+				columnName = "title",
+				tableEntry = "");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#DISPLAY_PAGE_TITLE",
+				value1 = "Display Page Name");
+		}
+	}
+
+	@description = "LPS-121658 When a user with edit permissions(owner) clicks on the title of a content in status Draft, associated DPT or not, the user is led to web content editor"
+	@priority = "3"
+	@uitest
+	test ClickTitleDraftNoDPT {
+		property portal.acceptance = "true";
+		property test.name.skip.portal.instance = "ContentDashboard#ClickTitleDraftNoDPT";
+
+		task ("Add web content Draft") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title",
+				workflowAction = "DRAFT");
+		}
+
+		task ("Go to Content Dashboard and click on the title") {
+			ContentDashboard.goToContentDashboard();
+
+			LexiconTable.clickTableEntryColumnLink(
+				columnName = "title",
+				tableEntry = "");
+		}
+
+		task ("Assert the web content is opened in the web content editor") {
+			AssertElementPresent(
+				locator1 = "Button#PUBLISH",
+				value1 = "Publish");
+		}
+	}
+
+	@description = "LPS-121658 When a user with edit permissions(owner) clicks on the title of a content in status Pending, associated DPT or not, the user is led to web content editor"
+	@priority = "3"
+	@uitest
+	test ClickTitlePendingNoDPT {
+		property portal.acceptance = "true";
+		property test.name.skip.portal.instance = "ContentDashboard#ClickTitlePendingNoDPT";
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		task ("Configure Web Content Article workflow to Single Approver") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			ProductMenu.gotoPortlet(
+				category = "Configuration",
+				portlet = "Workflow");
+
+			Workflow.configureWorkflow(
+				workflowDefinition = "Single Approver",
+				workflowResourceValue = "Web Content Article");
+		}
+
+		task ("Edit the Web Content article and submit it for publication") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			WebContentNavigator.gotoEditCP(webContentTitle = "WC Title");
+
+			Button.clickSubmitForPublication();
+
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+		}
+
+		task ("Go to Content Dashboard and click on the title") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			LexiconTable.clickTableEntryColumnLink(
+				columnName = "title",
+				tableEntry = "");
+		}
+
+		task ("Assert the web content is opened in the web content editor") {
+			AssertElementPresent(
+				locator1 = "Button#SUBMIT_FOR_PUBLICATION",
+				value1 = "Submit for Publication");
+		}
+	}
+
+	@description = "LPS-121658 When a user with edit permissions(owner) clicks on the title of a content in status Scheduled, associated DPT or not, the user is led to web content editor"
+	@priority = "3"
+	@uitest
+	test ClickTitleScheduledNoDPT {
+		property portal.acceptance = "true";
+		property test.name.skip.portal.instance = "ContentDashboard#ClickTitleScheduledNoDPT";
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		task ("Change display date of Web Content") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			WebContentNavigator.gotoEditCP(webContentTitle = "WC Title");
+
+			WebContent.editDisplayDate(displayDate = "01/01/2100");
+
+			PortletEntry.publish();
+		}
+
+		task ("Go to Content Dashboard and click on the title") {
+			ContentDashboard.goToContentDashboard();
+
+			LexiconTable.clickTableEntryColumnLink(
+				columnName = "title",
+				tableEntry = "");
+		}
+
+		task ("Assert the web content is opened in the web content editor") {
+			AssertElementPresent(
+				locator1 = "Button#PUBLISH",
+				value1 = "Publish");
+		}
+	}
+
+	@description = "Given a document created in an Asset Library
+	When the user goes to the content dashboard
+	Then the user can see the document listed"
+	@priority = "5"
+	test DocumentFromAssetLibraryIsListed {
+		property osgi.module.configuration.file.names = "com.liferay.content.dashboard.web.internal.configuration.FFContentDashboardDocumentConfiguration.config";
+		property osgi.module.configurations = "enabled=B&quot;true&quot;";
+		property portal.acceptance = "true";
+
+		task ("Add an Asset Library") {
+			JSONDepot.addDepot(
+				depotDescription = "This is the description",
+				depotName = "Test Depot Name");
+		}
+
+		task ("Add a document to the previous Asset Library created") {
+			JSONDocument.addFileWithUploadedFile(
+				dmDocumentDescription = "DM Document Description",
+				dmDocumentTitle = "DM Document Asset Library 1",
+				groupName = "Test Depot Name",
+				mimeType = "image/jpeg",
+				sourceFileName = "Document_2.jpg");
+		}
+
+		task ("Go to the Content Dashboard") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+		}
+
+		task ("Assert that both documents appear in the table") {
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "DM Document Asset Library 1");
+		}
+
+		task ("Delete the Asset Library") {
+			JSONDepot.deleteDepot(depotName = "Test Depot Name");
+		}
+	}
+
+	@description = " Given a document with and associated Display Page Template
+	When the user with permissions clicks on the view button
+	Then the user is lead to the view mode"
+	@priority = "4"
+	test DocumentIconView {
+		property osgi.module.configuration.file.names = "com.liferay.content.dashboard.web.internal.configuration.FFContentDashboardDocumentConfiguration.config";
+		property osgi.module.configurations = "enabled=B&quot;true&quot;";
+		property portal.acceptance = "true";
+
+		task ("Add Display Page and mark it as default") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Document",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Document");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			PageEditor.addWidget(portletName = "Documents and Media");
+
+			PageEditor.clickPublish();
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Add a document") {
+			JSONDocument.addFileWithUploadedFile(
+				dmDocumentTitle = "DM Document Title",
+				groupName = "Test Site Name",
+				mimeType = "text/txt",
+				sourceFileName = "Document_1.txt");
+		}
+
+		task ("Go to Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+		}
+
+		task ("Click on the View icon and check the user is lead to the Display Page") {
+			Click.clickNoMouseOver(locator1 = "ContentDashboard#ROW_PANEL_WC");
+
+			Click(locator1 = "ContentDashboard#ICON_VIEW_LISTED_MODIFIED_DATE");
+		}
+	}
+
+	@description = "Given a document created in site A in the instance, and another one created in the site B
+	When the user goes to the content dashboard
+	Then the user can see both listed"
+	@priority = "5"
+	test DocumentsFromDifferentSitesAreListed {
+		property osgi.module.configuration.file.names = "com.liferay.content.dashboard.web.internal.configuration.FFContentDashboardDocumentConfiguration.config";
+		property osgi.module.configurations = "enabled=B&quot;true&quot;";
+		property portal.acceptance = "true";
+
+		task ("Add two different sites") {
+			JSONGroup.addGroup(groupName = "Site Name 1");
+
+			JSONGroup.addGroup(groupName = "Site Name 2");
+		}
+
+		task ("Add a document for each site") {
+			JSONDocument.addFileWithUploadedFile(
+				dmDocumentTitle = "DM Document Site 1",
+				groupName = "Site Name 1",
+				mimeType = "text/txt",
+				sourceFileName = "Document_1.txt");
+
+			JSONDocument.addFileWithUploadedFile(
+				dmDocumentTitle = "DM Document Site 2",
+				groupName = "Site Name 2",
+				mimeType = "text/txt",
+				sourceFileName = "Document_2.txt");
+		}
+
+		task ("Go to the Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+		}
+
+		task ("Assert that both documents appear in the table") {
+			ContentDashboard.searchValue(webContentTitle = "DM Document Site 1");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "DM Document Site 1");
+
+			ContentDashboard.searchValue(webContentTitle = "DM Document Site 2");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "DM Document Site 2");
+		}
+
+		task ("Delete sites created") {
+			JSONGroup.deleteGroupByName(groupName = "Site Name 1");
+
+			JSONGroup.deleteGroupByName(groupName = "Site Name 2");
+		}
+	}
+
+	@description = "LPS-119966 Given a document with and associated Display Page Template
+	When the user with permissions clicks on the info panel button
+	Then the user is lead to the info panel"
+	@priority = "4"
+	test DocumentViewInfoPanel {
+		property portal.acceptance = "true";
+
+		task ("Create a new Document") {
+			JSONDocument.addFile(
+				dmDocumentDescription = "DM Document Description",
+				dmDocumentTitle = "DM Document Title",
+				groupName = "Test Site Name");
+		}
+
+		task ("Go to Content Dashboard") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+		}
+
+		task ("Open the Info panel") {
+			ContentDashboard.openInfoPanelByDropdownMenu();
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#INFO_PANEL_TITLE",
+				value1 = "DM Document Title");
+
+			Click(locator1 = "ContentDashboard#CLOSE_INFO_PANEL_BUTTON");
+		}
+	}
+
+	@description = " Given a document with and associated Display Page Template
+	When the user with permissions clicks on the edit button
+	Then the user is lead to the edit mode"
+	@priority = "4"
+	test EditDocument {
+		property osgi.module.configuration.file.names = "com.liferay.content.dashboard.web.internal.configuration.FFContentDashboardDocumentConfiguration.config";
+		property osgi.module.configurations = "enabled=B&quot;true&quot;";
+		property portal.acceptance = "true";
+
+		task ("Add a document") {
+			JSONDocument.addFileWithUploadedFile(
+				dmDocumentTitle = "DM Document Title",
+				groupName = "Test Site Name",
+				mimeType = "text/txt",
+				sourceFileName = "Document_1.txt");
+		}
+
+		task ("Go to Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+		}
+
+		task ("Edit the document") {
+			ContentDashboard.editAsset(assetTitle = "DM Document Title Edited");
+		}
+
+		task ("Assert the document has been edited") {
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "DM Document Title Edited");
+		}
+	}
+
+	@description = "Validate if the user can edit a web content through the Edit option"
+	@priority = "5"
+	test EditWebContent {
+		property portal.acceptance = "true";
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		task ("Go to edit the asset") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.editAsset(assetTitle = "WC Title Edited");
+		}
+
+		task ("Assert in title was porperty edited") {
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title Edited");
+		}
+	}
+
+	@description = "Validate if the user can access to the Content Dashboard after s/he has expired a Web Content"
+	@priority = "5"
+	test ExpiredWebContent {
+		property portal.acceptance = "true";
+
+		task ("Create expired Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+
+			JSONWebcontent.updateStatus(
+				groupName = "Test Site Name",
+				statusKey = "EXPIRE",
+				title = "WC Title");
+		}
+
+		task ("View experired assset in Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#EXPIRED_LABEL",
+				value1 = "EXPIRED");
+		}
+	}
+
+	@description = "Validate if the user can filter by Author, using different display types"
+	@priority = "5"
+	test FilterByAuthor {
+		property portal.acceptance = "true";
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		ContentDashboard.goToContentDashboard();
+
+		task ("Filter author using table") {
+			ContentDashboard.filterByAuthorTable(filterOption = "Author");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title");
+		}
+
+		task ("Filter author using list") {
+			ContentDashboard.clearFilters();
+
+			ContentDashboard.filterByAuthorList(filterOption = "Author");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title");
+		}
+
+		task ("Filter author using cards") {
+			ContentDashboard.clearFilters();
+
+			ContentDashboard.filterByAuthorCard(filterOption = "Author");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title");
+		}
+	}
+
+	@description = "Validate if the user can filter by category"
+	@priority = "5"
+	test FilterByCategory {
+		property portal.acceptance = "true";
+
+		task ("Create a vocabulary and a category for it") {
+			JSONCategory.addVocabulary(
+				groupName = "Test Site Name",
+				title = "Vocabulary Name");
+
+			var categoryId = JSONCategory.addCategory(
+				groupName = "Test Site Name",
+				title = "Category Name",
+				vocabularyName = "Vocabulary Name");
+		}
+
+		task ("Create a Web Content using the category created") {
+			JSONWebcontent.addWebContent(
+				assetCategoryIds = "${categoryId}",
+				content = "WC WebContent Content",
+				groupName = "Test Site Name",
+				title = "WC WebContent Title");
+		}
+
+		ContentDashboard.goToContentDashboard();
+
+		task ("Filter by category") {
+			ContentDashboard.filterByCategory(
+				categoryName = "Category Name",
+				filterOption = "Categories");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC WebContent Title");
+		}
+
+		task ("Delete the vocabulary") {
+			Category.openCategoriesAdmin(siteURLKey = "test-site-name");
+
+			Vocabulary.deleteByMenuCP(vocabularyName = "Vocabulary Name");
+		}
+	}
+
+	@description = "Validate if the user can filter by multiple tags"
+	@priority = "5"
+	test FilterByMultipleTags {
+		property portal.acceptance = "true";
+
+		task ("Create a Web Content with 2 tags") {
+			JSONWebcontent.addWebContent(
+				assetTagNames = "tagnumber1,tagnumber2",
+				content = "Web Content With Tag1 and Tag2",
+				groupName = "Test Site Name",
+				title = "WC Title 1");
+		}
+
+		task ("Create a Web Content with 1 tag") {
+			JSONWebcontent.addWebContent(
+				assetTagNames = "tagnumber1",
+				content = "Web Content With Tag1",
+				groupName = "Test Site Name",
+				title = "WC Title 2");
+		}
+
+		task ("Filter asset by tag in Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.filterByTag(
+				filterOption = "Tags",
+				tagName = "tagnumber1");
+
+			ContentDashboard.filterByTag(
+				filterOption = "Tags",
+				tagName = "tagnumber2");
+
+			Pause(locator1 = "3000");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title 1");
+		}
+	}
+
+	@description = "Validate if the user can filter by Site"
+	@priority = "5"
+	test FilterBySite {
+		property portal.acceptance = "true";
+
+		task ("Add a Web Contentto Global Site") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Global",
+				title = "WC Title Global");
+		}
+
+		task ("Filter asset by Global Site status in Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.filterBySiteGlobal(filterOption = "Site or Asset Library");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title Global");
+		}
+	}
+
+	@description = "Validate if the user can filter by Status: Any"
+	@priority = "5"
+	test FilterByStatusAny {
+		property portal.acceptance = "true";
+
+		task ("Add approved and draft Web Contents") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title Approved");
+
+			JSONWebcontent.addWebContent(
+				content = "WC WebContent Content",
+				groupName = "Test Site Name",
+				title = "WC Title Draft",
+				workflowAction = "DRAFT");
+		}
+
+		task ("Filter asset by Any status in Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.filterByStatusAny(filterOption = "Any");
+
+			ContentDashboard.searchValue(webContentTitle = "WC Title Approved");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title Approved");
+
+			ContentDashboard.searchValue(webContentTitle = "WC Title Draft");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title Draft");
+		}
+	}
+
+	@description = "Validate if the user can filter by Status: Approved"
+	@priority = "5"
+	test FilterByStatusApproved {
+		property portal.acceptance = "true";
+
+		task ("Create a Approved Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title Approved");
+		}
+
+		task ("Filter asset by Aproved status in Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.filterByStatusApproved(filterOption = "Approved");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title Approved");
+		}
+	}
+
+	@description = "Validate if the user can filter by Status: Draft"
+	@priority = "5"
+	test FilterByStatusDraft {
+		property portal.acceptance = "true";
+
+		task ("Create a Draft Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC WebContent Content",
+				groupName = "Test Site Name",
+				title = "WC Title Draft",
+				workflowAction = "DRAFT");
+		}
+
+		task ("Filter asset by Draft status in Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.filterByStatusDraft(filterOption = "Draft");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title Draft");
+		}
+	}
+
+	@description = "Validate if the user can filter by Status: Scheduled"
+	@priority = "5"
+	test FilterByStatusScheduled {
+		property portal.acceptance = "true";
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC WebContent Content",
+				groupName = "Test Site Name",
+				title = "WC Title Scheduled");
+		}
+
+		task ("Change display date of Web Content") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			WebContentNavigator.gotoEditCP(webContentTitle = "WC Title Scheduled");
+
+			WebContent.editDisplayDate(displayDate = "01/01/2100");
+
+			PortletEntry.publish();
+		}
+
+		task ("Filter asset at Content Dashboard using status") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.filterByStatusScheduled(filterOption = "Scheduled");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title Scheduled");
+		}
+	}
+
+	@description = "LPS-132411 Given The Type filter modal
+	When the user selects one or more subtypes
+	Then the subtypes selected appear as filter boxes above the Content table in the Content Dashboard, with the format Subtype: [subtypen_name]"
+	@priority = "5"
+	test FilterBySubtype {
+		property portal.acceptance = "true";
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "Webcontent Title");
+		}
+
+		task ("Navigate to the content Dashboard") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+		}
+
+		task ("Filter by Type") {
+			ContentDashboard.filterByType(
+				filterOption = "Type",
+				subtypeName = "Basic Web Content");
+		}
+
+		task ("Assert that the web content and filter label are present") {
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "Webcontent Title");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FILTER_TEXT",
+				value1 = "Subtype: Basic Web Content");
+		}
+	}
+
+	@description = "Validate if the user can filter by tag"
+	@priority = "5"
+	test FilterByTag {
+		property portal.acceptance = "true";
+
+		task ("Add web content with tag to the first site") {
+			JSONWebcontent.addWebContent(
+				assetTagNames = "test_tag",
+				content = "Web Content With Tag",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
+		}
+
+		task ("Filter by tag at Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.filterByTag(
+				filterOption = "Tags",
+				tagName = "test_tag");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "Web Content Title");
+		}
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When the user selects one or more extensions and clicks on 'Select' button
+	Then the extensions selected appear as filter boxes above the Content table in the Content Dashboard, with the format 'Extension: [extension_name]' "
+	@ignore = "true"
+	@priority = "5"
+	test FilteringExtensionsOnTheDashboard {
+
+		// TODO LPS-133354 FilteringExtensionsOnTheDashboard pending implementation
+
+	}
+
+	@description = "LPS-117419 When the item selector for tags displays all available tags and there's a tag that is created in two different sites with the same name, the repeated tag shows only once, the filter results retrieve contents labeled with those categories from the two sites and there's only one filter applied"
+	@priority = "5"
+	test FilterTheListOfContentsByTag {
+		property portal.acceptance = "true";
+
+		task ("Add web content with tag to the first site") {
+			JSONWebcontent.addWebContent(
+				assetTagNames = "test_tag",
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title 1");
+		}
+
+		task ("Create the second site") {
+			JSONGroup.addGroup(groupName = "Test Site Name 2");
+		}
+
+		task ("Add web content with tag to the second site") {
+			JSONWebcontent.addWebContent(
+				assetTagNames = "test_tag",
+				content = "Web Content Content",
+				groupName = "Test Site Name 2",
+				title = "Web Content Title 2");
+		}
+
+		task ("navigate to the content dashboard, filter by tags and make sure there is only one tag") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.filterByTag(
+				filterOption = "Tags",
+				tagName = "test_tag");
+		}
+
+		task ("Assert if both Web Contents are displayed") {
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FILTER_TEXT",
+				value1 = "Tag:test_tag");
+
+			ContentDashboard.searchValue(webContentTitle = "Web Content Title 1");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "Web Content Title 1");
+
+			ContentDashboard.searchValue(webContentTitle = "Web Content Title 2");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "Web Content Title 2");
+		}
+	}
+
+	@description = "LPS-116840 When a user with update permissions clicks on the edit icon, the user is led to the web editor"
+	@priority = "5"
+	test IconEdit {
+		property portal.acceptance = "true";
+
+		task ("Create a Web Content ") {
+			JSONWebcontent.addWebContent(
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "Webcontent Title");
+		}
+
+		task ("Check it in its display page and access the edit") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			Click.clickNoMouseOver(locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED_MODIFIED_DATE");
+		}
+	}
+
+	@description = "LPS-116840 When the user clicks on the info icon, the info panel displays"
+	@priority = "5"
+	test IconInfo {
+		property portal.acceptance = "true";
+
+		task ("Add Display Page and mark it as default") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			Button.clickPublish();
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Add Web Content and check it in its display page and access the info") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "teste");
+
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			Click.clickNoMouseOver(locator1 = "ContentDashboard#ROW_PANEL_WC");
+
+			Click(locator1 = "ContentDashboard#ICON_INFO_LISTED_MODIFIED_DATE");
+		}
+	}
+
+	@description = "LPS-122873 When the user add filters need to have only one vocabulary, the relative ordering of the categories remain the same"
+	@priority = "3"
+	test JustAddingAVocabularyThroughTheFilters {
+		property portal.acceptance = "true";
+
+		task ("Create a list of Audience Categories") {
+			var audienceId1	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_1",
+				vocabularyName = "Audience");
+
+			var audienceId2	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_2",
+				vocabularyName = "Audience");
+
+			var audienceId3	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_3",
+				vocabularyName = "Audience");
+		}
+
+		task ("Create a list of Stage Categories") {
+			var stageId1 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_1",
+				vocabularyName = "Stage");
+
+			var stageId2 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_2",
+				vocabularyName = "Stage");
+
+			var stageId3 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_3",
+				vocabularyName = "Stage");
+		}
+
+		task ("Create Web Contents with Stage categories only") {
+			for (var count : list "1,2,3") {
+				JSONWebcontent.addWebContent(
+					assetCategoryIds = "${stageId1},${stageId2},${stageId3}",
+					content = "Webcontent Content",
+					groupName = "Test Site Name",
+					title = "Webcontent Title ${count}");
+			}
+		}
+
+		task ("Go to content Dashboard and View the relative ordering of the categories remain the same") {
+			ContentDashboard.goToContentDashboard();
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#X_AXIS_VOCABULARY_NAME",
+				value1 = "Substage_1",
+				xAxisCategoryName = "stage");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#X_AXIS_VOCABULARY_NAME",
+				value1 = "Substage_2",
+				xAxisCategoryName = "stage");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#X_AXIS_VOCABULARY_NAME",
+				value1 = "Substage_3",
+				xAxisCategoryName = "stage");
+		}
+
+		task ("Delete the global audience categories") {
+			for (var categories : list "Subaudience_1,Subaudience_2,Subaudience_3") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Audience");
+			}
+
+			for (var categories : list "Substage_1,Substage_2,Substage_3") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Stage");
+			}
+		}
+	}
+
+	@description = "LPS-116987 When the user clicks on the eye icon in any of the translated into languages within the info panel, the user navigates to the VIEW version of the page in the matching language"
+	@priority = "5"
+	test LanguageVersion {
+		property portal.acceptance = "true";
+
+		task ("Add Display Page and mark it as default") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			Button.clickPublish();
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Add Web Content and change the language") {
+			JSONWebcontent.addWebContent(
+				content = "WC WebContent Content",
+				description = "Description",
+				groupName = "Test Site Name",
+				title = "WC WebContent Title");
+
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "Test Site Name");
+
+			Translations.gotoTranslate(webContentTitle = "WC WebContent Title");
+
+			Translations.changeTargetLocale(
+				currentTargetLocale = "ar-SA",
+				newTargetLocale = "es-ES");
+
+			Button.clickPublish();
+		}
+		task ("Navigate to the content Dashboard and go to the page view in the corresponding language") {
+			ContentDashboard.goToContentDashboard();
+
+			WebContent.checkLanguage();
+		}
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When there are file extensions for the MIME type 'audio'
+	Then the MIME type 'audio' appears as father and all of the file extensions for it appear as children and available to be selected"
+	@ignore = "true"
+	@priority = "4"
+	test MimeTypeAudio {
+
+		// TODO LPS-133354 MimeTypeAudio pending implementation
+
+	}
+
+	@description = "LPS-133354 Given The Extension filter modal
+	When there are file extensions for the MIME type 'code'
+	Then the MIME type 'code' appears as father and all of the file extensions for it appear as children and available to be selected"
+	@ignore = "true"
+	@priority = "4"
+	test MimeTypeCode {
+
+		// TODO LPS-133354 MimeTypeCode pending implementation
+
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When there are file extensions for the MIME type 'compressed'
+	Then the MIME type 'compressed' appears as father and all of the file extensions for it appear as children and available to be selected"
+	@ignore = "true"
+	@priority = "4"
+	test MimeTypeCompressed {
+
+		// TODO LPS-133354 MimeTypeCompressed pending implementation
+
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When there are file extensions for the MIME type 'others'
+	Then the MIME type 'others' appears as father and all of the file extensions for it appear as children and available to be selected"
+	@ignore = "true"
+	@priority = "4"
+	test MimeTypeOthers {
+
+		// TODO LPS-133354 MimeTypeOthers pending implementation
+
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When there are file extensions for the MIME type 'presentation'
+	Then the MIME type 'presentation' appears as father and all of the file extensions for it appear as children and available to be selected"
+	@ignore = "true"
+	@priority = "4"
+	test MimeTypePresentation {
+
+		// TODO LPS-133354 MimeTypePresentation pending implementation
+
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When there are file extensions for the MIME type 'spreadSheet'
+	Then the MIME type 'spreadSheet' appears as father and all of the file extensions for it appear as children and available to be selected"
+	@ignore = "true"
+	@priority = "4"
+	test MimeTypeSpreadsheet {
+
+		// TODO LPS-133354 MimeTypeSpreadsheet pending implementation
+
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When there are file extensions for the MIME type 'text'
+	Then the MIME type 'text' appears as father and all of the file extensions for it appear as children and available to be selected"
+	@ignore = "true"
+	@priority = "4"
+	test MimeTypeText {
+
+		// TODO LPS-133354 MimeTypeText pending implementation
+
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When there are file extensions for the MIME type 'vectorial'
+	Then the MIME type 'vectorial' appears as father and all of the file extensions for it appear as children and available to be selected"
+	@ignore = "true"
+	@priority = "4"
+	test MimeTypeVectorial {
+
+		// TODO LPS-133354 MimeTypeVectorial pending implementation
+
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When there are file extensions for the MIME type 'video'
+	Then the MIME type 'video' appears as father and all of the file extensions for it appear as children and available to be selected"
+	@ignore = "true"
+	@priority = "4"
+	test MimeTypeVideo {
+
+		// TODO LPS-133354 MimeTypeVideo pending implementation
+
+	}
+
+	@description = "LPS-131793: Given the categorization section in Documents and Media
+	When the user creates a Global internal vocabulary
+	Then the vocabulary is shown"
+	@ignore = "true"
+	@priority = "3"
+	test NewVocabularyGlobalInOOTBTable {
+
+		// TODO LPS-131793 NewVocabularyGlobalInOOTBTable pending implementation
+
+	}
+
+	@description = "LPS-131793: Given the categorization section in Documents and Media
+	When the user creates a Site internal vocabulary
+	Then the vocabulary is shown"
+	@ignore = "true"
+	@priority = "3"
+	test NewVocabularyInternalInOOTBTable {
+
+		// TODO LPS-131793 NewVocabularyInternalInOOTBTable pending implementation
+
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When there are NOT file extensions for any MIME type
+	Then the MIME type does NOT appear listed in the Extension modal"
+	@ignore = "true"
+	@priority = "3"
+	test NoMimeType {
+
+		// TODO LPS-133354 NoMimeType pending implementation
+
+	}
+
+	@description = "LPS-122873 When the user configure the audit graph to have just one vocabulary, the relative ordering of the categories remain the same"
+	@priority = "3"
+	test NumberOfVocabulariesAccordingToTheAuditGraph {
+		property portal.acceptance = "true";
+
+		task ("Create a list of Audiences") {
+			var categoryId1	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "C_Subaudience_1",
+				vocabularyName = "Audience");
+
+			var categoryId2	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "B_Subaudience_2",
+				vocabularyName = "Audience");
+
+			var categoryId3	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "A_Subaudience_3",
+				vocabularyName = "Audience");
+		}
+
+		task ("Create a list of Stage Categories") {
+			var stageId1 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_1",
+				vocabularyName = "Stage");
+
+			var stageId2 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_2",
+				vocabularyName = "Stage");
+
+			var stageId3 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_3",
+				vocabularyName = "Stage");
+		}
+
+		task ("Create a Web Content with the categories") {
+			JSONWebcontent.addWebContent(
+				assetCategoryIds = "${categoryId1},${categoryId2},${categoryId3},${stageId1},${stageId2},${stageId3}",
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "Webcontent Title");
+		}
+
+		task ("Go to Content Dashboard and set graph to only one vocabulary") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.moveVocabularyDisplayConfiguration(vocabularyName = "Stage");
+		}
+
+		task ("Assert the categories of the vocabulary removed is not present") {
+			AssertTextNotPresent(
+				locator1 = "ContentDashboard#X_AXIS_VOCABULARY_NAME",
+				value1 = "Substage_1",
+				xAxisCategoryName = "stage");
+
+			AssertTextNotPresent(
+				locator1 = "ContentDashboard#X_AXIS_VOCABULARY_NAME",
+				value1 = "Substage_2",
+				xAxisCategoryName = "stage");
+
+			AssertTextNotPresent(
+				locator1 = "ContentDashboard#X_AXIS_VOCABULARY_NAME",
+				value1 = "Substage_3",
+				xAxisCategoryName = "stage");
+		}
+
+		task ("Validate if the remaining categories are shown in order of creating") {
+			AssertTextPresent(
+				categoryIndex = "1",
+				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
+				value1 = "C_Subaudience_1");
+
+			AssertTextPresent(
+				categoryIndex = "2",
+				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
+				value1 = "B_Subaudience_2");
+
+			AssertTextPresent(
+				categoryIndex = "3",
+				locator1 = "ContentDashboard#X_AXIS_CATEGORIES_NAME",
+				value1 = "A_Subaudience_3");
+		}
+
+		task ("Delete the global audience categories") {
+			for (var categories : list "C_Subaudience_1,B_Subaudience_2,A_Subaudience_3") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Audience");
+			}
+
+			for (var categories : list "Substage_1,Substage_2,Substage_3") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Stage");
+			}
+		}
+	}
+
+	@description = "Validate if the user can order by Modification Date"
+	@priority = "5"
+	test OrderByModificationDate {
+		task ("Create 5 Web Contents") {
+			for (var count : list "1,2,3,4,5") {
+				JSONWebcontent.addWebContent(
+					content = "WC Content ${count}",
+					groupName = "Test Site Name",
+					title = "WC Title ${count}");
+			}
+		}
+
+		ContentDashboard.goToContentDashboard();
+
+		task ("Order assets by modification data in Content Dashboard") {
+			ContentDashboard.orderByModificationDate(filterOption = "Modified Date");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title 5");
+		}
+
+		task ("Change the order of assets") {
+			Click(locator1 = "ContentDashboard#REVERSE_SORT_DIRECTION_BUTTON");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title 1");
+		}
+	}
+
+	@description = "Validate if the user can order by title"
+	@priority = "5"
+	test OrderByTitle {
+		task ("Create 5 Web Contents") {
+			for (var count : list "1,2,3,4,5") {
+				JSONWebcontent.addWebContent(
+					content = "WC Content ${count}",
+					groupName = "Test Site Name",
+					title = "WC Title ${count}");
+			}
+		}
+
+		task ("Order assets by title in Content Dashboard") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.orderByTitle(filterOption = "Title");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title 5");
+		}
+
+		task ("Change de order of assets") {
+			Click(locator1 = "ContentDashboard#REVERSE_SORT_DIRECTION_BUTTON");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title 1");
+		}
+	}
+
+	@description = "LPS-132254 When a user selects the value of the number of rows (4, 8, 40, 60) displayed in the list, the Content Dashboard will display the number of rows selected"
+	@priority = "5"
+	test PaginationDisplaySelectedNumberOfRows {
+		property portal.acceptance = "true";
+
+		task ("Create 10 WC using JSON") {
+			for (var count : list "1,2,3,4,5,6,7,8,9,10") {
+				JSONWebcontent.addWebContent(
+					content = "WC Content ${count}",
+					groupName = "Test Site Name",
+					title = "WC Title ${count}");
+			}
+		}
+
+		task ("Go to Content Dashboard") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+		}
+
+		task ("Check if the correct number of entries are being displayed") {
+			Pagination.changePagination(itemsPerPage = "8");
+
+			Pagination.viewResults(results = "Showing 1 to 8 of 10 entries.");
+		}
+	}
+
+	@description = "LPS-132254 When a user use the <, > buttons, the page displayed moves forward/backward"
+	@priority = "3"
+	test PaginationMoveAcrossPagesWithButtons {
+		property portal.acceptance = "true";
+
+		task ("Create 6 WC using JSON") {
+			for (var count : list "1,2,3,4,5,6") {
+				JSONWebcontent.addWebContent(
+					content = "WC Content ${count}",
+					groupName = "Test Site Name",
+					title = "WC Title ${count}");
+			}
+		}
+
+		task ("Go to Content Dashboard") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+		}
+
+		task ("Use < > buttons to move forth and back") {
+			Pagination.changePagination(itemsPerPage = "4");
+
+			Click(locator1 = "Pagination#NEXT_LINK");
+
+			Pagination.viewResults(results = "Showing 5 to 6 of 6 entries.");
+
+			Click(locator1 = "Pagination#PREVIOUS_LINK");
+
+			Pagination.viewResults(results = "Showing 1 to 4 of 6 entries.");
+		}
+	}
+
+	@description = "LPS-132254 When a user clicks on a page number, that page is displayed in the Content Dashboard"
+	@priority = "3"
+	test PaginationMoveAcrossPagesWithNumber {
+		property portal.acceptance = "true";
+
+		task ("Create 6 WC using JSON") {
+			for (var count : list "1,2,3,4,5,6") {
+				JSONWebcontent.addWebContent(
+					content = "WC Content ${count}",
+					groupName = "Test Site Name",
+					title = "WC Title ${count}");
+			}
+		}
+
+		task ("Go to Content Dashboard") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+		}
+
+		task ("Use page numbers to move between pages") {
+			Pagination.changePagination(itemsPerPage = "4");
+
+			ContentDashboard.moveToPage(pageNumber = "2");
+
+			Pagination.viewResults(results = "Showing 5 to 6 of 6 entries.");
+		}
+	}
+
+	@description = "LPS-113832 When the option 'Access in Control Panel' is checked for permissions for Content Dashboard section, users with this role assigned can see and access the Content Dashboard in the Global App Menu."
+	@priority = "5"
+	test PermissionsForContentDashboard {
+		property portal.acceptance = "true";
+
+		task ("Disable option to strangers to verify email") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Configuration",
+				panel = "Control Panel",
+				portlet = "Instance Settings");
+
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "User Authentication",
+				configurationName = "General",
+				configurationScope = "Virtual Instance Scope");
+
+			PortalSettings.uncheckStrangersVerifyEmailCheckbox();
+		}
+
+		task ("Create a new user") {
+			JSONUser.addUser(
+				userEmailAddress = "userea@liferay.com",
+				userFirstName = "userfn",
+				userLastName = "userln",
+				userScreenName = "usersn");
+
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				newPassword = "test",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
+		}
+
+		task ("Create a new role and its permissions") {
+			JSONRole.addRegularRole(
+				roleKey = "Content Dashboard User",
+				roleTitle = "Content Dashboard User");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "VIEW_SITE_ADMINISTRATION",
+				resourceName = "com.liferay.portal.kernel.model.Group",
+				roleTitle = "Content Dashboard User");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "ACCESS_IN_CONTROL_PANEL",
+				resourceName = "com_liferay_content_dashboard_web_portlet_ContentDashboardAdminPortlet",
+				roleTitle = "Content Dashboard User");
+
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "VIEW_CONTROL_PANEL",
+				resourceName = "90",
+				roleTitle = "Content Dashboard User");
+
+			JSONRole.assignRoleToUser(
+				roleTitle = "Content Dashboard User",
+				userEmailAddress = "userea@liferay.com");
+		}
+
+		task ("login with the new user and access the content panel") {
+			User.logoutAndLoginPG(
+				userLoginEmailAddress = "userea@liferay.com",
+				userLoginFullName = "userfn userln");
+
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+		}
+
+		task ("Delete user and role created") {
+			JSONUser.deleteUserByEmailAddress(userEmailAddress = "userea@liferay.com");
+
+			JSONRole.deleteRole(roleTitle = "Content Dashboard User");
+		}
+	}
+
+	@description = "Validate if the user can open de Info side panel of a web content"
+	@priority = "5"
+	test SaveFiltersAfterEditing {
+		property portal.acceptance = "true";
+
+		task ("Create a Web Content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		task ("Edit Web Content") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.filterByAuthorTable(filterOption = "Author");
+
+			ContentDashboard.editAsset(assetTitle = "WC Title Edited");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FILTER_TEXT",
+				value1 = "Author:Test Test");
+		}
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When the user selects one or more extensions
+	Then the number of file extensions preselected will be shown as a text with the format '[number] Subtypes selected' "
+	@ignore = "true"
+	@priority = "3"
+	test SelectedExtensionNumbers {
+
+		// TODO LPS-133354 SelectedExtensionNumbers pending implementation
+
+	}
+
+	@description = "LPS-133354: Given The Extension filter modal
+	When the text input matches to one or more extensions from a MIME type and the user clicks on the MIME type parent
+	Then all the children that appear filtered will be selected"
+	@ignore = "true"
+	@priority = "3"
+	test SelectedParentAndChildExtensions {
+
+		// TODO LPS-133354 SelectedParentAndChildExtensions pending implementation
+
+	}
+
+	@description = "LPS-131886 Validade if when Web Content is updated its being corectly displayed"
+	@priority = "3"
+	test ShouldExhibitUpdatedWebContent {
+		task ("Create WC via JSON") {
+			JSONWebcontent.addWebContent(
+				content = "WC WebContent Content",
+				groupName = "Test Site Name",
+				title = "WC WebContent Title");
+		}
+
+		task ("Go to Content Dashboard and Edit WC") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			ContentDashboard.editAsset(assetTitle = "WC WebContent New Title");
+		}
+
+		task ("Check if content is correct") {
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED_MODIFIED_DATE",
+				value1 = "0 Seconds Ago");
+		}
+	}
+
+	@description = "LPS-131886 Validade if a Web Content associated with a Display Page Template is shown"
+	@priority = "5"
+	test ShouldExhibitWebContentAssociatedWithDisplayPage {
+		task ("Create and Publish a Display Page Template with Fragment") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			Button.clickPublish();
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Create a Web Content and set a Display Page") {
+			JSONWebcontent.addWebContent(
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "Webcontent Title");
+		}
+
+		task ("Check in Content Dashboard if WC is assiciated with Display Page Template") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "Webcontent Title");
+
+			AssertElementPresent(locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED_DISPLAY_PAGE");
+		}
+	}
+
+	@description = "LPS-131886 Validade if a Web Content not associated with a Display Page Template is shown"
+	@priority = "5"
+	test ShouldExhibitWebContentNotAssociatedWithDisplayPageTemplate {
+		task ("Create WC via JSON") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		task ("Check if WC is not associated in Content Dashboard") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title");
+
+			AssertElementNotPresent(locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED_DISPLAY_PAGE");
+		}
+	}
+
+	@description = "LPS-133181 When Filter by Author 'All', displays content from all users featured in the user's content dashboard view."
+	@priority = "5"
+	test ShowAllContentCreatorUsers {
+		task ("Disable option to strangers to verify email") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Configuration",
+				panel = "Control Panel",
+				portlet = "Instance Settings");
+
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "User Authentication",
+				configurationName = "General",
+				configurationScope = "Virtual Instance Scope");
+
+			PortalSettings.uncheckStrangersVerifyEmailCheckbox();
+		}
+
+		task ("Create and configure second user") {
+			JSONUser.addUser(
+				userEmailAddress = "userea@liferay.com",
+				userFirstName = "userfn",
+				userLastName = "userln",
+				userScreenName = "usersn");
+
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
+
+			JSONRole.assignRoleToUser(
+				roleTitle = "Administrator",
+				userEmailAddress = "userea@liferay.com");
+		}
+
+		task ("Create First WC via JSON") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content 1",
+				groupName = "Test Site Name",
+				title = "WC Title 1");
+		}
+
+		task ("Change to second user and create second WC") {
+			User.logoutAndLoginPG(
+				userLoginEmailAddress = "userea@liferay.com",
+				userLoginFullName = "userfn userln");
+
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			WebContentNavigator.gotoAddCP();
+
+			WebContent.addCP(
+				webContentContent = "WC Content 2",
+				webContentTitle = "WC Title 2");
+
+			PortletEntry.publish();
+		}
+
+		task ("Go to Content Dashboard and aplly All filter") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.filterByAuthorAll(filterOption = "All");
+		}
+
+		task ("Check if all contents are being displayed") {
+			ContentDashboard.searchValue(webContentTitle = "WC Title 1");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title 1");
+
+			ContentDashboard.searchValue(webContentTitle = "WC Title 2");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title 2");
+		}
+	}
+
+	@description = "LPS-133181 When Filter by Author 'Me', displays content where the current user is the last editor of the approved version."
+	@priority = "5"
+	test ShowOnlyContentCreatedByUser {
+		task ("Disable option to strangers to verify email") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Configuration",
+				panel = "Control Panel",
+				portlet = "Instance Settings");
+
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "User Authentication",
+				configurationName = "General",
+				configurationScope = "Virtual Instance Scope");
+
+			PortalSettings.uncheckStrangersVerifyEmailCheckbox();
+		}
+
+		task ("Create and configure second user") {
+			JSONUser.addUser(
+				userEmailAddress = "userea@liferay.com",
+				userFirstName = "userfn",
+				userLastName = "userln",
+				userScreenName = "usersn");
+
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
+
+			JSONRole.assignRoleToUser(
+				roleTitle = "Administrator",
+				userEmailAddress = "userea@liferay.com");
+		}
+
+		task ("Create First WC via JSON") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		task ("Change to second user") {
+			User.logoutAndLoginPG(
+				userLoginEmailAddress = "userea@liferay.com",
+				userLoginFullName = "userfn userln");
+		}
+
+		task ("Go to Content Dashboard and Edit web content") {
+			ContentDashboard.goToContentDashboard();
+
+			ContentDashboard.editAsset(assetTitle = "WC Title Edit");
+		}
+
+		task ("Filter by author Me and assert asset displayed") {
+			ContentDashboard.filterByAuthorMe(filterOption = "Me");
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#FIRST_ELEMENT_LISTED",
+				value1 = "WC Title Edit");
+		}
+
+		task ("Delete user created") {
+			JSONUser.deleteUserByEmailAddress(userEmailAddress = "userea@liferay.com");
+		}
+	}
+
+	@description = "LPS-131187 Given the Content Dashboard table
+	When a document is added
+	Then its type will be shown in the Type column"
+	@priority = "3"
+	test TypeColumnForDocument {
+		property osgi.module.configuration.file.names = "com.liferay.content.dashboard.web.internal.configuration.FFContentDashboardDocumentConfiguration.config";
+		property osgi.module.configurations = "enabled=B&quot;true&quot;";
+		property portal.acceptance = "true";
+
+		task ("Create document via JSON") {
+			task ("Create a new Document") {
+				JSONDocument.addFile(
+					dmDocumentDescription = "DM Document Description",
+					dmDocumentTitle = "DM Document Title",
+					groupName = "Test Site Name");
+			}
+		}
+
+		task ("Go to Content Dashboard") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+		}
+
+		task ("Assert the type of the web content is shown in the Type column") {
+			AssertTextPresent(
+				locator1 = "ContentDashboard#TYPE_COLUMN_VALUE",
+				value1 = "Document");
+		}
+	}
+
+	@description = "LPS-131187 Given the Content Dashboard table
+	When a web content is added
+	Then its type will be shown in the Type column"
+	@priority = "3"
+	test TypeColumnForWebContent {
+		task ("Create WC via JSON") {
+			JSONWebcontent.addWebContent(
+				content = "WC WebContent Content",
+				groupName = "Test Site Name",
+				title = "WC WebContent Title");
+		}
+
+		task ("Go to Content Dashboard") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+		}
+
+		task ("Assert the type of the web content is shown in the Type column") {
+			AssertTextPresent(
+				locator1 = "ContentDashboard#TYPE_COLUMN_VALUE",
+				value1 = "Web Content Article");
+		}
+	}
+
+	@description = "LPS-122873 When the user uncheck any checkbox from the vocab2, the relative ordering of the categories remain the same"
+	@priority = "3"
+	test UncheckACategoryInTheContentPanel {
+		property portal.acceptance = "true";
+
+		task ("Create a list of Audience Categories") {
+			var audienceId1	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_1",
+				vocabularyName = "Audience");
+
+			var audienceId2	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_2",
+				vocabularyName = "Audience");
+
+			var audienceId3	 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Subaudience_3",
+				vocabularyName = "Audience");
+		}
+
+		task ("Create a list of Stage Categories") {
+			var stageId1 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_1",
+				vocabularyName = "Stage");
+
+			var stageId2 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_2",
+				vocabularyName = "Stage");
+
+			var stageId3 = JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Substage_3",
+				vocabularyName = "Stage");
+		}
+
+		task ("Create a Web Content with the categories") {
+			JSONWebcontent.addWebContent(
+				assetCategoryIds = "${audienceId1},${audienceId2},${audienceId3},${stageId1},${stageId2},${stageId3}",
+				content = "Webcontent Content",
+				groupName = "Test Site Name",
+				title = "Webcontent Title");
+		}
+
+		task ("Navigate to content Dashboard, uncheck a vocabulary category 2 and see the order of categories") {
+			ContentDashboard.goToContentDashboard();
+
+			Click.javaScriptClick(
+				checkboxName = "Substage_2",
+				locator1 = "Checkbox#ANY_CHECKBOX");
+
+			task ("blue - first position") {
+				AssertElementPresent(
+					fillColor = "4B9FFF",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("orange - second position") {
+				AssertElementNotPresent(
+					fillColor = "FFB46E",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+
+			task ("red - third position") {
+				AssertElementPresent(
+					fillColor = "FF5F5F",
+					locator1 = "ContentDashboard#BAR_FROM_NO_VOCABULARY_SPECIFIED");
+			}
+		}
+
+		task ("Delete the global audience categories") {
+			for (var categories : list "Subaudience_1,Subaudience_2,Subaudience_3") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Audience");
+			}
+
+			for (var categories : list "Substage_1,Substage_2,Substage_3") {
+				JSONCategory.deleteCategory(
+					categoryName = "${categories}",
+					groupName = "Global",
+					vocabularyName = "Stage");
+			}
+		}
+	}
+
+	@description = "LPS-116840 When the user clicks on the view icon of a content with an associated display page, the user is led to the view mode of the page"
+	@priority = "5"
+	test WebContentIconView {
+		property portal.acceptance = "true";
+
+		task ("Add Display Page and mark it as default") {
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+				contentType = "Web Content Article",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupName = "Test Site Name",
+				subType = "Basic Web Content");
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+			Button.clickPublish();
+
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+			DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+		}
+
+		task ("Add Web Content and check it in its display page and access the view") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC");
+
+			ContentDashboard.goToContentDashboard();
+
+			Click.clickNoMouseOver(locator1 = "ContentDashboard#ROW_PANEL_WC");
+
+			WaitForElementPresent(locator1 = "ContentDashboard#ICON_VIEW_LISTED_MODIFIED_DATE");
+
+			Click(locator1 = "ContentDashboard#ICON_VIEW_LISTED_MODIFIED_DATE");
+		}
+	}
+
+	@description = "LPS-114912: Validate if the user can open de Info side panel of a web content"
+	@priority = "5"
+	test WebContentViewInfoPanel {
+		property portal.acceptance = "true";
+
+		task ("Create a web content") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content",
+				groupName = "Test Site Name",
+				title = "WC Title");
+		}
+
+		task ("Go to Content Dashboard") {
+			ApplicationsMenu.gotoPortlet(
+				category = "Content",
+				panel = "Applications",
+				portlet = "Content Dashboard");
+		}
+
+		task ("Open the Info panel") {
+			ContentDashboard.openInfoPanelByDropdownMenu();
+
+			AssertTextPresent(
+				locator1 = "ContentDashboard#INFO_PANEL_TITLE",
+				value1 = "WC Title");
+
+			Click(locator1 = "ContentDashboard#CLOSE_INFO_PANEL_BUTTON");
+		}
+	}
+
+}

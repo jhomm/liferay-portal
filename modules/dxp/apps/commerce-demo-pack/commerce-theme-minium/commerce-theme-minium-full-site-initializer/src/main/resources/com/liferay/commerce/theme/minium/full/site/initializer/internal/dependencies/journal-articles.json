@@ -1,0 +1,29 @@
+[
+	{
+		"articleId": "LOGIN_SPLASH",
+		"ddmStructureKey": "login-splash-structure",
+		"ddmTemplateKey": "LOGIN_SPLASH",
+		"permissions": [
+			{
+				"actionIds": [
+					"VIEW"
+				],
+				"roleName": "Guest",
+				"scope": 4
+			}
+		],
+		"title": "LOGIN_SPLASH"
+	},
+	{
+		"articleId": "SUMMER_SALES",
+		"ddmStructureKey": "MINIUM_PROMO",
+		"ddmTemplateKey": "MINIUM_PROMO",
+		"title": "Summer Sales"
+	},
+	{
+		"articleId": "UPDATED_PRICE_BOOKS",
+		"ddmStructureKey": "MINIUM_PROMO",
+		"ddmTemplateKey": "MINIUM_PROMO",
+		"title": "Updated Price Books"
+	}
+]

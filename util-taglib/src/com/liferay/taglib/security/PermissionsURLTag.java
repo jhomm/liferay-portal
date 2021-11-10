@@ -18,13 +18,13 @@ import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.WindowStateFactory;
+import com.liferay.portal.kernel.theme.PortletDisplay;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.theme.PortletDisplay;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.portletconfiguration.util.PortletConfigurationApplicationType;
+import com.liferay.portlet.configuration.kernel.util.PortletConfigurationApplicationType;
 
 import javax.portlet.PortletURL;
 import javax.portlet.WindowState;
@@ -60,7 +60,7 @@ public class PermissionsURLTag extends TagSupport {
 	 *         configuration dialog. For more information, see {@link
 	 *         LiferayWindowState}.
 	 * @param  roleTypes the role types
-	 * @param  request the current request
+	 * @param  httpServletRequest the current request
 	 * @return the URL for opening the resource's permissions configuration
 	 *         dialog and for configuring the resource's permissions
 	 * @throws Exception if an exception occurred
@@ -69,11 +69,12 @@ public class PermissionsURLTag extends TagSupport {
 			String redirect, String modelResource,
 			String modelResourceDescription, Object resourceGroupId,
 			String resourcePrimKey, String windowState, int[] roleTypes,
-			HttpServletRequest request)
+			HttpServletRequest httpServletRequest)
 		throws Exception {
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
 		if (resourceGroupId instanceof Number) {
 			Number resourceGroupIdNumber = (Number)resourceGroupId;
@@ -98,11 +99,11 @@ public class PermissionsURLTag extends TagSupport {
 			(Validator.isNull(windowState) ||
 			 !windowState.equals(LiferayWindowState.POP_UP.toString()))) {
 
-			redirect = PortalUtil.getCurrentURL(request);
+			redirect = PortalUtil.getCurrentURL(httpServletRequest);
 		}
 
 		PortletURL portletURL = PortletProviderUtil.getPortletURL(
-			request,
+			httpServletRequest,
 			PortletConfigurationApplicationType.PortletConfiguration.CLASS_NAME,
 			PortletProvider.Action.VIEW);
 
@@ -165,8 +166,8 @@ public class PermissionsURLTag extends TagSupport {
 				jspWriter.write(portletURLToString);
 			}
 		}
-		catch (Exception e) {
-			throw new JspException(e);
+		catch (Exception exception) {
+			throw new JspException(exception);
 		}
 
 		return EVAL_PAGE;

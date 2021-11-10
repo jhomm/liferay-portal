@@ -14,26 +14,28 @@
 
 package com.liferay.portal.tools.deploy;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Plugin;
 import com.liferay.portal.kernel.plugin.PluginPackage;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ServerDetector;
-import com.liferay.portal.kernel.util.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
-import com.liferay.portal.model.Plugin;
 import com.liferay.portal.tools.ToolDependencies;
-import com.liferay.portal.util.Portal;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portal.util.PrefsPropsUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
+import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +64,14 @@ public class PortletDeployer extends BaseDeployer {
 			}
 		}
 
-		new PortletDeployer(wars, jars);
+		try (PortletDeployer portletDeployer = new PortletDeployer(
+				wars, jars)) {
+		}
+		catch (IOException ioException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(ioException, ioException);
+			}
+		}
 	}
 
 	public PortletDeployer() {
@@ -100,7 +109,7 @@ public class PortletDeployer extends BaseDeployer {
 			double webXmlVersion, File srcFile, String displayName)
 		throws Exception {
 
-		StringBundler sb = new StringBundler();
+		StringBundler sb = new StringBundler(9);
 
 		if (ServerDetector.isWebSphere()) {
 			sb.append("<context-param>");
@@ -163,6 +172,10 @@ public class PortletDeployer extends BaseDeployer {
 	public String getServletContent(File portletXML, File webXML)
 		throws Exception {
 
+		if (!portletXML.exists()) {
+			return StringPool.BLANK;
+		}
+
 		StringBundler sb = new StringBundler();
 
 		Document document = UnsecureSAXReaderUtil.read(portletXML);
@@ -210,21 +223,7 @@ public class PortletDeployer extends BaseDeployer {
 
 	@Override
 	public void updateDeployDirectory(File srcFile) throws Exception {
-		boolean customPortletXML = false;
-
-		try {
-			customPortletXML = PrefsPropsUtil.getBoolean(
-				PropsKeys.AUTO_DEPLOY_CUSTOM_PORTLET_XML,
-				PropsValues.AUTO_DEPLOY_CUSTOM_PORTLET_XML);
-		}
-		catch (Exception e) {
-
-			// This will only happen when running the deploy tool in Ant in the
-			// classical way where the WAR file is actually massaged and
-			// packaged.
-
-			customPortletXML = PropsValues.AUTO_DEPLOY_CUSTOM_PORTLET_XML;
-		}
+		boolean customPortletXML = PropsValues.AUTO_DEPLOY_CUSTOM_PORTLET_XML;
 
 		customPortletXML = GetterUtil.getBoolean(
 			System.getProperty("deployer.custom.portlet.xml"),
@@ -262,5 +261,8 @@ public class PortletDeployer extends BaseDeployer {
 
 		FileUtil.write(portletXML, content);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		PortletDeployer.class);
 
 }

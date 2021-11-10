@@ -14,6 +14,16 @@
 
 package com.liferay.portlet.documentlibrary.util;
 
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.model.DLFileEntryConstants;
+import com.liferay.document.library.kernel.model.DLProcessorConstants;
+import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalServiceUtil;
+import com.liferay.document.library.kernel.util.DLProcessor;
+import com.liferay.document.library.kernel.util.RawMetadataProcessor;
+import com.liferay.dynamic.data.mapping.kernel.DDMFormValues;
+import com.liferay.dynamic.data.mapping.kernel.DDMStructure;
+import com.liferay.dynamic.data.mapping.kernel.DDMStructureManagerUtil;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -25,36 +35,26 @@ import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
-import com.liferay.portal.kernel.security.pacl.DoPrivileged;
-import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.StreamUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFileEntry;
-import com.liferay.portal.repository.liferayrepository.model.LiferayFileVersion;
-import com.liferay.portal.service.ServiceContext;
-import com.liferay.portal.util.PortalUtil;
 import com.liferay.portal.util.PropsValues;
-import com.liferay.portlet.documentlibrary.model.DLFileEntry;
-import com.liferay.portlet.documentlibrary.model.DLFileEntryConstants;
-import com.liferay.portlet.documentlibrary.model.DLProcessorConstants;
-import com.liferay.portlet.documentlibrary.service.DLFileEntryMetadataLocalServiceUtil;
-import com.liferay.portlet.dynamicdatamapping.DDMFormValues;
-import com.liferay.portlet.dynamicdatamapping.DDMStructure;
-import com.liferay.portlet.dynamicdatamapping.DDMStructureManagerUtil;
-import com.liferay.portlet.exportimport.lar.PortletDataContext;
 
-import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Alexander Chow
  * @author Mika Koivisto
  * @author Miguel Pastor
  */
-@DoPrivileged
 public class RawMetadataProcessorImpl
 	implements DLProcessor, RawMetadataProcessor {
 
@@ -111,9 +111,7 @@ public class RawMetadataProcessorImpl
 
 	@Override
 	public boolean isSupported(String mimeType) {
-		return !ArrayUtil.contains(
-			PropsValues.
-				DL_FILE_ENTRY_RAW_METADATA_PROCESSOR_EXCLUDED_MIME_TYPES,
+		return !_dlFileEntryRawMetadataProcesorExcludedMimeTypes.contains(
 			mimeType);
 	}
 
@@ -121,43 +119,24 @@ public class RawMetadataProcessorImpl
 	public void saveMetadata(FileVersion fileVersion) throws PortalException {
 		Map<String, DDMFormValues> rawMetadataMap = null;
 
-		if (fileVersion instanceof LiferayFileVersion) {
-			try {
-				LiferayFileVersion liferayFileVersion =
-					(LiferayFileVersion)fileVersion;
-
-				File file = liferayFileVersion.getFile(false);
-
-				rawMetadataMap = RawMetadataProcessorUtil.getRawMetadataMap(
-					fileVersion.getExtension(), fileVersion.getMimeType(),
-					file);
-			}
-			catch (UnsupportedOperationException uoe) {
-			}
-		}
-
-		if (rawMetadataMap == null) {
-			InputStream inputStream = null;
-
-			try {
-				inputStream = fileVersion.getContentStream(false);
-
-				if (inputStream == null) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"No metadata is available for file version " +
-								fileVersion.getFileVersionId());
-					}
-
-					return;
+		try (InputStream inputStream = fileVersion.getContentStream(false)) {
+			if (inputStream == null) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						"No metadata is available for file version " +
+							fileVersion.getFileVersionId());
 				}
 
-				rawMetadataMap = RawMetadataProcessorUtil.getRawMetadataMap(
-					fileVersion.getExtension(), fileVersion.getMimeType(),
-					inputStream);
+				return;
 			}
-			finally {
-				StreamUtil.cleanUp(inputStream);
+
+			rawMetadataMap = RawMetadataProcessorUtil.getRawMetadataMap(
+				fileVersion.getExtension(), fileVersion.getMimeType(),
+				inputStream);
+		}
+		catch (IOException ioException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(ioException, ioException);
 			}
 		}
 
@@ -183,9 +162,11 @@ public class RawMetadataProcessorImpl
 			Indexer<DLFileEntry> indexer = IndexerRegistryUtil.getIndexer(
 				DLFileEntryConstants.getClassName());
 
-			LiferayFileEntry liferayFileEntry = (LiferayFileEntry)fileEntry;
+			if (indexer != null) {
+				LiferayFileEntry liferayFileEntry = (LiferayFileEntry)fileEntry;
 
-			indexer.reindex(liferayFileEntry.getDLFileEntry());
+				indexer.reindex(liferayFileEntry.getDLFileEntry());
+			}
 		}
 	}
 
@@ -205,5 +186,11 @@ public class RawMetadataProcessorImpl
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		RawMetadataProcessorImpl.class);
+
+	private static final Set<String>
+		_dlFileEntryRawMetadataProcesorExcludedMimeTypes = new HashSet<>(
+			Arrays.asList(
+				PropsValues.
+					DL_FILE_ENTRY_RAW_METADATA_PROCESSOR_EXCLUDED_MIME_TYPES));
 
 }

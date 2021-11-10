@@ -1,0 +1,154 @@
+@component-name = "data-engine"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Data Engine";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONGroup.addGroup(groupName = "Test Site Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "WC Structure Title");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Color",
+			fieldName = "Color");
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
+		}
+	}
+
+	@description = "This test specific validates that a Color field can be added to the builder."
+	@priority = "5"
+	test AddColorFieldByDragAndDrop {
+		property portal.acceptance = "false";
+
+		DataEngine.addField(
+			fieldFieldLabel = "Color Test",
+			fieldName = "Color");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		DataEngine.viewField(
+			fieldFieldLabel = "Color Test",
+			fieldName = "Color");
+	}
+
+	@description = "This test ensures that a user can delete the Color field."
+	@priority = "5"
+	test DeleteColorFieldOnBuilder {
+		property portal.acceptance = "false";
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		DataEngine.delete(fieldFieldLabel = "Color");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		AssertElementNotPresent(
+			key_fieldFieldLabel = "Color",
+			locator1 = "DDMEditStructure#FORM_FIELD_CONTAINER_LABEL");
+	}
+
+	@description = "This test validates the input of valid and invalid characters on Field Reference."
+	@priority = "4"
+	test EditColorFieldNameWithValidAndInvalidCharacters {
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		DataEngine.editFieldReference(
+			assertFieldReference = "ColorTest1",
+			fieldFieldLabel = "Color",
+			fieldReference = "%Color*Test @1");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		DataEngine.editFieldReference(
+			assertFieldReference = "Color_Test",
+			fieldFieldLabel = "Color",
+			fieldReference = "Color_Test");
+	}
+
+	@description = "This test ensures that a user can set Color field as required."
+	@priority = "4"
+	test SetColorFieldAsRequired {
+		property portal.acceptance = "false";
+
+		DataEngine.editFieldRequired(fieldFieldLabel = "Color");
+
+		WebContentStructures.saveCP();
+
+		NavItem.click(navItem = "Web Content");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Title");
+
+		PortletEntry.inputTitle(title = "Web Content Title");
+
+		Button.clickPublish();
+
+		AssertTextEquals(
+			key_fieldFieldLabel = "Color",
+			locator1 = "WCEditWebContent#FIELD_REQUIRED_ALERT",
+			value1 = "This field is required.");
+	}
+
+	@description = "This test ensures that a user can set the Searchable property of color field."
+	@priority = "4"
+	test SetSearchablePropertyOfColorField {
+		property portal.acceptance = "false";
+
+		DataEngine.editFieldSearchable(
+			fieldFieldLabel = "Color",
+			searchableType = "Disable");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		DataEngine.viewFieldSearchable(
+			fieldFieldLabel = "Color",
+			searchableType = "Disable");
+
+		DataEngine.editFieldSearchable(
+			fieldFieldLabel = "Color",
+			searchableType = "Keyword");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
+
+		DataEngine.viewFieldSearchable(
+			fieldFieldLabel = "Color",
+			searchableType = "Keyword");
+	}
+
+}

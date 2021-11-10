@@ -14,19 +14,19 @@
 
 package com.liferay.util.bridges.freemarker;
 
-import com.liferay.portal.kernel.io.unsync.UnsyncStringWriter;
+import com.liferay.petra.io.unsync.UnsyncStringWriter;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.template.Template;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateException;
-import com.liferay.portal.kernel.template.TemplateManager;
 import com.liferay.portal.kernel.template.TemplateManagerUtil;
 import com.liferay.portal.kernel.template.TemplateResource;
 import com.liferay.portal.kernel.template.TemplateResourceLoaderUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.UnsyncPrintWriterPool;
-import com.liferay.portal.util.PortalUtil;
 
 import java.io.IOException;
 import java.io.Writer;
@@ -61,8 +61,8 @@ public class FreeMarkerPortlet extends MVCPortlet {
 
 		String servletContextName = portletContext.getPortletContextName();
 
-		String resourcePath = servletContextName.concat(
-			TemplateConstants.SERVLET_SEPARATOR).concat(path);
+		String resourcePath = StringBundler.concat(
+			servletContextName, TemplateConstants.SERVLET_SEPARATOR, path);
 
 		boolean resourceExists = false;
 
@@ -70,8 +70,8 @@ public class FreeMarkerPortlet extends MVCPortlet {
 			resourceExists = TemplateResourceLoaderUtil.hasTemplateResource(
 				TemplateConstants.LANG_TYPE_FTL, resourcePath);
 		}
-		catch (TemplateException te) {
-			throw new IOException(te);
+		catch (TemplateException templateException) {
+			throw new IOException(templateException);
 		}
 
 		if (!resourceExists) {
@@ -83,19 +83,10 @@ public class FreeMarkerPortlet extends MVCPortlet {
 					TemplateResourceLoaderUtil.getTemplateResource(
 						TemplateConstants.LANG_TYPE_FTL, resourcePath);
 
-				TemplateManager templateManager =
-					TemplateManagerUtil.getTemplateManager(
-						TemplateConstants.LANG_TYPE_FTL);
-
 				Template template = TemplateManagerUtil.getTemplate(
 					TemplateConstants.LANG_TYPE_FTL, templateResource, false);
 
-				templateManager.addTaglibApplication(
-					template, "Application", getServletContext());
-				templateManager.addTaglibFactory(
-					template, "PortletJspTagLibs", getServletContext());
-				templateManager.addTaglibRequest(
-					template, "Request",
+				template.prepareTaglib(
 					PortalUtil.getHttpServletRequest(portletRequest),
 					PortalUtil.getHttpServletResponse(portletResponse));
 
@@ -103,6 +94,9 @@ public class FreeMarkerPortlet extends MVCPortlet {
 				template.put(
 					"userInfo",
 					portletRequest.getAttribute(PortletRequest.USER_INFO));
+
+				template.prepare(
+					PortalUtil.getHttpServletRequest(portletRequest));
 
 				Writer writer = null;
 
@@ -118,15 +112,15 @@ public class FreeMarkerPortlet extends MVCPortlet {
 
 				template.processTemplate(writer);
 			}
-			catch (Exception e) {
-				throw new PortletException(e);
+			catch (Exception exception) {
+				throw new PortletException(exception);
 			}
 		}
 
-		if (clearRequestParameters) {
-			if (lifecycle.equals(PortletRequest.RENDER_PHASE)) {
-				portletResponse.setProperty("clear-request-parameters", "true");
-			}
+		if (clearRequestParameters &&
+			lifecycle.equals(PortletRequest.RENDER_PHASE)) {
+
+			portletResponse.setProperty("clear-request-parameters", "true");
 		}
 	}
 

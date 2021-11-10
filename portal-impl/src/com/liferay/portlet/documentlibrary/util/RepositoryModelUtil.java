@@ -14,6 +14,11 @@
 
 package com.liferay.portlet.documentlibrary.util;
 
+import com.liferay.document.library.kernel.model.DLFileEntry;
+import com.liferay.document.library.kernel.model.DLFileShortcut;
+import com.liferay.document.library.kernel.model.DLFileShortcutConstants;
+import com.liferay.document.library.kernel.model.DLFileVersion;
+import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.FileVersion;
@@ -24,11 +29,6 @@ import com.liferay.portal.repository.liferayrepository.model.LiferayFileEntry;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFileShortcut;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFileVersion;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFolder;
-import com.liferay.portlet.documentlibrary.model.DLFileEntry;
-import com.liferay.portlet.documentlibrary.model.DLFileShortcut;
-import com.liferay.portlet.documentlibrary.model.DLFileShortcutConstants;
-import com.liferay.portlet.documentlibrary.model.DLFileVersion;
-import com.liferay.portlet.documentlibrary.model.DLFolder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,9 +55,8 @@ public class RepositoryModelUtil {
 		if (ListUtil.isUnmodifiableList(dlFileEntries)) {
 			return Collections.unmodifiableList(fileEntries);
 		}
-		else {
-			return fileEntries;
-		}
+
+		return fileEntries;
 	}
 
 	public static List<FileShortcut> toFileShortcuts(
@@ -75,9 +74,8 @@ public class RepositoryModelUtil {
 		if (ListUtil.isUnmodifiableList(dlFileShortcuts)) {
 			return Collections.unmodifiableList(fileShortcuts);
 		}
-		else {
-			return fileShortcuts;
-		}
+
+		return fileShortcuts;
 	}
 
 	public static List<FileVersion> toFileVersions(
@@ -94,9 +92,8 @@ public class RepositoryModelUtil {
 		if (ListUtil.isUnmodifiableList(dlFileVersions)) {
 			return Collections.unmodifiableList(fileVersions);
 		}
-		else {
-			return fileVersions;
-		}
+
+		return fileVersions;
 	}
 
 	public static List<Folder> toFolders(List<DLFolder> dlFolders) {
@@ -111,9 +108,8 @@ public class RepositoryModelUtil {
 		if (ListUtil.isUnmodifiableList(dlFolders)) {
 			return Collections.unmodifiableList(folders);
 		}
-		else {
-			return folders;
-		}
+
+		return folders;
 	}
 
 	public static List<RepositoryEntry> toRepositoryEntries(
@@ -162,9 +158,8 @@ public class RepositoryModelUtil {
 
 			return Collections.unmodifiableList(repositoryEntries);
 		}
-		else {
-			return repositoryEntries;
-		}
+
+		return repositoryEntries;
 	}
 
 }

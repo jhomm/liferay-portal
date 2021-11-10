@@ -1,0 +1,20 @@
+@default = "mouseUp"
+definition {
+
+	function javaScriptMouseUp {
+		selenium.javaScriptMouseUp();
+	}
+
+	function mouseRelease {
+		selenium.mouseRelease();
+	}
+
+	function mouseUp {
+		selenium.mouseUp();
+	}
+
+	function mouseUpAt {
+		selenium.mouseUpAt();
+	}
+
+}

@@ -14,16 +14,18 @@
 
 package com.liferay.portal.tools;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.petra.xml.DocUtil;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
-import com.liferay.portal.kernel.util.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.TreeMapBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReader;
 import com.liferay.portal.util.FileImpl;
 import com.liferay.portal.xml.SAXReaderImpl;
-import com.liferay.util.xml.DocUtil;
 
 import com.thoughtworks.qdox.JavaDocBuilder;
 import com.thoughtworks.qdox.model.AbstractJavaEntity;
@@ -45,7 +47,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 import org.apache.tools.ant.DirectoryScanner;
 
@@ -58,8 +59,8 @@ public class JavadocBuilder {
 		try {
 			new JavadocBuilder(args);
 		}
-		catch (Exception e) {
-			e.printStackTrace();
+		catch (Exception exception) {
+			exception.printStackTrace();
 		}
 	}
 
@@ -103,7 +104,7 @@ public class JavadocBuilder {
 
 			int pos = comment.indexOf("</a>");
 
-			comment = comment.substring(pos + 4).trim();
+			comment = StringUtil.trim(comment.substring(pos + 4));
 		}
 
 		commentElement.addCDATA(comment);
@@ -199,7 +200,11 @@ public class JavadocBuilder {
 		DocletTag[] paramDocletTags) {
 
 		String name = javaParameter.getName();
-		String type = javaParameter.getType().getValue();
+
+		Type parameterType = javaParameter.getType();
+
+		String type = parameterType.getValue();
+
 		String value = null;
 
 		for (DocletTag paramDocletTag : paramDocletTags) {
@@ -208,11 +213,10 @@ public class JavadocBuilder {
 			if (!curValue.startsWith(name)) {
 				continue;
 			}
-			else {
-				curValue = value;
 
-				break;
-			}
+			value = curValue;
+
+			break;
 		}
 
 		Element paramElement = methodElement.addElement("param");
@@ -246,17 +250,24 @@ public class JavadocBuilder {
 
 		Type returnType = javaMethod.getReturnType();
 
-		if ((returnType == null) || returnType.getValue().equals("void")) {
+		if (returnType == null) {
 			return;
 		}
 
-		_addDocletElements(methodElement, javaMethod, "return");
+		String returnTypeValue = returnType.getValue();
+
+		if (!returnTypeValue.equals("void")) {
+			_addDocletElements(methodElement, javaMethod, "return");
+		}
 	}
 
 	private void _addThrowsElement(
 		Element methodElement, Type exception, DocletTag[] throwsDocletTags) {
 
-		String name = exception.getJavaClass().getName();
+		JavaClass exceptionClass = exception.getJavaClass();
+
+		String name = exceptionClass.getName();
+
 		String value = null;
 
 		for (DocletTag throwsDocletTag : throwsDocletTags) {
@@ -265,11 +276,10 @@ public class JavadocBuilder {
 			if (!curValue.startsWith(name)) {
 				continue;
 			}
-			else {
-				curValue = value;
 
-				break;
-			}
+			value = curValue;
+
+			break;
 		}
 
 		Element throwsElement = methodElement.addElement("throws");
@@ -346,8 +356,6 @@ public class JavadocBuilder {
 		pos = fileName.indexOf("/", pos);
 
 		String srcFile = fileName.substring(pos + 1);
-		String className = StringUtil.replace(
-			srcFile.substring(0, srcFile.length() - 5), "/", ".");
 
 		JavaDocBuilder builder = new JavaDocBuilder();
 
@@ -363,6 +371,9 @@ public class JavadocBuilder {
 		else {
 			builder.addSource(reader);
 		}
+
+		String className = StringUtil.replace(
+			srcFile.substring(0, srcFile.length() - 5), '/', '.');
 
 		return builder.getClassByName(className);
 	}
@@ -425,9 +436,7 @@ public class JavadocBuilder {
 		String[] lines, Map<String, Element> fieldElementsMap,
 		JavaField javaField) {
 
-		String fieldKey = _getFieldKey(javaField);
-
-		Element fieldElement = fieldElementsMap.get(fieldKey);
+		Element fieldElement = fieldElementsMap.get(_getFieldKey(javaField));
 
 		if (fieldElement == null) {
 			return null;
@@ -472,9 +481,8 @@ public class JavadocBuilder {
 		String[] lines, Map<String, Element> methodElementsMap,
 		JavaMethod javaMethod) {
 
-		String methodKey = _getMethodKey(javaMethod);
-
-		Element methodElement = methodElementsMap.get(methodKey);
+		Element methodElement = methodElementsMap.get(
+			_getMethodKey(javaMethod));
 
 		if (methodElement == null) {
 			return null;
@@ -519,7 +527,7 @@ public class JavadocBuilder {
 	}
 
 	private String _getMethodKey(Element methodElement) {
-		StringBuilder sb = new StringBuilder();
+		StringBundler sb = new StringBundler();
 
 		sb.append(methodElement.elementText("name"));
 		sb.append(StringPool.OPEN_PARENTHESIS);
@@ -539,7 +547,7 @@ public class JavadocBuilder {
 	}
 
 	private String _getMethodKey(JavaMethod javaMethod) {
-		StringBuilder sb = new StringBuilder();
+		StringBundler sb = new StringBundler();
 
 		sb.append(javaMethod.getName());
 		sb.append(StringPool.OPEN_PARENTHESIS);
@@ -549,7 +557,11 @@ public class JavadocBuilder {
 		for (JavaParameter javaParameter : javaParameters) {
 			sb.append(javaParameter.getName());
 			sb.append("|");
-			sb.append(javaParameter.getType().getValue());
+
+			Type type = javaParameter.getType();
+
+			sb.append(type.getValue());
+
 			sb.append(",");
 		}
 
@@ -562,9 +574,8 @@ public class JavadocBuilder {
 		if (content.contains("<javadoc autogenerated=\"true\">")) {
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	private void _process(
@@ -586,7 +597,7 @@ public class JavadocBuilder {
 
 			for (String curLimit : limitArray) {
 				includes.add(
-					"**\\" + StringUtil.replace(curLimit, ".", "\\") +
+					"**\\" + StringUtil.replace(curLimit, '.', '\\') +
 						"\\**\\*.java");
 				includes.add("**\\" + curLimit + ".java");
 			}
@@ -595,14 +606,14 @@ public class JavadocBuilder {
 			includes.add("**\\*.java");
 		}
 
-		ds.setIncludes(includes.toArray(new String[includes.size()]));
+		ds.setIncludes(includes.toArray(new String[0]));
 
 		ds.scan();
 
 		String[] fileNames = ds.getIncludedFiles();
 
 		for (String fileName : fileNames) {
-			fileName = StringUtil.replace(fileName, "\\", "/");
+			fileName = StringUtil.replace(fileName, '\\', '/');
 
 			/*if (!fileName.endsWith("Isolation.java")) {
 				continue;
@@ -614,7 +625,7 @@ public class JavadocBuilder {
 				File file = new File(_BASEDIR + fileName);
 
 				if (file.exists()) {
-					String oldContent = _fileUtil.read(
+					String oldContent = _fileImpl.read(
 						_BASEDIR + fileName + "doc");
 
 					if (_isGenerated(oldContent)) {
@@ -669,7 +680,7 @@ public class JavadocBuilder {
 
 		File file = new File(_BASEDIR + fileName);
 
-		String oldContent = _fileUtil.read(file);
+		String oldContent = _fileImpl.read(file);
 
 		String[] lines = StringUtil.splitLines(oldContent);
 
@@ -710,7 +721,7 @@ public class JavadocBuilder {
 			}
 		}
 
-		StringBuilder sb = new StringBuilder(oldContent.length());
+		StringBundler sb = new StringBundler(oldContent.length());
 
 		for (String line : lines) {
 			if (line != null) {
@@ -719,10 +730,10 @@ public class JavadocBuilder {
 			}
 		}
 
-		String newContent = sb.toString().trim();
+		String newContent = StringUtil.trim(sb.toString());
 
 		if ((oldContent == null) || !oldContent.equals(newContent)) {
-			_fileUtil.write(file, newContent);
+			_fileImpl.write(file, newContent);
 
 			if (log) {
 				System.out.println("Writing " + file);
@@ -738,19 +749,17 @@ public class JavadocBuilder {
 		String oldContent = null;
 
 		if (file.exists()) {
-			oldContent = _fileUtil.read(file);
+			oldContent = _fileImpl.read(file);
 
 			if (_isGenerated(oldContent)) {
 				return;
 			}
 		}
 
-		JavaClass javaClass = _getJavaClass(fileName);
-
-		String newContent = _getJavadocXml(javaClass);
+		String newContent = _getJavadocXml(_getJavaClass(fileName));
 
 		if ((oldContent == null) || !oldContent.equals(newContent)) {
-			_fileUtil.write(file, newContent.getBytes());
+			_fileImpl.write(file, newContent.getBytes());
 
 			System.out.println("Writing " + file);
 		}
@@ -768,7 +777,7 @@ public class JavadocBuilder {
 		File file = new File(_BASEDIR + fileName);
 
 		if (oldContent == null) {
-			oldContent = _fileUtil.read(file);
+			oldContent = _fileImpl.read(file);
 		}
 
 		String[] lines = StringUtil.splitLines(oldContent);
@@ -780,19 +789,16 @@ public class JavadocBuilder {
 
 		Element rootElement = document.getRootElement();
 
-		Map<Integer, String> commentsMap = new TreeMap<>();
-
-		commentsMap.put(
-			javaClass.getLineNumber(), _getJavaClassComment(rootElement));
+		Map<Integer, String> commentsMap = TreeMapBuilder.put(
+			javaClass.getLineNumber(), _getJavaClassComment(rootElement)
+		).build();
 
 		Map<String, Element> methodElementsMap = new HashMap<>();
 
 		List<Element> methodElements = rootElement.elements("method");
 
 		for (Element methodElement : methodElements) {
-			String methodKey = _getMethodKey(methodElement);
-
-			methodElementsMap.put(methodKey, methodElement);
+			methodElementsMap.put(_getMethodKey(methodElement), methodElement);
 		}
 
 		JavaMethod[] javaMethods = javaClass.getMethods();
@@ -812,9 +818,7 @@ public class JavadocBuilder {
 		List<Element> fieldElements = rootElement.elements("field");
 
 		for (Element fieldElement : fieldElements) {
-			String fieldKey = _getFieldKey(fieldElement);
-
-			fieldElementsMap.put(fieldKey, fieldElement);
+			fieldElementsMap.put(_getFieldKey(fieldElement), fieldElement);
 		}
 
 		JavaField[] javaFields = javaClass.getFields();
@@ -829,7 +833,7 @@ public class JavadocBuilder {
 				_getJavaFieldComment(lines, fieldElementsMap, javaField));
 		}
 
-		StringBuilder sb = new StringBuilder(oldContent.length());
+		StringBundler sb = new StringBundler(oldContent.length());
 
 		for (int lineNumber = 1; lineNumber <= lines.length; lineNumber++) {
 			String line = lines[lineNumber - 1];
@@ -844,10 +848,10 @@ public class JavadocBuilder {
 			sb.append("\n");
 		}
 
-		String newContent = sb.toString().trim();
+		String newContent = StringUtil.trim(sb.toString());
 
 		if ((oldContent == null) || !oldContent.equals(newContent)) {
-			_fileUtil.write(file, newContent);
+			_fileImpl.write(file, newContent);
 
 			System.out.println("Writing " + file);
 		}
@@ -855,7 +859,7 @@ public class JavadocBuilder {
 
 	private static final String _BASEDIR = "./";
 
-	private static final FileImpl _fileUtil = FileImpl.getInstance();
+	private static final FileImpl _fileImpl = FileImpl.getInstance();
 	private static final SAXReader _saxReader = new SAXReaderImpl();
 
 }

@@ -36,7 +36,7 @@ public class JQTFastStart {
 	public static void convert(File inputFile, File outputFile)
 		throws IOException {
 
-		_instance.doConvert(inputFile, outputFile);
+		_jqtFastStart.doConvert(inputFile, outputFile);
 	}
 
 	protected void doConvert(File inputFile, File outputFile)
@@ -44,18 +44,15 @@ public class JQTFastStart {
 
 		validate(inputFile, outputFile);
 
-		RandomAccessFile randomAccessInputFile = null;
-		RandomAccessFile randomAccessOutputFile = null;
-
-		try {
-			randomAccessInputFile = new RandomAccessFile(inputFile, "r");
+		try (RandomAccessFile randomAccessInputFile = new RandomAccessFile(
+				inputFile, "r")) {
 
 			Atom atom = null;
 			Atom ftypAtom = null;
 
+			boolean fastStart = false;
 			boolean ftypFound = false;
 			boolean mdatFound = false;
-			boolean isFastStart = false;
 
 			while (randomAccessInputFile.getFilePointer() <
 						randomAccessInputFile.length()) {
@@ -68,7 +65,7 @@ public class JQTFastStart {
 				}
 
 				if (ftypFound && !mdatFound && atom.isMOOV()) {
-					isFastStart = true;
+					fastStart = true;
 
 					break;
 				}
@@ -90,7 +87,7 @@ public class JQTFastStart {
 				}
 			}
 
-			if (isFastStart) {
+			if (fastStart) {
 				if (_log.isInfoEnabled()) {
 					_log.info("The movie is already a fast start MP4");
 				}
@@ -119,39 +116,33 @@ public class JQTFastStart {
 			randomAccessInputFile.seek(
 				ftypAtom.getOffset() + ftypAtom.getSize());
 
-			randomAccessOutputFile = new RandomAccessFile(outputFile, "rw");
+			try (RandomAccessFile randomAccessOutputFile = new RandomAccessFile(
+					outputFile, "rw")) {
 
-			randomAccessOutputFile.setLength(0);
+				randomAccessOutputFile.setLength(0);
 
-			randomAccessOutputFile.write(ftypAtom.getBuffer());
-			randomAccessOutputFile.write(moovAtom.getBuffer());
+				randomAccessOutputFile.write(ftypAtom.getBuffer());
+				randomAccessOutputFile.write(moovAtom.getBuffer());
 
-			byte[] buffer = new byte[1024 * 1024];
+				byte[] buffer = new byte[1024 * 1024];
 
-			while ((randomAccessInputFile.getFilePointer() + buffer.length) <
-						moovAtom.getOffset()) {
+				while ((randomAccessInputFile.getFilePointer() +
+							buffer.length) < moovAtom.getOffset()) {
 
-				int read = randomAccessInputFile.read(buffer);
+					int read = randomAccessInputFile.read(buffer);
 
-				randomAccessOutputFile.write(buffer, 0, read);
-			}
+					randomAccessOutputFile.write(buffer, 0, read);
+				}
 
-			int bufferSize = (int)
-				(moovAtom.getOffset() - randomAccessInputFile.getFilePointer());
+				int bufferSize =
+					(int)(moovAtom.getOffset() -
+						randomAccessInputFile.getFilePointer());
 
-			buffer = new byte[bufferSize];
+				buffer = new byte[bufferSize];
 
-			randomAccessInputFile.readFully(buffer);
+				randomAccessInputFile.readFully(buffer);
 
-			randomAccessOutputFile.write(buffer);
-		}
-		finally {
-			if (randomAccessInputFile != null) {
-				randomAccessInputFile.close();
-			}
-
-			if (randomAccessOutputFile != null) {
-				randomAccessOutputFile.close();
+				randomAccessOutputFile.write(buffer);
 			}
 		}
 	}
@@ -167,7 +158,9 @@ public class JQTFastStart {
 			throw new IOException("Output file alread exists " + outputFile);
 		}
 
-		if (inputFile.getAbsolutePath().equals(outputFile.getAbsolutePath())) {
+		String inputFileAbsolutePath = inputFile.getAbsolutePath();
+
+		if (inputFileAbsolutePath.equals(outputFile.getAbsolutePath())) {
 			throw new IOException(
 				"Input file and output file cannot be the same " + inputFile);
 		}
@@ -175,6 +168,6 @@ public class JQTFastStart {
 
 	private static final Log _log = LogFactoryUtil.getLog(JQTFastStart.class);
 
-	private static final JQTFastStart _instance = new JQTFastStart();
+	private static final JQTFastStart _jqtFastStart = new JQTFastStart();
 
 }

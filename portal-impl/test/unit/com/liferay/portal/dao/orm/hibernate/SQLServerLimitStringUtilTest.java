@@ -14,7 +14,11 @@
 
 package com.liferay.portal.dao.orm.hibernate;
 
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
+
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -22,11 +26,27 @@ import org.junit.Test;
  */
 public class SQLServerLimitStringUtilTest {
 
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
+	@Test
+	public void testDistinct() throws Exception {
+		String sql = SQLServerLimitStringUtil.getLimitString(
+			"SELECT DISTINCT JournalArticle.* FROM JournalArticle ORDER BY " +
+				"userName ASC",
+			10, 30);
+
+		Assert.assertFalse(sql.contains("SELECT top DISTINCT"));
+		Assert.assertTrue(sql.contains("SELECT DISTINCT top"));
+	}
+
 	@Test
 	public void testInnerOrderBy() throws Exception {
 		String sql = SQLServerLimitStringUtil.getLimitString(
-			"SELECT articleId, userName FROM JournalArticle" +
-				" ORDER BY modifiedDate ASC",
+			"SELECT articleId, userName FROM JournalArticle ORDER BY " +
+				"modifiedDate ASC",
 			10, 30);
 
 		Assert.assertTrue(sql.indexOf("30") > 0);
@@ -37,8 +57,8 @@ public class SQLServerLimitStringUtilTest {
 	@Test
 	public void testNoInnerOrderBy() throws Exception {
 		String sql = SQLServerLimitStringUtil.getLimitString(
-			"SELECT articleId, userName FROM JournalArticle" +
-				" ORDER BY userName ASC",
+			"SELECT articleId, userName FROM JournalArticle ORDER BY " +
+				"userName ASC",
 			10, 30);
 
 		Assert.assertTrue(sql.indexOf("30") > 0);
@@ -49,8 +69,8 @@ public class SQLServerLimitStringUtilTest {
 	@Test
 	public void testUnionWithFieldsQuery() throws Exception {
 		String sql = SQLServerLimitStringUtil.getLimitString(
-			"( SELECT articleId, userName FROM JournalArticle )" +
-				" UNION ALL ( SELECT articleId, userName FROM JournalArticle )",
+			"( SELECT articleId, userName FROM JournalArticle ) UNION ALL ( " +
+				"SELECT articleId, userName FROM JournalArticle )",
 			10, 30);
 
 		Assert.assertTrue(sql.indexOf("30") > 0);

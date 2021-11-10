@@ -14,13 +14,14 @@
 
 package com.liferay.portal.servlet.filters.cache;
 
-import com.liferay.portal.kernel.cache.MultiVMPoolUtil;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.cache.PortalCache;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.cache.PortalCacheHelperUtil;
+import com.liferay.portal.kernel.cache.PortalCacheManagerNames;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portlet.exportimport.lar.ExportImportThreadLocal;
 import com.liferay.util.servlet.filters.CacheResponseData;
 
 /**
@@ -66,18 +67,13 @@ public class CacheUtil {
 	}
 
 	private static String _encodeKey(long companyId, String key) {
-		StringBundler sb = new StringBundler(5);
-
-		sb.append(CACHE_NAME);
-		sb.append(StringPool.POUND);
-		sb.append(StringUtil.toHexString(companyId));
-		sb.append(StringPool.POUND);
-		sb.append(key);
-
-		return sb.toString();
+		return StringBundler.concat(
+			CACHE_NAME, StringPool.POUND, StringUtil.toHexString(companyId),
+			StringPool.POUND, key);
 	}
 
 	private static final PortalCache<String, CacheResponseData> _portalCache =
-		MultiVMPoolUtil.getPortalCache(CACHE_NAME);
+		PortalCacheHelperUtil.getPortalCache(
+			PortalCacheManagerNames.MULTI_VM, CACHE_NAME);
 
 }

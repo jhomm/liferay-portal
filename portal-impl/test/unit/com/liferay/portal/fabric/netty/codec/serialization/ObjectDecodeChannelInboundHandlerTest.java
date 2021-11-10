@@ -21,7 +21,7 @@ import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.kernel.test.rule.NewEnv;
 import com.liferay.portal.test.aspects.ReflectionUtilAdvice;
 import com.liferay.portal.test.rule.AdviseWith;
-import com.liferay.portal.test.rule.AspectJNewEnvTestRule;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
@@ -46,7 +46,7 @@ public class ObjectDecodeChannelInboundHandlerTest {
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new AggregateTestRule(
-			CodeCoverageAssertor.INSTANCE, AspectJNewEnvTestRule.INSTANCE);
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Test
 	public void testChannelRead() throws Exception {
@@ -57,7 +57,7 @@ public class ObjectDecodeChannelInboundHandlerTest {
 
 			Assert.fail();
 		}
-		catch (UnsupportedOperationException uoe) {
+		catch (UnsupportedOperationException unsupportedOperationException) {
 		}
 
 		ReflectionTestUtil.invoke(
@@ -69,6 +69,7 @@ public class ObjectDecodeChannelInboundHandlerTest {
 
 		Assert.assertSame(
 			uuid, dateChannelHandler.channelRead(null, uuid, null));
+
 		Assert.assertNull(dateChannelHandler.getDate());
 
 		Date date = new Date();
@@ -122,7 +123,7 @@ public class ObjectDecodeChannelInboundHandlerTest {
 
 		Map<String, ChannelHandler> map = channelPipeline.toMap();
 
-		Assert.assertTrue(map.isEmpty());
+		Assert.assertTrue(map.toString(), map.isEmpty());
 
 		AnnotatedObjectDecoder annotatedObjectDecoder =
 			new AnnotatedObjectDecoder();
@@ -143,8 +144,9 @@ public class ObjectDecodeChannelInboundHandlerTest {
 
 		map = channelPipeline.toMap();
 
-		Assert.assertEquals(1, map.size());
+		Assert.assertEquals(map.toString(), 1, map.size());
 		Assert.assertTrue(map.containsValue(annotatedObjectDecoder));
+
 		Assert.assertSame(
 			dateChannelHandler, annotatedObjectDecoder.removeLast());
 	}

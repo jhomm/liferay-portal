@@ -17,13 +17,12 @@
 <%@ include file="/html/taglib/ui/search_container/init.jsp" %>
 
 <%
-String href = (String)request.getAttribute("liferay-ui:search-container-column-icon:href");
-String src = (String)request.getAttribute("liferay-ui:search-container-column-icon:src");
+String src = HtmlUtil.escapeAttribute((String)request.getAttribute("liferay-ui:search-container-column-icon:src"));
 boolean toggleRowChecker = GetterUtil.getBoolean(request.getAttribute("liferay-ui:search-container-column-icon:toggleRowChecker"));
 %>
 
 <c:if test="<%= Validator.isNotNull(src) %>">
-	<div class="user-icon user-icon-xl user-icon-square <%= toggleRowChecker ? "click-selector" : StringPool.BLANK %>">
-		<img alt="thumbnail" class="img-responsive img-rounded" src="<%= HtmlUtil.escapeAttribute(src) %>" />
+	<div class="aspect-ratio-bg-cover <%= toggleRowChecker ? "click-selector" : StringPool.BLANK %> sticker sticker-static" style="background-image: url('<%= HtmlUtil.escapeAttribute(src) %>');">
+		<img alt="thumbnail" class="sr-only" src="<%= HtmlUtil.escapeAttribute(src) %>" />
 	</div>
 </c:if>

@@ -14,26 +14,26 @@
 
 package com.liferay.portlet.sitesadmin.search;
 
-import com.liferay.portal.kernel.dao.search.RowChecker;
+import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.model.Group;
-import com.liferay.portal.util.PortalUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.util.PortalUtil;
 
 import javax.portlet.PortletResponse;
 
 /**
  * @author Jorge Ferrer
  */
-public class SiteChecker extends RowChecker {
+public class SiteChecker extends EmptyOnClickRowChecker {
 
 	public SiteChecker(PortletResponse portletResponse) {
 		super(portletResponse);
 	}
 
 	@Override
-	public boolean isDisabled(Object obj) {
-		Group group = (Group)obj;
+	public boolean isDisabled(Object object) {
+		Group group = (Group)object;
 
 		try {
 			if (group.isCompany() ||
@@ -42,11 +42,11 @@ public class SiteChecker extends RowChecker {
 				return true;
 			}
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 
-		return super.isDisabled(obj);
+		return super.isDisabled(object);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(SiteChecker.class);

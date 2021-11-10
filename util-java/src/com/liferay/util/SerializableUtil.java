@@ -14,10 +14,10 @@
 
 package com.liferay.util;
 
+import com.liferay.portal.kernel.io.ProtectedObjectInputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
-import com.liferay.portal.kernel.util.ClassLoaderObjectInputStream;
-import com.liferay.portal.kernel.util.StreamUtil;
+import com.liferay.portal.kernel.util.ProtectedClassLoaderObjectInputStream;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -30,66 +30,52 @@ import java.io.ObjectOutputStream;
 public class SerializableUtil {
 
 	public static Object clone(Object object) {
-		return deserialize(serialize(object));
+		Class<?> clazz = object.getClass();
+
+		return deserialize(serialize(object), clazz.getClassLoader());
 	}
 
 	public static Object deserialize(byte[] bytes) {
-		ObjectInputStream objectInputStream = null;
-
-		try {
-			objectInputStream = new ObjectInputStream(
-				new UnsyncByteArrayInputStream(bytes));
+		try (ObjectInputStream objectInputStream =
+				new ProtectedObjectInputStream(
+					new UnsyncByteArrayInputStream(bytes))) {
 
 			return objectInputStream.readObject();
 		}
-		catch (ClassNotFoundException cnfe) {
-			throw new RuntimeException(cnfe);
+		catch (ClassNotFoundException classNotFoundException) {
+			throw new RuntimeException(classNotFoundException);
 		}
-		catch (IOException ioe) {
-			throw new RuntimeException(ioe);
-		}
-		finally {
-			StreamUtil.cleanUp(objectInputStream);
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
 		}
 	}
 
 	public static Object deserialize(byte[] bytes, ClassLoader classLoader) {
-		ObjectInputStream objectInputStream = null;
-
-		try {
-			objectInputStream = new ClassLoaderObjectInputStream(
-				new UnsyncByteArrayInputStream(bytes), classLoader);
+		try (ObjectInputStream objectInputStream =
+				new ProtectedClassLoaderObjectInputStream(
+					new UnsyncByteArrayInputStream(bytes), classLoader)) {
 
 			return objectInputStream.readObject();
 		}
-		catch (ClassNotFoundException cnfe) {
-			throw new RuntimeException(cnfe);
+		catch (ClassNotFoundException classNotFoundException) {
+			throw new RuntimeException(classNotFoundException);
 		}
-		catch (IOException ioe) {
-			throw new RuntimeException(ioe);
-		}
-		finally {
-			StreamUtil.cleanUp(objectInputStream);
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
 		}
 	}
 
 	public static byte[] serialize(Object object) {
-		ObjectOutputStream objectOutputStream = null;
-
 		UnsyncByteArrayOutputStream unsyncByteArrayOutputStream =
 			new UnsyncByteArrayOutputStream();
 
-		try {
-			objectOutputStream = new ObjectOutputStream(
-				unsyncByteArrayOutputStream);
+		try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(
+				unsyncByteArrayOutputStream)) {
 
 			objectOutputStream.writeObject(object);
 		}
-		catch (IOException ioe) {
-			throw new RuntimeException(ioe);
-		}
-		finally {
-			StreamUtil.cleanUp(objectOutputStream);
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
 		}
 
 		return unsyncByteArrayOutputStream.toByteArray();

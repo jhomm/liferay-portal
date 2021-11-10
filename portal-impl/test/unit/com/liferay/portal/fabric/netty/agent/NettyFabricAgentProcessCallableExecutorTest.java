@@ -14,14 +14,16 @@
 
 package com.liferay.portal.fabric.netty.agent;
 
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.process.ProcessCallable;
+import com.liferay.petra.process.ProcessException;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.fabric.netty.NettyTestUtil;
 import com.liferay.portal.fabric.netty.rpc.handlers.NettyRPCChannelHandler;
-import com.liferay.portal.fabric.status.JMXProxyUtil.ProcessCallableExecutor;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.process.ProcessCallable;
-import com.liferay.portal.kernel.process.ProcessException;
+import com.liferay.portal.fabric.status.JMXProxyUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -32,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 /**
@@ -40,8 +43,10 @@ import org.junit.Test;
 public class NettyFabricAgentProcessCallableExecutorTest {
 
 	@ClassRule
-	public static final CodeCoverageAssertor codeCoverageAssertor =
-		CodeCoverageAssertor.INSTANCE;
+	@Rule
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			CodeCoverageAssertor.INSTANCE, LiferayUnitTestRule.INSTANCE);
 
 	@Test
 	public void testExecute() throws Exception {
@@ -53,7 +58,7 @@ public class NettyFabricAgentProcessCallableExecutorTest {
 		channelPipeline.addFirst(
 			NettyRPCChannelHandler.NAME, NettyRPCChannelHandler.INSTANCE);
 
-		ProcessCallableExecutor processCallableExecutor =
+		JMXProxyUtil.ProcessCallableExecutor processCallableExecutor =
 			new NettyFabricAgentProcessCallableExecutor(embeddedChannel);
 
 		NoticeableFuture<Serializable> noticeableFuture =
@@ -67,8 +72,8 @@ public class NettyFabricAgentProcessCallableExecutorTest {
 
 				});
 
-		embeddedChannel.writeInbound(embeddedChannel.readOutbound());
-		embeddedChannel.writeInbound(embeddedChannel.readOutbound());
+		embeddedChannel.writeOneInbound(embeddedChannel.readOutbound());
+		embeddedChannel.writeOneInbound(embeddedChannel.readOutbound());
 
 		Assert.assertEquals(StringPool.BLANK, noticeableFuture.get());
 
@@ -84,16 +89,16 @@ public class NettyFabricAgentProcessCallableExecutorTest {
 
 			});
 
-		embeddedChannel.writeInbound(embeddedChannel.readOutbound());
-		embeddedChannel.writeInbound(embeddedChannel.readOutbound());
+		embeddedChannel.writeOneInbound(embeddedChannel.readOutbound());
+		embeddedChannel.writeOneInbound(embeddedChannel.readOutbound());
 
 		try {
 			noticeableFuture.get();
 
 			Assert.fail();
 		}
-		catch (ExecutionException ee) {
-			Assert.assertSame(processException, ee.getCause());
+		catch (ExecutionException executionException) {
+			Assert.assertSame(processException, executionException.getCause());
 		}
 	}
 

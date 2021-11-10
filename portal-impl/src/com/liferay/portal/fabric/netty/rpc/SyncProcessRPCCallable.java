@@ -14,9 +14,9 @@
 
 package com.liferay.portal.fabric.netty.rpc;
 
-import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
-import com.liferay.portal.kernel.concurrent.NoticeableFuture;
-import com.liferay.portal.kernel.process.ProcessCallable;
+import com.liferay.petra.concurrent.DefaultNoticeableFuture;
+import com.liferay.petra.concurrent.NoticeableFuture;
+import com.liferay.petra.process.ProcessCallable;
 
 import java.io.Serializable;
 
@@ -38,8 +38,8 @@ public class SyncProcessRPCCallable<T extends Serializable>
 		try {
 			defaultNoticeableFuture.set(_processCallable.call());
 		}
-		catch (Throwable t) {
-			defaultNoticeableFuture.setException(t);
+		catch (Throwable throwable) {
+			defaultNoticeableFuture.setException(throwable);
 		}
 
 		return defaultNoticeableFuture;

@@ -14,20 +14,21 @@
 
 package com.liferay.taglib.aui;
 
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.DisplayTerms;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.util.CharPool;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
-import com.liferay.portal.kernel.util.StringBundler;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.model.User;
-import com.liferay.portal.theme.ThemeDisplay;
-import com.liferay.portal.util.PortalUtil;
 import com.liferay.taglib.aui.base.BaseNavTag;
+import com.liferay.taglib.util.TagResourceBundleUtil;
 
 import javax.portlet.PortletResponse;
 
@@ -53,12 +54,17 @@ public class NavTag extends BaseNavTag implements BodyTag {
 
 			setCollapsible(true);
 
-			ThemeDisplay themeDisplay = (ThemeDisplay)request.getAttribute(
-				WebKeys.THEME_DISPLAY);
+			navBarTag.setDataTarget(_getNamespacedId());
+
+			HttpServletRequest httpServletRequest = getRequest();
+
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
 
 			StringBundler sb = navBarTag.getResponsiveButtonsSB();
 
-			sb.append("<a class=\"btn navbar-btn navbar-toggle");
+			sb.append("<a class=\"navbar-toggler navbar-toggler-link");
 
 			String cssClass = getCssClass();
 
@@ -66,9 +72,9 @@ public class NavTag extends BaseNavTag implements BodyTag {
 				String[] cssClassParts = StringUtil.split(
 					cssClass, CharPool.SPACE);
 
-				for (int i = 0; i < cssClassParts.length; i++) {
+				for (String cssClassPart : cssClassParts) {
 					sb.append(StringPool.SPACE);
-					sb.append(cssClassParts[i]);
+					sb.append(cssClassPart);
 					sb.append("-btn");
 				}
 			}
@@ -79,29 +85,35 @@ public class NavTag extends BaseNavTag implements BodyTag {
 
 			sb.append("\" id=\"");
 			sb.append(_getNamespacedId());
-			sb.append("NavbarBtn\" ");
-			sb.append("data-navId=\"");
+			sb.append("NavbarBtn\" data-navId=\"");
 			sb.append(_getNamespacedId());
 			sb.append("\" tabindex=\"0\">");
 
 			String icon = getIcon();
 
 			if (Validator.isNull(icon)) {
-				sb.append("<i class=\"icon-reorder\"></i>");
+				sb.append("<span class=\"navbar-toggler-icon\"></span>");
 			}
 			else if (icon.equals("user") && themeDisplay.isSignedIn()) {
 				try {
+					sb.append("<img alt=\"");
+
+					sb.append(
+						LanguageUtil.get(
+							TagResourceBundleUtil.getResourceBundle(
+								pageContext),
+							"my-account"));
+
+					sb.append("\" class=\"user-avatar-image\" src=\"");
+
 					User user = themeDisplay.getUser();
 
-					sb.append("<img alt=\"");
-					sb.append(LanguageUtil.get(request, "my-account"));
-					sb.append("\" class=\"user-avatar-image\" ");
-					sb.append("src=\"");
 					sb.append(user.getPortraitURL(themeDisplay));
+
 					sb.append("\">");
 				}
-				catch (Exception e) {
-					throw new JspException(e);
+				catch (Exception exception) {
+					throw new JspException(exception);
 				}
 			}
 			else {
@@ -131,16 +143,38 @@ public class NavTag extends BaseNavTag implements BodyTag {
 		_namespacedId = null;
 	}
 
+	protected String getMarkupView() {
+		String markupView = StringPool.BLANK;
+
+		NavBarTag navBarTag = (NavBarTag)findAncestorWithClass(
+			this, NavBarTag.class);
+
+		if (navBarTag != null) {
+			markupView = navBarTag.getMarkupView();
+		}
+
+		return markupView;
+	}
+
+	@Override
+	protected String getPage() {
+		if (Validator.isNotNull(getMarkupView())) {
+			return "/html/taglib/aui/nav/" + getMarkupView() + "/page.jsp";
+		}
+
+		return "/html/taglib/aui/nav/page.jsp";
+	}
+
 	@Override
 	protected int processStartTag() throws Exception {
 		return EVAL_BODY_BUFFERED;
 	}
 
 	@Override
-	protected void setAttributes(HttpServletRequest request) {
-		super.setAttributes(request);
+	protected void setAttributes(HttpServletRequest httpServletRequest) {
+		super.setAttributes(httpServletRequest);
 
-		setNamespacedAttribute(request, "id", _getNamespacedId());
+		setNamespacedAttribute(httpServletRequest, "id", _getNamespacedId());
 	}
 
 	private String _getNamespacedId() {
@@ -150,16 +184,18 @@ public class NavTag extends BaseNavTag implements BodyTag {
 
 		_namespacedId = getId();
 
-		HttpServletRequest request =
+		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)pageContext.getRequest();
 
 		if (Validator.isNull(_namespacedId)) {
 			_namespacedId = PortalUtil.getUniqueElementId(
-				request, StringPool.BLANK, AUIUtil.normalizeId("navTag"));
+				httpServletRequest, StringPool.BLANK,
+				AUIUtil.normalizeId("navTag"));
 		}
 
-		PortletResponse portletResponse = (PortletResponse)request.getAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE);
+		PortletResponse portletResponse =
+			(PortletResponse)httpServletRequest.getAttribute(
+				JavaConstants.JAVAX_PORTLET_RESPONSE);
 
 		if ((portletResponse != null) && getUseNamespace()) {
 			_namespacedId = portletResponse.getNamespace() + _namespacedId;

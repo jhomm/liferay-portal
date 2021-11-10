@@ -14,9 +14,6 @@
 
 package com.liferay.portal.servlet;
 
-import com.liferay.portal.kernel.util.ServerDetector;
-import com.liferay.portal.resiliency.spi.agent.SPIAgentRequest;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpSession;
@@ -28,12 +25,13 @@ import javax.servlet.http.HttpSession;
 public class SharedSessionServletRequest extends HttpServletRequestWrapper {
 
 	public SharedSessionServletRequest(
-		HttpServletRequest request, boolean shared) {
+		HttpServletRequest httpServletRequest, boolean shared) {
 
-		super(request);
+		super(httpServletRequest);
 
-		_portalSession = request.getSession();
 		_shared = shared;
+
+		_portalHttpSession = httpServletRequest.getSession();
 	}
 
 	@Override
@@ -48,46 +46,41 @@ public class SharedSessionServletRequest extends HttpServletRequestWrapper {
 		}
 
 		if (_shared) {
-			return _portalSession;
+			return _portalHttpSession;
 		}
 
-		HttpSession portletSession = super.getSession(create);
+		HttpSession portletHttpSession = super.getSession(create);
 
-		if ((portletSession != null) && (portletSession != _portalSession)) {
-			SPIAgentRequest.populatePortletSessionAttributes(
-				this, portletSession);
+		if ((portletHttpSession != null) &&
+			(portletHttpSession != _portalHttpSession)) {
 
-			return getSharedSessionWrapper(_portalSession, portletSession);
+			return getSharedSessionWrapper(
+				_portalHttpSession, portletHttpSession);
 		}
 
-		return portletSession;
+		return portletHttpSession;
 	}
 
 	public HttpSession getSharedSession() {
-		return _portalSession;
+		return _portalHttpSession;
 	}
 
 	protected void checkPortalSession() {
 		try {
-			_portalSession.isNew();
+			_portalHttpSession.isNew();
 		}
-		catch (IllegalStateException ise) {
-			_portalSession = super.getSession(true);
+		catch (IllegalStateException illegalStateException) {
+			_portalHttpSession = super.getSession(true);
 		}
 	}
 
 	protected HttpSession getSharedSessionWrapper(
-		HttpSession portalSession, HttpSession portletSession) {
+		HttpSession portalHttpSession, HttpSession portletHttpSession) {
 
-		if (ServerDetector.isJetty()) {
-			return new JettySharedSessionWrapper(portalSession, portletSession);
-		}
-		else {
-			return new SharedSessionWrapper(portalSession, portletSession);
-		}
+		return new SharedSessionWrapper(portalHttpSession, portletHttpSession);
 	}
 
-	private HttpSession _portalSession;
+	private HttpSession _portalHttpSession;
 	private final boolean _shared;
 
 }

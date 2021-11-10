@@ -14,36 +14,34 @@
 
 package com.liferay.portal.upgrade.v7_0_0;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.upgrade.MockPortletPreferences;
-import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.PropsUtil;
-import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import javax.portlet.PortletPreferences;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-
-import org.powermock.api.mockito.PowerMockito;
 
 /**
  * @author Iván Zaera
  */
-public class UpgradeMessageBoardsTest extends PowerMockito {
+public class UpgradeMessageBoardsTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Before
 	public void setUp() {
-		Props props = mock(Props.class);
-
-		when(
-			props.get(PropsKeys.MESSAGE_BOARDS_EMAIL_HTML_FORMAT)
-		).thenReturn(
-			String.valueOf(false)
-		);
-
-		PropsUtil.setProps(props);
+		PropsTestUtil.setProps(
+			PropsKeys.MESSAGE_BOARDS_EMAIL_HTML_FORMAT, StringPool.FALSE);
 
 		_portletPreferences = new MockPortletPreferences();
 		_upgradeMessageBoards = new UpgradeMessageBoards();
@@ -71,7 +69,7 @@ public class UpgradeMessageBoardsTest extends PowerMockito {
 	}
 
 	@Test
-	public void testUpgradeEmailSignatureWithNonHtmlFormat() throws Exception {
+	public void testUpgradeEmailSignatureWithNonhtmlFormat() throws Exception {
 		_portletPreferences.setValue(
 			"emailHtmlFormat", Boolean.FALSE.toString());
 		_portletPreferences.setValue("messageBody", "The Body");

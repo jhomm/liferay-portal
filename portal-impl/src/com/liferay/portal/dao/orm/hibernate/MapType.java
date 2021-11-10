@@ -16,7 +16,8 @@ package com.liferay.portal.dao.orm.hibernate;
 
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 
 import java.io.Serializable;
 
@@ -24,7 +25,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 import org.hibernate.engine.SessionImplementor;
 import org.hibernate.type.StandardBasicTypes;
@@ -44,8 +47,8 @@ public class MapType implements CompositeUserType, Serializable {
 	}
 
 	@Override
-	public Object deepCopy(Object obj) {
-		return obj;
+	public Object deepCopy(Object object) {
+		return object;
 	}
 
 	@Override
@@ -55,7 +58,7 @@ public class MapType implements CompositeUserType, Serializable {
 
 	@Override
 	public boolean equals(Object x, Object y) {
-		return Validator.equals(x, y);
+		return Objects.equals(x, y);
 	}
 
 	@Override
@@ -85,25 +88,33 @@ public class MapType implements CompositeUserType, Serializable {
 
 	@Override
 	public Object nullSafeGet(
-			ResultSet rs, String[] names, SessionImplementor session,
+			ResultSet resultSet, String[] names, SessionImplementor session,
 			Object owner)
 		throws SQLException {
 
 		String json = (String)StandardBasicTypes.STRING.nullSafeGet(
-			rs, names, session, owner);
+			resultSet, names, session, owner);
 
-		return _jsonFactory.deserialize(json);
+		try {
+			return _jsonFactory.deserialize(json);
+		}
+		catch (Exception exception) {
+			_log.error("Unable to process JSON " + json, exception);
+
+			return Collections.emptyMap();
+		}
 	}
 
 	@Override
 	public void nullSafeSet(
-			PreparedStatement ps, Object target, int index,
+			PreparedStatement preparedStatement, Object target, int index,
 			SessionImplementor session)
 		throws SQLException {
 
 		String json = _jsonFactory.serialize(target);
 
-		StandardBasicTypes.STRING.nullSafeSet(ps, json, index, session);
+		StandardBasicTypes.STRING.nullSafeSet(
+			preparedStatement, json, index, session);
 	}
 
 	@Override
@@ -123,6 +134,8 @@ public class MapType implements CompositeUserType, Serializable {
 	@Override
 	public void setPropertyValue(Object component, int property, Object value) {
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(MapType.class);
 
 	private static final JSONFactory _jsonFactory = new JSONFactoryImpl();
 

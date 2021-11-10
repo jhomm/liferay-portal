@@ -1,0 +1,4 @@
+dependencies {
+	testIntegrationCompile project(":dxp:apps:commerce:commerce-machine-learning-forecast-alert-api")
+	testIntegrationCompile project(":test:arquillian-extension-junit-bridge")
+}

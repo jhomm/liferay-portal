@@ -14,79 +14,72 @@
 
 package com.liferay.portal.spring.transaction;
 
+import com.liferay.portal.kernel.aop.AopMethodInvocation;
+import com.liferay.portal.kernel.aop.ChainableMethodAdvice;
+import com.liferay.portal.kernel.transaction.Transactional;
+
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
-import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
+import java.util.Map;
 
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.interceptor.TransactionAttribute;
-import org.springframework.transaction.interceptor.TransactionAttributeSource;
 
 /**
  * @author Shuyang Zhou
  */
-public class TransactionInterceptor implements MethodInterceptor {
+public class TransactionInterceptor extends ChainableMethodAdvice {
 
-	public TransactionAttributeSource getTransactionAttributeSource() {
-		return transactionAttributeSource;
+	public TransactionInterceptor(TransactionHandler transactionHandler) {
+		_transactionHandler = transactionHandler;
 	}
 
 	@Override
-	public Object invoke(MethodInvocation methodInvocation) throws Throwable {
-		Method method = methodInvocation.getMethod();
+	public TransactionAttributeAdapter createMethodContext(
+		Class<?> targetClass, Method method,
+		Map<Class<? extends Annotation>, Annotation> annotations) {
 
-		Class<?> targetClass = null;
-
-		Object targetBean = methodInvocation.getThis();
-
-		if (targetBean != null) {
-			targetClass = targetBean.getClass();
-		}
+		Transactional transactional = (Transactional)annotations.get(
+			Transactional.class);
 
 		TransactionAttribute transactionAttribute =
-			transactionAttributeSource.getTransactionAttribute(
-				method, targetClass);
+			TransactionAttributeBuilder.build(transactional);
 
 		if (transactionAttribute == null) {
-			return methodInvocation.proceed();
+			return null;
 		}
 
-		return transactionExecutor.execute(
-			platformTransactionManager, transactionAttribute, methodInvocation);
+		return new TransactionAttributeAdapter(transactionAttribute);
 	}
 
-	public void setPlatformTransactionManager(
-		PlatformTransactionManager platformTransactionManager) {
+	@Override
+	public Object invoke(
+			AopMethodInvocation aopMethodInvocation, Object[] arguments)
+		throws Throwable {
 
-		this.platformTransactionManager = platformTransactionManager;
+		TransactionAttributeAdapter transactionAttributeAdapter =
+			aopMethodInvocation.getAdviceMethodContext();
+
+		TransactionStatusAdapter transactionStatusAdapter =
+			_transactionHandler.start(transactionAttributeAdapter);
+
+		Object returnValue = null;
+
+		try {
+			returnValue = aopMethodInvocation.proceed(arguments);
+		}
+		catch (Throwable throwable) {
+			_transactionHandler.rollback(
+				throwable, transactionAttributeAdapter,
+				transactionStatusAdapter);
+		}
+
+		_transactionHandler.commit(
+			transactionAttributeAdapter, transactionStatusAdapter);
+
+		return returnValue;
 	}
 
-	public void setTransactionAttributeSource(
-		TransactionAttributeSource transactionAttributeSource) {
-
-		this.transactionAttributeSource = transactionAttributeSource;
-	}
-
-	public void setTransactionExecutor(
-		TransactionExecutor transactionExecutor) {
-
-		this.transactionExecutor = transactionExecutor;
-	}
-
-	/**
-	 * @deprecated As of 6.1.0, replaced by {@link
-	 *             #setPlatformTransactionManager(PlatformTransactionManager)}
-	 */
-	@Deprecated
-	public void setTransactionManager(
-		PlatformTransactionManager platformTransactionManager) {
-
-		setPlatformTransactionManager(platformTransactionManager);
-	}
-
-	protected PlatformTransactionManager platformTransactionManager;
-	protected TransactionAttributeSource transactionAttributeSource;
-	protected TransactionExecutor transactionExecutor;
+	private final TransactionHandler _transactionHandler;
 
 }

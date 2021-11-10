@@ -1,9 +1,16 @@
-<definition default="refresh">
-	<command name="refresh">
-		<execute selenium="refresh" />
+@default = "refresh"
+definition {
 
-		<execute selenium="assertJavaScriptErrors" />
+	function refresh {
+		WaitForSPARefresh();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.refresh();
+
+		WaitForLiferayEvent.initializeLiferayEventLog();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

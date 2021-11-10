@@ -1,0 +1,613 @@
+@component-name = "portal-publications"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Publications";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		JSONPublications.enablePublications();
+	}
+
+	tearDown {
+		var testPortalInstance = PropsUtil.get("test.portal.instance");
+
+		if ("${testPortalInstance}" == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			Publications.disablePublications();
+		}
+	}
+
+	@description = "Assert we can add edit and delete comment for Publication Review."
+	@priority = "4"
+	test AddEditAndDeleteCommentForPublicationReview {
+		JSONPublications.addPublication(publicationName = "Publication Name");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent Content",
+			groupName = "Guest",
+			title = "WC WebContent Title");
+
+		PublicationsNavigator.gotoReviewChanges(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name");
+
+		PublicationsChanges.assertPublicationsCommentsCRUDPermissions();
+	}
+
+	@description = "Assert Publications user can add/delete/publish publication with all permissions of Publications, can't add/publish a new publicaiton without add/publish publication permission."
+	@priority = "5"
+	test AllowPublicationsPermissionUserToAddAndPublishPublications {
+		property custom.properties = "jsonws.web.service.paths.excludes=";
+
+		JSONUser.addUser(
+			userEmailAddress = "userea@liferay.com",
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "userea@liferay.com");
+
+		JSONRole.addRegularRole(
+			roleKey = "Publications Role",
+			roleTitle = "Publications Role");
+
+		for (var resourceActionIndex : list "ACCESS_IN_CONTROL_PANEL,ADD_TO_PAGE,CONFIGURATION,PERMISSIONS,PREFERENCES,VIEW") {
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "${resourceActionIndex}",
+				resourceName = "com_liferay_change_tracking_web_portlet_PublicationsPortlet",
+				roleTitle = "Publications Role");
+		}
+
+		Permissions.definePermissionViaJSONAPI(
+			resourceAction = "VIEW_CONTROL_PANEL",
+			resourceName = "90",
+			roleTitle = "Publications Role");
+
+		for (var resourceActionIndex : list "ADD_PUBLICATION,PERMISSIONS") {
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "${resourceActionIndex}",
+				resourceName = "com.liferay.change.tracking",
+				roleTitle = "Publications Role");
+		}
+
+		for (var resourceActionIndex : list "DELETE,PERMISSIONS,PUBLISH,UPDATE,VIEW") {
+			Permissions.definePermissionViaJSONAPI(
+				resourceAction = "${resourceActionIndex}",
+				resourceName = "com.liferay.change.tracking.model.CTCollection",
+				roleTitle = "Publications Role");
+		}
+
+		JSONRole.assignRoleToUser(
+			roleTitle = "Publications Role",
+			userEmailAddress = "userea@liferay.com");
+
+		JSONPublications.addPublication(publicationName = "Publication Name");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent Content",
+			groupName = "Guest",
+			title = "WC WebContent Title");
+
+		User.logoutPG();
+
+		User.loginUserPG(
+			password = "test",
+			userEmailAddress = "userea@liferay.com");
+
+		PublicationsNavigator.gotoPublish(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name");
+
+		Publications.publishPublication(publicationName = "Publication Name");
+
+		Publications.createNewPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name 2");
+
+		ApplicationsMenu.gotoPortlet(
+			category = "Publications",
+			panel = "Applications",
+			portlet = "Publications");
+
+		Publications.deletePublication(publicationName = "Publication Name");
+
+		User.logoutPG();
+
+		User.loginUserPG(
+			password = "test",
+			userEmailAddress = "test@liferay.com");
+
+		Permissions.removePermissionViaAPI(
+			resourceAction = "ADD_PUBLICATION",
+			resourceName = "com.liferay.change.tracking",
+			roleTitle = "Publications Role");
+
+		User.logoutPG();
+
+		User.loginUserPG(
+			password = "test",
+			userEmailAddress = "userea@liferay.com");
+
+		PublicationsPermissions.assertNoPermissionToCreatePublication();
+
+		User.logoutPG();
+
+		User.loginUserPG(
+			password = "test",
+			userEmailAddress = "test@liferay.com");
+
+		Permissions.removePermissionViaAPI(
+			resourceAction = "PUBLISH",
+			resourceName = "com.liferay.change.tracking.model.CTCollection",
+			roleTitle = "Publications Role");
+
+		JSONPublications.addPublication(publicationName = "Publication Name 3");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name 3");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent Content 3",
+			groupName = "Guest",
+			title = "WC WebContent Title 3");
+
+		User.logoutPG();
+
+		User.loginUserPG(
+			password = "test",
+			userEmailAddress = "userea@liferay.com");
+
+		PublicationsPermissions.assertNoPermissionToPublishPublication(publicationName = "Publication Name 3");
+	}
+
+	@description = "Assert Non-privileged user cannot see Publications bar."
+	@priority = "5"
+	test AssertNonPrivilegedUserCannotSeePublicationsBar {
+		property custom.properties = "jsonws.web.service.paths.excludes=";
+
+		JSONUser.addUser(
+			userEmailAddress = "userea@liferay.com",
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
+
+		JSONRole.assignRoleToUser(
+			roleTitle = "Power User",
+			userEmailAddress = "userea@liferay.com");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "userea@liferay.com");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "userea@liferay.com",
+			userLoginFullName = "userfn userln");
+
+		AssertElementNotPresent(locator1 = "Publications#PUBLICATIONS_INDICATOR_BUTTON");
+	}
+
+	@priority = "5"
+	test AssertPublicationHistoryIsSortedByPublishDate {
+		JSONPublications.addPublication(publicationName = "Publication Name 1");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name 1");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent Content 1",
+			groupName = "Guest",
+			title = "WC WebContent Title 1");
+
+		JSONPublications.addPublication(publicationName = "Publication Name 2");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name 2");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent Content 2",
+			groupName = "Guest",
+			title = "WC WebContent Title 2");
+
+		JSONPublications.addPublication(publicationName = "Publication Name 3");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name 3");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent Content 3",
+			groupName = "Guest",
+			title = "WC WebContent Title 3");
+
+		JSONPublications.publishPublication(publicationName = "Publication Name 1");
+
+		JSONPublications.publishPublication(publicationName = "Publication Name 3");
+
+		JSONPublications.publishPublication(publicationName = "Publication Name 2");
+
+		Publications.viewPublicationOrderInHistory(publicationList = "Publication Name 2,Publication Name 3,Publication Name 1");
+	}
+
+	@priority = "4"
+	test DiscardSubsetsofChangesInPublication {
+		JSONPublications.addPublication(publicationName = "Publication Name");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent Content",
+			groupName = "Guest",
+			title = "WC WebContent Title");
+
+		WebContentStructures.openWebContentStructuresAdmin(siteURLKey = "guest");
+
+		WebContentStructures.addCP(
+			structureDescription = "WC Structure Description",
+			structureName = "WC Structure Name");
+
+		DataEngine.addField(
+			fieldFieldLabel = "Text",
+			fieldName = "Text");
+
+		WebContentStructures.saveCP(structureName = "WC Structure Name");
+
+		WebContentTemplates.openWebContentTemplatesAdmin(siteURLKey = "guest");
+
+		WebContentTemplates.addCP(
+			structureName = "WC Structure Name",
+			templateDescription = "WC Template Description",
+			templateFieldNames = "Text",
+			templateName = "WC Template Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		WebContentNavigator.gotoAddWithStructureCP(structureName = "WC Structure Name");
+
+		WebContent.addWithStructureCP(
+			structureName = "WC Structure Name",
+			templateName = "WC Template Name",
+			webContentText = "WC WebContent Text",
+			webContentTitle = "WC WebContent Title 1");
+
+		PortletEntry.publish();
+
+		PublicationsNavigator.gotoReviewChanges();
+
+		PublicationsChanges.discardChanges(
+			changeCategory = "Dynamic Data Mapping Structure",
+			changeTitle = "WC Structure Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		WebContent.viewNotPresentCP(webContentTitle = "WC WebContent Title 2 Edit");
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+		NavItem.gotoStructures();
+
+		AssertElementNotPresent(
+			key_ddlDataDefinitionName = "WC Structure Name",
+			locator1 = "DDMSelectStructure#DDM_STRUCTURE_TABLE_NAME");
+
+		NavItem.gotoTemplates();
+
+		AssertElementNotPresent(
+			key_tableEntry = "WC Template Name",
+			locator1 = "LexiconTable#TABLE_ENTRY");
+
+		JSONPublications.publishPublication(publicationName = "Publication Name");
+
+		Publications.viewPublicationPublished(publicationName = "Publication Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		WebContent.viewNotPresentCP(webContentTitle = "WC WebContent Title 2 Edit");
+
+		WebContent.viewTitle(webContentTitle = "WC WebContent Title");
+
+		NavItem.gotoStructures();
+
+		AssertElementNotPresent(
+			key_ddlDataDefinitionName = "WC Structure Name",
+			locator1 = "DDMSelectStructure#DDM_STRUCTURE_TABLE_NAME");
+
+		NavItem.gotoTemplates();
+
+		AssertElementNotPresent(
+			key_tableEntry = "WC Template Name",
+			locator1 = "LexiconTable#TABLE_ENTRY");
+	}
+
+	@description = "Assert publications changes can search and sort"
+	@priority = "4"
+	test PublicationsChangesCanSearchAndSort {
+		JSONPublications.addPublication(publicationName = "Publication Name");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name");
+
+		for (var count : list "1,2,3") {
+			JSONWebcontent.addWebContent(
+				content = "WC Content ${count}",
+				groupName = "Guest",
+				title = "WC Title ${count}");
+		}
+
+		PublicationsNavigator.gotoReviewChanges(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name");
+
+		Search.searchCP(searchTerm = "1");
+
+		PublicationsChanges.viewChangesResultsOrder(
+			changeCategory = "Web Content Article",
+			changesList = "WC Title 1");
+
+		PublicationsChanges.viewChangesResultNotPresent(
+			changeCategory = "Web Content Article",
+			changeOrder = "2",
+			changeTitle = "WC Title 2");
+
+		PublicationsChanges.viewChangesResultNotPresent(
+			changeCategory = "Web Content Article",
+			changeOrder = "3",
+			changeTitle = "WC Title 3");
+
+		Search.searchCP(searchTerm = "WC");
+
+		PublicationsChanges.viewChangesResultsOrder(
+			changeCategory = "Web Content Article",
+			changesList = "WC Title 1,WC Title 2,WC Title 3");
+
+		PublicationsChanges.sortChanges(
+			sort = "descending",
+			sortName = "Title");
+
+		PublicationsChanges.viewChangesResultsOrder(
+			changeCategory = "Web Content Article",
+			changesList = "WC Title 1,WC Title 2,WC Title 3");
+
+		PublicationsChanges.sortChanges(
+			sort = "ascending",
+			sortName = "Title");
+
+		PublicationsChanges.viewChangesResultsOrder(
+			changeCategory = "Web Content Article",
+			changesList = "WC Title 3,WC Title 2,WC Title 1");
+	}
+
+	@priority = "5"
+	test PublishParallelPublications {
+		property app.server.types = "jboss,tcserver,tomcat,weblogic,websphere,wildfly";
+		property database.types = "hypersonic,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+		property environment.acceptance = "true";
+		property portal.acceptance = "true";
+
+		JSONWebcontent.addFolder(
+			folderName = "WC Folder Name",
+			groupName = "Guest");
+
+		Publications.createNewPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			portlet = "Web Content");
+
+		WebContentFolder.gotoCP(
+			folderName = "WC Folder Name",
+			webContentTitle = "WC Folder Name");
+
+		WebContentNavigator.gotoAddCP();
+
+		WebContent.addCP(
+			webContentContent = "WC WebContent 1 Content",
+			webContentTitle = "WC WebContent 1 Title");
+
+		PortletEntry.publish();
+
+		Publications.createNewPublication(publicationName = "Publication 2 Name");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			portlet = "Web Content");
+
+		WebContentFolder.gotoCP(
+			folderName = "WC Folder Name",
+			webContentTitle = "WC Folder Name");
+
+		WebContentNavigator.gotoAddCP();
+
+		WebContent.addCP(
+			webContentContent = "WC WebContent 2 Content",
+			webContentTitle = "WC WebContent 2 Title");
+
+		PortletEntry.publish();
+
+		PublicationsNavigator.gotoPublish(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication 2 Name");
+
+		Publications.publishPublication(publicationName = "Publication 2 Name");
+
+		Publications.selectPublication(publicationName = "Publication Name");
+
+		PublicationsNavigator.gotoPublish(publicationName = "Publication Name");
+
+		Publications.publishPublication(publicationName = "Publication Name");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Content &amp; Data",
+			portlet = "Web Content");
+
+		WebContentFolder.gotoCP(
+			folderName = "WC Folder Name",
+			webContentTitle = "WC Folder Name");
+
+		AssertElementPresent(
+			key_webContentTitle = "WC WebContent 1 Title",
+			locator1 = "WC#ENTRY_LIST_TITLE");
+
+		AssertElementPresent(
+			key_webContentTitle = "WC WebContent 2 Title",
+			locator1 = "WC#ENTRY_LIST_TITLE");
+	}
+
+	@priority = "5"
+	test RescheduleAndCancelScheduledPublication {
+		property portal.acceptance = "true";
+
+		Publications.createNewPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent Content",
+			groupName = "Guest",
+			title = "WC WebContent Title");
+
+		Publications.schedulePublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name");
+
+		Publications.schedulePublication(
+			publicationName = "Publication Name",
+			reschedule = "true");
+
+		Publications.unschedulePublication(publicationName = "Publication Name");
+
+		AssertTextEquals(
+			locator1 = "Message#EMPTY_INFO",
+			value1 = "No publication has been scheduled yet.");
+	}
+
+	@priority = "5"
+	test RevertPublicationAndPublishNow {
+		property portal.acceptance = "true";
+
+		JSONPublications.addPublication(publicationName = "Publication Name");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent Content",
+			groupName = "Guest",
+			title = "WC WebContent Title");
+
+		JSONPublications.publishPublication(publicationName = "Publication Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		AssertElementPresent(
+			key_webContentTitle = "WC WebContent Title",
+			locator1 = "WC#ENTRY_LIST_TITLE");
+
+		PublicationsNavigator.openPublicationsHistory();
+
+		Publications.revertPublication(
+			publicationName = "Publication Name",
+			publishNow = "true");
+
+		JSONPublications.publishPublication(publicationName = "Revert &quot;Publication Name&quot;");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+		AssertTextEquals(
+			locator1 = "Message#EMPTY_INFO",
+			value1 = "No web content was found.");
+	}
+
+	@priority = "5"
+	test SchedulePublication {
+		JSONPublications.addPublication(publicationName = "Publication Name 1");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name 1");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent 1 Content",
+			groupName = "Guest",
+			title = "WC WebContent 1 Title");
+
+		PublicationsNavigator.openPublicationsAdmin();
+
+		Publications.schedulePublication(publicationName = "Publication Name 1");
+
+		Publications.assertScheduledPublicationPublished(publicationName = "Publication Name 1");
+
+		JSONPublications.addPublication(publicationName = "Publication Name 2");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name 2");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent 2 Content",
+			groupName = "Guest",
+			title = "WC WebContent 2 Title");
+
+		Publications.schedulePublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name 2");
+
+		Publications.assertScheduledPublicationPublished(publicationName = "Publication Name 2");
+
+		JSONPublications.addPublication(publicationName = "Publication Name 3");
+
+		JSONPublications.selectPublication(publicationName = "Publication Name 3");
+
+		JSONWebcontent.addWebContent(
+			content = "WC WebContent 3 Content",
+			groupName = "Guest",
+			title = "WC WebContent 3 Title");
+
+		Publications.schedulePublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name 3");
+
+		Publications.assertScheduledPublicationPublished(publicationName = "Publication Name 3");
+	}
+
+	@priority = "5"
+	test SearchPublishedPublications {
+		for (var publicationName : list "Apple,Banana,Cherry") {
+			JSONPublications.addPublication(publicationName = "${publicationName}");
+		}
+
+		PublicationsNavigator.openPublicationsAdmin();
+
+		for (var publicationName : list "Apple,Banana,Cherry") {
+			Publications.search(publicationName = "${publicationName}");
+		}
+
+		for (var publicationName : list "Apple,Banana,Cherry") {
+			JSONPublications.selectPublication(publicationName = "${publicationName}");
+
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "${publicationName}");
+
+			JSONPublications.publishPublication(publicationName = "${publicationName}");
+		}
+
+		Navigator.gotoNavTab(navTab = "History");
+
+		for (var publicationName : list "Apple,Banana,Cherry") {
+			Publications.search(publicationName = "${publicationName}");
+		}
+	}
+
+}

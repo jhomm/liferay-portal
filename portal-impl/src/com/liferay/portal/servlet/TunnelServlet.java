@@ -19,10 +19,14 @@ import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.access.control.AccessControlThreadLocal;
+import com.liferay.portal.kernel.security.auth.HttpPrincipal;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.util.MethodHandler;
 import com.liferay.portal.kernel.util.MethodKey;
 import com.liferay.portal.kernel.util.ObjectValuePair;
-import com.liferay.portal.security.auth.HttpPrincipal;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.ProtectedClassLoaderObjectInputStream;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -30,6 +34,7 @@ import java.io.ObjectOutputStream;
 
 import java.lang.reflect.InvocationTargetException;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -41,23 +46,42 @@ import javax.servlet.http.HttpServletResponse;
 public class TunnelServlet extends HttpServlet {
 
 	@Override
-	public void doPost(HttpServletRequest request, HttpServletResponse response)
+	public void doPost(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
 		throws IOException {
 
-		ObjectInputStream ois = null;
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		if ((permissionChecker == null) || !permissionChecker.isSignedIn()) {
+			if (_log.isWarnEnabled()) {
+				_log.warn("Unauthenticated access is forbidden");
+			}
+
+			httpServletResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
+
+			return;
+		}
+
+		ObjectInputStream objectInputStream = null;
+
+		Thread thread = Thread.currentThread();
 
 		try {
-			ois = new ObjectInputStream(request.getInputStream());
+			objectInputStream = new ProtectedClassLoaderObjectInputStream(
+				httpServletRequest.getInputStream(),
+				thread.getContextClassLoader());
 		}
-		catch (IOException ioe) {
+		catch (IOException ioException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(ioe, ioe);
+				_log.warn(ioException, ioException);
 			}
 
 			return;
 		}
 
-		Object returnObj = null;
+		Object returnObject = null;
 
 		boolean remoteAccess = AccessControlThreadLocal.isRemoteAccess();
 
@@ -65,7 +89,8 @@ public class TunnelServlet extends HttpServlet {
 			AccessControlThreadLocal.setRemoteAccess(true);
 
 			ObjectValuePair<HttpPrincipal, MethodHandler> ovp =
-				(ObjectValuePair<HttpPrincipal, MethodHandler>)ois.readObject();
+				(ObjectValuePair<HttpPrincipal, MethodHandler>)
+					objectInputStream.readObject();
 
 			MethodHandler methodHandler = ovp.getValue();
 
@@ -76,44 +101,61 @@ public class TunnelServlet extends HttpServlet {
 					return;
 				}
 
-				returnObj = methodHandler.invoke();
+				returnObject = methodHandler.invoke();
 			}
 		}
-		catch (InvocationTargetException ite) {
-			returnObj = ite.getCause();
+		catch (InvocationTargetException invocationTargetException) {
+			_log.error(invocationTargetException, invocationTargetException);
 
-			if (!(returnObj instanceof PortalException)) {
-				_log.error(ite, ite);
+			Throwable throwable = invocationTargetException.getCause();
 
-				if (returnObj != null) {
-					Throwable throwable = (Throwable)returnObj;
+			if (throwable != null) {
+				Class<?> clazz = throwable.getClass();
 
-					returnObj = new SystemException(throwable.getMessage());
+				if (throwable instanceof PortalException) {
+					returnObject = new PortalException(
+						"Invocation failed due to " + clazz.getName());
 				}
 				else {
-					returnObj = new SystemException();
+					returnObject = new SystemException(
+						"Invocation failed due to " + clazz.getName());
 				}
 			}
+			else {
+				returnObject = new SystemException();
+			}
 		}
-		catch (Exception e) {
-			_log.error(e, e);
+		catch (Exception exception) {
+			_log.error(exception, exception);
 		}
 		finally {
 			AccessControlThreadLocal.setRemoteAccess(remoteAccess);
 		}
 
-		if (returnObj != null) {
-			try (ObjectOutputStream oos = new ObjectOutputStream(
-					response.getOutputStream())) {
+		if (returnObject != null) {
+			try (ObjectOutputStream objectOutputStream = new ObjectOutputStream(
+					httpServletResponse.getOutputStream())) {
 
-				oos.writeObject(returnObj);
+				objectOutputStream.writeObject(returnObject);
 			}
-			catch (IOException ioe) {
-				_log.error(ioe, ioe);
+			catch (IOException ioException) {
+				_log.error(ioException, ioException);
 
-				throw ioe;
+				throw ioException;
 			}
 		}
+	}
+
+	@Override
+	protected void doGet(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
+		throws IOException, ServletException {
+
+		PortalUtil.sendError(
+			HttpServletResponse.SC_NOT_FOUND,
+			new IllegalArgumentException("The GET method is not supported"),
+			httpServletRequest, httpServletResponse);
 	}
 
 	protected boolean isValidRequest(Class<?> clazz) {
@@ -125,9 +167,8 @@ public class TunnelServlet extends HttpServlet {
 
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(TunnelServlet.class);

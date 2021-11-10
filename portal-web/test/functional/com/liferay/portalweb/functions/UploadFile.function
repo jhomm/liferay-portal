@@ -1,11 +1,16 @@
-<definition default="uploadFile">
-	<command name="uploadFile">
-		<execute selenium="waitForVisible" />
+@default = "uploadFile"
+definition {
 
-		<execute selenium="uploadFile" />
+	function uploadFile {
+		WaitForSPARefresh();
 
-		<execute selenium="assertJavaScriptErrors" />
+		selenium.waitForElementPresent();
 
-		<execute selenium="assertLiferayErrors" />
-	</command>
-</definition>
+		selenium.uploadFile();
+
+		selenium.assertJavaScriptErrors();
+
+		selenium.assertLiferayErrors();
+	}
+
+}

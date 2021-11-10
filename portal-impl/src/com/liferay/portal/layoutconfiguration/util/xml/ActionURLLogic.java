@@ -14,12 +14,13 @@
 
 package com.liferay.portal.layoutconfiguration.util.xml;
 
+import com.liferay.portal.kernel.layoutconfiguration.util.xml.RuntimeLogic;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
+import com.liferay.portal.kernel.portlet.LiferayRenderResponse;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
-import com.liferay.portal.util.PortalUtil;
-import com.liferay.portlet.RenderResponseImpl;
 
 import javax.portlet.PortletRequest;
 import javax.portlet.RenderResponse;
@@ -36,7 +37,7 @@ public class ActionURLLogic extends RuntimeLogic {
 	public static final String OPEN_TAG = "<runtime-action-url";
 
 	public ActionURLLogic(RenderResponse renderResponse) {
-		_renderResponseImpl = (RenderResponseImpl)renderResponse;
+		_liferayRenderResponse = (LiferayRenderResponse)renderResponse;
 	}
 
 	@Override
@@ -60,14 +61,13 @@ public class ActionURLLogic extends RuntimeLogic {
 		Element root = doc.getRootElement();
 
 		LiferayPortletURL liferayPortletURL =
-			_renderResponseImpl.createLiferayPortletURL(getLifecycle());
+			_liferayRenderResponse.createLiferayPortletURL(getLifecycle());
 
 		String portletId = root.attributeValue("portlet-name");
 
 		if (portletId != null) {
-			portletId = PortalUtil.getJsSafePortletId(portletId);
-
-			liferayPortletURL.setPortletId(portletId);
+			liferayPortletURL.setPortletId(
+				PortalUtil.getJsSafePortletId(portletId));
 		}
 
 		for (int i = 1;; i++) {
@@ -86,6 +86,6 @@ public class ActionURLLogic extends RuntimeLogic {
 
 	private static final String _LIFECYCLE = PortletRequest.ACTION_PHASE;
 
-	private final RenderResponseImpl _renderResponseImpl;
+	private final LiferayRenderResponse _liferayRenderResponse;
 
 }
